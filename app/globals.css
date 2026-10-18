@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+/*
+  Color tokens. Change these to restyle the whole site.
+  The palette is layered neutrals: sections alternate between slightly
+  different tones so the page feels dimensional without heavy shadows.
+  The light theme is the default; <html data-theme="dark"> switches it.
+*/
+:root {
+  color-scheme: light;
+
+  --background: #f7f6f3; /* main: warm off-white */
+  --hero-top: #fcfbf9; /* top of the hero's faint gradient */
+  --surface: #efede9; /* alternate sections: soft warm gray */
+  --card: rgb(255 255 255 / 0.7); /* grouped surfaces: semi-translucent */
+  --card-hover: #ffffff;
+  --foreground: #1d1f22; /* primary text: charcoal */
+  --muted: #62666d; /* secondary text (readable on every section tone) */
+  --border: rgb(29 31 34 / 0.09);
+  --accent: #3d6a96; /* restrained cool blue */
+  --accent-hover: #2f5679;
+  --nav: rgb(247 246 243 / 0.8);
+
+  /* Theme toggle: pastel peach with a warm sun */
+  --toggle-bg: #f5e8db;
+  --toggle-bg-hover: #f0dccb;
+  --toggle-icon: #a86b32;
+}
+
+/* Dark theme: layered charcoal and blue-gray, never pure black */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background: #1b1c1f;
+  --hero-top: #232428;
+  --surface: #222327;
+  --card: rgb(255 255 255 / 0.04);
+  --card-hover: rgb(255 255 255 / 0.08);
+  --foreground: #ecebe8;
+  --muted: #a3a6ad;
+  --border: rgb(255 255 255 / 0.08);
+  --accent: #9db8d9; /* soft pastel blue */
+  --accent-hover: #bccfe6;
+  --nav: rgb(27 28 31 / 0.78);
+
+  /* Theme toggle: pastel lavender with a soft moon */
+  --toggle-bg: rgb(201 191 242 / 0.12);
+  --toggle-bg-hover: rgb(201 191 242 / 0.2);
+  --toggle-icon: #c9bff2;
+}
+
+/* Makes the tokens usable as Tailwind classes, e.g. bg-surface, text-muted */
+@theme inline {
+  --color-background: var(--background);
+  --color-hero-top: var(--hero-top);
+  --color-surface: var(--surface);
+  --color-card: var(--card);
+  --color-card-hover: var(--card-hover);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-nav: var(--nav);
+  --color-toggle-bg: var(--toggle-bg);
+  --color-toggle-bg-hover: var(--toggle-bg-hover);
+  --color-toggle-icon: var(--toggle-icon);
+
+  /* System fonts: San Francisco on Apple devices, native fonts elsewhere */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/*
+  Registering --hero-top as a color lets the browser animate it, so the
+  hero's gradient fades between themes along with everything else.
+*/
+@property --hero-top {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #fcfbf9;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Leave room for the sticky navbar when jumping to a section */
+  scroll-padding-top: 3rem;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Clear, consistent keyboard focus ring for every link and button */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/*
+  Theme change: <ThemeToggle> adds this class to <html> for a moment so
+  every color fades to the new theme instead of switching instantly.
+  The toggle icon is left out because it has its own animation below.
+*/
+html.theme-transition {
+  transition:
+    --hero-top 0.4s ease,
+    background-color 0.4s ease,
+    color 0.4s ease !important;
+}
+
+html.theme-transition *:not(.theme-icon, .theme-icon *) {
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease,
+    border-color 0.4s ease,
+    text-decoration-color 0.4s ease !important;
+}
+
+/*
+  Theme toggle icon: a sun that morphs into a crescent moon.
+  - the rays rotate, shrink and fade out
+  - the center circle grows
+  - a hidden "bite" circle slides in to cut the crescent shape
+*/
+.theme-icon,
+.theme-icon-core,
+.theme-icon-rays,
+.theme-icon-bite {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition:
+    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
+}
+
+/* The sun starts turned 45deg (its rays look the same), so the icon
+   makes a gentle quarter-turn as it becomes the moon. */
+.theme-icon {
+  transform: rotate(-45deg);
+}
+
+.theme-icon-bite {
+  transform: translate(10px, -10px); /* parked outside the sun */
+}
+
+[data-theme="dark"] .theme-icon {
+  transform: rotate(0deg);
+}
+
+[data-theme="dark"] .theme-icon-core {
+  transform: scale(1.6);
+}
+
+[data-theme="dark"] .theme-icon-rays {
+  transform: rotate(45deg) scale(0.5);
+  opacity: 0;
+}
+
+[data-theme="dark"] .theme-icon-bite {
+  transform: translate(0, 0);
+}
+
+/* Used by <Reveal>: hidden until it scrolls into view */
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s ease-out;
+}
+
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* Respect users who have asked their OS for less motion */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .theme-icon,
+  .theme-icon * {
+    transition: none;
+  }
+}
