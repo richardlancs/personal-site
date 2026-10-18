@@ -127,6 +127,33 @@ html.theme-transition *:not(.theme-icon, .theme-icon *) {
 }
 
 /*
+  Hover grow: a small, smooth grow on hover and a slight press on click.
+  Add the `hover-grow` class to any icon or button.
+*/
+.hover-grow {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.hover-grow:hover {
+  transform: scale(1.1);
+}
+
+.hover-grow:active {
+  transform: scale(0.96);
+}
+
+/* Keep the grow smooth even while the theme colors are fading */
+html.theme-transition .hover-grow {
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s ease,
+    color 0.4s ease !important;
+}
+
+/*
   Theme toggle icon: a sun that morphs into a crescent moon.
   - the rays rotate, shrink and fade out
   - the center circle grows
@@ -197,5 +224,9 @@ html.theme-transition *:not(.theme-icon, .theme-icon *) {
   .theme-icon,
   .theme-icon * {
     transition: none;
+  }
+  .hover-grow:hover,
+  .hover-grow:active {
+    transform: none;
   }
 }

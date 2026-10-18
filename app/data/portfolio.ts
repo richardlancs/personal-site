@@ -39,7 +39,7 @@ export const profile = {
 
 export const about: string[] = [
   "I'm a Computer Science student at the University of Waterloo, interested in software development, artificial intelligence, and building practical projects.",
-  "Right now I'm strengthening my computer science fundamentals, especially data structures and algorithms and object-oriented programming, while learning full-stack development and exploring AI and machine learning.",
+  "Outside of code, I play badminton and basketball, lift weights, and play poker. They keep me active and competitive, and poker especially has taught me to think in probabilities and make calm decisions with incomplete information.",
   "I use GitHub to document what I'm learning and to share the projects I build throughout university.",
 ];
 

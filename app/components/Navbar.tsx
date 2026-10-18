@@ -25,12 +25,14 @@ export default function Navbar() {
           <ThemeToggle />
         </div>
 
-        <ul className="-mx-3 flex w-full overflow-x-auto text-[13px] sm:ml-auto sm:w-auto">
+        {/* The padding gives the pills room to grow without being clipped
+            by the horizontal scroll on small screens */}
+        <ul className="-m-1 flex w-full gap-1.5 overflow-x-auto p-1 text-[13px] sm:ml-auto sm:w-auto">
           {links.map((link) => (
             <li key={link.href}>
               <a
                 href={link.href}
-                className="block whitespace-nowrap px-3 py-1 text-muted transition-colors duration-200 hover:text-foreground"
+                className="hover-grow flex h-8 items-center whitespace-nowrap rounded-full bg-foreground/5 px-3.5 text-muted hover:bg-foreground/10 hover:text-foreground"
               >
                 {link.label}
               </a>
