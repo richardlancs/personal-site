@@ -9,18 +9,18 @@ export default function Hero() {
       className="bg-background bg-linear-to-b from-hero-top to-transparent"
     >
       <div className="mx-auto grid max-w-6xl items-center gap-16 px-6 pb-24 pt-28 sm:px-10 sm:pb-32 sm:pt-44 lg:grid-cols-[1fr_minmax(0,26rem)]">
-        <div>
+        <div className="text-center sm:text-left">
           <h1 className="text-5xl font-semibold tracking-tight sm:text-7xl">
             {profile.name}
           </h1>
           <p className="mt-3 text-2xl font-semibold tracking-tight text-muted sm:text-3xl">
             {profile.headline}
           </p>
-          <p className="mt-8 max-w-xl text-lg leading-relaxed text-muted">
+          <p className="mx-auto mt-8 max-w-xl text-lg sm:mx-0 leading-relaxed text-muted">
             {profile.intro}
           </p>
 
-          <div className="mt-10 flex flex-wrap gap-3">
+          <div className="mt-10 flex flex-wrap justify-center gap-3 sm:justify-start">
             <a
               href="#projects"
               className="rounded-full bg-foreground px-6 py-3 text-sm font-medium text-background transition-opacity duration-200 hover:opacity-85"

@@ -19,7 +19,7 @@ const socialLinks = [
 export default function Footer() {
   return (
     <footer className="border-t border-border bg-surface">
-      <div className="mx-auto flex max-w-6xl flex-col-reverse gap-6 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10">
+      <div className="mx-auto flex max-w-6xl flex-col-reverse items-center gap-6 px-6 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-10">
         <p className="text-xs text-muted">
           {/* Year is written out because this page is pre-built as static HTML */}
           © 2026 {profile.name}
