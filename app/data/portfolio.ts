@@ -37,6 +37,14 @@ export const profile = {
   linkedinUrl: "https://www.linkedin.com/in/richard-lan-0312072a8",
 };
 
+// Background song, played only when a visitor presses the music button.
+// Put the audio file in public/audio/ with the name used in `src`.
+export const backgroundMusic = {
+  title: "Nightlife in Shanghai",
+  artist: "Chuuki",
+  src: "/audio/nightlife-in-shanghai.mp3",
+};
+
 export const about: string[] = [
   "I'm a Computer Science student at the University of Waterloo, interested in software development, artificial intelligence, and building practical projects.",
   "Outside of code, I play badminton and basketball, lift weights, and play poker. They keep me active and competitive, and poker especially has taught me to think in probabilities and make calm decisions with incomplete information.",

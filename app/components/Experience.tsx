@@ -3,7 +3,7 @@ import Section from "./Section";
 
 export default function Experience() {
   return (
-    <Section id="experience" title="Experience & Education" tone="soft">
+    <Section id="experience" title="Experience & Education" icon="experience" tone="soft">
       <ol className="divide-y divide-border">
         {experience.map((job, index) => (
           <li key={index} className="py-10 first:pt-0 last:pb-0">

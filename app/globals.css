@@ -12,6 +12,7 @@
   --background: #f7f6f3; /* main: warm off-white */
   --hero-top: #fcfbf9; /* top of the hero's faint gradient */
   --surface: #efede9; /* alternate sections: soft warm gray */
+  --tint: #dce3e8; /* soft blue-gray behind icons and graphics */
   --card: rgb(255 255 255 / 0.7); /* grouped surfaces: semi-translucent */
   --card-hover: #ffffff;
   --foreground: #1d1f22; /* primary text: charcoal */
@@ -34,6 +35,7 @@
   --background: #1b1c1f;
   --hero-top: #232428;
   --surface: #222327;
+  --tint: #2a3138;
   --card: rgb(255 255 255 / 0.04);
   --card-hover: rgb(255 255 255 / 0.08);
   --foreground: #ecebe8;
@@ -54,6 +56,7 @@
   --color-background: var(--background);
   --color-hero-top: var(--hero-top);
   --color-surface: var(--surface);
+  --color-tint: var(--tint);
   --color-card: var(--card);
   --color-card-hover: var(--card-hover);
   --color-foreground: var(--foreground);

@@ -1,4 +1,5 @@
 import Reveal from "./Reveal";
+import SectionIcon, { type SectionIconName } from "./SectionIcon";
 
 // A shared wrapper used by every page section so they all line up:
 // the title sits in a narrow left column and the content in a wider
@@ -14,6 +15,7 @@ type SectionProps = {
   id: string;
   title: string;
   tone?: keyof typeof tones;
+  icon?: SectionIconName;
   children: React.ReactNode;
 };
 
@@ -21,6 +23,7 @@ export default function Section({
   id,
   title,
   tone = "base",
+  icon,
   children,
 }: SectionProps) {
   return (
@@ -28,9 +31,12 @@ export default function Section({
       <div className="mx-auto max-w-6xl px-6 py-24 sm:px-10 sm:py-32">
         <Reveal>
           <div className="grid gap-8 md:grid-cols-[220px_1fr] md:gap-16">
-            <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-              {title}
-            </h2>
+            <div>
+              {icon && <SectionIcon name={icon} />}
+              <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {title}
+              </h2>
+            </div>
             <div className="max-w-3xl">{children}</div>
           </div>
         </Reveal>

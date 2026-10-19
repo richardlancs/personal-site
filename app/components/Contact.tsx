@@ -20,7 +20,7 @@ const contactLinks = [
 
 export default function Contact() {
   return (
-    <Section id="contact" title="Contact" tone="soft">
+    <Section id="contact" title="Contact" icon="contact" tone="soft">
       <p className="text-lg leading-relaxed text-muted">
         I&apos;m looking for software engineering internship and co-op roles.
         Email is the best way to reach me.

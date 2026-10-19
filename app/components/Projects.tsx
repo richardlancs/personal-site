@@ -4,7 +4,7 @@ import Section from "./Section";
 
 export default function Projects() {
   return (
-    <Section id="projects" title="Projects">
+    <Section id="projects" title="Projects" icon="projects">
       {/* One grouped surface holding every project, split by thin lines */}
       <div className="divide-y divide-border rounded-2xl border border-border bg-card">
         {projects.map((project, index) => (
