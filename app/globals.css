@@ -140,8 +140,12 @@ html.theme-transition *:not(.theme-icon, .theme-icon *) {
     color 0.2s ease;
 }
 
-.hover-grow:hover {
-  transform: scale(1.1);
+/* Only on devices with a real hover, so a tap on a phone doesn't leave
+   the button stuck in its enlarged state */
+@media (hover: hover) {
+  .hover-grow:hover {
+    transform: scale(1.1);
+  }
 }
 
 .hover-grow:active {

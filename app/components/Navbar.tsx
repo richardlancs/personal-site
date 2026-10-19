@@ -17,7 +17,7 @@ export default function Navbar() {
         On small screens: name and toggles on the first row, links below.
         On larger screens: everything on one row, toggles on the far right.
       */}
-      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-1 px-6 py-2 sm:min-h-12 sm:px-10">
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-y-2 px-4 pb-2.5 pt-2 sm:min-h-12 sm:gap-y-1 sm:px-10 sm:py-2">
         <a href="#top" className="text-sm font-semibold">
           {profile.name}
         </a>
@@ -27,14 +27,14 @@ export default function Navbar() {
           <ThemeToggle />
         </div>
 
-        {/* The padding gives the pills room to grow without being clipped
-            by the horizontal scroll on small screens */}
-        <ul className="-m-1 flex w-full gap-1.5 overflow-x-auto p-1 text-[13px] sm:ml-auto sm:w-auto">
+        {/* On phones the links share one full-width track, like an iOS
+            segmented control. From `sm` up they become separate pills. */}
+        <ul className="flex w-full overflow-x-auto rounded-full bg-foreground/5 p-1 text-xs sm:-m-1 sm:ml-auto sm:w-auto sm:gap-1.5 sm:overflow-visible sm:bg-transparent sm:text-[13px]">
           {links.map((link) => (
-            <li key={link.href}>
+            <li key={link.href} className="flex-1 sm:flex-none">
               <a
                 href={link.href}
-                className="hover-grow flex h-8 items-center whitespace-nowrap rounded-full bg-foreground/5 px-3.5 text-muted hover:bg-foreground/10 hover:text-foreground"
+                className="hover-grow flex h-8 items-center justify-center whitespace-nowrap rounded-full px-1.5 text-muted hover:bg-foreground/10 hover:text-foreground active:bg-foreground/10 sm:bg-foreground/5 sm:px-3.5"
               >
                 {link.label}
               </a>
