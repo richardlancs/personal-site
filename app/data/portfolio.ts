@@ -39,10 +39,12 @@ export const profile = {
 
 // Background song, played only when a visitor presses the music button.
 // Put the audio file in public/audio/ with the name used in `src`.
+// "Chill lofi inspired" by omfgdude, CC0 (public domain):
+// https://opengameart.org/content/chill-lofi-inspired
 export const backgroundMusic = {
-  title: "Nightlife in Shanghai",
-  artist: "Chuuki",
-  src: "/audio/nightlife-in-shanghai.mp3",
+  title: "Chill lofi inspired",
+  artist: "omfgdude",
+  src: "/audio/chill-lofi.mp3",
 };
 
 export const about: string[] = [
