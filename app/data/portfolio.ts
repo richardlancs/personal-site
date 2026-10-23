@@ -55,6 +55,25 @@ export const about: string[] = [
 
 export const projects: Project[] = [
   {
+    title: "MarketLab",
+    description:
+      "A stock market web app that runs on simulated prices: a dashboard and screener for about 95 US stocks, paper trading, portfolio risk analytics, and a strategy backtester with walk-forward testing. It also has price alerts with push notifications, monthly trading competitions, and short lessons with quizzes. Heavier analytics run in a separate Python service.",
+    technologies: [
+      "TypeScript",
+      "Next.js",
+      "React",
+      "Tailwind CSS",
+      "Python (FastAPI, pandas, NumPy)",
+      "SQLite (Turso, Drizzle)",
+      "Better Auth",
+      "Vitest",
+      "Playwright",
+      "Vercel",
+    ],
+    githubUrl: "https://github.com/richardlancs/marketlab",
+    liveUrl: "https://marketlab-theta.vercel.app",
+  },
+  {
     title: "Scrollganizer",
     description:
       "A Chrome side-panel extension I worked on as a software developer on a team of three. It builds a searchable library of saved TikTok videos and photo posts in the browser, so they can be found by caption, creator, hashtag, or collection instead of scrolling through Favorites. The library stays on the user's device and can be exported or imported as JSON.",

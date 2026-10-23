@@ -13,7 +13,7 @@ export default function ProjectCard({
   liveUrl,
 }: Project) {
   return (
-    <article className="p-6 sm:p-8">
+    <article className="p-6 transition-colors duration-300 sm:p-8 [@media(hover:hover)]:hover:bg-card-hover/60">
       <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
       <p className="mt-3 text-lg leading-relaxed text-muted">{description}</p>
       <p className="mt-4 text-sm text-muted">{technologies.join(", ")}</p>

@@ -22,6 +22,16 @@
   --accent-hover: #2f5679;
   --nav: rgb(247 246 243 / 0.8);
 
+  /*
+    Background washes (body::before): three soft, still pools of colour
+    behind the page, in the palette's own pastels. Text stays at 4.5:1 or
+    better even at a wash's centre.
+  */
+  --wash-1: #537a91; /* steel blue */
+  --wash-2: #e0a878; /* peach */
+  --wash-3: #9d90d8; /* lavender */
+  --wash-strength: 10%;
+
   /* Theme toggle: pastel peach with a warm sun */
   --toggle-bg: #f5e8db;
   --toggle-bg-hover: #f0dccb;
@@ -44,6 +54,11 @@
   --accent: #9db8d9; /* soft pastel blue */
   --accent-hover: #bccfe6;
   --nav: rgb(27 28 31 / 0.78);
+
+  --wash-1: #9db8d9;
+  --wash-2: #e0b48c;
+  --wash-3: #c9bff2;
+  --wash-strength: 7%;
 
   /* Theme toggle: pastel lavender with a soft moon */
   --toggle-bg: rgb(201 191 242 / 0.12);
@@ -96,6 +111,22 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/*
+  The washes. Fixed, so they stay put while the sections scroll over them;
+  the sections' own backgrounds are see-through enough to let them show.
+*/
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(45% 40% at 12% 15%, color-mix(in oklab, var(--wash-1) var(--wash-strength), transparent), transparent),
+    radial-gradient(40% 45% at 90% 35%, color-mix(in oklab, var(--wash-2) var(--wash-strength), transparent), transparent),
+    radial-gradient(50% 40% at 45% 95%, color-mix(in oklab, var(--wash-3) var(--wash-strength), transparent), transparent);
 }
 
 ::selection {
@@ -204,18 +235,41 @@ html.theme-transition .hover-grow {
   transform: translate(0, 0);
 }
 
-/* Used by <Reveal>: hidden until it scrolls into view */
+/*
+  Used by <Reveal>: hidden until it scrolls into view, then it rises and
+  comes into focus from a slight blur (a hint of motion blur). Ends on
+  `filter: none` so nothing is left filtered once it has arrived.
+*/
 .reveal {
   opacity: 0;
-  transform: translateY(8px);
+  transform: translateY(10px);
+  filter: blur(4px);
   transition:
-    opacity 0.4s ease-out,
-    transform 0.4s ease-out;
+    opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal.is-visible {
   opacity: 1;
   transform: none;
+  filter: none;
+}
+
+/*
+  The hero's entrance on page load: the same rise and focus, one line after
+  another. Add `enter` and set --delay for the stagger.
+*/
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+    filter: blur(4px);
+  }
+}
+
+.enter {
+  animation: enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms) both;
 }
 
 /* Respect users who have asked their OS for less motion */
@@ -226,7 +280,11 @@ html.theme-transition .hover-grow {
   .reveal {
     opacity: 1;
     transform: none;
+    filter: none;
     transition: none;
+  }
+  .enter {
+    animation: none;
   }
   .theme-icon,
   .theme-icon * {

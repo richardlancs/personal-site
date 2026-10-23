@@ -6,10 +6,12 @@ import SectionIcon, { type SectionIconName } from "./SectionIcon";
 // right column. On phones the title is centered above the content.
 // The `id` is what the navbar links jump to.
 
-// Background tones, so sections can alternate for a sense of depth.
+// Background tones, so sections can alternate for a sense of depth. Both
+// let the page's background washes (globals.css) show through: "base" is
+// clear, "soft" a slightly see-through warm gray.
 const tones = {
-  base: "bg-background",
-  soft: "bg-surface",
+  base: "",
+  soft: "bg-surface/75",
 };
 
 type SectionProps = {
