@@ -15,9 +15,13 @@ import { useEffect, useRef } from "react";
 const SEEN_KEY = "intro-seen";
 
 // Timing after the ball lands, in milliseconds
-const SQUASH_MS = 140;
-const EXPAND_MS = 750;
-const FADE_MS = 450;
+const SQUASH_MS = 260; // the landing squash, while the ball keeps rolling
+const EXPAND_MS = 1300;
+const FADE_MS = 600;
+// How much of the ball's recent path the trail covers, in seconds
+const TRAIL_S = 0.14;
+// The expanding circle's edge fades out over this share of its radius
+const FEATHER = 0.18;
 
 type Terrain = {
   width: number;
@@ -73,7 +77,7 @@ function makeTerrain(width: number, height: number): Terrain {
     lipX: rampEnd,
     startX: 0.06 * width,
     radius: Math.max(8, Math.min(width, height) * 0.026),
-    gravity: amp * 4.8,
+    gravity: amp * 2.8,
   };
 }
 
@@ -177,7 +181,10 @@ export default function Intro() {
     sceneCtx.scale(dpr, dpr);
     drawScene(sceneCtx, terrain);
 
-    const background = getComputedStyle(document.body).backgroundColor;
+    // The page's background, as numbers, so the expanding ball can blend into it
+    const background = (getComputedStyle(document.body).backgroundColor.match(/[\d.]+/g) ?? ["247", "246", "243"]).slice(0, 3).map(Number);
+    const ballTone = [250, 238, 230];
+    const mix = (u: number) => ballTone.map((c, i) => Math.round(c + (background[i] - c) * u)).join(" ");
     const r = terrain.radius;
 
     // Ball state: rolling along the ground, then flying, then landed
@@ -190,9 +197,11 @@ export default function Intro() {
     let vy = 0;
     let spin = 0;
     let landedAt = 0;
-    const trail: { x: number; y: number }[] = [];
+    let clock = 0; // simulated seconds
+    const trail: { x: number; y: number; t: number }[] = [];
 
-    const slope = (at: number) => (terrain.ground(at + 0.5) - terrain.ground(at - 0.5));
+    // The slope just behind a point, so at the ramp's lip it's still the ramp's
+    const slope = (at: number) => terrain.ground(at) - terrain.ground(at - 1);
     // The ball's centre sits one radius above the ground, along its normal
     const centreOn = (at: number) => {
       const s = slope(at);
@@ -219,34 +228,59 @@ export default function Intro() {
         cy += vy * dt;
         spin += (vx * dt) / r;
         if (vy > 0 && cy + r >= terrain.ground(cx)) {
-          cy = terrain.ground(cx) - r;
+          // Touch down and keep rolling along the dune, slowing to a stop
           phase = "land";
           landedAt = performance.now();
+          x = cx;
+          speed = vx * 0.7;
+          ({ x: cx, y: cy } = centreOn(x));
         }
+      } else {
+        speed *= Math.exp(-5 * dt);
+        x = Math.min(x + speed * dt, w - r);
+        spin += (speed * dt) / r;
+        ({ x: cx, y: cy } = centreOn(x));
       }
+      clock += dt;
+      trail.push({ x: cx, y: cy, t: clock });
+      while (trail.length && clock - trail[0].t > TRAIL_S) trail.shift();
     }
 
     function draw(now: number) {
       ctx!.drawImage(scene, 0, 0, w, h);
 
-      // A short fading trail behind the ball: a touch of motion blur
-      trail.forEach((p, i) => {
-        ctx!.fillStyle = `rgb(255 250 243 / ${((i + 1) / trail.length) * 0.18})`;
-        ctx!.beginPath();
-        ctx!.arc(p.x, p.y, r * 0.92, 0, Math.PI * 2);
-        ctx!.fill();
-      });
-
       let radius = r;
       let squash = 1;
+      let grow = 0; // 0 to 1 through the expansion
       if (phase === "land") {
         const since = now - landedAt;
-        if (since < SQUASH_MS) squash = 1 - 0.18 * Math.sin((since / SQUASH_MS) * Math.PI);
-        else radius = r + (Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) - r) * easeInOut(Math.min((since - SQUASH_MS) / EXPAND_MS, 1));
+        if (since < SQUASH_MS) squash = 1 - 0.14 * Math.sin((since / SQUASH_MS) * Math.PI);
+        else {
+          grow = easeInOut(Math.min((since - SQUASH_MS) / EXPAND_MS, 1));
+          // Big enough that even the feathered edge clears the farthest corner
+          const cover = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)) / (1 - FEATHER);
+          radius = r + (cover - r) * grow;
+        }
+      }
+
+      // The trail: soft-edged glows along the ball's recent path, smaller
+      // and fainter the older they are, which blend into a blurred streak.
+      // It fades away as the ball slows after landing.
+      for (let i = 0; i < trail.length; i += 2) {
+        const u = (i + 1) / trail.length;
+        const { x: tx, y: ty } = trail[i];
+        const size = r * (0.5 + 0.55 * u);
+        const glow = ctx!.createRadialGradient(tx, ty, 0, tx, ty, size);
+        glow.addColorStop(0, `rgb(255 248 240 / ${0.16 * u * (1 - grow)})`);
+        glow.addColorStop(1, "rgb(255 248 240 / 0)");
+        ctx!.fillStyle = glow;
+        ctx!.beginPath();
+        ctx!.arc(tx, ty, size, 0, Math.PI * 2);
+        ctx!.fill();
       }
 
       // Soft shadow on the ground beneath the ball
-      if (radius === r) {
+      if (grow === 0) {
         const gy = terrain.ground(cx);
         const lift = Math.max(0, gy - (cy + r));
         ctx!.fillStyle = `rgb(150 110 100 / ${0.18 * Math.max(0, 1 - lift / (h * 0.3))})`;
@@ -255,13 +289,27 @@ export default function Intro() {
         ctx!.fill();
       }
 
-      // The ball: warm white, shaded, with a faint stripe that shows it rolling
+      // The ball: warm white, shaded, with a faint stripe that shows it
+      // rolling. In flight it stretches a little along its path.
       ctx!.save();
       ctx!.translate(cx, cy + r * (1 - squash));
+      const growing = grow > 0;
+      if (phase !== "land") {
+        const [dx, dy] = phase === "fly" ? [vx, vy] : [speed, speed * slope(x)];
+        const stretch = 1 + Math.min(0.08, Math.hypot(dx, dy) / (r * 300));
+        ctx!.rotate(Math.atan2(dy, dx));
+        ctx!.scale(stretch, 1 / stretch);
+        ctx!.rotate(-Math.atan2(dy, dx));
+      }
       ctx!.scale(1 / squash, squash);
-      const growing = radius > r;
       if (growing) {
-        ctx!.fillStyle = background;
+        // Blends from the ball's colour into the page's, with a soft edge
+        const fill = ctx!.createRadialGradient(0, 0, 0, 0, 0, radius);
+        const colour = mix(Math.min(grow * 1.6, 1));
+        fill.addColorStop(0, `rgb(${colour})`);
+        fill.addColorStop(1 - FEATHER, `rgb(${colour})`);
+        fill.addColorStop(1, `rgb(${colour} / 0)`);
+        ctx!.fillStyle = fill;
       } else {
         const shade = ctx!.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
         shade.addColorStop(0, "#fffdf9");
@@ -292,15 +340,11 @@ export default function Intro() {
       // Small fixed steps keep the motion the same at any frame rate
       let elapsed = Math.min((now - last) / 1000, 0.05);
       last = now;
-      while (elapsed > 0 && phase !== "land") {
+      while (elapsed > 0) {
         const dt = Math.min(elapsed, 1 / 240);
         step(dt);
         elapsed -= dt;
       }
-      if (phase !== "land") {
-        trail.push({ x: cx, y: cy });
-        if (trail.length > 7) trail.shift();
-      } else trail.length = 0;
 
       draw(now);
       if (phase === "land" && now - landedAt >= SQUASH_MS + EXPAND_MS) return finish();
