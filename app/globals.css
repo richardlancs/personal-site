@@ -272,6 +272,44 @@ html.theme-transition .hover-grow {
   animation: enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms) both;
 }
 
+/*
+  Intro (components/Intro.tsx). Hidden unless the script in layout.tsx put
+  `intro` on <html>. The sky gradient shows from the first paint, before the
+  canvas is drawn. If the script never finishes it (say JavaScript fails),
+  the overlay fades itself out after 8 seconds.
+*/
+.intro-overlay {
+  display: none;
+}
+
+html.intro .intro-overlay {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: pointer;
+  background: linear-gradient(#c9c3e6, #eac6da 38%, #f6cfc3 62%, #fbe3c6 85%);
+  transition: opacity 0.45s ease;
+  animation: intro-failsafe 0.45s ease 8s forwards;
+}
+
+html.intro-out .intro-overlay {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes intro-failsafe {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* The hero waits under the intro, then plays its entrance as the intro fades */
+html.intro:not(.intro-out) .enter {
+  animation-name: none;
+}
+
 /* Respect users who have asked their OS for less motion */
 @media (prefers-reduced-motion: reduce) {
   html {
