@@ -732,13 +732,20 @@ html.theme-transition .hover-grow {
   color: #2b2f27;
 }
 
+/* Every page in one hand: the same face and size, on the ruled lines */
+.notebook-page,
+.notebook-sheet {
+  font-family: var(--font-display);
+  font-size: 1.08rem;
+  font-weight: 500;
+  line-height: 2rem;
+}
+
 .notebook-page {
   position: relative;
   min-height: 25rem;
   padding: 2.75rem 1.6rem 2.5rem 3.2rem;
   border-radius: 3px;
-  font-size: 1.02rem;
-  line-height: 2rem;
 }
 
 .notebook-page[data-side="left"] {
@@ -755,15 +762,8 @@ html.theme-transition .hover-grow {
   margin-top: 2rem;
 }
 
-.notebook-lead {
-  font-family: var(--font-display);
-  font-size: 1.2rem;
-  line-height: 2rem;
-}
-
+/* Notes to self are the same writing, in rust ink */
 .notebook-note {
-  font-family: var(--font-display);
-  font-weight: 600;
   color: #8f4a26;
 }
 

@@ -45,7 +45,7 @@ export const profile = {
   name: "Richard Lan",
   headline: "Computer Science Student at the University of Waterloo",
   intro:
-    "I'm interested in software development, AI, and the web, and I'm looking for software engineering internship and co-op opportunities.",
+    "Lately I've been building MarketLab, a stock market simulator with paper trading and a strategy backtester, and, with a team of three, Scrollganizer, a Chrome extension that makes saved TikToks searchable. Next I'm digging into AI and machine learning, and looking for a software engineering internship or co-op.",
   emails: [
     { label: "School email", address: "r6lan@uwaterloo.ca" },
     { label: "Personal email", address: "lanrichard159@gmail.com" },

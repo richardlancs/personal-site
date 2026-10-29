@@ -20,6 +20,7 @@ export type WorldState = {
   hover: string | null;
   labels: boolean; // "Show places"
   phoneUp: boolean;
+  fountain: number; // when the fountain was last turned on (ms), 0 if never
   doorOpen: boolean;
   arrived: boolean; // the camera has settled in the current place
   quality: "high" | "low";
@@ -31,6 +32,7 @@ let state: WorldState = {
   hover: null,
   labels: false,
   phoneUp: false,
+  fountain: 0,
   doorOpen: false,
   arrived: false,
   quality: "high",
@@ -67,4 +69,11 @@ export function useWorld<T>(pick: (s: WorldState) => T): T {
 // For looking at the world's state from the browser console in development
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   (window as unknown as { __world: typeof world }).__world = world;
+}
+
+// How long the fountain runs once turned on
+export const FOUNTAIN_MS = 7000;
+
+export function runFountain() {
+  world.set({ fountain: performance.now() });
 }

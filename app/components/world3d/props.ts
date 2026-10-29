@@ -280,10 +280,17 @@ export function buildSwing() {
 // Water that holds a little of the sky
 export function waterMaterial(color = "#36432f", sky = "#cdb486") {
   return new THREE.ShaderMaterial({
-    uniforms: { uTime: windUniforms.uTime, uColor: { value: new THREE.Color(color) }, uSky: { value: new THREE.Color(sky) } },
+    uniforms: {
+      uTime: windUniforms.uTime,
+      uColor: { value: new THREE.Color(color) },
+      uSky: { value: new THREE.Color(sky) },
+      uSplash: { value: 0 }, // 0 to 1: how hard water is falling into it
+    },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
+      varying vec2 vLocal;
       void main() {
+        vLocal = position.xz;
         vec4 w = modelMatrix * vec4(position, 1.0);
         vWorld = w.xyz;
         gl_Position = projectionMatrix * viewMatrix * w;
@@ -292,10 +299,15 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
       uniform float uTime;
       uniform vec3 uColor;
       uniform vec3 uSky;
+      uniform float uSplash;
       varying vec3 vWorld;
+      varying vec2 vLocal;
       void main() {
         vec2 p = vWorld.xz;
         float ripple = sin(p.x * 3.1 + uTime * 0.9) * sin(p.y * 2.7 - uTime * 0.7) + sin(length(p) * 6.0 - uTime * 1.3) * 0.5;
+        // Rings spreading out from where the water comes down
+        float d = length(vLocal);
+        ripple += sin(d * 11.0 - uTime * 7.0) * uSplash * 1.4 * smoothstep(2.9, 0.6, d);
         vec3 view = normalize(cameraPosition - vWorld);
         float fres = pow(1.0 - max(view.y, 0.0), 3.0);
         vec3 col = mix(uColor, uSky, 0.08 + fres * 0.3 + ripple * 0.025);
@@ -314,7 +326,8 @@ export function buildFountain() {
   g.add(mesh(new THREE.LatheGeometry(outer, 40), M.stone()));
   const column = [v(0.45, 0.3, 0), v(0.35, 0.5, 0), v(0.22, 0.6, 0), v(0.24, 1.3, 0), v(0.8, 1.42, 0), v(0.85, 1.55, 0), v(0.3, 1.5, 0), v(0.16, 1.7, 0), v(0.22, 1.85, 0), v(0.05, 2.05, 0)].map((p) => new THREE.Vector2(p.x, p.y));
   g.add(mesh(new THREE.LatheGeometry(column, 24), M.stone()));
-  const water = new THREE.Mesh(new THREE.CircleGeometry(2.84, 40).rotateX(-Math.PI / 2), waterMaterial());
+  const waterMat = waterMaterial();
+  const water = new THREE.Mesh(new THREE.CircleGeometry(2.84, 40).rotateX(-Math.PI / 2), waterMat);
   water.position.y = 0.45;
   g.add(water);
   // Leaves floating on it
@@ -330,7 +343,58 @@ export function buildFountain() {
     floating.add(leaf);
   }
   g.add(floating);
-  return { group: g, floating };
+
+  // The jet: a column of water rising from the top, which spreads into
+  // drops falling back to the upper bowl and the basin
+  const TOP = 2.05;
+  const jetMat = new THREE.MeshLambertMaterial({ color: "#f2f6f0", emissive: "#9fb8b0", emissiveIntensity: 0.45, transparent: true, opacity: 0, depthWrite: false });
+  const jet = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.11, 1, 14, 1, true).translate(0, 0.5, 0), jetMat);
+  jet.position.y = TOP;
+  jet.scale.y = 0.001;
+  jet.visible = false;
+  g.add(jet);
+  const DROPS = 320;
+  const drops = new Float32Array(DROPS * 3);
+  const seeds = Array.from({ length: DROPS }, () => ({ a: r() * Math.PI * 2, out: r.range(0.35, 1.25), up: r.range(0.75, 1.1), phase: r() }));
+  const dropGeo = new THREE.BufferGeometry();
+  dropGeo.setAttribute("position", new THREE.BufferAttribute(drops, 3));
+  const dropMat = new THREE.PointsMaterial({ color: "#f6faf4", size: 0.1, transparent: true, opacity: 0, depthWrite: false });
+  const spray = new THREE.Points(dropGeo, dropMat);
+  spray.frustumCulled = false;
+  spray.visible = false;
+  g.add(spray);
+
+  // level: 0 off to 1 full; t: seconds
+  const update = (level: number, t: number) => {
+    const on = level > 0.002;
+    jet.visible = spray.visible = on;
+    waterMat.uniforms.uSplash.value = level;
+    if (!on) return;
+    const height = 1.7 * level;
+    jet.scale.set(1 + Math.sin(t * 9) * 0.05, height, 1 + Math.cos(t * 7) * 0.05);
+    jetMat.opacity = 0.85 * Math.min(1, level * 2);
+    dropMat.opacity = Math.min(1, level * 1.5);
+    // Each drop leaves the top of the jet, arcs out and falls back
+    const g9 = 9.8;
+    const v0 = Math.sqrt(2 * g9 * Math.max(height, 0.05)) * 0.55;
+    for (let i = 0; i < DROPS; i++) {
+      const s = seeds[i];
+      const life = 1.1;
+      const k = ((t / life + s.phase) % 1) * life;
+      const vy = v0 * s.up;
+      const vx = s.out * level;
+      let y = TOP + height + vy * k - 0.5 * g9 * k * k;
+      const dist = vx * k;
+      // Drops that land stop at the surface they fall on
+      const floor = dist < 0.85 ? 1.55 : 0.46;
+      if (y < floor) y = floor;
+      drops[i * 3] = Math.cos(s.a) * dist;
+      drops[i * 3 + 1] = y;
+      drops[i * 3 + 2] = Math.sin(s.a) * dist;
+    }
+    dropGeo.attributes.position.needsUpdate = true;
+  };
+  return { group: g, floating, update };
 }
 
 // One leaf from the four in the fallen-leaves texture

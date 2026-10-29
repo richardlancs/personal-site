@@ -14,7 +14,7 @@ import Library from "./scenes/Library";
 import Park from "./scenes/Park";
 import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
-import { useWorld, world } from "./store";
+import { FOUNTAIN_MS, runFountain, useWorld, world } from "./store";
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
@@ -396,7 +396,36 @@ function Labels({ active }: { active: SceneId }) {
           <span className="world-label-section">{place.section}</span>
         </Link>
       ))}
+      <FountainLabel on={hover === "park:fountain"} />
     </nav>
+  );
+}
+
+// The fountain's tag: not a place, just something to turn on
+function FountainLabel({ on }: { on: boolean }) {
+  const started = useWorld((s) => s.fountain);
+  const [stopped, setStopped] = useState(0); // the last run that has finished
+  const running = started > 0 && stopped !== started;
+  useEffect(() => {
+    if (!started) return;
+    const timer = window.setTimeout(() => setStopped(started), FOUNTAIN_MS);
+    return () => window.clearTimeout(timer);
+  }, [started]);
+  return (
+    <button
+      type="button"
+      data-anchor="park:fountain"
+      data-hidden=""
+      data-on={on || undefined}
+      aria-pressed={running}
+      className="world-label"
+      onClick={runFountain}
+      onFocus={() => world.set({ hover: "park:fountain" })}
+      onBlur={() => world.set({ hover: null })}
+    >
+      <span className="world-label-place">The fountain</span>
+      <span className="world-label-section">{running ? "Running" : "Turn it on"}</span>
+    </button>
   );
 }
 

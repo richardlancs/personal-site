@@ -17,7 +17,7 @@ export default function AboutPage() {
   const pages = [
     {
       id: "lead",
-      content: <p className="notebook-lead">{lead}</p>,
+      content: <p>{lead}</p>,
     },
     ...rest.map((paragraph, i) => ({
       id: `page-${i}`,

@@ -27,7 +27,7 @@ import {
   mat,
 } from "../props";
 import { rng } from "../rng";
-import { useWorld } from "../store";
+import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
 import { Hitbox, SunLight, type SceneProps } from "./common";
 
@@ -266,7 +266,7 @@ function buildPark(quality: "high" | "low") {
   const sky = buildSky({ top: "#7ea3c2", horizon: "#f2d6a6", sun: "#ffd9a0", sunDir: [-0.75, 0.32, 0.25] });
   root.add(sky);
 
-  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion };
+  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain };
 }
 
 export default function Park({ active, quality, navigate }: SceneProps) {
@@ -275,9 +275,11 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   const focus = useWorld((s) => s.focus);
   const lights = useRef<Record<string, THREE.PointLight | null>>({});
   const kick = useRef({ swing: 0, sign: 0 });
+  const water = useRef(0); // the fountain, 0 off to 1 running
 
   useEffect(() => {
     for (const [id, p] of Object.entries(parkPlaces)) anchors.set(`park:${id}`, v(p.label[0], p.label[1], p.label[2]));
+    anchors.set("park:fountain", v(PLAZA.x + 2.4, 1.6, PLAZA.z + 1.2));
   }, []);
 
   useFrame(({ camera, clock }, dt) => {
@@ -306,6 +308,12 @@ export default function Park({ active, quality, navigate }: SceneProps) {
     // The arcade's sign hums
     (built.arcade.signMat as THREE.MeshLambertMaterial).emissiveIntensity = 0.18 + (Math.sin(t * 13) > 0.92 ? 0.12 : 0);
     built.falling.update(Math.min(dt, 0.05), t);
+    // The fountain: rises quickly, runs a while, dies down more slowly
+    const started = world.get().fountain;
+    const running = started > 0 && performance.now() - started < FOUNTAIN_MS;
+    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    water.current = reduce ? (running ? 1 : 0) : THREE.MathUtils.damp(water.current, running ? 1 : 0, running ? 2.6 : 1.1, dt);
+    built.fountain.update(water.current, t);
     // Light comes up on the place you point at
     for (const [id, light] of Object.entries(lights.current)) {
       if (!light) continue;
@@ -336,6 +344,13 @@ export default function Park({ active, quality, navigate }: SceneProps) {
             onSelect={() => navigate(id === "board" ? "/map" : `/${{ library: "about", workshop: "projects", station: "experience", arcade: "interests", booth: "contact" }[id]}`)}
           />
         ))}
+      {active && (
+        <>
+          {/* The basin's rim and the column, kept low so they don't catch clicks meant for the board behind */}
+          <Hitbox id="park:fountain" position={[PLAZA.x, 0.35, PLAZA.z]} size={[6.4, 0.7, 6.4]} onSelect={runFountain} />
+          <Hitbox id="park:fountain" position={[PLAZA.x, 1.15, PLAZA.z]} size={[1.8, 1.7, 1.8]} onSelect={runFountain} />
+        </>
+      )}
       {active && <Hitbox id="park:swing" position={[-8, 1.3, 3.5]} rotation={0.35} size={[3, 2.6, 2]} onSelect={kickSwing} />}
     </group>
   );

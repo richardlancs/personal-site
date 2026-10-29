@@ -27,7 +27,8 @@ function pageTexture(i: number) {
     rule: "rgba(74,110,140,0.16)",
     padding: 30,
     wrap: true,
-    lines: text ? [{ text, size: i === 0 ? 25 : 22, font: i === 0 ? "display" : "text", color: "#2b2f27", weight: 500 }] : [],
+    // Every page in the same face and size
+    lines: text ? [{ text, size: 23, font: "display", color: "#2b2f27", weight: 500 }] : [],
   });
 }
 
