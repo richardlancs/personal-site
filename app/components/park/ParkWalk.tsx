@@ -14,14 +14,21 @@ import { WALK_CLASS, WALK_QUERY } from "./walk";
 // - `--p` on <html>: how far through the park the visitor is, from 0 to 1,
 //   which moves the sun and changes the sky (globals.css)
 // - aria-current on the navbar link for the section on screen
+//
+// While walking sideways the view gets a horizontal motion blur that grows
+// with speed. And it answers "park:goto" (sent by the clearing's paths) by
+// jumping straight to a section, which then comes into focus.
 export default function ParkWalk({ children }: { children: React.ReactNode }) {
   const outerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const outer = outerRef.current;
+    const viewport = viewportRef.current;
     const track = trackRef.current;
-    if (!outer || !track) return;
+    if (!outer || !viewport || !track) return;
+    const blur = document.getElementById("walk-blur-amount");
 
     const root = document.documentElement;
     const query = matchMedia(WALK_QUERY);
@@ -34,6 +41,8 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
     let distance = 0; // how far the track slides, in px
     let frame = 0;
     let current: HTMLElement | undefined;
+    let lastX = 0;
+    let blurTimer = 0;
 
     const top = () => outer.getBoundingClientRect().top + window.scrollY;
     // The page scroll that puts a point of the track (px from its left edge)
@@ -50,6 +59,8 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
       if (sideways) {
         const x = Math.min(Math.max(window.scrollY - top(), 0), distance);
         track!.style.transform = `translate3d(${-x}px, 0, 0)`;
+        motionBlur(Math.abs(x - lastX));
+        lastX = x;
       }
 
       // The section under the middle of the screen
@@ -66,6 +77,17 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
           else link.removeAttribute("aria-current");
         }
       }
+    }
+
+    // `moved`: px the track slid since the last frame. Blur stays off at
+    // walking pace so text is crisp, and clears as soon as movement stops.
+    function motionBlur(moved: number) {
+      const amount = Math.min(Math.max(moved - 6, 0) * 0.12, 7);
+      if (!blur || amount < 0.4) return;
+      blur.setAttribute("stdDeviation", `${amount.toFixed(1)} 0`);
+      viewport!.style.filter = "url(#walk-blur)";
+      window.clearTimeout(blurTimer);
+      blurTimer = window.setTimeout(() => (viewport!.style.filter = ""), 90);
     }
 
     function measure() {
@@ -90,7 +112,8 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
     // that is off to the side, so scroll to where the walk shows it.
     function onClick(event: MouseEvent) {
       if (!sideways || event.defaultPrevented) return;
-      const link = (event.target as Element).closest<HTMLAnchorElement>("a[href^='#']");
+      // (The clearing's own path links travel by themselves; see HubStage)
+      const link = (event.target as Element).closest<HTMLAnchorElement>("a[href^='#']:not([data-hub])");
       const target = link && document.getElementById(link.hash.slice(1));
       const zone = target && zones.find((z) => z.contains(target));
       if (!link || !zone) return;
@@ -114,6 +137,28 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
       window.scrollTo({ top: scrollFor(fitsFirstScreen ? zone.offsetLeft : left - 64) });
     }
 
+    // Arriving down one of the clearing's paths
+    function onGoto(event: Event) {
+      const zone = zones.find((z) => z.id === (event as CustomEvent<string>).detail);
+      if (!zone) return;
+      const y = sideways
+        ? scrollFor(zone.offsetLeft)
+        : zone.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: y, behavior: "instant" });
+      lastX = Math.max(y - top(), 0); // a jump, not a blur-worthy sprint
+      history.pushState(null, "", `#${zone.id}`);
+      update();
+      zone.classList.remove("arriving");
+      void zone.offsetWidth; // restart the animation if it's already there
+      zone.classList.add("arriving");
+      const done = (e: AnimationEvent) => {
+        if (e.target !== zone) return;
+        zone.classList.remove("arriving");
+        zone.removeEventListener("animationend", done);
+      };
+      zone.addEventListener("animationend", done);
+    }
+
     measure();
 
     // Arriving on a link like /#projects
@@ -130,8 +175,11 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
     window.addEventListener("scroll", onScroll, { passive: true });
     document.addEventListener("click", onClick);
     document.addEventListener("focusin", onFocus);
+    window.addEventListener("park:goto", onGoto);
     return () => {
       cancelAnimationFrame(frame);
+      window.clearTimeout(blurTimer);
+      window.removeEventListener("park:goto", onGoto);
       resizeObserver.disconnect();
       query.removeEventListener("change", measure);
       window.removeEventListener("resize", measure);
@@ -143,7 +191,7 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
 
   return (
     <div ref={outerRef} className="walk">
-      <div className="walk-viewport">
+      <div ref={viewportRef} className="walk-viewport">
         <div ref={trackRef} className="walk-track">
           {children}
         </div>

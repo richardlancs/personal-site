@@ -1,4 +1,4 @@
-import { Bench, Bush, Flowers, Lamp, Tree } from "./scenery";
+import { Bench, Bush, Flowers, Lamp, TallGrass, Tree } from "./scenery";
 
 // The illustration that stands on the ground beside each section's content.
 // Every scene shares one 600 × 360 canvas whose bottom edge is the ground.
@@ -61,35 +61,6 @@ function Pillar({ x }: { x: number }) {
   );
 }
 
-// Hero: the park's front gate on a spring morning
-export function EntranceScene() {
-  return (
-    <Scene>
-      <Tree x={90} y={352} scale={1.25} />
-      <Tree x={540} y={354} scale={1.1} flip />
-      <Bush x={170} y={358} />
-      <Bush x={450} y={358} scale={1.1} />
-
-      <Pillar x={210} />
-      <Pillar x={390} />
-      <g fill="none" stroke="var(--metal)" strokeLinecap="round">
-        <path d="M230 176C262 88 338 88 370 176" strokeWidth="5" />
-        <path d="M230 196C264 118 336 118 370 196" strokeWidth="3" />
-        <circle cx="300" cy="104" r="6" strokeWidth="2.5" />
-        <path d="M280 125v15M320 125v15" strokeWidth="1.5" />
-      </g>
-      {/* A small wooden sign hanging from the arch */}
-      <rect x="266" y="140" width="68" height="24" rx="5" fill="var(--wood-light)" />
-      <path d="M290 152c6-8 14-8 20 0-6 8-14 8-20 0Z" fill="var(--leaf-dark)" />
-
-      <Flowers x={244} y={358} />
-      <Flowers x={362} y={358} hue={1} />
-      <Flowers x={500} y={360} hue={2} />
-      <Basketball x={468} y={347} className="play-roll" />
-    </Scene>
-  );
-}
-
 // About: a bench under an old oak
 export function OakScene() {
   return (
@@ -101,6 +72,9 @@ export function OakScene() {
       <Flowers x={150} y={358} hue={1} />
       <Flowers x={196} y={360} />
       <Flowers x={470} y={360} hue={2} />
+      <TallGrass x={120} y={360} seed={2} height={40} />
+      <TallGrass x={250} y={362} seed={5} height={30} />
+      <TallGrass x={500} y={362} seed={9} height={44} />
     </Scene>
   );
 }
@@ -116,6 +90,9 @@ export function GroveScene() {
       <Bush x={540} y={358} scale={0.9} />
       <Flowers x={160} y={360} hue={2} />
       <Flowers x={500} y={360} />
+      <TallGrass x={130} y={362} seed={3} height={42} />
+      <TallGrass x={360} y={362} seed={7} height={34} />
+      <TallGrass x={570} y={362} seed={1} height={46} />
     </Scene>
   );
 }
@@ -146,6 +123,9 @@ export function TrailScene() {
       </g>
       <Flowers x={150} y={360} hue={1} />
       <Flowers x={350} y={360} hue={2} />
+      <TallGrass x={260} y={362} seed={4} height={36} />
+      <TallGrass x={330} y={362} seed={8} height={30} />
+      <TallGrass x={470} y={362} seed={6} height={44} />
     </Scene>
   );
 }
@@ -205,6 +185,9 @@ export function GardenScene() {
         <path d="M-18-30q-14 4-10 16" stroke="var(--can)" strokeWidth="4" fill="none" />
         <rect x="-12" y="-38" width="20" height="4" rx="2" fill="var(--metal)" opacity="0.4" />
       </g>
+      <TallGrass x={60} y={362} seed={10} height={40} />
+      <TallGrass x={290} y={362} seed={11} height={28} />
+      <TallGrass x={440} y={362} seed={13} height={30} />
     </Scene>
   );
 }
@@ -245,6 +228,9 @@ export function EveningScene() {
           />
         ))}
       </g>
+      <TallGrass x={160} y={362} seed={14} height={42} />
+      <TallGrass x={300} y={362} seed={15} height={32} />
+      <TallGrass x={540} y={362} seed={16} height={46} />
     </Scene>
   );
 }

@@ -20,6 +20,7 @@
 
   --background: #f4f1e8; /* page base; mostly hidden behind the sky */
   --paper: rgb(252 249 241 / 0.94); /* cards */
+  --paper-solid: #fcf9f1;
   --paper-edge: rgb(110 86 52 / 0.16);
   --foreground: #2a2e29; /* primary text: soft charcoal */
   --muted: #565b53; /* secondary text, readable on paper and every sky */
@@ -86,6 +87,40 @@
   --chip-red: #c65b4c;
   --chip-blue: #4f7ca3;
 
+  /* Deeper foliage, grass blades and path edges */
+  --leaf-deep: #4f7a4c;
+  --trunk-dark: #6b513d;
+  --blade-dark: #5f8f50;
+  --blade: #7fae63;
+  --blade-light: #a6cb85;
+  --path-edge: #d8bf91;
+
+  /* The central clearing and the city beyond it (components/park/hub) */
+  --hub-sky-1: #a9c3c8;
+  --hub-sky-2: #e2dccb;
+  --hub-sky-3: #efdcbc;
+  --hub-glow: #fff1d0;
+  --hub-sun: #fff6e0;
+  --hub-ray: rgb(255 248 228 / 0.24);
+  --hub-haze-text: rgb(244 238 222 / 0.6);
+  --hub-water: #9fb9b6;
+  --city-far: #b9c4c3;
+  --city-far-line: rgb(255 255 255 / 0.2);
+  --city-far-green: #a3b9a0;
+  --concrete: #a9aea6;
+  --city-mid: #8e9c9a;
+  --city-mid-dark: #75827f;
+  --city-window: #b8c4c0;
+  --city-window-dark: #5d6866;
+  --vine: #5f8a55;
+  --vine-light: #86ad6b;
+  --rust: #a0664a;
+  --billboard: #d9cdb2;
+  --asphalt: #8c8d86;
+  --asphalt-crack: #6c6d67;
+  --lane: rgb(245 240 225 / 0.55);
+  --mote: rgb(255 250 225 / 0.9);
+
   /* Ground strip height in the stacked layout (taller while walking) */
   --ground-h: 64px;
 
@@ -101,6 +136,7 @@
 
   --background: #1a2133;
   --paper: rgb(32 38 44 / 0.93);
+  --paper-solid: #252c33;
   --paper-edge: rgb(255 255 255 / 0.09);
   --foreground: #ece6d8;
   --muted: #b2b5aa;
@@ -156,6 +192,38 @@
   --piece-dark: #1f1e1b;
   --card-face: #e8e2d4;
   --suit-red: #b8463c;
+
+  --leaf-deep: #1a3128;
+  --trunk-dark: #3a2e26;
+  --blade-dark: #1d3426;
+  --blade: #2a4634;
+  --blade-light: #3b5c45;
+  --path-edge: #3b3b31;
+
+  --hub-sky-1: #121a2c;
+  --hub-sky-2: #27304a;
+  --hub-sky-3: #3d3f55;
+  --hub-glow: #c8d0f0;
+  --hub-sun: #eee8d6;
+  --hub-ray: rgb(200 210 240 / 0.07);
+  --hub-haze-text: rgb(18 26 44 / 0.55);
+  --hub-water: #2b3a48;
+  --city-far: #2a3346;
+  --city-far-line: rgb(255 255 255 / 0.04);
+  --city-far-green: #24382f;
+  --concrete: #343a44;
+  --city-mid: #262e3a;
+  --city-mid-dark: #1d242e;
+  --city-window: #343d4a;
+  --city-window-dark: #e9c77a; /* at night, a few windows are still lit */
+  --vine: #1f3a2b;
+  --vine-light: #2c4d38;
+  --rust: #6a4636;
+  --billboard: #4a4a48;
+  --asphalt: #33353a;
+  --asphalt-crack: #24262a;
+  --lane: rgb(220 215 200 / 0.25);
+  --mote: #fff0a8;
 
   /* Theme toggle: pastel lavender with a soft moon */
   --toggle-bg: rgb(201 191 242 / 0.12);
@@ -482,14 +550,6 @@ body {
   transform: translateX(calc(var(--p) * -60vw));
 }
 
-/* The hero's hint arrow points the way the walk goes */
-.walk-hint-arrow {
-  display: inline-block;
-}
-.walk-on .walk-hint-arrow {
-  transform: rotate(-90deg);
-}
-
 /* Navbar trail: fills as the visitor walks toward the far gate */
 .walk-progress {
   position: absolute;
@@ -596,6 +656,340 @@ body {
   .interest:hover {
     transform: translateY(-4px);
   }
+}
+
+/*
+  The central clearing (components/park/hub). A full-screen scene whose
+  1600 × 900 canvas always covers the section, cropping its sides on narrow
+  screens. Its layers drift with the pointer (--mx/--my from HubStage, each
+  layer's --depth), and the paths switch layouts below 4:3 and 3:4.
+*/
+.hub {
+  position: relative;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  container: hub / size;
+}
+
+.walk-on .hub {
+  width: 100vw;
+}
+
+.hub-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.hub-canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100cqw, 100cqh * 16 / 9);
+  height: max(100cqh, 100cqw * 9 / 16);
+  transform: translate(-50%, -50%);
+  /* One canvas unit, in px */
+  --u: calc(max(100cqh, 100cqw * 9 / 16) / 900);
+}
+
+.hub-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform: translate3d(
+    calc(var(--mx, 0) * var(--depth) * -22px),
+    calc(var(--my, 0) * var(--depth) * -12px),
+    0
+  );
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+}
+
+.hub-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.hub-mid,
+.hub-narrow {
+  display: none;
+}
+
+/* Foreground grass leans away from the pointer */
+.hub-fg .sway {
+  transform: skewX(calc(var(--mx, 0) * -5deg));
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hub-layer ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-spot {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+}
+
+@container hub (aspect-ratio < 4 / 3) {
+  .hub-wide {
+    display: none;
+  }
+  .hub-mid {
+    display: inline;
+  }
+  .hub-spot {
+    left: var(--mid-x);
+    top: var(--mid-y);
+  }
+}
+
+@container hub (aspect-ratio < 3 / 4) {
+  .hub-mid {
+    display: none;
+  }
+  .hub-narrow {
+    display: inline;
+  }
+  .hub-spot {
+    left: var(--nx);
+    top: var(--ny);
+  }
+}
+
+/* A path's button floats above the stone lantern at its end */
+.hub-button {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--u) * 70);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+  translate: -50% 0;
+  pointer-events: auto;
+  border-radius: 1rem;
+  text-decoration: none;
+}
+
+/* Grows (from its base, so it never covers its label) and leans toward
+   the pointer as it gets near. --near goes 0 → 1 (HubStage). */
+.hub-disc {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border: 1px solid var(--paper-edge);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--accent);
+  box-shadow:
+    0 0 0 calc(var(--near, 0) * 10px) color-mix(in srgb, var(--accent) 14%, transparent),
+    0 10px 24px -12px rgb(40 30 15 / 0.5);
+  transform: translate(var(--pull-x, 0), var(--pull-y, 0)) scale(calc(1 + var(--near, 0) * 0.55));
+  transform-origin: 50% 100%;
+  transition:
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.25s ease,
+    background-color 0.2s ease;
+}
+
+.hub-disc svg {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+
+.hub-label {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  background: linear-gradient(var(--wood), var(--wood-dark));
+  color: var(--plank-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px -6px rgb(0 0 0 / 0.5);
+  transform: translateY(calc(var(--near, 0) * 4px));
+  transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hub-button:hover .hub-disc {
+  background: var(--paper-solid);
+}
+
+.hub-button:focus-visible {
+  outline: none;
+}
+.hub-button:focus-visible .hub-disc {
+  transform: scale(1.4);
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .hub-disc {
+    width: 2.9rem;
+    height: 2.9rem;
+  }
+  .hub-label {
+    font-size: 0.66rem;
+  }
+}
+
+/* Name and intro over the sky, on a soft patch of haze */
+.hub-intro {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(3.5rem + 1vh);
+  z-index: 2;
+  margin-inline: auto;
+  max-width: 46rem;
+  padding: 1.5rem;
+  text-align: center;
+  pointer-events: none;
+  background: radial-gradient(closest-side, var(--hub-haze-text), transparent);
+  transition:
+    opacity 0.4s ease,
+    filter 0.4s ease;
+}
+
+.hub-intro a {
+  pointer-events: auto;
+}
+
+/* Sized to the clearing's height so the paths always have room below */
+.hub-name {
+  font-size: clamp(2.1rem, min(8.5cqh, 10.5cqw), 4.5rem);
+  line-height: 1.05;
+}
+.hub-headline {
+  font-size: clamp(0.95rem, min(2.9cqh, 4.4cqw), 1.5rem);
+}
+
+/* The intro paragraph needs a tall, wide view; elsewhere the About
+   section (right after the clearing) says the same thing */
+@container hub (aspect-ratio < 4 / 3) or (height < 760px) {
+  .hub-intro-text {
+    display: none;
+  }
+}
+
+.hub-text-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 4px;
+  transition:
+    color 0.2s ease,
+    text-decoration-color 0.2s ease;
+}
+.hub-text-link:hover {
+  color: var(--accent-hover);
+  text-decoration-color: currentColor;
+}
+
+/* Pollen drifting slowly up through the light */
+.hub-motes span {
+  position: absolute;
+  width: var(--size);
+  height: var(--size);
+  border-radius: 50%;
+  background: var(--mote);
+  box-shadow: 0 0 6px var(--mote);
+  opacity: 0;
+  animation: mote var(--drift) linear var(--delay) infinite;
+}
+@keyframes mote {
+  15% {
+    opacity: 0.8;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translate(46px, -140px);
+    opacity: 0;
+  }
+}
+
+/* Choosing a path: the view rushes toward its end, blurring with speed */
+.hub-traveling {
+  transform-origin: var(--ox) var(--oy);
+  animation: travel 0.62s cubic-bezier(0.55, 0, 0.8, 0.4) forwards;
+}
+@keyframes travel {
+  to {
+    transform: scale(3);
+    filter: blur(12px);
+    opacity: 0;
+  }
+}
+.hub:has(.hub-traveling) .hub-intro {
+  opacity: 0;
+  filter: blur(8px);
+}
+
+/* ...and the section it leads to comes into focus */
+.zone.arriving {
+  animation: arrive 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes arrive {
+  from {
+    filter: blur(14px);
+    transform: scale(1.06);
+    opacity: 0.2;
+  }
+}
+
+/*
+  The painted finish: the soft brush filter (Sky.tsx, #paint) over every
+  illustration, and a fringe of grass blades along the ground.
+*/
+.zone-scene svg,
+.interest svg,
+.ground,
+.grass-fringe {
+  filter: url(#paint);
+}
+
+.grass-fringe {
+  position: absolute;
+  left: 0;
+  bottom: calc(var(--ground-h) * 0.84);
+  width: 100%;
+  height: 40px;
+}
+
+/* Grass sways when a scene is hovered */
+.sway {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+.zone-scene:hover .sway,
+.interest:hover .sway {
+  animation: sway 1.4s ease-in-out;
+}
+@keyframes sway {
+  30% {
+    transform: skewX(-7deg);
+  }
+  65% {
+    transform: skewX(3deg);
+  }
+}
+
+/* While walking sideways, let the scenes behind the content be hovered */
+.walk-on .zone-body {
+  pointer-events: none;
+}
+.walk-on .zone-body > * {
+  pointer-events: auto;
 }
 
 /*
@@ -881,6 +1275,107 @@ html.theme-transition .hover-grow {
   }
 }
 
+/* Hovering a scene plays its moment again (a renamed copy of each
+   animation, so the browser restarts it) */
+.zone-scene:hover .play-roll {
+  animation: roll-again 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.interest:hover .play-bounce {
+  animation: bounce-again 1.5s linear;
+}
+.interest:hover .play-shuttle {
+  animation: shuttle-again 1.3s linear;
+}
+.interest:hover .play-slide {
+  animation: slide-again 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.interest:hover .play-fan {
+  animation: fan-again 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.zone-scene:hover .play-nod {
+  animation: nod-again 1.4s ease-in-out;
+}
+.zone-scene:hover .play-swing {
+  animation: swing-again 1.2s ease-in-out;
+}
+.zone-scene:hover .play-flag {
+  animation: flag-again 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes roll-again {
+  from {
+    transform: translateX(-150px) rotate(-420deg);
+  }
+}
+@keyframes bounce-again {
+  0% {
+    transform: translateY(-80px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  34% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  56% {
+    transform: translateY(-34px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  74% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  86% {
+    transform: translateY(-10px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes shuttle-again {
+  0% {
+    transform: translate(-112px, 44px) rotate(-50deg);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  55% {
+    transform: translate(-46px, -18px) rotate(-10deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  100% {
+    transform: none;
+  }
+}
+@keyframes slide-again {
+  from {
+    transform: translate(var(--from-x), var(--from-y));
+  }
+}
+@keyframes fan-again {
+  from {
+    transform: rotate(0deg);
+  }
+}
+@keyframes nod-again {
+  0% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes swing-again {
+  0% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+@keyframes flag-again {
+  from {
+    transform: rotate(90deg);
+  }
+}
+
 /*
   Intro (components/Intro.tsx). Hidden unless the script in layout.tsx put
   `intro` on <html>. The sky gradient shows from the first paint, before the
@@ -937,8 +1432,20 @@ html.intro:not(.intro-out) .enter {
     transform: translateX(-50%);
   }
   .enter,
-  .is-visible [class*="play-"] {
-    animation: none;
+  .is-visible [class*="play-"],
+  [class*="play-"],
+  .sway,
+  .hub-motes span,
+  .zone.arriving {
+    animation: none !important;
+  }
+  .hub-layer,
+  .hub-disc,
+  .hub-label {
+    transition: none;
+  }
+  .hub-motes {
+    display: none;
   }
   .theme-icon,
   .theme-icon *,

@@ -59,11 +59,13 @@ Keep content/data separate from visual components where practical.
 
 ## Design Direction
 
-The site is a walk through an illustrated park, in a soft
-storybook / Ghibli-inspired style. Each section is a spot in the park
-(entrance, old oak, notice board, trail, courts & tables, garden, far
-gate), and the sky moves from morning to dusk as the visitor walks.
-The dark theme is the same park at night.
+The site is a walk through an illustrated park, in a soft, painterly
+Ghibli-inspired style. It opens in a central clearing looking out over
+an abandoned, overgrown city (`app/components/park/hub/`), with a path
+leading to each section. Each section is a spot in the park (old oak,
+notice board, trail, courts & tables, garden, far gate), and the sky
+moves from morning to dusk as the visitor walks. The dark theme is the
+same park at night.
 
 On large screens the park is walked sideways (scrolling slides the
 sections horizontally; see `app/components/park/ParkWalk.tsx`). On
