@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import ProjectEntry from "../components/locations/ProjectEntry";
-import LocationPage from "../components/world/LocationPage";
+import Workbench from "../components/locations/Workbench";
+import Location from "../components/world/Location";
 import { projects, skillGroups } from "../data/portfolio";
 import { placeById } from "../data/world";
 
@@ -9,24 +9,23 @@ export const metadata: Metadata = {
   description: "Software projects by Richard Lan, with screenshots, code and live demos.",
 };
 
+// The workshop: old screens on a bench, one per project, and the tool
+// wall with the skills
 export default function ProjectsPage() {
   return (
-    <LocationPage place={placeById("workshop")} wide>
-      <div className="space-y-16">
-        {projects.map((project) => (
-          <ProjectEntry key={project.title} {...project} />
-        ))}
-      </div>
+    <Location place={placeById("workshop")} side="below" intro="Old screens on the bench, still wired up. Choose one to switch it on.">
+      <Workbench projects={projects} />
 
-      <section id="skills" aria-labelledby="skills-title" className="mt-16 scroll-mt-[calc(var(--nav-h)+1.5rem)] border-t border-border pt-10">
+      <section id="skills" aria-labelledby="skills-title" className="tool-wall take-clicks">
         <h2 id="skills-title" className="font-display text-3xl font-semibold tracking-tight">
           Skills
         </h2>
-        <div className="mt-6 grid gap-8 sm:grid-cols-3">
+        <p className="mt-1 text-sm text-muted">On the tool wall.</p>
+        <div className="tool-boards">
           {skillGroups.map((group) => (
-            <div key={group.category}>
+            <div key={group.category} className="tool-board">
               <h3 className="font-display text-lg font-semibold">{group.category}</h3>
-              <ul className="mt-2 space-y-1.5 text-[15px] text-muted">
+              <ul className="tool-tags">
                 {group.skills.map((skill) => (
                   <li key={skill}>{skill}</li>
                 ))}
@@ -35,6 +34,6 @@ export default function ProjectsPage() {
           ))}
         </div>
       </section>
-    </LocationPage>
+    </Location>
   );
 }

@@ -60,18 +60,24 @@ Keep content/data separate from visual components where practical.
 ## Design Direction
 
 The site is a painted park in an abandoned, overgrown Japanese city, in
-late-afternoon autumn light. The home page is one painting
+late-afternoon autumn light. The park is one painting
 (`app/assets/park/park-v04.png`, from the versioned masters in
-`art/park/masters/`, history in `docs/art/park/`). Painted objects are the
-navigation: the notice board opens a map, and the pavilion (About),
-workshop (Projects, Skills), station (Experience), greenhouse (Interests)
-and phone booth (Contact) lead to their pages (`app/data/world.ts` holds
-their positions in painting pixels). Each page opens on a band of the
-painting looking toward its place, with the content on paper below, until
-that place gets its own painting.
+`art/park/masters/`, history in `docs/art/park/`), cut into moving layers by
+`scripts/art/layers.mjs` (output in `app/assets/park/layers/`).
 
-On phones and portrait screens the painting is a cropped band above the
-introduction and a plain list of places.
+The world (`app/components/world/World.tsx`) is mounted once in the root
+layout and stays on screen across pages; the URL decides where its camera
+looks. Painted objects are the navigation: the notice board opens the map
+(`/map`), and the pavilion (About), workshop (Projects, Skills), station
+(Experience), greenhouse (Interests) and phone booth (Contact) lead to their
+pages. `app/data/world.ts` holds their positions and cameras in painting
+pixels. Each place's page has its own object to read from (notebook,
+workbench, timetable, planting beds, directory card), in
+`app/components/locations/`. Progress and the art still needed:
+`docs/world/progress-log.md`.
+
+On phones and portrait screens the painting is a band at the top that pans
+sideways in the park, above the introduction and a plain list of places.
 
 The overall feeling should be:
 
@@ -142,23 +148,16 @@ The site should feel spacious rather than dense.
 
 ## Navigation
 
-Navigation should be:
+There is no row of tabs. Visitors get around by going to places in the
+park; the camera moves there. The plain alternatives, always one step away:
 
-- minimal
-- responsive
-- easy to scan
-- optionally sticky
-- subtly translucent when appropriate
+- the **Places** menu in the top-right corner (every section, including
+  Skills)
+- the notice board's map (`/map`)
+- "Back to the park" and Escape on every place's page
 
-If using transparency or blur, keep it restrained.
-
-Navigation should clearly link to:
-
-- About
-- Projects
-- Experience
-- Skills
-- Contact
+Every place is a real URL, so browser history, deep links and the keyboard
+work. Keep the corner controls small and on paper.
 
 ---
 

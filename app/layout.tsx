@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Shippori_Mincho_B1, Zen_Kaku_Gothic_New } from "next/font/google";
-import Navbar from "./components/Navbar";
+import World from "./components/world/World";
+import WorldControls from "./components/world/WorldControls";
 import "./globals.css";
 
 // Headings: a Japanese mincho with a slight ink spread, like letterpress on
@@ -42,8 +43,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body>
-        <Navbar />
-        {children}
+        <a href="#content" className="skip-link">
+          Skip to the page
+        </a>
+        <WorldControls />
+        {/* The painted park stays on screen across pages; each page moves
+            its camera (components/world/World.tsx) */}
+        <World />
+        <div id="content" tabIndex={-1} className="outline-none">
+          {children}
+        </div>
       </body>
     </html>
   );

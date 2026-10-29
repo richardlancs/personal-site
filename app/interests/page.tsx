@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import LocationPage from "../components/world/LocationPage";
+import PlantingBeds from "../components/locations/PlantingBeds";
+import Location from "../components/world/Location";
 import { interests } from "../data/portfolio";
 import { placeById } from "../data/world";
 
@@ -8,17 +9,11 @@ export const metadata: Metadata = {
   description: "What Richard Lan does away from the keyboard.",
 };
 
+// The greenhouse: markers in the planting beds, one for each interest
 export default function InterestsPage() {
   return (
-    <LocationPage place={placeById("greenhouse")}>
-      <ul className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
-        {interests.map((interest) => (
-          <li key={interest.name}>
-            <h2 className="font-display text-xl font-semibold tracking-tight">{interest.name}</h2>
-            <p className="mt-2 text-[15px] leading-6 text-muted">{interest.description}</p>
-          </li>
-        ))}
-      </ul>
-    </LocationPage>
+    <Location place={placeById("greenhouse")} side="left" intro="Someone kept the beds going under the broken glass. Pull up a marker.">
+      <PlantingBeds interests={interests} />
+    </Location>
   );
 }

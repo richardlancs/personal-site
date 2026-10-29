@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import LocationPage from "../components/world/LocationPage";
+import Payphone from "../components/locations/Payphone";
+import Location from "../components/world/Location";
 import { profile } from "../data/portfolio";
 import { placeById } from "../data/world";
 
@@ -11,42 +12,23 @@ export const metadata: Metadata = {
 // Shows a URL without "https://" and "www." so it reads cleanly
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "");
 
-const contactLinks = [
+// No résumé file yet: add one to public/ and a line here when there is
+const lines = [
   ...profile.emails.map((email) => ({
     label: email.label,
     value: email.address,
     href: `mailto:${email.address}`,
+    copy: true,
   })),
   { label: "GitHub", value: shortUrl(profile.githubUrl), href: profile.githubUrl },
   { label: "LinkedIn", value: shortUrl(profile.linkedinUrl), href: profile.linkedinUrl },
 ];
 
+// The phone booth by the park gate
 export default function ContactPage() {
   return (
-    <LocationPage place={placeById("booth")}>
-      <p className="leading-relaxed text-muted sm:text-lg">
-        I&apos;m looking for software engineering internship and co-op roles. Email is the best
-        way to reach me.
-      </p>
-
-      <dl className="mt-8 divide-y divide-border border-y border-border">
-        {contactLinks.map((link) => (
-          <div key={link.label} className="grid gap-1 py-4 sm:grid-cols-[9rem_1fr] sm:gap-8">
-            <dt className="text-sm text-muted sm:pt-0.5">{link.label}</dt>
-            <dd>
-              <a
-                href={link.href}
-                // Email links open the mail app; web links open in a new tab
-                target={link.href.startsWith("mailto:") ? undefined : "_blank"}
-                rel="noopener noreferrer"
-                className="text-link break-all"
-              >
-                {link.value}
-              </a>
-            </dd>
-          </div>
-        ))}
-      </dl>
-    </LocationPage>
+    <Location place={placeById("booth")} side="left" intro="The light inside still comes on, and the line still works.">
+      <Payphone lines={lines} />
+    </Location>
   );
 }
