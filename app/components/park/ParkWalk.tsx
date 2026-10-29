@@ -82,7 +82,7 @@ export default function ParkWalk({ children }: { children: React.ReactNode }) {
     // `moved`: px the track slid since the last frame. Blur stays off at
     // walking pace so text is crisp, and clears as soon as movement stops.
     function motionBlur(moved: number) {
-      const amount = Math.min(Math.max(moved - 6, 0) * 0.12, 7);
+      const amount = Math.min(Math.max(moved - 10, 0) * 0.07, 3.5);
       if (!blur || amount < 0.4) return;
       blur.setAttribute("stdDeviation", `${amount.toFixed(1)} 0`);
       viewport!.style.filter = "url(#walk-blur)";

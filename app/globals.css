@@ -925,8 +925,8 @@ body {
 }
 @keyframes travel {
   to {
-    transform: scale(3);
-    filter: blur(12px);
+    transform: scale(2.4);
+    filter: blur(6px);
     opacity: 0;
   }
 }
@@ -941,8 +941,8 @@ body {
 }
 @keyframes arrive {
   from {
-    filter: blur(14px);
-    transform: scale(1.06);
+    filter: blur(7px);
+    transform: scale(1.04);
     opacity: 0.2;
   }
 }
