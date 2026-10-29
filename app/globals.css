@@ -641,6 +641,13 @@ body {
   transform: translate(-50%, -4px);
 }
 
+.spot[data-label="right"] .spot-label {
+  left: calc(100% + 0.25rem);
+  bottom: auto;
+  top: 50%;
+  transform: translate(0, -50%) translateX(-4px);
+}
+
 .spot-place {
   font-family: var(--font-display);
   font-size: 0.95rem;
@@ -689,6 +696,12 @@ body {
 .world[data-labels] .spot:not(.spot-small) .spot-label {
   opacity: 1;
   transform: translate(-50%, 0);
+}
+
+/* Tags beside their object keep their own position when shown */
+.world[data-labels] .spot[data-label="right"] .spot-label,
+.spot[data-label="right"]:is(:hover, :focus-visible) .spot-label {
+  transform: translate(0, -50%);
 }
 
 /* Name tags belong to the park; away from it the camera is too close */
@@ -918,9 +931,11 @@ body {
 
   /* Tags above everything here: below, the station's would sit on the
      notice board's */
-  .spot[data-label="below"]:not(.spot-small) .spot-label {
+  .spot:is([data-label="below"], [data-label="right"]):not(.spot-small) .spot-label {
     top: auto;
+    left: 50%;
     bottom: calc(100% + 0.4rem);
+    transform: translate(-50%, 0) !important;
   }
 
   /* A hint that the painting pans, until it has been panned */

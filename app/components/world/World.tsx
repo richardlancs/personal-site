@@ -40,8 +40,9 @@ const layerSizes = ([left, , right]: Box) => {
 };
 
 // Name tags sit above their object, except where that would run into the
-// introduction (pavilion, workshop) or the corner controls (station)
-const labelBelow = new Set(["station", "pavilion", "workshop"]);
+// introduction (pavilion; the workshop's goes beside it) or the corner
+// controls (station)
+const labelSide: Record<string, "below" | "right"> = { station: "below", pavilion: "below", workshop: "right" };
 
 // The world: the painted park, always there behind every page. The URL
 // decides where the camera looks: the whole park on the home page, the
@@ -214,7 +215,7 @@ export default function World() {
                 <Link
                   key={place.id}
                   href={place.href}
-                  data-label={labelBelow.has(place.id) ? "below" : undefined}
+                  data-label={labelSide[place.id]}
                   className="spot"
                   style={boxStyle(place.box)}
                   onPointerEnter={() => hover(place.id)}
