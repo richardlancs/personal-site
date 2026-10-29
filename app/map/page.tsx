@@ -13,7 +13,7 @@ const pins: Record<string, { x: number; y: number }> = {
   pavilion: { x: 16, y: 55.5 },
   workshop: { x: 25, y: 23.5 },
   station: { x: 52, y: 13 },
-  greenhouse: { x: 81, y: 27 },
+  arcade: { x: 81, y: 27 },
   booth: { x: 85, y: 60.5 },
 };
 

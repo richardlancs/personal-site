@@ -122,503 +122,68 @@ body {
 }
 
 /*
-  The world (components/world/World.tsx)
+  The world (components/world3d/)
 
-  The painting covers the view at its own 3:2 shape. --pw/--ph are its
-  size on screen, --px/--py where its top-left corner sits. --fx/--fy pick
-  which part stays in view when it's cropped (0 = left/top edge). Layers,
-  hotspots and the park's introduction are placed with the same numbers,
-  so they stay on their painted objects at every size.
+  A WebGL canvas behind every page. On wide screens it fills the window
+  and pages sit over it; on phones and portrait screens it's a band at the
+  top of the page and the page follows below.
 */
-:root {
-  --view-w: 100vw;
-  --view-h: 100svh;
-  --fx: 0.5;
-  --fy: 0.1; /* keep the sky; crop the steps first */
-  --pw: max(var(--view-w), calc(var(--view-h) * 1.5));
-  --ph: calc(var(--pw) / 1.5);
-  --px: clamp(calc(var(--view-w) - var(--pw)), calc(var(--view-w) / 2 - var(--pw) * var(--fx)), 0px);
-  --py: clamp(calc(var(--view-h) - var(--ph)), calc(var(--view-h) / 2 - var(--ph) * var(--fy)), 0px);
-
-  /* Camera moves: slow to leave, slow to settle */
-  --travel: 1.35s;
-  --travel-ease: cubic-bezier(0.6, 0.02, 0.18, 1);
-  /* When a place's page comes in, after the camera has mostly arrived */
-  --arrive-delay: 0.62s;
-}
-
-.world {
+.world3d {
   position: fixed;
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #c9a865; /* the painting's average, shown while it loads */
+  background: #e2c99c; /* the park's haze, while it loads */
 }
 
-.world-view {
+.world3d canvas {
+  /* Horizontal drags look around; vertical ones still scroll the page */
+  touch-action: pan-y;
+}
+
+.world3d-loading {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgb(255 240 210 / 0.8), transparent 60%),
+    linear-gradient(#e9d3a6, #c9b07a);
+}
+
+/* The threshold between places: the colour of the doorway closing in
+   around the middle of the view, then opening on the next place */
+.world-iris {
+  --iris: 1;
   position: absolute;
   inset: 0;
-  overflow: hidden;
+  z-index: 2;
+  pointer-events: none;
+  background: #e9cf9c;
+  mask-image: radial-gradient(
+    circle at 50% 52%,
+    transparent calc((1 - var(--iris)) * 85vmax),
+    #000 calc((1 - var(--iris)) * 85vmax + 14vmax)
+  );
+  -webkit-mask-image: radial-gradient(
+    circle at 50% 52%,
+    transparent calc((1 - var(--iris)) * 85vmax),
+    #000 calc((1 - var(--iris)) * 85vmax + 14vmax)
+  );
 }
 
-/*
-  The camera. It looks at (--cx, --cy) on the painting, pushed in by --cz,
-  and puts that point at (--ax, --ay) of the screen, without ever showing
-  past the painting's edges.
-*/
-.world-camera {
+/* Name tags pinned to the places in the park. Each is a real link: the
+   park's keyboard and screen-reader way in. */
+.world-labels {
   position: absolute;
   inset: 0;
-  transform-origin: 0 0;
-  --tx: clamp(
-    calc(var(--view-w) - var(--cz) * (var(--px) + var(--pw))),
-    calc(var(--ax) * var(--view-w) - var(--cz) * (var(--px) + var(--cx) * var(--pw))),
-    calc(-1 * var(--cz) * var(--px))
-  );
-  --ty: clamp(
-    calc(var(--view-h) - var(--cz) * (var(--py) + var(--ph))),
-    calc(var(--ay) * var(--view-h) - var(--cz) * (var(--py) + var(--cy) * var(--ph))),
-    calc(-1 * var(--cz) * var(--py))
-  );
-  transform: translate(var(--tx), var(--ty)) scale(var(--cz));
-  transition: transform var(--travel) var(--travel-ease);
-}
-
-.world[data-scene="park"] .world-camera {
-  --tx: 0px;
-  --ty: 0px;
-}
-
-.world-stage {
-  position: absolute;
-  left: var(--px);
-  top: var(--py);
-  width: var(--pw);
-  height: var(--ph);
-}
-
-/* One layer of the painting, positioned in painting percentages */
-.layer {
-  position: absolute;
-  left: var(--l);
-  top: var(--t);
-  width: var(--w);
-  height: var(--h);
+  z-index: 3;
   pointer-events: none;
 }
 
-.layer-push,
-.sway,
-.gust {
-  position: absolute;
-  inset: 0;
-}
-
-/* Near layers grow more than far ones as the camera moves in */
-.layer-push {
-  transform: scale(calc(1 + (var(--cz) - 1) * var(--push)));
-  transition:
-    transform var(--travel) var(--travel-ease),
-    transform-origin var(--travel) var(--travel-ease);
-}
-
-.layer img,
-.falling img {
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/*
-  Idle wind. Each layer turns a little around its own pivot, with uneven
-  timing and still moments. Periods differ (layers.ts) and the starting
-  points are offset, so no two layers move together.
-*/
-.sway {
-  animation: bough var(--period) ease-in-out infinite;
-}
-
-.sway-grass {
-  animation-name: grass;
-}
-
-.sway-chain {
-  animation-name: chain;
-}
-
-.sway-drift {
-  animation-name: drift;
-}
-
-.layer-canopy .sway {
-  animation-delay: -2.7s;
-}
-.layer-tree-left .sway {
-  animation-delay: -6.1s;
-}
-.layer-ginkgo .sway {
-  animation-delay: -4.4s;
-}
-.layer-leaves-right .sway {
-  animation-delay: -1.3s;
-}
-.layer-sign .sway {
-  animation-delay: -3.9s;
-}
-
-@keyframes bough {
-  0%,
-  100% {
-    transform: rotate(0deg);
-  }
-  9% {
-    transform: rotate(calc(var(--amp) * -0.36deg));
-  }
-  21% {
-    transform: rotate(calc(var(--amp) * 0.1deg));
-  }
-  31% {
-    transform: rotate(calc(var(--amp) * -0.16deg));
-  }
-  46% {
-    transform: rotate(calc(var(--amp) * -0.12deg));
-  }
-  59% {
-    transform: rotate(calc(var(--amp) * -0.5deg));
-  }
-  71% {
-    transform: rotate(calc(var(--amp) * 0.16deg));
-  }
-  84% {
-    transform: rotate(calc(var(--amp) * -0.07deg));
-  }
-}
-
-@keyframes grass {
-  0%,
-  100% {
-    transform: skewX(0deg);
-  }
-  14% {
-    transform: skewX(calc(var(--amp) * -0.7deg));
-  }
-  27% {
-    transform: skewX(calc(var(--amp) * -0.2deg));
-  }
-  38% {
-    transform: skewX(calc(var(--amp) * -0.45deg));
-  }
-  55% {
-    transform: skewX(calc(var(--amp) * 0.15deg));
-  }
-  68% {
-    transform: skewX(calc(var(--amp) * -0.9deg));
-  }
-  83% {
-    transform: skewX(calc(var(--amp) * -0.1deg));
-  }
-}
-
-/* The swing: a slow pendulum that dies away, then hangs still */
-@keyframes chain {
-  0%,
-  100% {
-    transform: skewX(0deg);
-  }
-  10% {
-    transform: skewX(calc(var(--amp) * 1.6deg));
-  }
-  22% {
-    transform: skewX(calc(var(--amp) * -1.2deg));
-  }
-  34% {
-    transform: skewX(calc(var(--amp) * 0.8deg));
-  }
-  46% {
-    transform: skewX(calc(var(--amp) * -0.45deg));
-  }
-  58% {
-    transform: skewX(calc(var(--amp) * 0.2deg));
-  }
-  70% {
-    transform: skewX(0deg);
-  }
-}
-
-.layer-swing .sway {
-  /* Three swings of the pendulum per period, then stillness */
-  animation-duration: calc(var(--period) * 3);
-  animation-delay: -5s;
-}
-
-@keyframes drift {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  50% {
-    transform: translateX(1.1%);
-  }
-}
-
-/* The receiver in the booth, lifted off its hook */
-.layer-receiver .gust {
-  transition: transform 0.45s cubic-bezier(0.3, 1.3, 0.5, 1);
-}
-
-.world[data-receiver="up"] .layer-receiver .gust {
-  transform: translate(-55%, -18%) rotate(-28deg);
-}
-
-/* Late sun through the trees: soft beams from the upper left */
-.light-shafts {
+.world-label {
   position: absolute;
   left: 0;
-  top: 8%;
-  width: 62%;
-  height: 72%;
-  background: linear-gradient(
-    122deg,
-    transparent 24%,
-    rgb(255 228 168 / 0.17) 29%,
-    transparent 35%,
-    transparent 41%,
-    rgb(255 228 168 / 0.12) 45%,
-    transparent 51%,
-    transparent 57%,
-    rgb(255 228 168 / 0.1) 60%,
-    transparent 66%
-  );
-  mask-image: radial-gradient(ellipse 90% 80% at 0% 25%, #000 20%, transparent 75%);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: shafts 23s ease-in-out infinite alternate;
-}
-
-@keyframes shafts {
-  0% {
-    opacity: 0.55;
-    transform: translateX(0);
-  }
-  40% {
-    opacity: 0.95;
-  }
-  100% {
-    opacity: 0.7;
-    transform: translateX(1.5%);
-  }
-}
-
-/* Light moving through the leaves onto the path */
-.dapple {
-  position: absolute;
-  left: var(--l);
-  top: var(--t);
-  width: var(--w);
-  height: var(--h);
-  background:
-    radial-gradient(ellipse 10% 6% at 30% 40%, rgb(255 226 160 / 0.5), transparent),
-    radial-gradient(ellipse 7% 5% at 55% 62%, rgb(255 226 160 / 0.45), transparent),
-    radial-gradient(ellipse 9% 5% at 72% 30%, rgb(255 226 160 / 0.4), transparent),
-    radial-gradient(ellipse 6% 4% at 44% 78%, rgb(255 226 160 / 0.4), transparent);
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-  animation: dapple 31s ease-in-out infinite alternate;
-}
-
-@keyframes dapple {
-  0% {
-    opacity: 0.4;
-    transform: translate(0, 0);
-  }
-  35% {
-    opacity: 0.9;
-  }
-  60% {
-    opacity: 0.5;
-    transform: translate(1.2%, -0.8%);
-  }
-  100% {
-    opacity: 0.85;
-    transform: translate(-0.8%, 0.6%);
-  }
-}
-
-/* Lights in the places: on when you look at a place or arrive there */
-.glow {
-  position: absolute;
-  left: var(--l);
-  top: var(--t);
-  width: var(--w);
-  height: var(--h);
-  background: radial-gradient(closest-side, rgb(255 205 130 / 0.75), rgb(255 190 110 / 0.25) 60%, transparent);
-  mix-blend-mode: screen;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.8s ease;
-}
-
-.glow-pavilion {
-  opacity: 0.3;
-}
-
-.glow-booth {
-  /* The tube at the top of the booth, lighting the glass below */
-  background:
-    radial-gradient(ellipse 60% 14% at 50% 3%, rgb(255 236 190 / 0.9), transparent),
-    radial-gradient(ellipse 75% 60% at 50% 20%, rgb(255 214 150 / 0.45), transparent 75%);
-  opacity: 0.55;
-}
-
-.glow-station {
-  border-radius: 50%;
-}
-
-.glow[data-on] {
-  opacity: 1;
-  transition: opacity 1.4s ease var(--arrive-delay);
-}
-
-.world:has(.spot[href="/about"]:is(:hover, :focus-visible)) .glow-pavilion,
-.world:has(.spot[href="/projects"]:is(:hover, :focus-visible)) .glow-workshop,
-.world:has(.spot[href="/experience"]:is(:hover, :focus-visible)) .glow-station,
-.world:has(.spot[href="/interests"]:is(:hover, :focus-visible)) .glow-greenhouse,
-.world:has(.spot[href="/contact"]:is(:hover, :focus-visible)) .glow-booth {
-  opacity: 0.85;
-}
-
-/* Dust drifting in the low sun */
-.dust {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.dust span {
-  position: absolute;
-  width: var(--size);
-  height: var(--size);
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgb(255 244 214 / 0.95), rgb(255 230 180 / 0));
-  mix-blend-mode: screen;
-  opacity: 0;
-  animation: mote 20s ease-in-out infinite alternate;
-}
-
-@keyframes mote {
-  0% {
-    opacity: 0;
-    transform: translate(0, 0);
-  }
-  30% {
-    opacity: 0.85;
-  }
-  70% {
-    opacity: 0.5;
-  }
-  100% {
-    opacity: 0;
-    transform: translate(var(--dx), var(--dy));
-  }
-}
-
-.falling {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.leaf {
-  position: absolute;
-  height: auto;
-  will-change: transform;
-}
-
-/* While reading a place's page, the rest of the view settles back */
-.world-shade {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 1s ease;
-  --shade: rgb(28 26 18 / 0.5);
-}
-
-.world:not([data-scene="park"]) .world-shade {
-  opacity: 1;
-  transition-delay: 0.3s;
-}
-
-.world:is([data-scene="pavilion"], [data-scene="station"]) .world-shade {
-  background: linear-gradient(to right, transparent 38%, var(--shade) 78%);
-}
-
-.world:is([data-scene="greenhouse"], [data-scene="booth"]) .world-shade {
-  background: linear-gradient(to left, transparent 40%, var(--shade) 80%);
-}
-
-.world[data-scene="workshop"] .world-shade {
-  background: linear-gradient(to bottom, transparent 22%, var(--shade) 60%);
-}
-
-.world[data-scene="map"] .world-shade {
-  background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 30%, rgb(28 26 18 / 0.55));
-}
-
-.pan-hint {
-  display: none;
-}
-
-.world:not([data-scene="park"]) .pan-hint {
-  display: none !important;
-}
-
-/* Stop everything when the tab is hidden or the park is scrolled away */
-.world[data-paused="true"] *,
-.world[data-paused="true"] *::before {
-  animation-play-state: paused !important;
-}
-
-/* What you can click in the park */
-.spots {
-  position: absolute;
-  inset: 0;
-}
-
-.spot {
-  position: absolute;
-  left: var(--l);
-  top: var(--t);
-  width: var(--w);
-  height: var(--h);
-  border-radius: 40%;
-  cursor: pointer;
-}
-
-.spot:focus-visible {
-  outline: none;
-}
-
-/* Hover/focus: a little more late-afternoon light on the object itself,
-   feathered at the edges. It brightens the painting; it doesn't glow. */
-.spot-light {
-  position: absolute;
-  inset: -12%;
-  opacity: 0;
-  backdrop-filter: brightness(1.14) saturate(1.06);
-  -webkit-backdrop-filter: brightness(1.14) saturate(1.06);
-  mask-image: radial-gradient(closest-side, #000 55%, transparent);
-  -webkit-mask-image: radial-gradient(closest-side, #000 55%, transparent);
-  transition: opacity 0.3s ease;
-  pointer-events: none;
-}
-
-/* A small paper name tag tied to the object */
-.spot-label {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.5rem);
+  top: 0;
   display: grid;
   gap: 0.05rem;
+  margin: -1.6rem 0 0;
   padding: 0.4rem 0.7rem 0.45rem;
   border: 1px solid var(--paper-edge);
   border-radius: 4px;
@@ -627,151 +192,62 @@ body {
   white-space: nowrap;
   text-align: center;
   box-shadow: 0 8px 18px -12px rgb(40 30 10 / 0.55);
+  translate: -50% 0;
   opacity: 0;
-  transform: translate(-50%, 4px);
+  pointer-events: auto;
   transition:
     opacity 0.25s ease,
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-  pointer-events: none;
+    scale 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  scale: 0.96;
 }
 
-.spot[data-label="below"] .spot-label {
-  bottom: auto;
-  top: calc(100% + 0.5rem);
-  transform: translate(-50%, -4px);
+.world-label[data-hidden] {
+  visibility: hidden;
 }
 
-.spot[data-label="right"] .spot-label {
-  left: calc(100% + 0.25rem);
-  bottom: auto;
-  top: 50%;
-  transform: translate(0, -50%) translateX(-4px);
+.world-label[data-on],
+.world-label:focus-visible,
+.world-labels[data-all] .world-label {
+  opacity: 1;
+  scale: 1;
 }
 
-.spot-place {
+.world-label:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.world-label-place {
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.2;
 }
 
-.spot-section {
+.world-label-section {
   font-size: 0.75rem;
   color: var(--muted);
 }
 
-/* Small things to look at: a quieter tag */
-.spot-small .spot-place {
-  font-size: 0.85rem;
-  font-weight: 500;
-}
-
-.spot-small .spot-section {
-  font-style: italic;
-}
-
-@media (hover: hover) {
-  .spot:hover .spot-light {
+/* Touch screens have no hover: the tags stay up */
+@media (hover: none) {
+  .world-label {
     opacity: 1;
-  }
-  .spot:hover .spot-label {
-    opacity: 1;
-    transform: translate(-50%, 0);
+    scale: 1;
   }
 }
 
-.spot:focus-visible .spot-light {
-  opacity: 1;
-}
-
-.spot:focus-visible .spot-label {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-/* "Show places" in the introduction (and the first look around) reveal
-   every place's tag; small things keep theirs until you look */
-.world[data-labels] .spot:not(.spot-small) .spot-label {
-  opacity: 1;
-  transform: translate(-50%, 0);
-}
-
-/* Tags beside their object keep their own position when shown */
-.world[data-labels] .spot[data-label="right"] .spot-label,
-.spot[data-label="right"]:is(:hover, :focus-visible) .spot-label {
-  transform: translate(0, -50%);
-}
-
-/* Name tags belong to the park; away from it the camera is too close */
-.world:not([data-scene="park"]) .spot-label {
-  display: none;
-}
-
-/* The receiver in the booth: the tag is on the Contact page instead */
-.spot-receiver {
-  border-radius: 30%;
-}
-
-.spot-receiver:focus-visible {
-  outline: 2px solid #f4ecda;
-  outline-offset: 2px;
-}
-
-/* A note about something you looked at, pinned beside it */
-.park-note-anchor {
-  position: absolute;
-  left: var(--l);
-  top: var(--t);
-  width: var(--w);
-  height: var(--h);
-  pointer-events: none;
-}
-
-.park-note {
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + 0.6rem);
-  width: max-content;
-  max-width: 17rem;
-  padding: 0.7rem 0.9rem 0.8rem;
-  border: 1px solid var(--paper-edge);
-  border-radius: 3px;
-  background: var(--paper);
-  color: var(--foreground);
-  font-size: 0.875rem;
-  line-height: 1.5;
-  box-shadow: 0 12px 24px -16px rgb(40 30 10 / 0.6);
-  transform: translateX(-50%) rotate(-0.8deg);
-  animation: note-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.park-note[data-label="below"] {
-  bottom: auto;
-  top: calc(100% + 0.6rem);
-}
-
-.park-note-name {
-  display: block;
-  margin-bottom: 0.15rem;
-  font-family: var(--font-display);
-  font-weight: 600;
-}
-
-@keyframes note-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 6px) rotate(-0.8deg);
-  }
+/* Without WebGL: the painting of the park */
+.world3d-fallback {
+  background: #c9a865;
 }
 
 /* The park's introduction, in the open sky at the upper left */
 .park-intro {
   position: absolute;
-  left: calc(var(--px) + var(--pw) * 0.075);
-  top: max(calc(var(--py) + var(--ph) * 0.07), 4.5rem);
-  width: max(20rem, calc(var(--pw) * 0.29));
+  left: max(1.5rem, 6vw);
+  top: max(4.5rem, 9vh);
+  width: clamp(20rem, 31vw, 33rem);
   /* The block sits over the painting; only its heading, links and buttons
      take clicks, so the workshop under its lower edge stays clickable */
   pointer-events: none;
@@ -781,7 +257,7 @@ body {
   pointer-events: auto;
 }
 
-/* The painting is daytime in both themes, so text over it stays ink.
+/* The world is daytime in both themes, so text over it stays ink.
    Behind it, a band of late-afternoon haze softens the far skyline, so
    the text stays readable without a card. */
 @media (orientation: landscape) and (min-width: 768px) {
@@ -810,7 +286,7 @@ body {
 }
 
 .park-name {
-  font-size: clamp(2.25rem, calc(var(--ph) * 0.05), 3.75rem);
+  font-size: clamp(2.25rem, 4.2vw, 3.75rem);
   line-height: 1.05;
 }
 
@@ -820,7 +296,12 @@ body {
 }
 
 /* Page content sits over the world. Only its objects take clicks, so the
-   painting around them stays clickable. */
+   world around them stays clickable. */
+:root {
+  /* When a place's page comes in: as the camera walks into the place */
+  --arrive-delay: 1.5s;
+}
+
 .over-world {
   position: relative;
   z-index: 10;
@@ -844,65 +325,30 @@ body {
 }
 
 /*
-  Phones and portrait tablets: the painting is a band at the top of the
-  page. In the park you can pan across it with a finger, and every place
-  keeps its name tag; the introduction and a plain list of places follow
-  below. On a place's page the band is shorter and the camera looks at
-  that place, with the page below it.
+  Phones and portrait tablets: the world is a band at the top of the page
+  (taller in the park), and the page follows below it. Drag across the
+  band to look around.
 */
 @media (orientation: portrait), (max-width: 767px) {
-  :root {
-    --view-h: 62svh;
-    --fx: 0.64;
-    --fy: 0.4;
-  }
-
-  .world {
+  .world3d {
     position: relative;
     inset: auto;
-    height: var(--view-h);
+    height: 62svh;
     min-height: 22rem;
   }
 
-  .world:not([data-scene="park"]) {
-    --view-h: 40svh;
-    min-height: 16rem;
-  }
-
-  /* Pan the whole painting in the park */
-  .world[data-scene="park"] .world-view {
-    overflow-x: auto;
-    overflow-y: hidden;
-    overscroll-behavior-x: contain;
-    scrollbar-width: none;
-  }
-
-  .world[data-scene="park"] .world-view::-webkit-scrollbar {
-    display: none;
-  }
-
-  .world[data-scene="park"] .world-camera {
-    position: relative;
-    width: var(--pw);
-    height: 100%;
-    transition: none;
-  }
-
-  .world[data-scene="park"] .world-stage {
-    left: 0;
-  }
-
-  .world:not([data-scene="park"]) .world-shade {
-    background: linear-gradient(to bottom, transparent 55%, rgb(28 26 18 / 0.35));
+  .world3d:not([data-scene="park"]) {
+    height: 44svh;
+    min-height: 17rem;
   }
 
   .park-intro {
     position: static;
-    pointer-events: auto;
     width: auto;
     max-width: 40rem;
     margin: 0 auto;
     padding: 1.75rem 1.25rem 0.5rem;
+    pointer-events: auto;
   }
 
   .park-name {
@@ -913,63 +359,16 @@ body {
     display: block;
   }
 
-  /* Name tags: just what's there, always shown; small things keep only
-     their light until tapped */
-  .spot-label {
+  .world-label {
     padding: 0.25rem 0.55rem;
-    opacity: 1;
-    transform: translate(-50%, 0);
   }
 
-  .spot-label .spot-place {
+  .world-label-place {
     font-size: 0.8rem;
   }
 
-  .spot:not(.spot-small) .spot-section {
+  .world-label-section {
     display: none;
-  }
-
-  /* Tags above everything here: below, the station's would sit on the
-     notice board's */
-  .spot:is([data-label="below"], [data-label="right"]):not(.spot-small) .spot-label {
-    top: auto;
-    left: 50%;
-    bottom: calc(100% + 0.4rem);
-    transform: translate(-50%, 0) !important;
-  }
-
-  /* A hint that the painting pans, until it has been panned */
-  .pan-hint {
-    position: absolute;
-    left: 50%;
-    bottom: 0.75rem;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.3rem 0.75rem;
-    border-radius: 999px;
-    background: var(--label);
-    color: var(--foreground);
-    font-size: 0.8rem;
-    font-weight: 500;
-    transform: translateX(-50%);
-    transition: opacity 0.4s ease;
-    pointer-events: none;
-  }
-
-  .pan-hint[data-gone] {
-    opacity: 0;
-  }
-
-
-  .spot-small .spot-label {
-    opacity: 0;
-  }
-
-  .park-note {
-    max-width: min(15rem, 70vw);
-    font-size: 0.8125rem;
   }
 }
 
@@ -1068,37 +467,24 @@ html.theme-transition .hover-grow {
   transform: translate(0, 0);
 }
 
-/* Respect users who have asked their OS for less motion: the park holds
-   still, and the camera cuts instead of moving */
+/* Respect users who have asked their OS for less motion: the world holds
+   still, and the camera cuts instead of moving (World3D.tsx) */
 @media (prefers-reduced-motion: reduce) {
-  .world-camera,
-  .layer-push,
-  .glow,
-  .world-shade,
-  .spot-light,
-  .spot-label,
-  .layer-receiver .gust,
+  .world-label,
   .theme-icon,
   .theme-icon * {
     transition: none !important;
   }
-  .sway,
-  .light-shafts,
-  .dapple,
   .arrive,
-  .park-note,
   .motion-safe-anim {
     animation: none !important;
-  }
-  .dust,
-  .falling {
-    display: none;
   }
   .hover-grow:hover,
   .hover-grow:active {
     transform: none;
   }
 }
+
 
 /* For keyboard users: straight past the park to the page's content */
 .skip-link {
@@ -1262,46 +648,11 @@ html.theme-transition .hover-grow {
 }
 
 .location-column {
-  width: min(37rem, 46vw);
+  width: min(34rem, 40vw);
 }
 
 .location[data-side="below"] .location-column {
   width: min(70rem, 100%);
-}
-
-/* The workshop: its sign and the screens on the bench share a row, and
-   the monitor and notes run the full width below */
-@media (orientation: landscape) and (min-width: 768px) {
-  .location[data-place="workshop"] {
-    padding-top: max(24svh, 11rem);
-  }
-
-  .location[data-place="workshop"] .location-column {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    column-gap: 2rem;
-    align-items: end;
-  }
-
-  .location[data-place="workshop"] .location-column > :not(.location-header),
-  .location[data-place="workshop"] .project {
-    grid-column: 1 / -1;
-  }
-
-  .location[data-place="workshop"] .workbench {
-    display: contents;
-  }
-
-  .location[data-place="workshop"] .bench-screens {
-    grid-column: 2;
-    grid-row: 1;
-    align-self: end;
-    margin-bottom: 1.25rem;
-  }
-
-  .location[data-place="workshop"] .location-header {
-    max-width: 24rem;
-  }
 }
 
 /* The place's sign: its name, what's there, a line about it */
@@ -1510,26 +861,26 @@ html.theme-transition .hover-grow {
   background: var(--paper);
 }
 
-/* ---------- The workshop: screens on a bench ---------- */
-.bench-screens {
+/* ---------- The workshop: the projects on the benches ---------- */
+.bench-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 1.25rem;
-  padding: 0 1.25rem;
-  /* The bench top they stand on */
-  border-bottom: 14px solid #6e4a30;
-  border-image: linear-gradient(#8a5f3e, #5e3e28) 1;
+  gap: 0.6rem;
+  margin-bottom: 1.4rem;
 }
 
-.bench-screen {
-  display: grid;
-  justify-items: center;
-  gap: 0;
-  width: 11rem;
-  padding: 8px 8px 0;
-  border-radius: 12px 12px 4px 4px;
+.bench-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.5rem 1rem 0.55rem 0.8rem;
+  border: 1px solid var(--paper-edge);
+  border-radius: 6px 6px 3px 3px;
   background: linear-gradient(#ddd4bd, #c3b898);
+  color: #2b2f27;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.5),
     0 10px 20px -14px rgb(30 20 10 / 0.8);
@@ -1537,176 +888,64 @@ html.theme-transition .hover-grow {
 }
 
 @media (hover: hover) {
-  .bench-screen:hover {
-    transform: translateY(-3px);
+  .bench-tab:hover {
+    transform: translateY(-2px);
   }
 }
 
-.bench-screen-glass {
-  position: relative;
+/* The power light: green when its monitor is on */
+.bench-tab-lamp {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4a564a;
+  transition:
+    background-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.bench-tab[aria-pressed="true"] .bench-tab-lamp {
+  background: #7fe08a;
+  box-shadow: 0 0 6px #7fe08a;
+}
+
+.shot-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.shot-thumb {
+  width: 6.5rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  background: #101310;
+  opacity: 0.7;
+  transition:
+    opacity 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.shot-thumb img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  overflow: hidden;
-  border-radius: 8px;
-  background: radial-gradient(ellipse at 35% 30%, #39423a, #161a16 70%);
-  box-shadow: inset 0 0 18px rgb(0 0 0 / 0.7);
-}
-
-/* Off: a faint ghost of the last thing on screen */
-.bench-screen-image {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  height: 4rem;
   object-fit: cover;
   object-position: top;
-  opacity: 0.12;
-  filter: grayscale(1) contrast(0.8);
-  transition:
-    opacity 0.4s ease,
-    filter 0.4s ease;
 }
 
-.bench-screen[aria-pressed="true"] .bench-screen-image {
+.shot-thumb[aria-pressed="true"],
+.shot-thumb:hover {
   opacity: 1;
-  filter: none;
 }
 
-.bench-screen-tape {
-  margin: 0.45rem 0 0.5rem;
-  padding: 0.1rem 0.55rem;
-  background: rgb(240 228 190 / 0.95);
-  color: #2b2f27;
-  font-family: var(--font-display);
-  font-size: 0.9rem;
-  font-weight: 600;
-  transform: rotate(-1.5deg);
+.shot-thumb[aria-pressed="true"] {
+  border-color: var(--accent);
 }
 
-.project {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  align-items: start;
-  gap: 1.75rem;
-  margin-top: 1.75rem;
-}
-
-/* The big monitor */
-.monitor {
-  padding: 14px 14px 0;
-  border-radius: 16px 16px 8px 8px;
-  background: linear-gradient(#ded5be, #bfb393);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.55),
-    0 30px 50px -30px rgb(25 18 8 / 0.85);
-}
-
-.monitor-screen {
-  position: relative;
-  aspect-ratio: 16 / 10;
-  overflow: hidden;
-  border-radius: 9px;
-  background: #101310;
-  animation: power-on 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
-}
-
-/* Glass: faint scanlines and a curved edge */
-.monitor-screen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: repeating-linear-gradient(to bottom, rgb(0 0 0 / 0.06) 0 1px, transparent 1px 3px);
-  box-shadow: inset 0 0 40px rgb(0 0 0 / 0.45);
-  pointer-events: none;
-}
-
-@keyframes power-on {
-  0% {
-    filter: brightness(0);
-    clip-path: inset(49.5% 0 49.5% 0);
-  }
-  35% {
-    filter: brightness(2.2);
-    clip-path: inset(49.5% 0 49.5% 0);
-  }
-  70% {
-    filter: brightness(1.3);
-    clip-path: inset(0 0 0 0);
-  }
-  100% {
-    filter: brightness(1);
-    clip-path: inset(0 0 0 0);
-  }
-}
-
-.monitor-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: top;
-  animation: shot-in 0.3s ease both;
-}
-
-@keyframes shot-in {
-  from {
-    opacity: 0.2;
-  }
-}
-
-.monitor-strip {
-  display: flex;
-  justify-content: center;
-  gap: 4%;
-  height: 100%;
-  padding: 3% 4%;
-  background: #1b211c;
-}
-
-.monitor-strip img {
-  height: 100%;
-  width: auto;
-  border-radius: 4px;
-}
-
-.monitor-chin {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 2.4rem;
-  padding: 0 0.5rem;
-}
-
-.monitor-lamp {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #7fd18a;
-  box-shadow: 0 0 6px #7fd18a;
-}
-
-.monitor-buttons {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.monitor-button {
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 50%;
-  background: linear-gradient(#cfc5a8, #a99d7c);
-  box-shadow:
-    inset 0 -2px 0 rgb(0 0 0 / 0.2),
-    0 1px 0 rgb(255 255 255 / 0.4);
-}
-
-.monitor-button[aria-pressed="true"] {
-  background: linear-gradient(#a99d7c, #cfc5a8);
-  box-shadow: inset 0 2px 3px rgb(0 0 0 / 0.3);
-}
-
-/* The project's notes, clipped beside the monitor */
+/* The project's notes, clipped to a board */
 .project-notes {
   position: relative;
   padding: 1.75rem 1.5rem 1.5rem;
@@ -1923,93 +1162,79 @@ html.theme-transition .hover-grow {
   }
 }
 
-/* ---------- The greenhouse: markers in the beds ---------- */
-.bed {
-  position: relative;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 1.5rem 1.75rem;
-  padding: 1.5rem 1.5rem 0;
+/* ---------- The arcade: a cabinet for each interest ---------- */
+.cabinet-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.6rem;
 }
 
-.bed-soil {
-  position: absolute;
-  inset: auto 0 -0.75rem;
-  z-index: 0;
-  height: 2.6rem;
-  border-radius: 40% 40% 6px 6px / 60% 60% 6px 6px;
-  background:
-    radial-gradient(circle at 20% 30%, rgb(255 255 255 / 0.06) 1px, transparent 2px) 0 0 / 11px 9px,
-    linear-gradient(#5a3f2a, #3d2a1c);
-  box-shadow: 0 16px 30px -18px rgb(20 12 6 / 0.9);
-}
-
-.marker {
-  position: relative;
-  z-index: 1;
+.cabinet-button {
   display: grid;
   justify-items: center;
-  transform: rotate(var(--tilt));
-  transform-origin: 50% 100%;
-  transition: transform 0.4s cubic-bezier(0.3, 1.3, 0.5, 1);
-}
-
-.marker[aria-pressed="true"] {
-  transform: translateY(-1rem) rotate(0deg);
-}
-
-.marker-head {
-  padding: 0.45rem 0.9rem 0.5rem;
-  border-radius: 3px;
-  background: linear-gradient(#e2c08a, #c9a265);
-  color: #2b2f27;
+  gap: 0.45rem;
+  padding: 0.6rem 0.4rem 0.65rem;
+  border-radius: 8px 8px 4px 4px;
+  background: linear-gradient(#3b3640, #27232b);
+  color: #f3ead6;
   font-family: var(--font-display);
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  box-shadow:
-    inset 0 -2px 0 rgb(90 60 30 / 0.25),
-    0 8px 14px -10px rgb(30 18 8 / 0.8);
+  box-shadow: 0 12px 22px -14px rgb(10 8 12 / 0.9);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.marker-stake {
-  width: 0.55rem;
-  height: 3.2rem;
-  background: linear-gradient(to right, #b48a52, #8f6a3c);
-  clip-path: polygon(0 0, 100% 0, 100% 85%, 50% 100%, 0 85%);
+@media (hover: hover) {
+  .cabinet-button:hover {
+    transform: translateY(-3px);
+  }
 }
 
-.seed-packet {
+.cabinet-button-screen {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 4px;
+  background: #0b0d0c;
+  color: #4b5a52;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    box-shadow 0.35s ease;
+}
+
+.cabinet-button[aria-pressed="true"] .cabinet-button-screen {
+  background: #141a22;
+  color: #f2c9a4;
+  box-shadow: inset 0 0 14px rgb(242 201 164 / 0.35);
+}
+
+.cabinet-card {
   display: flex;
   gap: 1.1rem;
   align-items: flex-start;
-  margin-top: 2.25rem;
+  margin-top: 1.25rem;
   padding: 1.4rem 1.4rem 1.5rem;
+  border: 1px solid var(--paper-edge);
   border-radius: 3px;
-  background: #efe4c6 var(--grain);
-  color: #2b2f27;
-  box-shadow:
-    inset 0 10px 0 -6px rgb(120 90 50 / 0.18),
-    0 22px 40px -28px rgb(30 20 10 / 0.75);
-  animation: packet-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  background: var(--paper) var(--grain);
+  box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
+  animation: card-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.seed-packet .text-muted {
-  color: #4a4f44;
-}
-
-.seed-packet-sketch {
+.cabinet-card-sketch {
   flex: none;
   display: grid;
   place-items: center;
   width: 4.25rem;
   height: 4.25rem;
-  border: 1.5px solid rgb(59 104 73 / 0.5);
+  border: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
   border-radius: 50%;
-  color: #3b6849;
+  color: var(--accent);
 }
 
-@keyframes packet-out {
+@keyframes card-out {
   from {
     opacity: 0;
     transform: translateY(16px) rotate(-1deg);
@@ -2323,41 +1548,16 @@ html.theme-transition .hover-grow {
     position: relative;
   }
 
-  .project,
   .tool-boards {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .bench-screens {
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 0 0.5rem;
-  }
-
-  .bench-screen {
-    flex: 1 1 0;
-    min-width: 0;
-  }
-
-  .monitor-strip {
-    gap: 3%;
   }
 
   .directory-lines li {
     grid-template-columns: 1.75rem minmax(0, 1fr);
   }
 
-  .bed {
-    flex-wrap: nowrap;
-    justify-content: space-between;
-    gap: 0.5rem;
-    padding: 1.25rem 0.5rem 0;
-  }
-
-  .marker-head {
-    padding: 0.35rem 0.5rem 0.4rem;
-    font-size: 0.875rem;
+  .cabinet-button {
+    font-size: 0.8rem;
   }
 
   .directory-value {
@@ -2403,15 +1603,13 @@ html.theme-transition .hover-grow {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .monitor-screen,
-  .monitor-image,
   .flap,
-  .seed-packet,
+  .cabinet-card,
   .map-sheet {
     animation: none;
   }
-  .marker,
-  .bench-screen,
+  .bench-tab,
+  .cabinet-button,
   .phone-handset svg {
     transition: none;
   }

@@ -1,18 +1,24 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useWorld, world } from "../world3d/store";
 
 export type NotebookPage = { id: string; content: React.ReactNode };
 
 const TURN_MS = 560;
 
-// The notebook in the pavilion: open on the bench, two pages at a time on
-// wide screens and one on phones. Turning a page sweeps a leaf across the
+// The notebook on the pavilion's desk. The one in the world
+// (world3d/scenes/Library.tsx) turns its pages with this one. Here: two
+// pages at a time on wide screens and one on phones. Turning a page sweeps a leaf across the
 // spread; the words underneath change halfway through, so it's quick, and
 // every page is one press (or arrow key) away. "All the pages" lays them
 // out in one column for anyone who'd rather just read.
 export default function Notebook({ pages }: { pages: NotebookPage[] }) {
-  const [page, setPage] = useState(0); // the first page showing
+  const page = useWorld((s) => s.sel.page); // the first page showing
+  const setPage = (n: number) => {
+    world.select("page", n);
+    world.set({ focus: "notebook" });
+  };
   const [wide, setWide] = useState(false);
   const [all, setAll] = useState(false);
   const leaf = useRef<HTMLDivElement>(null);

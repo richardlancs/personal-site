@@ -3,7 +3,7 @@ import ShowPlaces from "./components/world/ShowPlaces";
 import { profile } from "./data/portfolio";
 import { places } from "./data/world";
 
-// The site opens in the park (components/world/World.tsx, in the layout).
+// The site opens in the park (components/world3d, in the layout).
 // This page is what sits over it: the introduction in the open sky, and
 // on phones a plain list of the places below the painting.
 export default function Home() {

@@ -1,29 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { setReceiver } from "../world/useAmbience";
+import { useState } from "react";
+import { useWorld, world } from "../world3d/store";
 
 export type Line = { label: string; value: string; href: string; copy?: boolean };
 
 // The phone booth: the directory card pinned inside, with every way to get
 // in touch as a plain link, and the phone itself. Picking up the receiver
-// (here, or on the painted phone) lifts it in the painting and opens the
-// line; nothing waits on it.
+// (here, or on the phone in the booth) lifts it off the hook in the world
+// and steps up to it; nothing waits on it.
 export default function Payphone({ lines }: { lines: Line[] }) {
-  const [up, setUp] = useState(false);
+  const up = useWorld((s) => s.phoneUp);
   const [copied, setCopied] = useState<string | null>(null);
-
-  // Stay in step with the painted receiver
-  useEffect(() => {
-    const onReceiver = (event: Event) => setUp((event as CustomEvent<boolean>).detail);
-    window.addEventListener("world:receiver", onReceiver);
-    return () => {
-      window.removeEventListener("world:receiver", onReceiver);
-    };
-  }, []);
-
-  // Hang up when leaving the booth
-  useEffect(() => () => setReceiver(false), []);
+  const setReceiver = (lift: boolean) => world.set({ phoneUp: lift, focus: "phone" });
 
   async function copy(value: string) {
     try {

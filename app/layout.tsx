@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Shippori_Mincho_B1, Zen_Kaku_Gothic_New } from "next/font/google";
-import World from "./components/world/World";
+import WorldShell from "./components/world3d/WorldShell";
 import WorldControls from "./components/world/WorldControls";
 import "./globals.css";
 
@@ -47,9 +47,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to the page
         </a>
         <WorldControls />
-        {/* The painted park stays on screen across pages; each page moves
-            its camera (components/world/World.tsx) */}
-        <World />
+        {/* The world stays on screen across pages; each page moves its
+            camera to a place (components/world3d/World3D.tsx) */}
+        <WorldShell />
         <div id="content" tabIndex={-1} className="outline-none">
           {children}
         </div>

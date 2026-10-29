@@ -1,28 +1,27 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import type { Project } from "../../data/portfolio";
+import { useWorld, world } from "../world3d/store";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-// The workshop bench: one old screen per project. Choosing a screen turns
-// it on and brings its project up on the big monitor, with the notes for
-// it clipped alongside. The URL keeps the project (#marketlab), so it can
-// be linked to directly.
+// The workshop's notes. The projects' screenshots are on the monitors on
+// the benches (world3d/scenes/Workshop.tsx); choosing a project here, or
+// its monitor there, switches that monitor on and walks over to it. The
+// address keeps the project (#marketlab) so it can be linked to.
 export default function Workbench({ projects }: { projects: Project[] }) {
-  const [selected, setSelected] = useState(0);
-  const [shot, setShot] = useState(0);
-  // Bumped on every change so the screen plays its switch-on again
-  const [power, setPower] = useState(0);
+  const selected = useWorld((s) => s.sel.project);
+  const shot = useWorld((s) => s.sel.shot);
 
   useEffect(() => {
     const fromHash = () => {
       const index = projects.findIndex((project) => slug(project.title) === window.location.hash.slice(1));
       if (index >= 0) {
-        setSelected(index);
-        setShot(0);
-        setPower((n) => n + 1);
+        world.select("project", index);
+        world.select("shot", 0);
+        world.set({ focus: `monitor-${index}` });
       }
     };
     fromHash();
@@ -30,115 +29,81 @@ export default function Workbench({ projects }: { projects: Project[] }) {
     return () => window.removeEventListener("hashchange", fromHash);
   }, [projects]);
 
+  // Keep the address in step when a monitor is chosen in the world
+  useEffect(() => {
+    const hash = `#${slug(projects[selected].title)}`;
+    if (window.location.hash && window.location.hash !== hash) history.replaceState(null, "", hash);
+  }, [selected, projects]);
+
   function choose(index: number) {
-    if (index === selected) return;
-    setSelected(index);
-    setShot(0);
-    setPower((n) => n + 1);
+    world.select("project", index);
+    world.select("shot", 0);
+    world.set({ focus: `monitor-${index}` });
     history.replaceState(null, "", `#${slug(projects[index].title)}`);
   }
 
   const project = projects[selected];
   const screenshots = project.screenshots ?? [];
-  const tall = screenshots[0] && screenshots[0].height > screenshots[0].width;
   const titleId = `project-${slug(project.title)}`;
 
   return (
-    <div className="workbench take-clicks">
-      {/* The screens on the bench */}
-      <div role="group" aria-label="Projects on the bench" className="bench-screens">
+    <div className="take-clicks">
+      <div role="group" aria-label="Projects on the benches" className="bench-tabs">
         {projects.map((item, index) => (
-          <button
-            key={item.title}
-            type="button"
-            aria-pressed={index === selected}
-            aria-controls="project-monitor"
-            className="bench-screen"
-            onClick={() => choose(index)}
-          >
-            <span className="bench-screen-glass">
-              {item.screenshots?.[0] && (
-                <Image
-                  src={item.screenshots[0].src}
-                  alt=""
-                  width={item.screenshots[0].width}
-                  height={item.screenshots[0].height}
-                  sizes="10rem"
-                  className="bench-screen-image"
-                />
-              )}
-            </span>
-            <span className="bench-screen-tape">{item.title}</span>
+          <button key={item.title} type="button" aria-pressed={index === selected} aria-controls="project-notes" className="bench-tab" onClick={() => choose(index)}>
+            <span className="bench-tab-lamp" aria-hidden="true" />
+            {item.title}
           </button>
         ))}
       </div>
 
-      <article id="project-monitor" aria-labelledby={titleId} className="project">
-        {/* The big monitor: the project's real screenshots */}
-        <div className="monitor">
-          <div key={power} className="monitor-screen" data-tall={tall || undefined}>
-            {tall ? (
-              <div className="monitor-strip">
-                {screenshots.map((item) => (
-                  <Image key={item.src} src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="(min-width: 1024px) 14rem, 30vw" />
-                ))}
-              </div>
-            ) : (
-              screenshots[shot] && (
-                <Image
-                  key={screenshots[shot].src}
-                  src={screenshots[shot].src}
-                  alt={screenshots[shot].alt}
-                  width={screenshots[shot].width}
-                  height={screenshots[shot].height}
-                  sizes="(min-width: 1024px) 40rem, 90vw"
-                  className="monitor-image"
-                />
-              )
-            )}
-          </div>
-          <div className="monitor-chin">
-            <span className="monitor-lamp" aria-hidden="true" />
-            {!tall && screenshots.length > 1 && (
-              <span className="monitor-buttons">
-                {screenshots.map((item, index) => (
-                  <button
-                    key={item.src}
-                    type="button"
-                    aria-label={`Screenshot ${index + 1} of ${screenshots.length}`}
-                    aria-pressed={index === shot}
-                    onClick={() => setShot(index)}
-                    className="monitor-button"
-                  />
-                ))}
-              </span>
-            )}
-          </div>
-        </div>
+      <article id="project-notes" key={project.title} aria-labelledby={titleId} className="project-notes">
+        <h2 id={titleId} className="font-display text-3xl font-semibold tracking-tight">
+          {project.title}
+        </h2>
+        <p className="mt-3 leading-relaxed text-muted">{project.description}</p>
 
-        {/* The notes clipped beside it */}
-        <div className="project-notes">
-          <h2 id={titleId} className="font-display text-3xl font-semibold tracking-tight">
-            {project.title}
-          </h2>
-          <p className="mt-3 leading-relaxed text-muted">{project.description}</p>
-          <h3 className="project-notes-label">Built with</h3>
-          <ul className="project-parts">
-            {project.technologies.map((technology) => (
-              <li key={technology}>{technology}</li>
-            ))}
-          </ul>
-          <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
-            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-              Code on GitHub
+        {screenshots.length > 0 && (
+          <>
+            <h3 className="project-notes-label">On the screen</h3>
+            <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
+              {screenshots.map((item, index) => (
+                <button
+                  key={item.src}
+                  type="button"
+                  aria-pressed={index === shot}
+                  className="shot-thumb"
+                  onClick={() => {
+                    world.select("shot", index);
+                    world.set({ focus: `monitor-${selected}` });
+                  }}
+                >
+                  <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="7rem" />
+                </button>
+              ))}
+            </div>
+            <a href={screenshots[shot]?.src} target="_blank" rel="noopener noreferrer" className="text-link mt-2 inline-block text-sm">
+              Open this screenshot full size
             </a>
-            {project.liveUrl && (
-              <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-                Live demo
-              </a>
-            )}
-          </p>
-        </div>
+          </>
+        )}
+
+        <h3 className="project-notes-label">Built with</h3>
+        <ul className="project-parts">
+          {project.technologies.map((technology) => (
+            <li key={technology}>{technology}</li>
+          ))}
+        </ul>
+        <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
+          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+            Code on GitHub
+          </a>
+          {project.liveUrl && (
+            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+              Live demo
+            </a>
+          )}
+        </p>
       </article>
     </div>
   );

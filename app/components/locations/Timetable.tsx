@@ -1,16 +1,22 @@
 "use client";
 
-import { useState } from "react";
 import type { Experience } from "../../data/portfolio";
+import { useWorld, world } from "../world3d/store";
 
 const when = (stop: Experience) => (stop.endDate ? `${stop.startDate} – ${stop.endDate}` : stop.startDate);
 
-// The station timetable: an enamel board with one line per stop, and the
-// notice for the chosen line below it. Choosing a line turns the notice
-// over line by line, like the flaps of an old departures board.
+// The station timetable. The board on the platform wall
+// (world3d/scenes/Station.tsx) shows the same lines; choosing one here or
+// there turns its flap over, and the notice for it turns over below,
+// line by line.
 export default function Timetable({ stops }: { stops: Experience[] }) {
-  const [selected, setSelected] = useState(0);
+  const selected = useWorld((s) => s.sel.line);
   const stop = stops[selected];
+
+  function choose(index: number) {
+    world.select("line", index);
+    world.set({ focus: "timetable" });
+  }
 
   return (
     <div className="take-clicks">
@@ -33,13 +39,7 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
               <tr key={`${item.role}-${item.organization}`} data-selected={index === selected || undefined}>
                 <td className="tabular-nums">{when(item)}</td>
                 <td>
-                  <button
-                    type="button"
-                    className="timetable-line"
-                    aria-pressed={index === selected}
-                    aria-controls="timetable-notice"
-                    onClick={() => setSelected(index)}
-                  >
+                  <button type="button" className="timetable-line" aria-pressed={index === selected} aria-controls="timetable-notice" onClick={() => choose(index)}>
                     {item.role}
                   </button>
                 </td>
@@ -50,7 +50,6 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
         </table>
       </div>
 
-      {/* The notice for the chosen line */}
       <section id="timetable-notice" key={selected} aria-live="polite" className="timetable-notice">
         <p className="flap tabular-nums text-sm font-semibold text-warm" style={{ "--i": 0 } as React.CSSProperties}>
           {when(stop)}

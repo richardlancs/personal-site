@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { places, sceneFor } from "../../data/world";
+import { places } from "../../data/world";
 import MusicToggle from "../MusicToggle";
 import ThemeToggle from "../ThemeToggle";
 
@@ -11,14 +11,14 @@ import ThemeToggle from "../ThemeToggle";
 // menu is the plain alternative, one step from anywhere.
 export default function WorldControls() {
   const pathname = usePathname();
-  const scene = sceneFor(pathname);
+  const inPark = pathname === "/" || pathname === "/map";
 
   // Close the menu once a place is chosen (the page changes underneath)
   const close = () => document.getElementById("places-menu")?.hidePopover();
 
   return (
     <div className="world-controls">
-      {scene !== "park" ? (
+      {!inPark || pathname === "/map" ? (
         <Link href="/" className="control-tag hover-grow" title="Back to the park (Esc)">
           <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12.5 4.5 7 10l5.5 5.5" />
@@ -49,14 +49,14 @@ export default function WorldControls() {
       <nav id="places-menu" popover="auto" aria-label="Places" className="places-menu paper">
         <ul>
           <li>
-            <Link href="/" onClick={close} aria-current={scene === "park" ? "page" : undefined}>
+            <Link href="/" onClick={close} aria-current={pathname === "/" ? "page" : undefined}>
               <span className="places-menu-section">The park</span>
               <span className="places-menu-place">Home</span>
             </Link>
           </li>
           {places.map((place) => (
             <li key={place.id}>
-              <Link href={place.href} onClick={close} aria-current={scene === place.id ? "page" : undefined}>
+              <Link href={place.href} onClick={close} aria-current={pathname === place.href ? "page" : undefined}>
                 <span className="places-menu-section">{place.section}</span>
                 <span className="places-menu-place">{place.name}</span>
               </Link>

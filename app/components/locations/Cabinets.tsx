@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { Interest } from "../../data/portfolio";
+import { useWorld, world } from "../world3d/store";
 
-// A small ink drawing for each interest, on its seed packet
+// A small drawing for each interest, like the ones on its cabinet screen
 function Sketch({ scene }: { scene: Interest["scene"] }) {
   const common = {
     viewBox: "0 0 48 48",
@@ -49,34 +49,33 @@ function Sketch({ scene }: { scene: Interest["scene"] }) {
   }
 }
 
-// The greenhouse beds: a wooden marker for each interest, pushed into the
-// soil. Pulling one up brings out its seed packet with the notes.
-export default function PlantingBeds({ interests }: { interests: Interest[] }) {
-  const [selected, setSelected] = useState(0);
+// The arcade's cabinets, one for each interest. Choosing one here or in
+// the world (world3d/scenes/Arcade.tsx) walks up to that cabinet and
+// switches it on; its card comes out below, like a prize from the tray.
+export default function Cabinets({ interests }: { interests: Interest[] }) {
+  const selected = useWorld((s) => s.sel.interest);
   const interest = interests[selected];
+
+  function choose(index: number) {
+    world.select("interest", index);
+    world.set({ focus: `cabinet-${index}` });
+  }
 
   return (
     <div className="take-clicks">
-      <div role="group" aria-label="Interests" className="bed">
+      <div role="group" aria-label="Cabinets" className="cabinet-row">
         {interests.map((item, index) => (
-          <button
-            key={item.name}
-            type="button"
-            className="marker"
-            aria-pressed={index === selected}
-            aria-controls="seed-packet"
-            style={{ "--tilt": `${[-3, 2, -1.5, 3][index % 4]}deg` } as React.CSSProperties}
-            onClick={() => setSelected(index)}
-          >
-            <span className="marker-head">{item.name}</span>
-            <span className="marker-stake" aria-hidden="true" />
+          <button key={item.name} type="button" className="cabinet-button" aria-pressed={index === selected} aria-controls="cabinet-card" onClick={() => choose(index)}>
+            <span className="cabinet-button-screen" aria-hidden="true">
+              <Sketch scene={item.scene} />
+            </span>
+            {item.name}
           </button>
         ))}
-        <span className="bed-soil" aria-hidden="true" />
       </div>
 
-      <section id="seed-packet" key={interest.name} aria-live="polite" className="seed-packet">
-        <span className="seed-packet-sketch">
+      <section id="cabinet-card" key={interest.name} aria-live="polite" className="cabinet-card">
+        <span className="cabinet-card-sketch">
           <Sketch scene={interest.scene} />
         </span>
         <div>
