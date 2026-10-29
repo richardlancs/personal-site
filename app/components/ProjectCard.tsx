@@ -3,20 +3,24 @@ import type { Project } from "../data/portfolio";
 const linkStyle =
   "text-accent underline decoration-transparent underline-offset-4 transition-colors duration-200 hover:text-accent-hover hover:decoration-current";
 
-// One project = one row. The Projects section renders one of these per
-// item in the `projects` list, separated by thin lines.
+// One project, as a note pinned to the notice board. `tilt` turns it a
+// fraction of a degree so the board looks hand-pinned; it straightens on hover.
 export default function ProjectCard({
   title,
   description,
   technologies,
   githubUrl,
   liveUrl,
-}: Project) {
+  tilt = 0,
+}: Project & { tilt?: number }) {
   return (
-    <article className="p-6 transition-colors duration-300 sm:p-8 [@media(hover:hover)]:hover:bg-card-hover/60">
-      <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
-      <p className="mt-3 text-lg leading-relaxed text-muted">{description}</p>
-      <p className="mt-4 text-sm text-muted">{technologies.join(", ")}</p>
+    <article
+      className="paper pinned h-full p-6 sm:p-7"
+      style={{ "--tilt": `${tilt}deg` } as React.CSSProperties}
+    >
+      <h3 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">{title}</h3>
+      <p className="mt-3 text-[15px] leading-6 text-muted">{description}</p>
+      <p className="mt-4 text-[13px] leading-5 text-muted">{technologies.join(" · ")}</p>
 
       <div className="mt-5 flex gap-6 text-sm font-medium">
         <a

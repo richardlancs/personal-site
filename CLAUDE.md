@@ -59,71 +59,50 @@ Keep content/data separate from visual components where practical.
 
 ## Design Direction
 
-The site should use an Apple-inspired design language without directly
-copying Apple's website or UI.
+The site is a walk through an illustrated park, in a soft
+storybook / Ghibli-inspired style. Each section is a spot in the park
+(entrance, old oak, notice board, trail, courts & tables, garden, far
+gate), and the sky moves from morning to dusk as the visitor walks.
+The dark theme is the same park at night.
 
-Aim for approximately:
-
-- 75% Apple.com editorial design
-- 25% macOS/iOS interface influence
+On large screens the park is walked sideways (scrolling slides the
+sections horizontally; see `app/components/park/ParkWalk.tsx`). On
+phones, tablets in portrait, and with reduced motion, sections stack
+vertically.
 
 The overall feeling should be:
 
-- minimal
-- premium
+- warm
 - calm
-- spacious
-- precise
-- professional
-- modern
-- recruiter-friendly
+- playful but not childish
+- polished
+- recruiter-friendly: content stays readable and easy to skim
 
-Prioritize typography, whitespace, alignment, spacing, and hierarchy
-over decoration.
+Illustrations are hand-written inline SVG built from the pieces in
+`app/components/park/`. Keep text on paper cards or plain sky, never
+over busy illustration.
 
 ---
 
 ## Color Palette
 
-Do NOT use a solid black background across the entire website.
-
-Use a soft layered palette with subtle tonal differences.
-
-Preferred palette:
-
-- Warm/off-white background: `#F7F6F2`
-- Secondary warm gray: `#EFEDE8`
-- Soft blue-gray: `#DCE3E8`
-- Primary charcoal text: `#1F2328`
-- Secondary text: `#687078`
-- Muted steel-blue accent: `#537A91`
-
-These values are guidelines rather than strict requirements.
-
-Use approximately:
-
-- 70% neutral tones
-- 20% soft secondary tones
-- 10% accent color
-
-Use color to create subtle separation between sections.
+All colors are tokens in `app/globals.css` (day in `:root`, night in
+`[data-theme="dark"]`): soft greens, warm wood and paper, pastel skies.
 
 Avoid:
-- large areas of pure black
-- pure white everywhere
-- neon colors
-- highly saturated colors
+- large areas of pure black or pure white
+- neon or highly saturated colors
 - rainbow gradients
 - excessive glassmorphism
-- excessive gradients
 
-Subtle gradients are acceptable when they create gentle depth.
+Keep text contrast at 4.5:1 or better on paper and on every sky.
 
 ---
 
 ## Typography
 
-Use a clean system font stack with an Apple/San Francisco-like feel.
+Use system fonts: the sans stack for body text and a bookish system
+serif (`font-display`) for headings.
 
 Prefer:
 

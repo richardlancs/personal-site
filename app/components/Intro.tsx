@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-// The opening animation: a pastel desert at sunset, where a ball rolls down
-// one dune, shoots up a ramp, flies off its lip, lands, and grows to fill
+// The opening animation: the park on a spring morning, where a basketball
+// rolls down one hill, shoots up a ramp, flies off its lip, lands, rolls
+// toward the park gate, and grows to fill
 // the screen with the site's own background before fading away.
 //
 // It plays once per browser session. The inline script in layout.tsx adds
@@ -43,9 +44,9 @@ function makeTerrain(width: number, height: number): Terrain {
   const amp = Math.min(height * 0.42, width * 0.3);
   const top = valley - amp; // the starting hill
   const lip = valley - amp * 0.55; // the ramp's lip
-  const dune = valley - amp * 0.28; // where the ball lands
+  const landing = valley - amp * 0.28; // where the ball lands
 
-  const [hillEnd, rampEnd, duneStart] = [0.42, 0.62, 0.76].map((f) => f * width);
+  const [hillEnd, rampEnd, landingStart] = [0.42, 0.62, 0.76].map((f) => f * width);
   const hillStart = 0.1 * width;
 
   const ground = (x: number) => {
@@ -59,13 +60,13 @@ function makeTerrain(width: number, height: number): Terrain {
       const u = (x - hillEnd) / (rampEnd - hillEnd);
       return valley - (valley - lip) * u * u;
     }
-    if (x < duneStart) {
-      const u = (x - rampEnd) / (duneStart - rampEnd);
-      return lip + (dune - lip) * (1 - Math.cos(Math.PI * u)) * 0.5;
+    if (x < landingStart) {
+      const u = (x - rampEnd) / (landingStart - rampEnd);
+      return lip + (landing - lip) * (1 - Math.cos(Math.PI * u)) * 0.5;
     }
-    // A long, low dune with a gentle swell
-    const u = (x - duneStart) / (width - duneStart);
-    return dune - amp * 0.05 * Math.sin(Math.PI * Math.min(u, 1));
+    // A long, low hill with a gentle swell
+    const u = (x - landingStart) / (width - landingStart);
+    return landing - amp * 0.05 * Math.sin(Math.PI * Math.min(u, 1));
   };
 
   return {
@@ -81,67 +82,93 @@ function makeTerrain(width: number, height: number): Terrain {
   };
 }
 
-// The still scenery, drawn once per screen size
+// The still scenery, drawn once per screen size: the park on a spring
+// morning, in the same colors as the site's dawn sky (globals.css)
 function drawScene(ctx: CanvasRenderingContext2D, t: Terrain) {
   const { width: w, height: h, valley, amp } = t;
 
   const sky = ctx.createLinearGradient(0, 0, 0, h);
-  sky.addColorStop(0, "#c9c3e6"); // lavender
-  sky.addColorStop(0.38, "#eac6da"); // pink
-  sky.addColorStop(0.62, "#f6cfc3"); // peach
-  sky.addColorStop(0.85, "#fbe3c6"); // pale gold
+  sky.addColorStop(0, "#bcdbea"); // pale blue
+  sky.addColorStop(0.55, "#e3ece4"); // misty green
+  sky.addColorStop(1, "#f8e4cb"); // warm morning light
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, w, h);
 
-  // The setting sun, with a soft glow
-  const sunX = w * 0.7;
+  // The rising sun, with a soft glow
+  const sunX = w * 0.72;
   const sunY = valley - amp * 1.15;
-  const sunR = Math.min(w, h) * 0.11;
-  const glow = ctx.createRadialGradient(sunX, sunY, sunR * 0.6, sunX, sunY, sunR * 3);
-  glow.addColorStop(0, "rgb(255 236 214 / 0.55)");
-  glow.addColorStop(1, "rgb(255 236 214 / 0)");
+  const sunR = Math.min(w, h) * 0.09;
+  const glow = ctx.createRadialGradient(sunX, sunY, sunR * 0.6, sunX, sunY, sunR * 3.2);
+  glow.addColorStop(0, "rgb(255 240 210 / 0.6)");
+  glow.addColorStop(1, "rgb(255 240 210 / 0)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, w, h);
-  ctx.fillStyle = "#fff0dc";
+  ctx.fillStyle = "#fff6dc";
   ctx.beginPath();
   ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2);
   ctx.fill();
 
-  // Far and middle dunes: gentle waves in dusty rose and sand
-  const dunes = (base: number, swell: number, waves: number, phase: number, color: string) => {
+  // A few soft clouds
+  const s = Math.min(w, h);
+  ctx.fillStyle = "rgb(255 255 255 / 0.8)";
+  for (const [cx, cy, size] of [[0.18, 0.16, 1], [0.5, 0.1, 0.7], [0.86, 0.22, 0.9]]) {
+    const x = w * cx;
+    const y = h * cy;
+    const k = s * 0.05 * size;
+    ctx.beginPath();
+    ctx.ellipse(x, y, k * 2.4, k * 0.6, 0, 0, Math.PI * 2);
+    ctx.arc(x - k, y - k * 0.35, k * 0.8, 0, Math.PI * 2);
+    ctx.arc(x + k * 0.1, y - k * 0.8, k * 1.05, 0, Math.PI * 2);
+    ctx.arc(x + k * 1.2, y - k * 0.25, k * 0.7, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Far and middle hills, each with a line of round treetops
+  const hills = (base: number, swell: number, waves: number, phase: number, color: string, trees: string) => {
+    const at = (x: number) => base - swell * (0.5 + 0.5 * Math.sin((x / w) * Math.PI * waves + phase));
+    ctx.fillStyle = trees;
+    for (let x = w * 0.05; x < w; x += w * 0.17) {
+      const r = s * 0.035;
+      ctx.beginPath();
+      ctx.arc(x, at(x) - r * 0.4, r, 0, Math.PI * 2);
+      ctx.arc(x + r * 1.1, at(x + r) - r * 0.1, r * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    }
     ctx.fillStyle = color;
     ctx.beginPath();
     ctx.moveTo(0, h);
-    for (let x = 0; x <= w; x += 8) {
-      ctx.lineTo(x, base - swell * (0.5 + 0.5 * Math.sin((x / w) * Math.PI * waves + phase)));
-    }
+    for (let x = 0; x <= w; x += 8) ctx.lineTo(x, at(x));
     ctx.lineTo(w, h);
     ctx.fill();
   };
-  dunes(valley - amp * 0.62, amp * 0.3, 2.2, 0.6, "rgb(222 180 186 / 0.6)");
-  dunes(valley - amp * 0.3, amp * 0.25, 1.6, 2.4, "rgb(236 198 176 / 0.75)");
+  hills(valley - amp * 0.62, amp * 0.3, 2.2, 0.6, "#c3d8cc", "#b0cbb9");
+  hills(valley - amp * 0.3, amp * 0.25, 1.6, 2.4, "#abcb9d", "#95bb86");
 
-  // A small cactus on the far dunes
-  const cx = w * 0.86;
-  const cy = valley - amp * 0.5;
-  const s = Math.min(w, h) * 0.05;
-  ctx.strokeStyle = "rgb(176 140 150 / 0.7)";
-  ctx.lineCap = "round";
-  ctx.lineWidth = s * 0.22;
+  // The park gate on the far hill, which the ball rolls through
+  const gateX = w * 0.88;
+  const gateW = Math.max(s * 0.16, 60);
+  const pillarH = s * 0.2;
+  const pillarW = s * 0.03;
+  for (const px of [gateX - gateW / 2, gateX + gateW / 2]) {
+    const py = t.ground(px);
+    ctx.fillStyle = "#ddd6c7";
+    ctx.fillRect(px - pillarW / 2, py - pillarH, pillarW, pillarH + 4);
+    ctx.fillStyle = "#bbb2a0";
+    ctx.fillRect(px - pillarW * 0.65, py - pillarH - pillarW * 0.35, pillarW * 1.3, pillarW * 0.35);
+  }
+  ctx.strokeStyle = "#59605d";
+  ctx.lineWidth = Math.max(2, s * 0.006);
   ctx.beginPath();
-  ctx.moveTo(cx, cy);
-  ctx.lineTo(cx, cy - s);
-  ctx.moveTo(cx, cy - s * 0.45);
-  ctx.quadraticCurveTo(cx - s * 0.35, cy - s * 0.45, cx - s * 0.35, cy - s * 0.75);
-  ctx.moveTo(cx, cy - s * 0.6);
-  ctx.quadraticCurveTo(cx + s * 0.32, cy - s * 0.6, cx + s * 0.32, cy - s * 0.85);
+  const archY = t.ground(gateX) - pillarH;
+  ctx.moveTo(gateX - gateW / 2 + pillarW / 2, archY);
+  ctx.quadraticCurveTo(gateX, archY - gateW * 0.55, gateX + gateW / 2 - pillarW / 2, archY);
   ctx.stroke();
 
   // The ball's ground, in front of everything
-  const sand = ctx.createLinearGradient(0, h * 0.4, 0, h);
-  sand.addColorStop(0, "#f1d5b4");
-  sand.addColorStop(1, "#e9c3a0");
-  ctx.fillStyle = sand;
+  const grass = ctx.createLinearGradient(0, h * 0.4, 0, h);
+  grass.addColorStop(0, "#9cc27d");
+  grass.addColorStop(1, "#88b06b");
+  ctx.fillStyle = grass;
   ctx.beginPath();
   ctx.moveTo(0, h);
   for (let x = 0; x <= w; x += 4) ctx.lineTo(x, t.ground(x));
@@ -183,7 +210,7 @@ export default function Intro() {
 
     // The page's background, as numbers, so the expanding ball can blend into it
     const background = (getComputedStyle(document.body).backgroundColor.match(/[\d.]+/g) ?? ["247", "246", "243"]).slice(0, 3).map(Number);
-    const ballTone = [250, 238, 230];
+    const ballTone = [217, 119, 63];
     const mix = (u: number) => ballTone.map((c, i) => Math.round(c + (background[i] - c) * u)).join(" ");
     const r = terrain.radius;
 
@@ -228,7 +255,7 @@ export default function Intro() {
         cy += vy * dt;
         spin += (vx * dt) / r;
         if (vy > 0 && cy + r >= terrain.ground(cx)) {
-          // Touch down and keep rolling along the dune, slowing to a stop
+          // Touch down and keep rolling along the hill, slowing to a stop
           phase = "land";
           landedAt = performance.now();
           x = cx;
@@ -271,8 +298,8 @@ export default function Intro() {
         const { x: tx, y: ty } = trail[i];
         const size = r * (0.5 + 0.55 * u);
         const glow = ctx!.createRadialGradient(tx, ty, 0, tx, ty, size);
-        glow.addColorStop(0, `rgb(255 248 240 / ${0.16 * u * (1 - grow)})`);
-        glow.addColorStop(1, "rgb(255 248 240 / 0)");
+        glow.addColorStop(0, `rgb(255 244 228 / ${0.16 * u * (1 - grow)})`);
+        glow.addColorStop(1, "rgb(255 244 228 / 0)");
         ctx!.fillStyle = glow;
         ctx!.beginPath();
         ctx!.arc(tx, ty, size, 0, Math.PI * 2);
@@ -283,7 +310,7 @@ export default function Intro() {
       if (grow === 0) {
         const gy = terrain.ground(cx);
         const lift = Math.max(0, gy - (cy + r));
-        ctx!.fillStyle = `rgb(150 110 100 / ${0.18 * Math.max(0, 1 - lift / (h * 0.3))})`;
+        ctx!.fillStyle = `rgb(60 90 50 / ${0.2 * Math.max(0, 1 - lift / (h * 0.3))})`;
         ctx!.beginPath();
         ctx!.ellipse(cx, gy, r * 1.1, r * 0.3, 0, 0, Math.PI * 2);
         ctx!.fill();
@@ -305,15 +332,15 @@ export default function Intro() {
       if (growing) {
         // Blends from the ball's colour into the page's, with a soft edge
         const fill = ctx!.createRadialGradient(0, 0, 0, 0, 0, radius);
-        const colour = mix(Math.min(grow * 1.6, 1));
+        const colour = mix(Math.min(grow * 2.4, 1));
         fill.addColorStop(0, `rgb(${colour})`);
         fill.addColorStop(1 - FEATHER, `rgb(${colour})`);
         fill.addColorStop(1, `rgb(${colour} / 0)`);
         ctx!.fillStyle = fill;
       } else {
         const shade = ctx!.createRadialGradient(-r * 0.35, -r * 0.35, r * 0.1, 0, 0, r);
-        shade.addColorStop(0, "#fffdf9");
-        shade.addColorStop(1, "#ecc9bb");
+        shade.addColorStop(0, "#f0a26a");
+        shade.addColorStop(1, "#c7622e");
         ctx!.fillStyle = shade;
       }
       ctx!.beginPath();
@@ -321,14 +348,23 @@ export default function Intro() {
       ctx!.fill();
       if (!growing) {
         // A faint rim, so the ball still reads in front of the pale sun
-        ctx!.strokeStyle = "rgb(190 140 135 / 0.35)";
+        ctx!.strokeStyle = "rgb(120 55 25 / 0.35)";
         ctx!.lineWidth = 1;
         ctx!.stroke();
+        // Basketball seams, turning as it rolls
+        ctx!.clip();
         ctx!.rotate(spin);
-        ctx!.strokeStyle = "rgb(214 170 160 / 0.6)";
-        ctx!.lineWidth = r * 0.16;
+        ctx!.strokeStyle = "rgb(80 35 15 / 0.55)";
+        ctx!.lineWidth = r * 0.12;
         ctx!.beginPath();
-        ctx!.arc(0, 0, r * 0.62, -0.6, 0.6);
+        ctx!.moveTo(-r, 0);
+        ctx!.lineTo(r, 0);
+        ctx!.moveTo(0, -r);
+        ctx!.lineTo(0, r);
+        ctx!.moveTo(-r * 0.7, -r * 0.7);
+        ctx!.quadraticCurveTo(-r * 0.15, 0, -r * 0.7, r * 0.7);
+        ctx!.moveTo(r * 0.7, -r * 0.7);
+        ctx!.quadraticCurveTo(r * 0.15, 0, r * 0.7, r * 0.7);
         ctx!.stroke();
       }
       ctx!.restore();

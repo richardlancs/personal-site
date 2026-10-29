@@ -24,6 +24,14 @@ export type SkillGroup = {
   skills: string[];
 };
 
+// Each interest gets its own small illustrated spot in the park; `scene`
+// picks which one (see components/park/InterestScene.tsx).
+export type Interest = {
+  name: string;
+  description: string;
+  scene: "basketball" | "badminton" | "chess" | "poker";
+};
+
 export const profile = {
   name: "Richard Lan",
   headline: "Computer Science Student at the University of Waterloo",
@@ -110,6 +118,33 @@ export const experience: Experience[] = [
       "Focusing on data structures and algorithms, object-oriented programming, and full-stack development.",
       "Exploring AI and machine learning alongside core computer science fundamentals.",
     ],
+  },
+];
+
+export const interests: Interest[] = [
+  {
+    name: "Basketball",
+    scene: "basketball",
+    description:
+      "One of the ways I stay active, and an easy way to get my competitive side out.",
+  },
+  {
+    name: "Badminton",
+    scene: "badminton",
+    description:
+      "My other court sport. Rallies are fast, so it comes down to footwork and reading where the shuttle is going next.",
+  },
+  {
+    name: "Chess",
+    scene: "chess",
+    description:
+      "A slower kind of competition: planning a few moves ahead and working out what the other player is after.",
+  },
+  {
+    name: "Poker",
+    scene: "poker",
+    description:
+      "Poker has taught me to think in probabilities and to make calm decisions with incomplete information.",
   },
 ];
 

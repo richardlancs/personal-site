@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Intro from "./components/Intro";
+import { WALK_CLASS, WALK_QUERY } from "./components/park/walk";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -16,6 +17,10 @@ const introScript = `(function(){try{if(!sessionStorage.getItem("intro-seen")&&!
 
 const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;
 
+// Also before the first paint: pick the sideways park walk on screens that
+// get it (components/park/ParkWalk.tsx), so the layout doesn't jump.
+const walkScript = `(function(){try{if(matchMedia(${JSON.stringify(WALK_QUERY)}).matches)document.documentElement.classList.add(${JSON.stringify(WALK_CLASS)})}catch(e){}})()`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
@@ -28,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script dangerouslySetInnerHTML={{ __html: introScript }} />
+        <script dangerouslySetInnerHTML={{ __html: walkScript }} />
       </head>
       <body className="min-h-full flex flex-col">
         <Intro />

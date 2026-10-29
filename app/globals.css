@@ -1,36 +1,93 @@
 @import "tailwindcss";
 
 /*
+  `walk:` applies while the park is walked sideways (html.walk-on, set by
+  components/park/ParkWalk.tsx on big enough screens).
+*/
+@custom-variant walk (&:where(.walk-on *));
+
+/*
   Color tokens. Change these to restyle the whole site.
-  The palette is layered neutrals: sections alternate between slightly
-  different tones so the page feels dimensional without heavy shadows.
-  The light theme is the default; <html data-theme="dark"> switches it.
+  The site is a storybook park: soft greens, warm wood and paper, and a sky
+  that changes with the time of day. The light theme is daytime, the dark
+  theme is the same park at night (<html data-theme="dark">).
 */
 :root {
   color-scheme: light;
 
-  --background: #f7f6f3; /* main: warm off-white */
-  --hero-top: #fcfbf9; /* top of the hero's faint gradient */
-  --surface: #efede9; /* alternate sections: soft warm gray */
-  --tint: #dce3e8; /* soft blue-gray behind icons and graphics */
-  --card: rgb(255 255 255 / 0.7); /* grouped surfaces: semi-translucent */
-  --card-hover: #ffffff;
-  --foreground: #1d1f22; /* primary text: charcoal */
-  --muted: #62666d; /* secondary text (readable on every section tone) */
-  --border: rgb(29 31 34 / 0.09);
-  --accent: #3d6a96; /* restrained cool blue */
-  --accent-hover: #2f5679;
-  --nav: rgb(247 246 243 / 0.8);
+  /* How far through the park the visitor is, 0 to 1 (set by ParkWalk) */
+  --p: 0;
 
-  /*
-    Background washes (body::before): three soft, still pools of colour
-    behind the page, in the palette's own pastels. Text stays at 4.5:1 or
-    better even at a wash's centre.
-  */
-  --wash-1: #537a91; /* steel blue */
-  --wash-2: #e0a878; /* peach */
-  --wash-3: #9d90d8; /* lavender */
-  --wash-strength: 10%;
+  --background: #f4f1e8; /* page base; mostly hidden behind the sky */
+  --paper: rgb(252 249 241 / 0.94); /* cards */
+  --paper-edge: rgb(110 86 52 / 0.16);
+  --foreground: #2a2e29; /* primary text: soft charcoal */
+  --muted: #565b53; /* secondary text, readable on paper and every sky */
+  --border: rgb(42 46 41 / 0.12);
+  --accent: #3b6849; /* links: leaf green */
+  --accent-hover: #2b4f37;
+  --warm: #9c4f27; /* small labels: terracotta */
+  --nav: rgb(250 247 239 / 0.8);
+
+  /* Skies, from morning to dusk. Crossfaded by --p (see "Sky" below). */
+  --sky-dawn: linear-gradient(#bcdbea, #e3ece4 55%, #f8e4cb);
+  --sky-day: linear-gradient(#9fcae5, #d2e7ef 55%, #edf1e0);
+  --sky-golden: linear-gradient(#b4c3d9, #f0cfa6 55%, #f7e0bb);
+  --sky-dusk: linear-gradient(#8f87b8, #d5a3b2 55%, #f0c3a4);
+  --sky-night: none;
+  --cloud: rgb(255 255 255 / 0.82);
+  --hill-far: #c3d8cc;
+  --hill-mid: #abcb9d;
+  --hill-tree: #95bb86;
+
+  /* Scenery */
+  --grass-back: #b5d197;
+  --grass: #9cc27d;
+  --grass-front: #88b06b;
+  --path: #ead7b0;
+  --leaf-light: #bad99c;
+  --leaf: #8fba74;
+  --leaf-dark: #6c9a5a;
+  --trunk: #8b6a50;
+  --shadow: rgb(60 90 50 / 0.18);
+  --wood-light: #c3976a;
+  --wood: #8c623f; /* also the sign plank: cream text stays above 4.5:1 */
+  --wood-dark: #74502f;
+  --plank-text: #fff7e8;
+  --cork: #d9bc93;
+  --stone: #ddd6c7;
+  --stone-dark: #bbb2a0;
+  --metal: #59605d;
+  --fence: #f1e9d8;
+  --soil: #7d5f47;
+  --lamp: #f3e8c8;
+  --lamp-light: #ffe6a6;
+  --glow: 0; /* lamp light: off by day */
+  --firefly: #f6e6a0;
+  --petal-pink: #f0b4c2;
+  --petal-yellow: #f2d985;
+  --petal-white: #fbf6ea;
+  --petal-center: #d99a4a;
+  --sunflower: #efc55a;
+  --sunflower-center: #8a5a33;
+  --can: #7fa3b5;
+  --mailbox: #c4664a;
+  --ball: #d9773f;
+  --ball-seam: rgb(80 35 15 / 0.55);
+  --court: #c9a07d;
+  --court-line: rgb(255 250 240 / 0.8);
+  --backboard: #f8f4ea;
+  --square-light: #f0e7d3;
+  --square-dark: #9c8a71;
+  --piece-light: #fcf8ef;
+  --piece-dark: #3a3834;
+  --card-face: #fdfaf3;
+  --suit-red: #c2453b;
+  --chip-red: #c65b4c;
+  --chip-blue: #4f7ca3;
+
+  /* Ground strip height in the stacked layout (taller while walking) */
+  --ground-h: 64px;
 
   /* Theme toggle: pastel peach with a warm sun */
   --toggle-bg: #f5e8db;
@@ -38,27 +95,67 @@
   --toggle-icon: #a86b32;
 }
 
-/* Dark theme: layered charcoal and blue-gray, never pure black */
+/* Night in the park: deep blue sky, lamps lit, never pure black */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
-  --background: #1b1c1f;
-  --hero-top: #232428;
-  --surface: #222327;
-  --tint: #2a3138;
-  --card: rgb(255 255 255 / 0.04);
-  --card-hover: rgb(255 255 255 / 0.08);
-  --foreground: #ecebe8;
-  --muted: #a3a6ad;
-  --border: rgb(255 255 255 / 0.08);
-  --accent: #9db8d9; /* soft pastel blue */
-  --accent-hover: #bccfe6;
-  --nav: rgb(27 28 31 / 0.78);
+  --background: #1a2133;
+  --paper: rgb(32 38 44 / 0.93);
+  --paper-edge: rgb(255 255 255 / 0.09);
+  --foreground: #ece6d8;
+  --muted: #b2b5aa;
+  --border: rgb(255 255 255 / 0.1);
+  --accent: #a6cfa4;
+  --accent-hover: #c6e3c2;
+  --warm: #e5a57c;
+  --nav: rgb(26 32 46 / 0.8);
 
-  --wash-1: #9db8d9;
-  --wash-2: #e0b48c;
-  --wash-3: #c9bff2;
-  --wash-strength: 7%;
+  --sky-night: linear-gradient(#131b2f, #223051 55%, #3a4569);
+  --cloud: rgb(170 182 214 / 0.16);
+  --hill-far: #253346;
+  --hill-mid: #20362f;
+  --hill-tree: #1b2e29;
+
+  --grass-back: #2d4637;
+  --grass: #263d30;
+  --grass-front: #1f3328;
+  --path: #47473b;
+  --leaf-light: #3f6551;
+  --leaf: #2f5141;
+  --leaf-dark: #244033;
+  --trunk: #4b3b30;
+  --shadow: rgb(0 0 0 / 0.25);
+  --wood-light: #7a5d45;
+  --wood: #614733;
+  --wood-dark: #503a29;
+  --plank-text: #f6ead6;
+  --cork: #54463a;
+  --stone: #5d5f5c;
+  --stone-dark: #474945;
+  --metal: #8b928e;
+  --fence: #6a6a60;
+  --soil: #3a2f27;
+  --lamp: #ffe3a0;
+  --glow: 1;
+  --firefly: #fff0a8;
+  --petal-pink: #b98593;
+  --petal-yellow: #c4ad68;
+  --petal-white: #c9c4b6;
+  --petal-center: #a77a40;
+  --sunflower: #bf9d48;
+  --sunflower-center: #5e3e25;
+  --can: #4b6573;
+  --mailbox: #8f4b38;
+  --ball: #b9622f;
+  --court: #5b4a3e;
+  --court-line: rgb(255 250 240 / 0.45);
+  --backboard: #c9c4b8;
+  --square-light: #8b8574;
+  --square-dark: #4a4338;
+  --piece-light: #e9e3d4;
+  --piece-dark: #1f1e1b;
+  --card-face: #e8e2d4;
+  --suit-red: #b8463c;
 
   /* Theme toggle: pastel lavender with a soft moon */
   --toggle-bg: rgb(201 191 242 / 0.12);
@@ -66,19 +163,18 @@
   --toggle-icon: #c9bff2;
 }
 
-/* Makes the tokens usable as Tailwind classes, e.g. bg-surface, text-muted */
+/* Makes the tokens usable as Tailwind classes, e.g. bg-paper, text-muted */
 @theme inline {
   --color-background: var(--background);
-  --color-hero-top: var(--hero-top);
-  --color-surface: var(--surface);
-  --color-tint: var(--tint);
-  --color-card: var(--card);
-  --color-card-hover: var(--card-hover);
+  --color-paper: var(--paper);
+  --color-paper-edge: var(--paper-edge);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
+  --color-warm: var(--warm);
+  --color-leaf-dark: var(--leaf-dark);
   --color-nav: var(--nav);
   --color-toggle-bg: var(--toggle-bg);
   --color-toggle-bg-hover: var(--toggle-bg-hover);
@@ -86,18 +182,12 @@
 
   /* System fonts: San Francisco on Apple devices, native fonts elsewhere */
   --font-sans:
-    -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
-
-/*
-  Registering --hero-top as a color lets the browser animate it, so the
-  hero's gradient fades between themes along with everything else.
-*/
-@property --hero-top {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: #fcfbf9;
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  /* Headings: a bookish system serif for the storybook feel */
+  --font-display:
+    "Iowan Old Style", "New York", ui-serif, "Palatino Linotype", Palatino,
+    Georgia, serif;
 }
 
 html {
@@ -113,22 +203,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/*
-  The washes. Fixed, so they stay put while the sections scroll over them;
-  the sections' own backgrounds are see-through enough to let them show.
-*/
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(45% 40% at 12% 15%, color-mix(in oklab, var(--wash-1) var(--wash-strength), transparent), transparent),
-    radial-gradient(40% 45% at 90% 35%, color-mix(in oklab, var(--wash-2) var(--wash-strength), transparent), transparent),
-    radial-gradient(50% 40% at 45% 95%, color-mix(in oklab, var(--wash-3) var(--wash-strength), transparent), transparent);
-}
-
 ::selection {
   background: color-mix(in srgb, var(--accent) 22%, transparent);
 }
@@ -141,13 +215,396 @@ body::before {
 }
 
 /*
+  Sky (components/park/Sky.tsx). Fixed behind everything. The four daytime
+  skies are stacked and each fades in over the one before as --p grows, so
+  the walk goes morning → day → golden hour → dusk. The sun rises on the
+  left and sets on the right along an arc. At night the night sky covers
+  them all and the moon takes the sun's path.
+*/
+.sky {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sky-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.sky-dawn {
+  background: var(--sky-dawn);
+}
+.sky-day {
+  background: var(--sky-day);
+  opacity: clamp(0, calc(var(--p) * 3), 1);
+}
+.sky-golden {
+  background: var(--sky-golden);
+  opacity: clamp(0, calc(var(--p) * 3 - 1), 1);
+}
+.sky-dusk {
+  background: var(--sky-dusk);
+  opacity: clamp(0, calc(var(--p) * 3 - 2), 1);
+}
+
+.sky-night,
+.sky-stars,
+.sky-moon {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.sky-night {
+  background: var(--sky-night);
+}
+.sky-stars {
+  background-image:
+    radial-gradient(1.5px 1.5px at 8% 12%, #fff9, transparent),
+    radial-gradient(1px 1px at 18% 30%, #fff8, transparent),
+    radial-gradient(1.5px 1.5px at 27% 8%, #fffa, transparent),
+    radial-gradient(1px 1px at 36% 22%, #fff7, transparent),
+    radial-gradient(1.5px 1.5px at 47% 14%, #fff9, transparent),
+    radial-gradient(1px 1px at 55% 34%, #fff6, transparent),
+    radial-gradient(1.5px 1.5px at 64% 6%, #fffa, transparent),
+    radial-gradient(1px 1px at 72% 26%, #fff8, transparent),
+    radial-gradient(1.5px 1.5px at 81% 16%, #fff9, transparent),
+    radial-gradient(1px 1px at 90% 32%, #fff7, transparent),
+    radial-gradient(1.5px 1.5px at 95% 9%, #fffa, transparent),
+    radial-gradient(1px 1px at 4% 38%, #fff6, transparent);
+}
+
+.sky-sun,
+.sky-moon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  transform: translate(
+    calc(6vw + var(--p) * 80vw),
+    calc(48vh - sin(calc(var(--p) * 180deg)) * 38vh)
+  );
+}
+.sky-sun {
+  width: 16vmin;
+  height: 16vmin;
+  background: radial-gradient(
+    circle,
+    #fff6dc 0 34%,
+    rgb(255 236 200 / 0.5) 38%,
+    rgb(255 226 186 / 0) 70%
+  );
+  transition: opacity 0.4s ease;
+}
+.sky-moon {
+  width: 8vmin;
+  height: 8vmin;
+  box-shadow:
+    inset 2.2vmin -1vmin 0 0 #f3eddc,
+    0 0 5vmin rgb(243 237 220 / 0.18);
+}
+
+[data-theme="dark"] .sky-night,
+[data-theme="dark"] .sky-stars,
+[data-theme="dark"] .sky-moon {
+  opacity: 1;
+}
+[data-theme="dark"] .sky-sun {
+  opacity: 0;
+}
+
+.sky-clouds {
+  position: absolute;
+  top: 6vh;
+  left: 0;
+  width: 160vw;
+  height: 30vh;
+}
+.sky-hills {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+}
+.sky-hills-far {
+  width: 150vw;
+  height: 46vh;
+}
+.sky-hills-mid {
+  width: 170vw;
+  height: 40vh;
+}
+
+/*
+  The walk (components/park/ParkWalk.tsx).
+  Stacked layout by default: every section ("zone") is a block with its
+  content on top and its scene and ground beneath.
+*/
+.zone {
+  position: relative;
+}
+
+.zone-body {
+  position: relative;
+  z-index: 1;
+  max-width: 72rem;
+  margin-inline: auto;
+  padding: 7rem 1.5rem 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .zone-body {
+    padding: 8rem 2.5rem 3rem;
+  }
+}
+
+.zone-land {
+  position: relative;
+  height: clamp(170px, 42vw, 300px);
+}
+
+.zone-scene {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--ground-h) - 8px);
+  width: min(100%, 34rem);
+  height: calc(100% - var(--ground-h) + 8px);
+  transform: translateX(-50%);
+}
+
+.zone-scene svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.ground {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  width: 100%;
+  height: var(--ground-h);
+}
+
+/* The scene's own reveal must keep its centring transform */
+.zone-scene.reveal {
+  transform: translate(-50%, 10px);
+}
+.zone-scene.reveal.is-visible {
+  transform: translateX(-50%);
+}
+
+/*
+  Walking sideways: the track is pinned to the screen and slid left by
+  ParkWalk. Each zone is at least a screen wide; its content sits on the
+  left, vertically centred above the ground, and its scene stands on the
+  right (width set per zone with --scene-w).
+*/
+.walk-on {
+  --ground-h: clamp(84px, 16vh, 150px);
+}
+
+.walk-on .walk-viewport {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: clip;
+}
+
+.walk-on .walk-track {
+  position: relative;
+  display: flex;
+  width: max-content;
+  height: 100%;
+  will-change: transform;
+}
+
+.walk-on .zone {
+  flex: none;
+  width: max-content;
+  min-width: 100vw;
+  height: 100%;
+}
+
+.walk-on .zone-body {
+  display: flex;
+  height: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 5.5rem calc(var(--scene-w, 38vw) + 5vw) calc(var(--ground-h) + 2.5rem) 8vw;
+  /* A fallback for content taller than a short screen */
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+/* Centred, but never pushed off the top when there isn't room */
+.walk-on .zone-body > * {
+  margin-block: auto;
+}
+
+/* Grounded zones stand their content on the grass instead */
+.walk-on .zone-grounded .zone-body {
+  padding-bottom: calc(var(--ground-h) - 14px);
+}
+.walk-on .zone-grounded .zone-body > * {
+  margin-block: auto 0;
+}
+
+.walk-on .zone-land {
+  position: absolute;
+  inset: 0;
+  height: auto;
+  z-index: 0;
+}
+
+.walk-on .zone-scene,
+.walk-on .zone-scene.reveal,
+.walk-on .zone-scene.reveal.is-visible {
+  left: auto;
+  right: 3vw;
+  width: var(--scene-w, 38vw);
+  height: min(64vh, calc(var(--scene-w, 38vw) * 0.6));
+  transform: none;
+}
+.walk-on .zone-scene.reveal:not(.is-visible) {
+  transform: translateY(10px);
+}
+
+/* The far scenery drifts slowly as the walk goes on, for depth */
+.walk-on .sky-clouds {
+  transform: translateX(calc(var(--p) * -50vw));
+}
+.walk-on .sky-hills-far {
+  transform: translateX(calc(var(--p) * -40vw));
+}
+.walk-on .sky-hills-mid {
+  transform: translateX(calc(var(--p) * -60vw));
+}
+
+/* The hero's hint arrow points the way the walk goes */
+.walk-hint-arrow {
+  display: inline-block;
+}
+.walk-on .walk-hint-arrow {
+  transform: rotate(-90deg);
+}
+
+/* Navbar trail: fills as the visitor walks toward the far gate */
+.walk-progress {
+  position: absolute;
+  inset-inline: 0;
+  bottom: -1px;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.55;
+  transform: scaleX(var(--p));
+  transform-origin: left;
+}
+
+/*
+  Surfaces. Paper for cards, a carved wooden plank for each spot's sign,
+  and a cork notice board. A faint grain keeps them from looking flat.
+*/
+.paper {
+  border: 1px solid var(--paper-edge);
+  border-radius: 1.25rem;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .2 .1 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    var(--paper);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.4) inset,
+    0 14px 30px -18px rgb(50 40 20 / 0.35);
+}
+
+.plank {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.45rem;
+  background: linear-gradient(var(--wood), var(--wood-dark));
+  color: var(--plank-text);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.16),
+    0 2px 0 rgb(0 0 0 / 0.12);
+}
+
+.board {
+  padding: 1.25rem;
+  border: 8px solid var(--wood-light);
+  border-radius: 1.25rem;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .22 0 0 0 0 .1 .22 0 0 0 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    var(--cork);
+  box-shadow: 0 16px 34px -20px rgb(50 40 20 / 0.45);
+}
+
+@media (min-width: 640px) {
+  .board {
+    padding: 1.75rem;
+  }
+}
+
+/* A note pinned at a slight angle; it straightens and lifts on hover */
+.pinned {
+  position: relative;
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pinned::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #f19a8a, var(--chip-red) 60%);
+  box-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
+}
+@media (hover: hover) {
+  .pinned:hover {
+    transform: translateY(-3px);
+  }
+}
+
+/* Skills: a small leaf in place of a bullet */
+.leaf-bullet {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+.leaf-bullet::before {
+  content: "";
+  flex: none;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 0 70% 0 70%;
+  background: var(--leaf);
+  transform: translateY(-0.05rem);
+}
+
+/* Interests: each spot lifts a touch on hover */
+.interest {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (hover: hover) {
+  .interest:hover {
+    transform: translateY(-4px);
+  }
+}
+
+/*
   Theme change: <ThemeToggle> adds this class to <html> for a moment so
   every color fades to the new theme instead of switching instantly.
   The toggle icon is left out because it has its own animation below.
 */
 html.theme-transition {
   transition:
-    --hero-top 0.4s ease,
     background-color 0.4s ease,
     color 0.4s ease !important;
 }
@@ -157,6 +614,9 @@ html.theme-transition *:not(.theme-icon, .theme-icon *) {
     background-color 0.4s ease,
     color 0.4s ease,
     border-color 0.4s ease,
+    fill 0.4s ease,
+    stroke 0.4s ease,
+    opacity 0.4s ease,
     text-decoration-color 0.4s ease !important;
 }
 
@@ -236,18 +696,18 @@ html.theme-transition .hover-grow {
 }
 
 /*
-  Used by <Reveal>: hidden until it scrolls into view, then it rises and
-  comes into focus from a slight blur (a hint of motion blur). Ends on
-  `filter: none` so nothing is left filtered once it has arrived.
+  Used by <Reveal>: hidden until it comes into view, then it rises and
+  comes into focus from a slight blur. Ends on `filter: none` so nothing is
+  left filtered once it has arrived. --delay staggers it.
 */
 .reveal {
   opacity: 0;
   transform: translateY(10px);
   filter: blur(4px);
   transition:
-    opacity 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms),
+    filter 0.5s cubic-bezier(0.22, 1, 0.36, 1) var(--delay, 0ms);
 }
 
 .reveal.is-visible {
@@ -273,6 +733,155 @@ html.theme-transition .hover-grow {
 }
 
 /*
+  Scene motion: one small moment per scene, played once when it comes into
+  view. Each element is drawn in its resting place, and the animation only
+  says where it comes *from*, so without motion the picture is complete.
+*/
+.play-roll,
+.play-bounce,
+.play-fan,
+.play-nod,
+.play-swing,
+.play-flag {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.play-fan {
+  transform-origin: 50% 100%;
+  transform: rotate(var(--angle));
+}
+
+.play-swing,
+.play-flag {
+  transform-origin: 0% 50%;
+}
+
+.play-nod {
+  transform-origin: 50% 100%;
+}
+
+.is-visible .play-roll {
+  animation: roll 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.5s backwards;
+}
+@keyframes roll {
+  from {
+    transform: translateX(-150px) rotate(-420deg);
+  }
+}
+
+.is-visible .play-bounce {
+  animation: bounce 1.5s linear 0.4s backwards;
+}
+@keyframes bounce {
+  0% {
+    transform: translateY(-80px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  34% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  56% {
+    transform: translateY(-34px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  74% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  86% {
+    transform: translateY(-10px);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.is-visible .play-shuttle {
+  animation: shuttle 1.3s linear 0.4s backwards;
+}
+@keyframes shuttle {
+  0% {
+    transform: translate(-112px, 44px) rotate(-50deg);
+    animation-timing-function: cubic-bezier(0.2, 0.6, 0.4, 1);
+  }
+  55% {
+    transform: translate(-46px, -18px) rotate(-10deg);
+    animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.is-visible .play-slide {
+  animation: slide 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.6s backwards;
+}
+@keyframes slide {
+  from {
+    transform: translate(var(--from-x), var(--from-y));
+  }
+}
+
+.is-visible .play-fan {
+  animation: fan 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.5s backwards;
+}
+@keyframes fan {
+  from {
+    transform: rotate(0deg);
+  }
+}
+
+.is-visible .play-nod {
+  animation: nod 1.4s ease-in-out 0.5s backwards;
+}
+@keyframes nod {
+  0% {
+    transform: rotate(-8deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+.is-visible .play-swing {
+  animation: swing 1.2s ease-in-out 0.5s backwards;
+}
+@keyframes swing {
+  0% {
+    transform: rotate(-7deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+.is-visible .play-flag {
+  animation: flag 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.8s backwards;
+}
+@keyframes flag {
+  from {
+    transform: rotate(90deg);
+  }
+}
+
+/* Fireflies: faint at dusk, bright at night */
+.firefly {
+  opacity: calc(0.35 + var(--glow) * 0.65);
+  filter: drop-shadow(0 0 4px var(--firefly));
+}
+.is-visible .play-glow {
+  animation: glow 1.2s ease var(--delay, 0ms) backwards;
+}
+@keyframes glow {
+  from {
+    opacity: 0;
+  }
+}
+
+/*
   Intro (components/Intro.tsx). Hidden unless the script in layout.tsx put
   `intro` on <html>. The sky gradient shows from the first paint, before the
   canvas is drawn. If the script never finishes it (say JavaScript fails),
@@ -288,7 +897,7 @@ html.intro .intro-overlay {
   inset: 0;
   z-index: 100;
   cursor: pointer;
-  background: linear-gradient(#c9c3e6, #eac6da 38%, #f6cfc3 62%, #fbe3c6 85%);
+  background: linear-gradient(#bcdbea, #e3ece4 55%, #f8e4cb);
   transition: opacity 0.45s ease;
   animation: intro-failsafe 0.45s ease 8s forwards;
 }
@@ -315,21 +924,35 @@ html.intro:not(.intro-out) .enter {
   html {
     scroll-behavior: auto;
   }
-  .reveal {
+  .reveal,
+  .zone-scene.reveal {
     opacity: 1;
-    transform: none;
     filter: none;
     transition: none;
   }
-  .enter {
+  .reveal:not(.zone-scene) {
+    transform: none;
+  }
+  .zone-scene.reveal {
+    transform: translateX(-50%);
+  }
+  .enter,
+  .is-visible [class*="play-"] {
     animation: none;
   }
   .theme-icon,
-  .theme-icon * {
+  .theme-icon *,
+  .pinned,
+  .interest {
     transition: none;
   }
   .hover-grow:hover,
-  .hover-grow:active {
+  .hover-grow:active,
+  .pinned:hover,
+  .interest:hover {
     transform: none;
+  }
+  .pinned:hover {
+    transform: rotate(var(--tilt, 0deg));
   }
 }
