@@ -36,8 +36,8 @@ const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 // The paths through the park, [x, z], and how wide they are
 const paths: { points: [number, number][]; width: number }[] = [
   { points: [[0, 26], [0, 15], [0, 9.5]], width: 3 },
-  { points: [[-5, 3], [-9, -1], [-12.2, -3.6]], width: 2 },
-  { points: [[-4, -1], [-9, -9], [-16, -19], [-21.5, -26.5]], width: 2.2 },
+  { points: [[-4, 2.5], [-6.5, -1], [-7.7, -3.6]], width: 2 },
+  { points: [[3, -2], [8, -11], [12.5, -19.5], [15.2, -25.6]], width: 2.2 },
   { points: [[0, -2], [1, -14], [3, -30], [4, -45]], width: 2.6 },
   { points: [[4, -1], [11, -9], [19, -17], [24.5, -23]], width: 2.2 },
   { points: [[5, 6], [8.3, 2.9]], width: 1.6 },
@@ -46,8 +46,8 @@ const PLAZA = { x: 0, z: 4, r: 6.6 };
 
 // Where the places stand, and where their name tags go
 export const parkPlaces = {
-  library: { pos: [-14, 0, -6] as const, ry: 0.75, label: [-14, 7, -6] as const, hit: [8, 6.5, 6] as const, light: [-11.5, 2.5, -3.5] as const },
-  workshop: { pos: [-24, 0, -30] as const, ry: 0.6, label: [-22, 2.6, -26] as const, hit: [13, 7, 8.5] as const, light: [-21, 3, -25] as const },
+  library: { pos: [-10, 0, -6.3] as const, ry: 0.75, label: [-7.4, 3.4, -3.2] as const, hit: [8, 6.5, 6] as const, light: [-7.5, 2.5, -3.8] as const },
+  workshop: { pos: [17.5, 0, -29] as const, ry: -0.6, label: [17.5, 8.2, -29] as const, hit: [13, 7, 8.5] as const, light: [15.4, 3, -24] as const },
   station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 20, 7] as const, light: [4, 4, -44] as const },
   arcade: { pos: [27, 0, -26] as const, ry: -0.7, label: [27, 8, -26] as const, hit: [10.5, 7, 8.5] as const, light: [24, 3, -22] as const },
   booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.4, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
@@ -61,8 +61,8 @@ function onPath(x: number, z: number, margin = 0) {
 
 // Footprints the grass and trees keep out of
 const footprints: [number, number, number][] = [
-  [-14, -6, 5],
-  [-24, -30, 8],
+  [-10, -6.3, 5],
+  [17.5, -29, 8],
   [4, -50, 9],
   [27, -26, 7],
   [9.5, 1.5, 1.2],
@@ -148,7 +148,7 @@ function buildPark(quality: "high" | "low") {
     root.add(lamp);
   }
   const sign = buildSignpost([
-    { ja: "工房", label: "Workshop", angle: 2.23 },
+    { ja: "工房", label: "Workshop", angle: 1.0 },
     { ja: "駅", label: "Station", angle: 1.43 },
     { ja: "ゲーム", label: "Arcade", angle: 0.68 },
     { ja: "東屋", label: "Pavilion", angle: 2.82 },
@@ -170,17 +170,17 @@ function buildPark(quality: "high" | "low") {
     ["zelkova", -7.8, 19.5, 1.2],
     ["maple", 8.2, 18.8, 1.1],
     ["zelkova", -17, 6, 1],
-    ["ginkgo", -4.8, -6.8, 0.9],
+    ["ginkgo", -3.6, -10.5, 0.9],
     ["zelkova", -24, -9, 1.1],
     ["zelkova", 14.5, 10.5, 1],
     ["zelkova", 18, -3.5, 1.15],
     ["maple", 8, -14.5, 1],
     ["maple", -11.5, 12.5, 0.9],
-    ["zelkova", 10, -22, 1],
+    ["zelkova", 25, -14, 1],
     ["zelkova", -8.5, -28, 1.1],
     ["ginkgo", -14, -16, 1],
     ["ginkgo", 6.5, -31, 1],
-    ["zelkova", 16, -34, 1.2],
+    ["zelkova", 23, -40, 1.2],
     ["zelkova", -31, -18, 1.2],
     ["zelkova", 33, -8, 1.2],
     ["pine", -36, 4, 1],
@@ -276,10 +276,10 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   const lights = useRef<Record<string, THREE.PointLight | null>>({});
   const kick = useRef({ swing: 0, sign: 0 });
   const water = useRef(0); // the fountain, 0 off to 1 running
+  const fountainLight = useRef<THREE.PointLight>(null);
 
   useEffect(() => {
     for (const [id, p] of Object.entries(parkPlaces)) anchors.set(`park:${id}`, v(p.label[0], p.label[1], p.label[2]));
-    anchors.set("park:fountain", v(PLAZA.x + 2.4, 1.6, PLAZA.z + 1.2));
   }, []);
 
   useFrame(({ camera, clock }, dt) => {
@@ -314,6 +314,10 @@ export default function Park({ active, quality, navigate }: SceneProps) {
     const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
     water.current = reduce ? (running ? 1 : 0) : THREE.MathUtils.damp(water.current, running ? 1 : 0, running ? 2.6 : 1.1, dt);
     built.fountain.update(water.current, t);
+    // Pointing at the fountain warms its stone, like the places' lights
+    const lit = hover === "park:fountain" ? 0.22 : 0;
+    built.fountain.stone.emissiveIntensity = THREE.MathUtils.damp(built.fountain.stone.emissiveIntensity, lit, 6, dt);
+    if (fountainLight.current) fountainLight.current.intensity = THREE.MathUtils.damp(fountainLight.current.intensity, lit ? 6 : 0, 6, dt);
     // Light comes up on the place you point at
     for (const [id, light] of Object.entries(lights.current)) {
       if (!light) continue;
@@ -344,6 +348,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
             onSelect={() => navigate(id === "board" ? "/map" : `/${{ library: "about", workshop: "projects", station: "experience", arcade: "interests", booth: "contact" }[id]}`)}
           />
         ))}
+      <pointLight ref={fountainLight} position={[PLAZA.x + 0.8, 2.6, PLAZA.z + 2.4]} color="#ffcf8a" intensity={0} distance={8} decay={1.4} />
       {active && (
         <>
           {/* The basin's rim and the column, kept low so they don't catch clicks meant for the board behind */}

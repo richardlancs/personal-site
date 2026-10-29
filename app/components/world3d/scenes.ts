@@ -27,7 +27,7 @@ export type SceneDef = {
 export const scenes: Record<SceneId, SceneDef> = {
   park: {
     offset: [0, 0, 0],
-    home: { pos: [1.4, 2.3, 16.5], target: [0, 2.7, -6] },
+    home: { pos: [1.4, 2.3, 16.5], target: [0, 5.2, -6] },
     enter: { pos: [0.3, 1.45, 27], target: [0, 2.2, 8] },
     exit: { pos: [0.3, 1.45, 27], target: [0, 2.2, 8] },
     focus: {
@@ -113,10 +113,10 @@ export const scenes: Record<SceneId, SceneDef> = {
 // The camera's route from the park's main view to each place's door, in
 // park coordinates, and where it looks at the end
 export const routesFromPark: Partial<Record<SceneId, { path: V3[]; look: V3 }>> = {
-  workshop: { path: [[-2.5, 2.2, 7], [-9.5, 2.0, -8], [-18.5, 1.9, -21.5]], look: [-23.5, 2.1, -29] },
+  workshop: { path: [[2, 2.2, 7], [8, 2.0, -9], [13.2, 1.9, -19.5]], look: [15.6, 2.1, -26.5] },
   station: { path: [[0.9, 2.3, 3], [1.9, 2.5, -18], [3.5, 2.3, -36]], look: [4, 3.2, -47] },
   arcade: { path: [[5, 2.2, 6], [13.5, 2.0, -9.5], [22.5, 1.9, -20]], look: [27, 2.1, -25.5] },
-  library: { path: [[-3.6, 2.1, 9], [-8.6, 1.9, 0.5], [-11, 1.8, -2.9]], look: [-14, 1.7, -6] },
+  library: { path: [[-2.2, 2.1, 9], [-5.6, 1.9, 1.5], [-7.2, 1.8, -2.4]], look: [-10, 1.7, -6.3] },
   booth: { path: [[4.6, 2.0, 9.5], [7.6, 1.75, 5.2]], look: [9.5, 1.45, 1.6] },
 };
 

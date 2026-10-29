@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 // above: the same layout as the painting, folded flat
 const pins: Record<string, { x: number; y: number }> = {
   pavilion: { x: 16, y: 55.5 },
-  workshop: { x: 25, y: 23.5 },
+  workshop: { x: 66.7, y: 23.5 },
   station: { x: 52, y: 13 },
   arcade: { x: 81, y: 27 },
   booth: { x: 85, y: 60.5 },
@@ -39,7 +39,7 @@ export default function MapPage() {
             {/* Paths, from the steps up to the fountain and out to every place */}
             <g className="map-path">
               <path d="M300 352 C300 320 302 290 300 262" />
-              <path d="M300 236 C290 200 260 180 236 160 C200 130 170 100 150 80" />
+              <path d="M300 236 C318 190 360 135 400 92" />
               <path d="M300 236 C306 190 310 120 312 47" />
               <path d="M320 240 C380 220 430 160 470 100" />
               <path d="M326 250 C390 250 450 236 500 215" />
@@ -59,7 +59,7 @@ export default function MapPage() {
               {/* Pavilion: a tiled roof on posts */}
               <path d="M78 196 q18 -14 36 0 M84 196 v12 M108 196 v12 M84 208 h24" />
               {/* Workshop: a sawtooth roof */}
-              <path d="M134 90 v-12 l8 8 v-8 l8 8 v-8 l8 8 v-8 l8 8 v12 Z" />
+              <path d="M384 90 v-12 l8 8 v-8 l8 8 v-8 l8 8 v-8 l8 8 v12 Z" />
               {/* Station: the clock tower */}
               <path d="M305 60 v-22 l7 -9 l7 9 v22 Z" />
               <circle cx="312" cy="43" r="3.2" />

@@ -14,7 +14,7 @@ import Library from "./scenes/Library";
 import Park from "./scenes/Park";
 import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
-import { FOUNTAIN_MS, runFountain, useWorld, world } from "./store";
+import { useWorld, world } from "./store";
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
@@ -356,7 +356,10 @@ function LabelProjector({ active }: { active: SceneId }) {
         continue;
       }
       delete el.dataset.hidden;
-      el.style.transform = `translate3d(${((v.x + 1) / 2) * size.width}px, ${((1 - v.y) / 2) * size.height}px, 0)`;
+      // Keep the whole tag on screen, even for places at the edge of the view
+      const half = el.offsetWidth / 2 + 12;
+      const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, half, size.width - half);
+      el.style.transform = `translate3d(${x}px, ${((1 - v.y) / 2) * size.height}px, 0)`;
     }
   });
   return null;
@@ -396,36 +399,7 @@ function Labels({ active }: { active: SceneId }) {
           <span className="world-label-section">{place.section}</span>
         </Link>
       ))}
-      <FountainLabel on={hover === "park:fountain"} />
     </nav>
-  );
-}
-
-// The fountain's tag: not a place, just something to turn on
-function FountainLabel({ on }: { on: boolean }) {
-  const started = useWorld((s) => s.fountain);
-  const [stopped, setStopped] = useState(0); // the last run that has finished
-  const running = started > 0 && stopped !== started;
-  useEffect(() => {
-    if (!started) return;
-    const timer = window.setTimeout(() => setStopped(started), FOUNTAIN_MS);
-    return () => window.clearTimeout(timer);
-  }, [started]);
-  return (
-    <button
-      type="button"
-      data-anchor="park:fountain"
-      data-hidden=""
-      data-on={on || undefined}
-      aria-pressed={running}
-      className="world-label"
-      onClick={runFountain}
-      onFocus={() => world.set({ hover: "park:fountain" })}
-      onBlur={() => world.set({ hover: null })}
-    >
-      <span className="world-label-place">The fountain</span>
-      <span className="world-label-section">{running ? "Running" : "Turn it on"}</span>
-    </button>
   );
 }
 

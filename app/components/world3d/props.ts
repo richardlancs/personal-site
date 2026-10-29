@@ -322,10 +322,12 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
 
 export function buildFountain() {
   const g = new THREE.Group();
+  // Its own stone, so it can catch the light when pointed at
+  const stone = paint({ color: "#b4ab96", brush: 0.35, brushScale: 1.5, moss: 0.55, grime: 0.6, grimeHeight: 0.8, emissive: "#ffcf8a", emissiveIntensity: 0 });
   const outer = [v(3.0, 0, 0), v(3.15, 0.05, 0), v(3.18, 0.5, 0), v(3.05, 0.6, 0), v(2.85, 0.58, 0), v(2.82, 0.3, 0), v(0.1, 0.3, 0)].map((p) => new THREE.Vector2(p.x, p.y));
-  g.add(mesh(new THREE.LatheGeometry(outer, 40), M.stone()));
+  g.add(mesh(new THREE.LatheGeometry(outer, 40), stone));
   const column = [v(0.45, 0.3, 0), v(0.35, 0.5, 0), v(0.22, 0.6, 0), v(0.24, 1.3, 0), v(0.8, 1.42, 0), v(0.85, 1.55, 0), v(0.3, 1.5, 0), v(0.16, 1.7, 0), v(0.22, 1.85, 0), v(0.05, 2.05, 0)].map((p) => new THREE.Vector2(p.x, p.y));
-  g.add(mesh(new THREE.LatheGeometry(column, 24), M.stone()));
+  g.add(mesh(new THREE.LatheGeometry(column, 24), stone));
   const waterMat = waterMaterial();
   const water = new THREE.Mesh(new THREE.CircleGeometry(2.84, 40).rotateX(-Math.PI / 2), waterMat);
   water.position.y = 0.45;
@@ -394,7 +396,7 @@ export function buildFountain() {
     }
     dropGeo.attributes.position.needsUpdate = true;
   };
-  return { group: g, floating, update };
+  return { group: g, floating, update, stone };
 }
 
 // One leaf from the four in the fallen-leaves texture
