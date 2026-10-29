@@ -26,12 +26,12 @@ const when = (i: number) => {
 function rowTexture(i: number, selected: boolean) {
   const e = experience[i];
   return textPanel(`timetable-row-${i}-${selected}`, 512, 96, {
-    background: selected ? "#3f5a48" : "#22382b",
+    background: selected ? "#5d7b62" : "#22382b",
     padding: 16,
     valign: "middle",
     lines: [
-      { text: `${when(i)}    ${e.role}`, size: 26, color: selected ? "#fff3d6" : "#ece3c9", weight: 600, gap: 4 },
-      { text: e.organization, size: 20, color: selected ? "#f2c9a4" : "#c8c1a8" },
+      { text: `${when(i)}   ${e.role}`, size: e.role.length + when(i).length > 28 ? 21 : 25, color: selected ? "#fff6e0" : "#ece3c9", weight: 600, gap: 4 },
+      { text: e.organization, size: 19, color: selected ? "#ffd9b8" : "#c8c1a8" },
     ],
   });
 }

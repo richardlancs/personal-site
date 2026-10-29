@@ -47,7 +47,7 @@ const PLAZA = { x: 0, z: 4, r: 6.6 };
 // Where the places stand, and where their name tags go
 export const parkPlaces = {
   library: { pos: [-14, 0, -6] as const, ry: 0.75, label: [-14, 7, -6] as const, hit: [8, 6.5, 6] as const, light: [-11.5, 2.5, -3.5] as const },
-  workshop: { pos: [-24, 0, -30] as const, ry: 0.6, label: [-24, 8.6, -30] as const, hit: [13, 7, 8.5] as const, light: [-21, 3, -25] as const },
+  workshop: { pos: [-24, 0, -30] as const, ry: 0.6, label: [-22, 2.6, -26] as const, hit: [13, 7, 8.5] as const, light: [-21, 3, -25] as const },
   station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 20, 7] as const, light: [4, 4, -44] as const },
   arcade: { pos: [27, 0, -26] as const, ry: -0.7, label: [27, 8, -26] as const, hit: [10.5, 7, 8.5] as const, light: [24, 3, -22] as const },
   booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.4, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },

@@ -55,11 +55,11 @@ export const scenes: Record<SceneId, SceneDef> = {
   },
   station: {
     offset: [800, 0, 0],
-    home: { pos: [5.5, 2.55, 2.4], target: [-1.5, 1.9, -1.6] },
-    enter: { pos: [15, 2.4, 1.6], target: [4, 2.2, -0.5] },
-    exit: { pos: [15, 2.4, 1.6], target: [4, 2.2, -0.5] },
+    home: { pos: [6.2, 2.5, -0.5], target: [-2.2, 2.0, -2.6] },
+    enter: { pos: [15, 2.4, -0.6], target: [4, 2.2, -1.6] },
+    exit: { pos: [15, 2.4, -0.6], target: [4, 2.2, -1.6] },
     focus: {
-      timetable: { pos: [-0.55, 2.4, 1.1], target: [-2.2, 2.05, -2.85] },
+      timetable: { pos: [-1.6, 2.35, 1.25], target: [-2.25, 2.05, -2.85] },
     },
     frame: "left",
     threshold: "#f1dcae",

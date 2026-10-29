@@ -1,5 +1,8 @@
 # The world: progress log
 
+> Superseded by the real-time 3D world (`3d-progress-log.md`). Kept as the
+> record of the 2D layered-painting version.
+
 ## 2026-10-29: the park becomes a place you move through
 
 ### Baseline (before)

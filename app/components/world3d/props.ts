@@ -25,7 +25,7 @@ export const M = {
   redWood: () => mat("redWood", () => paint({ map: planks("red"), brush: 0.25, brushScale: 2, moss: 0.2, grime: 0.3 })),
   iron: () => mat("iron", () => paint({ color: "#3d3f38", brush: 0.3, brushScale: 3, rust: 0.6 })),
   rust: () => mat("rust", () => paint({ color: "#8a4b2c", brush: 0.4, brushScale: 3, rust: 0.8 })),
-  green: () => mat("green", () => paint({ map: enamel(140, 28, 34), brush: 0.2, brushScale: 2, rust: 0.22, grime: 0.5, moss: 0.2 })),
+  green: () => mat("green", () => paint({ map: enamel(140, 28, 34), brush: 0.2, brushScale: 2, rust: 0.1, grime: 0.5, moss: 0.2 })),
   stone: () => mat("stone", () => paint({ color: "#b4ab96", brush: 0.35, brushScale: 1.5, moss: 0.55, grime: 0.6, grimeHeight: 0.8 })),
   concrete: () => mat("concrete", () => paint({ color: "#a8a293", brush: 0.35, brushScale: 1.2, moss: 0.35, grime: 0.7, grimeHeight: 2 })),
   paving: () => mat("paving", () => paint({ map: flagstones(), brush: 0.18, brushScale: 0.6, side: THREE.DoubleSide })),

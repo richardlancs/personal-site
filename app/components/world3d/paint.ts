@@ -265,3 +265,8 @@ export function mesh(
   }
   return m;
 }
+
+// For checking the wind from the browser console in development
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  (window as unknown as { __wind: typeof windUniforms }).__wind = windUniforms;
+}

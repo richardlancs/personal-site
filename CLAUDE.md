@@ -59,25 +59,23 @@ Keep content/data separate from visual components where practical.
 
 ## Design Direction
 
-The site is a painted park in an abandoned, overgrown Japanese city, in
-late-afternoon autumn light. The park is one painting
-(`app/assets/park/park-v04.png`, from the versioned masters in
-`art/park/masters/`, history in `docs/art/park/`), cut into moving layers by
-`scripts/art/layers.mjs` (output in `app/assets/park/layers/`).
+The site is a small real-time 3D world: an abandoned, overgrown Japanese
+park and the places around it, in late-afternoon autumn light. It is built
+with three.js and React Three Fiber in `app/components/world3d/`, and every
+model and texture there is generated in code from fixed seeds (no downloaded
+models, no Blender). The painting `app/assets/park/park-v04.png` is the art
+reference, and the fallback when WebGL isn't available.
 
-The world (`app/components/world/World.tsx`) is mounted once in the root
-layout and stays on screen across pages; the URL decides where its camera
-looks. Painted objects are the navigation: the notice board opens the map
-(`/map`), and the pavilion (About), workshop (Projects, Skills), station
-(Experience), greenhouse (Interests) and phone booth (Contact) lead to their
-pages. `app/data/world.ts` holds their positions and cameras in painting
-pixels. Each place's page has its own object to read from (notebook,
-workbench, timetable, planting beds, directory card), in
-`app/components/locations/`. Progress and the art still needed:
-`docs/world/progress-log.md`.
+Six places, each its own 3D scene: the park (home; its notice board opens
+the map at `/map`), the workshop (Projects, Skills), the station
+(Experience), the arcade (Interests), the pavilion reading room (About) and
+the phone booth (Contact). The URL picks the place; `World3D.tsx` moves the
+camera there. Each page's HTML panel and its 3D objects share state through
+`world3d/store.ts`. Progress, decisions and limits:
+`docs/world/3d-progress-log.md`.
 
-On phones and portrait screens the painting is a band at the top that pans
-sideways in the park, above the introduction and a plain list of places.
+On phones and portrait screens the world is a band at the top of the page,
+with the page below it.
 
 The overall feeling should be:
 
@@ -87,10 +85,9 @@ The overall feeling should be:
 - polished
 - recruiter-friendly: content stays readable and easy to skim
 
-The painting is the artwork; don't redraw scenery in CSS or SVG. Changes
-to the painting go through the workflow in
-`docs/art/park/refinement-workflow.md`. Keep text on paper or open sky,
-never over busy illustration.
+Build scenery as 3D in `world3d/`, through the shared painted material
+(`paint.ts`), not as CSS or SVG. Keep text on paper or open sky, never over
+busy scenery. Real content stays in HTML.
 
 ---
 

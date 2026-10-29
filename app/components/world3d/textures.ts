@@ -723,3 +723,32 @@ export const softDot = () =>
     g.fillStyle = grad;
     g.fillRect(0, 0, 64, 64);
   });
+
+// Old glass in a window: small panes, a few still catching warm light
+// from inside, most dark, one or two broken, all of them dirty
+export const windowPanes = (lit: number) =>
+  texture(`panes-${lit}`, 128, 128, (g, r) => {
+    for (let y = 0; y < 2; y++)
+      for (let x = 0; x < 3; x++) {
+        const on = r() < lit;
+        const l = on ? r.range(62, 78) : r.range(16, 30);
+        const grad = g.createLinearGradient(0, y * 64, 0, y * 64 + 64);
+        grad.addColorStop(0, hsl(on ? 38 : 200, on ? 70 : 12, l + 6));
+        grad.addColorStop(1, hsl(on ? 30 : 200, on ? 65 : 12, l - 6));
+        g.fillStyle = grad;
+        g.fillRect(x * 42.7 + 2, y * 64 + 2, 38.7, 60);
+        if (r() < 0.18) {
+          g.fillStyle = "rgba(8,10,10,0.85)";
+          g.beginPath();
+          g.moveTo(x * 42.7 + r.range(4, 30), y * 64 + 2);
+          g.lineTo(x * 42.7 + 40, y * 64 + r.range(10, 50));
+          g.lineTo(x * 42.7 + 40, y * 64 + 2);
+          g.fill();
+        }
+      }
+    blotches(g, r, 128, 128, 16, ["rgba(120,100,60,0.3)", "rgba(40,50,40,0.3)"], [8, 30]);
+    g.fillStyle = "#2b2a24";
+    g.fillRect(41, 0, 3, 128);
+    g.fillRect(84, 0, 3, 128);
+    g.fillRect(0, 62, 128, 4);
+  });

@@ -3,7 +3,7 @@ import { at, blob, box, buildBush, buildVine, merge, tube } from "./geometry";
 import { mesh, paint } from "./paint";
 import { M, mat } from "./props";
 import { rng } from "./rng";
-import { clockFace, facade, plaster, roofTiles, textPanel } from "./textures";
+import { clockFace, facade, plaster, roofTiles, textPanel, windowPanes } from "./textures";
 
 // Buildings: the places in the park and the empty city around it
 
@@ -27,7 +27,10 @@ export function hipRoof(w: number, d: number, h: number, flare = 0.25) {
 }
 
 export const windowGlow = (strength = 1) =>
-  mat(`windowGlow-${strength}`, () => paint({ color: "#ffd99c", emissive: "#ffb867", emissiveIntensity: 0.9 * strength, brush: 0.35, brushScale: 6 }));
+  mat(`windowGlow-${strength}`, () => {
+    const panes = windowPanes(Math.min(0.85, 0.25 + strength * 0.45));
+    return paint({ map: panes, emissive: "#ffb867", emissiveMap: panes, emissiveIntensity: 0.55 * strength, brush: 0.2, brushScale: 6 });
+  });
 
 // The pavilion, seen from the park: a reading room on a stone base
 export function buildPavilion() {
