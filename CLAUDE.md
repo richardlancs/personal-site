@@ -59,37 +59,40 @@ Keep content/data separate from visual components where practical.
 
 ## Design Direction
 
-The site is a walk through an illustrated park, in a soft, painterly
-Ghibli-inspired style. It opens in a central clearing looking out over
-an abandoned, overgrown city (`app/components/park/hub/`), with a path
-leading to each section. Each section is a spot in the park (old oak,
-notice board, trail, courts & tables, garden, far gate), and the sky
-moves from morning to dusk as the visitor walks. The dark theme is the
-same park at night.
+The site is a painted park in an abandoned, overgrown Japanese city, in
+late-afternoon autumn light. The home page is one painting
+(`app/assets/park/park-v04.png`, from the versioned masters in
+`art/park/masters/`, history in `docs/art/park/`). Painted objects are the
+navigation: the notice board opens a map, and the pavilion (About),
+workshop (Projects, Skills), station (Experience), greenhouse (Interests)
+and phone booth (Contact) lead to their pages (`app/data/world.ts` holds
+their positions in painting pixels). Each page opens on a band of the
+painting looking toward its place, with the content on paper below, until
+that place gets its own painting.
 
-On large screens the park is walked sideways (scrolling slides the
-sections horizontally; see `app/components/park/ParkWalk.tsx`). On
-phones, tablets in portrait, and with reduced motion, sections stack
-vertically.
+On phones and portrait screens the painting is a cropped band above the
+introduction and a plain list of places.
 
 The overall feeling should be:
 
 - warm
 - calm
-- playful but not childish
+- nostalgic, quietly lonely, never frightening
 - polished
 - recruiter-friendly: content stays readable and easy to skim
 
-Illustrations are hand-written inline SVG built from the pieces in
-`app/components/park/`. Keep text on paper cards or plain sky, never
-over busy illustration.
+The painting is the artwork; don't redraw scenery in CSS or SVG. Changes
+to the painting go through the workflow in
+`docs/art/park/refinement-workflow.md`. Keep text on paper or open sky,
+never over busy illustration.
 
 ---
 
 ## Color Palette
 
 All colors are tokens in `app/globals.css` (day in `:root`, night in
-`[data-theme="dark"]`): soft greens, warm wood and paper, pastel skies.
+`[data-theme="dark"]`): paper, green-black ink, leaf green and rust. The
+painting stays the same in both themes for now.
 
 Avoid:
 - large areas of pure black or pure white
@@ -103,8 +106,9 @@ Keep text contrast at 4.5:1 or better on paper and on every sky.
 
 ## Typography
 
-Use system fonts: the sans stack for body text and a bookish system
-serif (`font-display`) for headings.
+Two typefaces from `next/font/google`, set in `app/layout.tsx`: Shippori
+Mincho B1 for headings and place names (`font-display`), Zen Kaku Gothic
+New for text (`font-sans`).
 
 Prefer:
 

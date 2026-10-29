@@ -2,12 +2,21 @@
 // To update your portfolio, edit the values below — you shouldn't need to
 // touch the components. Anything in [square brackets] is a placeholder.
 
+// A real screenshot of the project, saved in public/projects/
+export type Screenshot = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 export type Project = {
   title: string;
   description: string;
   technologies: string[];
   githubUrl: string;
   liveUrl?: string; // optional: leave it out if there is no live demo
+  screenshots?: Screenshot[]; // optional; the first one is shown largest
 };
 
 export type Experience = {
@@ -24,8 +33,8 @@ export type SkillGroup = {
   skills: string[];
 };
 
-// Each interest gets its own small illustrated spot in the park; `scene`
-// picks which one (see components/park/InterestScene.tsx).
+// `scene` names the illustration an interest will get in its painted
+// location (not drawn yet).
 export type Interest = {
   name: string;
   description: string;
@@ -80,6 +89,27 @@ export const projects: Project[] = [
     ],
     githubUrl: "https://github.com/richardlancs/marketlab",
     liveUrl: "https://marketlab-theta.vercel.app",
+    // Captured from the live demo
+    screenshots: [
+      {
+        src: "/projects/marketlab/dashboard.png",
+        alt: "MarketLab dashboard with market index cards and an Apple stock chart",
+        width: 1440,
+        height: 900,
+      },
+      {
+        src: "/projects/marketlab/backtest.png",
+        alt: "MarketLab backtester comparing a moving-average crossover strategy with buy and hold on AAPL",
+        width: 1440,
+        height: 900,
+      },
+      {
+        src: "/projects/marketlab/screener.png",
+        alt: "MarketLab stock screener with preset filters and a table of stocks",
+        width: 1440,
+        height: 900,
+      },
+    ],
   },
   {
     title: "Scrollganizer",
@@ -95,6 +125,27 @@ export const projects: Project[] = [
       "Playwright",
     ],
     githubUrl: "https://github.com/richardlancs/Scrollganize",
+    // From the project repository's docs/screenshots (sample data)
+    screenshots: [
+      {
+        src: "/projects/scrollganizer/panel-results-light.png",
+        alt: "Scrollganizer side panel searching saved videos for the category “travel”, with 18 results",
+        width: 420,
+        height: 900,
+      },
+      {
+        src: "/projects/scrollganizer/panel-grid-light.png",
+        alt: "Scrollganizer result cards with the matching words highlighted",
+        width: 420,
+        height: 900,
+      },
+      {
+        src: "/projects/scrollganizer/panel-results-dark.png",
+        alt: "Scrollganizer side panel in the dark theme",
+        width: 420,
+        height: 900,
+      },
+    ],
   },
 ];
 
