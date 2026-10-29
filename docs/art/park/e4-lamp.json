@@ -1,0 +1,67 @@
+{
+  "comment": "Scripted E4 lamplight in the pavilion window (scripts/art/lamp.mjs), built from the current master's own pixels. Nothing outside the E4 region in edits.json can change; the wall tint fades to exactly 0 at its edge. Pixels on the 1536x1024 master, measured on v03.",
+  "source": "art/park/masters/pk-d-v03.png",
+  "geometry": {
+    "opening": [
+      165,
+      515,
+      191,
+      545
+    ],
+    "frame": [
+      161,
+      511,
+      195,
+      549
+    ]
+  },
+  "presets": {
+    "A": {
+      "name": "Faint",
+      "amber": [
+        236,
+        150,
+        70
+      ],
+      "paneTarget": 0.23,
+      "paneMix": 0.78,
+      "textureKeep": 0.18,
+      "lamp": {
+        "at": [
+          170,
+          540
+        ],
+        "falloff": 0.5
+      },
+      "frameWarm": 0.12,
+      "spill": {
+        "reach": 7,
+        "warm": 0.04
+      }
+    },
+    "B": {
+      "name": "Soft",
+      "amber": [
+        240,
+        152,
+        70
+      ],
+      "paneTarget": 0.27,
+      "paneMix": 0.85,
+      "textureKeep": 0.15,
+      "lamp": {
+        "at": [
+          170,
+          540
+        ],
+        "falloff": 0.6
+      },
+      "frameWarm": 0.18,
+      "spill": {
+        "reach": 8,
+        "warm": 0.06
+      }
+    }
+  },
+  "tuning": "Round 1 (amber [226,156,84] / [232,160,86], 30% of the old view kept as texture, flat panes) read as dull tan glass at 4x. Round 2: richer amber, less of the old view, and a soft falloff from a lamp low inside the room (lamp.at, lamp.falloff)."
+}

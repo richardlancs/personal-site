@@ -1,0 +1,178 @@
+{
+  "comment": "Scripted E2 relighting of the notice board area (scripts/art/relight.mjs). Nothing outside region.polygon can change; foliage and paving changes fade to exactly 0 at its edge (true distance fade), the board lift fades over the last 3 px. Coordinates are pixels on the 1536x1024 master.",
+  "source": "art/park/masters/pk-d-v01.png",
+  "lightSource": "art/park/edits/e2/e2-a.png",
+  "geometry": {
+    "board": [
+      [
+        942,
+        413
+      ],
+      [
+        1104,
+        413
+      ],
+      [
+        1104,
+        445
+      ],
+      [
+        1090,
+        445
+      ],
+      [
+        1090,
+        566
+      ],
+      [
+        1076,
+        566
+      ],
+      [
+        1076,
+        532
+      ],
+      [
+        964,
+        532
+      ],
+      [
+        964,
+        566
+      ],
+      [
+        950,
+        566
+      ],
+      [
+        950,
+        445
+      ],
+      [
+        940,
+        445
+      ]
+    ],
+    "foliageZone": {
+      "cx": 1030,
+      "cy": 455,
+      "rx": 175,
+      "ry": 95,
+      "fadeFromY": 535,
+      "fadeToY": 572
+    },
+    "pavingPool": {
+      "cx": 1015,
+      "cy": 590,
+      "rx": 125,
+      "ry": 34
+    }
+  },
+  "presets": {
+    "A": {
+      "name": "Conservative",
+      "foliage": {
+        "darken": 0.2,
+        "cool": 0.6
+      },
+      "board": {
+        "lift": 0.1,
+        "warm": 0.4
+      },
+      "paving": {
+        "strength": 0
+      }
+    },
+    "B": {
+      "name": "Balanced",
+      "foliage": {
+        "darken": 0.34,
+        "cool": 0.85
+      },
+      "board": {
+        "lift": 0.18,
+        "warm": 0.5
+      },
+      "paving": {
+        "strength": 0.55
+      }
+    },
+    "C": {
+      "name": "Stronger contrast",
+      "foliage": {
+        "darken": 0.48,
+        "cool": 1
+      },
+      "board": {
+        "lift": 0.25,
+        "warm": 0.6
+      },
+      "paving": {
+        "strength": 0.85
+      }
+    },
+    "C2": {
+      "name": "C with hue-preserving board light (preview)",
+      "foliage": {
+        "darken": 0.48,
+        "cool": 1
+      },
+      "board": {
+        "lift": 0.25,
+        "warm": 0.6,
+        "preserveHue": true
+      },
+      "paving": {
+        "strength": 0.85
+      }
+    }
+  },
+  "region": {
+    "note": "The E2 mask from edits.json, extended over the foliage above the fingerpost (its finial tops out at y≈425), so the foliage upper-left of the board can be shaded. Foliage and paving changes fade to exactly 0 over the outer 36 px of this region; the board lift uses its own silhouette. The notch (x 932-969, y 477-506) fits the fingerpost's lower arm where it crosses the board's left post.",
+    "polygon": [
+      [
+        850,
+        362
+      ],
+      [
+        1185,
+        362
+      ],
+      [
+        1185,
+        625
+      ],
+      [
+        930,
+        625
+      ],
+      [
+        930,
+        506
+      ],
+      [
+        969,
+        506
+      ],
+      [
+        969,
+        477
+      ],
+      [
+        932,
+        477
+      ],
+      [
+        932,
+        418
+      ],
+      [
+        850,
+        418
+      ]
+    ],
+    "feather": 10,
+    "envelope": 36
+  },
+  "tuning": "Round 1 (darken 0.12/0.22/0.32, lift 0.07/0.12/0.16) was too timid: C was barely distinguishable from v01 in the squint test. Round 2 raised the strengths and widened the foliage zone core."
+}

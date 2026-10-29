@@ -1,0 +1,8 @@
+{
+  "comment": "Colour correction for the desktop master, applied by scripts/art/grade.mjs to a copy (the master is never changed). All amounts are in 0-255 levels and scale with `strength` (0 = no change, 1 = as written). Shadow and highlight weights follow each pixel's brightness, so mid-tones and the warm sunlight move least.",
+  "id": "g01",
+  "strength": 1,
+  "shadows": { "r": -10, "g": 2, "b": 26, "falloff": 2 },
+  "highlights": { "r": 0, "g": 0, "b": 6 },
+  "saturation": 0.9
+}

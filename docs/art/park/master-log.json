@@ -1,0 +1,487 @@
+[
+  {
+    "version": "v00",
+    "file": "art/park/masters/pk-d-v00.png",
+    "sha256": "1132ada3ae90d06fcd5bea829f88341248c648c2b0fa20c480240a0adca038af",
+    "date": "2026-10-29",
+    "source": "art/park/candidates/pk-d-c01.png",
+    "note": "Original ChatGPT Images candidate c01, unchanged"
+  },
+  {
+    "version": "v01",
+    "file": "art/park/masters/pk-d-v01.png",
+    "sha256": "d6dfb12438ac5163c25497584ad424a02caf3d3b860bea48ba5600b87e7a2e14",
+    "date": "2026-10-29",
+    "edit": "e3",
+    "candidate": "art/park/edits/e3/e3-a.png",
+    "candidateSha256": "6accd1cf0e45437dcc194a24c79008300da0fa1342909244e7b8dcdd31788d7e",
+    "parent": "v00",
+    "region": [
+      [
+        1361,
+        401
+      ],
+      [
+        1374,
+        401
+      ],
+      [
+        1441,
+        433
+      ],
+      [
+        1442,
+        460
+      ],
+      [
+        1436,
+        466
+      ],
+      [
+        1436,
+        712
+      ],
+      [
+        1296,
+        712
+      ],
+      [
+        1296,
+        462
+      ],
+      [
+        1293,
+        456
+      ],
+      [
+        1294,
+        440
+      ],
+      [
+        1300,
+        430
+      ]
+    ],
+    "feather": 6,
+    "alignmentShift": [
+      0,
+      -2
+    ],
+    "alignmentError": 29.24,
+    "candidateDriftOutsideRegion": 30.53,
+    "ringColourShiftRGB": [
+      -2.6,
+      -5.4,
+      -3.7
+    ],
+    "colourMatched": false,
+    "changedVsCurrent": {
+      "changedPixels": 41788,
+      "meanAbsDiff": 1.542,
+      "changedBox": [
+        1293,
+        401,
+        1441,
+        711
+      ]
+    },
+    "changedVsOriginal": {
+      "changedPixels": 41788,
+      "meanAbsDiff": 1.542,
+      "changedBox": [
+        1293,
+        401,
+        1441,
+        711
+      ]
+    },
+    "pixelsChangedOutsideRegion": 0,
+    "note": "E3 approved by Richard: the green poster case became a glass telephone booth (payphone, door, warm interior light). Candidate re-rendered the whole painting, so the mask is the new booth silhouette (+4 px, feather 6); everything outside it is v00. Independent check: 0 pixels changed outside the mask.",
+    "candidateOriginalName": "Golden-Hour Ruins in the Overgrown Park.png (ChatGPT Images download)",
+    "approved": true
+  },
+  {
+    "version": "v02",
+    "file": "art/park/masters/pk-d-v02.png",
+    "sha256": "e03594380e97152c694f1733ace23d55ffd3ac96e6ec447dc44f7e0286e2b17c",
+    "date": "2026-10-29",
+    "edit": "e2",
+    "method": "scripted relight (scripts/art/relight.mjs)",
+    "parent": "v01",
+    "parentSha256": "d6dfb12438ac5163c25497584ad424a02caf3d3b860bea48ba5600b87e7a2e14",
+    "preset": "C",
+    "settings": {
+      "name": "Stronger contrast",
+      "foliage": {
+        "darken": 0.48,
+        "cool": 1
+      },
+      "board": {
+        "lift": 0.25,
+        "warm": 0.6
+      },
+      "paving": {
+        "strength": 0.85
+      }
+    },
+    "region": {
+      "note": "The E2 mask from edits.json, extended over the foliage above the fingerpost (its finial tops out at y≈425), so the foliage upper-left of the board can be shaded. Foliage and paving changes fade to exactly 0 over the outer 36 px of this region; the board lift uses its own silhouette. The notch (x 932-969, y 477-506) fits the fingerpost's lower arm where it crosses the board's left post.",
+      "polygon": [
+        [
+          850,
+          362
+        ],
+        [
+          1185,
+          362
+        ],
+        [
+          1185,
+          625
+        ],
+        [
+          930,
+          625
+        ],
+        [
+          930,
+          506
+        ],
+        [
+          969,
+          506
+        ],
+        [
+          969,
+          477
+        ],
+        [
+          932,
+          477
+        ],
+        [
+          932,
+          418
+        ],
+        [
+          850,
+          418
+        ]
+      ],
+      "feather": 10,
+      "envelope": 36
+    },
+    "geometry": {
+      "board": [
+        [
+          942,
+          413
+        ],
+        [
+          1104,
+          413
+        ],
+        [
+          1104,
+          445
+        ],
+        [
+          1090,
+          445
+        ],
+        [
+          1090,
+          566
+        ],
+        [
+          1076,
+          566
+        ],
+        [
+          1076,
+          532
+        ],
+        [
+          964,
+          532
+        ],
+        [
+          964,
+          566
+        ],
+        [
+          950,
+          566
+        ],
+        [
+          950,
+          445
+        ],
+        [
+          940,
+          445
+        ]
+      ],
+      "foliageZone": {
+        "cx": 1030,
+        "cy": 455,
+        "rx": 175,
+        "ry": 95,
+        "fadeFromY": 535,
+        "fadeToY": 572
+      },
+      "pavingPool": {
+        "cx": 1015,
+        "cy": 590,
+        "rx": 125,
+        "ry": 34
+      }
+    },
+    "lightSource": "art/park/edits/e2/e2-a.png",
+    "lightSourceSha256": "885a6bb793a702ecc6a2c413619abc6a9fd0ca3ca40805351e415f8b012583bf",
+    "changedVsParent": {
+      "changedPixels": 46070,
+      "meanAbsDiff": 0.526,
+      "changedBox": [
+        888,
+        367,
+        1182,
+        618
+      ]
+    },
+    "pixelsChangedOutsideRegion": 0,
+    "approved": true,
+    "note": "E2 approved by Richard as scripted relight preset C (review-e2-relight.md): foliage around the notice board darker and cooler, warm multiplicative light on the board capped by highlight headroom, e2-a's paving light transferred as a brightness ratio onto v01's own pixels. Board face 0.342 -> 0.428; vs foliage above 2.01 -> 3.06, right 3.18 -> 5.41 (foliage-only boxes); near-white paper 14.2% accepted (pale paper moved by a few levels, no visible clipping). Brightness deliberately not pushed to the 0.48 target. 0 pixels changed outside the region.",
+    "rolledBack": "2026-10-29",
+    "supersededBy": "v03",
+    "supersededNote": "Kept unchanged as a historical version. Superseded because its per-channel board light made the paper notices slightly paler and less saturated (warmth R-B 109 -> 98, saturation 0.468 -> 0.404). Richard chose C2 to prioritise colour fidelity."
+  },
+  {
+    "version": "v03",
+    "file": "art/park/masters/pk-d-v03.png",
+    "sha256": "698351d50d5f9df1659ffb36baa452621aa9b89890230d82acc9084453bfc1d2",
+    "date": "2026-10-29",
+    "edit": "e2",
+    "method": "scripted relight (scripts/art/relight.mjs)",
+    "parent": "v01",
+    "parentSha256": "d6dfb12438ac5163c25497584ad424a02caf3d3b860bea48ba5600b87e7a2e14",
+    "preset": "C2",
+    "settings": {
+      "name": "C with hue-preserving board light (preview)",
+      "foliage": {
+        "darken": 0.48,
+        "cool": 1
+      },
+      "board": {
+        "lift": 0.25,
+        "warm": 0.6,
+        "preserveHue": true
+      },
+      "paving": {
+        "strength": 0.85
+      }
+    },
+    "region": {
+      "note": "The E2 mask from edits.json, extended over the foliage above the fingerpost (its finial tops out at y≈425), so the foliage upper-left of the board can be shaded. Foliage and paving changes fade to exactly 0 over the outer 36 px of this region; the board lift uses its own silhouette. The notch (x 932-969, y 477-506) fits the fingerpost's lower arm where it crosses the board's left post.",
+      "polygon": [
+        [
+          850,
+          362
+        ],
+        [
+          1185,
+          362
+        ],
+        [
+          1185,
+          625
+        ],
+        [
+          930,
+          625
+        ],
+        [
+          930,
+          506
+        ],
+        [
+          969,
+          506
+        ],
+        [
+          969,
+          477
+        ],
+        [
+          932,
+          477
+        ],
+        [
+          932,
+          418
+        ],
+        [
+          850,
+          418
+        ]
+      ],
+      "feather": 10,
+      "envelope": 36
+    },
+    "geometry": {
+      "board": [
+        [
+          942,
+          413
+        ],
+        [
+          1104,
+          413
+        ],
+        [
+          1104,
+          445
+        ],
+        [
+          1090,
+          445
+        ],
+        [
+          1090,
+          566
+        ],
+        [
+          1076,
+          566
+        ],
+        [
+          1076,
+          532
+        ],
+        [
+          964,
+          532
+        ],
+        [
+          964,
+          566
+        ],
+        [
+          950,
+          566
+        ],
+        [
+          950,
+          445
+        ],
+        [
+          940,
+          445
+        ]
+      ],
+      "foliageZone": {
+        "cx": 1030,
+        "cy": 455,
+        "rx": 175,
+        "ry": 95,
+        "fadeFromY": 535,
+        "fadeToY": 572
+      },
+      "pavingPool": {
+        "cx": 1015,
+        "cy": 590,
+        "rx": 125,
+        "ry": 34
+      }
+    },
+    "lightSource": "art/park/edits/e2/e2-a.png",
+    "lightSourceSha256": "885a6bb793a702ecc6a2c413619abc6a9fd0ca3ca40805351e415f8b012583bf",
+    "changedVsParent": {
+      "changedPixels": 46069,
+      "meanAbsDiff": 0.484,
+      "changedBox": [
+        888,
+        367,
+        1182,
+        618
+      ]
+    },
+    "pixelsChangedOutsideRegion": 0,
+    "approved": true,
+    "alternativeSuccessorOf": "v01",
+    "supersedes": "v02",
+    "note": "E2 approved by Richard as scripted relight preset C2 (C with hue-preserving board light): one gain for all channels, capped by the brightest channel's headroom, then a small warm tint. An alternative successor to v01, superseding v02 (v02 kept unchanged). Paper cream hue shift 0.00 deg, saturation +0.009 vs v01; board vs foliage above 2.85:1 (v02: 3.06). Accepted trade: slightly less separation for colour fidelity."
+  },
+  {
+    "version": "v04",
+    "file": "art/park/masters/pk-d-v04.png",
+    "sha256": "6ab5055f5a4daed276694dbcdbe4b1ff006ce3176460a2b6edae260f9fbba66e",
+    "date": "2026-10-29",
+    "edit": "e4",
+    "method": "scripted lamplight (scripts/art/lamp.mjs)",
+    "parent": "v03",
+    "parentSha256": "698351d50d5f9df1659ffb36baa452621aa9b89890230d82acc9084453bfc1d2",
+    "preset": "B",
+    "settings": {
+      "name": "Soft",
+      "amber": [
+        240,
+        152,
+        70
+      ],
+      "paneTarget": 0.27,
+      "paneMix": 0.85,
+      "textureKeep": 0.15,
+      "lamp": {
+        "at": [
+          170,
+          540
+        ],
+        "falloff": 0.6
+      },
+      "frameWarm": 0.18,
+      "spill": {
+        "reach": 8,
+        "warm": 0.06
+      }
+    },
+    "geometry": {
+      "opening": [
+        165,
+        515,
+        191,
+        545
+      ],
+      "frame": [
+        161,
+        511,
+        195,
+        549
+      ]
+    },
+    "region": {
+      "name": "Pavilion window",
+      "note": "Was rect [110, 480, 360, 600]. Measured on v02: window opening x 163-192, y 513-546 (frame ~161-194, 511-548); wooden pillar x 145-158; bench top y 563; door from x 230. The mask is the window plus a narrow band of wall for the light spill, clear of the pillar, bench, door and roof.",
+      "rect": [
+        159,
+        505,
+        206,
+        558
+      ],
+      "feather": 5
+    },
+    "changedVsParent": {
+      "changedPixels": 1760,
+      "meanAbsDiff": 0.029,
+      "changedBox": [
+        159,
+        506,
+        200,
+        554
+      ]
+    },
+    "pixelsChangedOutsideRegion": 0,
+    "approved": true,
+    "note": "E4 approved by Richard as scripted lamplight preset B (review-e4-a.md): dim amber panes (lum 0.197 -> 0.245, warmth 58 -> 123, 0% near-white), faint frame and wall warmth. e4-a (ChatGPT) rejected as too bright."
+  }
+]

@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Playwright MCP audit screenshots, snapshots and console logs (disposable)
+.playwright-mcp/
+
+# Source artwork: PSD/KRA files, candidates and full-size masters (large)
+/art/

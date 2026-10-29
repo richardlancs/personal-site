@@ -1,0 +1,130 @@
+{
+  "comment": "Region edits on the desktop master. Regions are in pixels on the 1536x1024 master: rect = [left, top, right, bottom], or polygon = [[x, y], ...]. feather = width in px of the soft edge, kept entirely inside the region, so pixels outside it never change. See docs/art/park/refinement-workflow.md.",
+  "size": [
+    1536,
+    1024
+  ],
+  "edits": {
+    "e3": {
+      "name": "Telephone booth",
+      "note": "Selection guide was rect [1298, 408, 1452, 712]. Mask narrowed to the new booth's silhouette (+4 px) so the master's own leaves, tree trunk and stone post stay around it; it reaches up to y 401 for the taller roof.",
+      "polygon": [
+        [
+          1361,
+          401
+        ],
+        [
+          1374,
+          401
+        ],
+        [
+          1441,
+          433
+        ],
+        [
+          1442,
+          460
+        ],
+        [
+          1436,
+          466
+        ],
+        [
+          1436,
+          712
+        ],
+        [
+          1296,
+          712
+        ],
+        [
+          1296,
+          462
+        ],
+        [
+          1293,
+          456
+        ],
+        [
+          1294,
+          440
+        ],
+        [
+          1300,
+          430
+        ]
+      ],
+      "feather": 6
+    },
+    "e2": {
+      "name": "Notice board light and separation",
+      "note": "Was rect [820, 380, 1210, 640]. Narrowed so the mask never touches the fingerpost (post x 897-907, arms to x 967 at y 478-505), the fountain finial (x 880-920 from y 610) or the greenhouse (from x 1190). It covers the board (x 952-1102, y 415-565), the foliage and fallen beam behind it, and the paving in front down to y 625. The notch at x 932-972, y 472-510 leaves the fingerpost arm crossing the board post untouched.",
+      "polygon": [
+        [
+          932,
+          380
+        ],
+        [
+          1185,
+          380
+        ],
+        [
+          1185,
+          625
+        ],
+        [
+          930,
+          625
+        ],
+        [
+          930,
+          510
+        ],
+        [
+          972,
+          510
+        ],
+        [
+          972,
+          472
+        ],
+        [
+          932,
+          472
+        ]
+      ],
+      "feather": 10
+    },
+    "e4": {
+      "name": "Pavilion window",
+      "note": "Was rect [110, 480, 360, 600]. Measured on v02: window opening x 163-192, y 513-546 (frame ~161-194, 511-548); wooden pillar x 145-158; bench top y 563; door from x 230. The mask is the window plus a narrow band of wall for the light spill, clear of the pillar, bench, door and roof.",
+      "rect": [
+        159,
+        505,
+        206,
+        558
+      ],
+      "feather": 5
+    },
+    "e1": {
+      "name": "Left skyline haze and text zone",
+      "rect": [
+        90,
+        120,
+        760,
+        400
+      ],
+      "feather": 20
+    },
+    "e5": {
+      "name": "Side paths (deferred)",
+      "rect": [
+        700,
+        520,
+        1260,
+        620
+      ],
+      "feather": 14
+    }
+  }
+}
