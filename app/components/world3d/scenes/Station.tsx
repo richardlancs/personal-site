@@ -30,8 +30,8 @@ function rowTexture(i: number, selected: boolean) {
     padding: 16,
     valign: "middle",
     lines: [
-      { text: `${when(i)}   ${e.role}`, size: e.role.length + when(i).length > 28 ? 21 : 25, color: selected ? "#fff6e0" : "#ece3c9", weight: 600, gap: 4 },
-      { text: e.organization, size: 19, color: selected ? "#ffd9b8" : "#c8c1a8" },
+      { text: e.role, size: e.role.length > 28 ? 21 : 25, color: selected ? "#fff6e0" : "#ece3c9", weight: 600, gap: 4 },
+      { text: `${when(i)}  ·  ${e.organization}`, size: when(i).length + e.organization.length > 40 ? 16 : 19, color: selected ? "#ffd9b8" : "#c8c1a8" },
     ],
   });
 }

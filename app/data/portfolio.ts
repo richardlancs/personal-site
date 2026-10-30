@@ -151,23 +151,36 @@ export const projects: Project[] = [
 
 export const experience: Experience[] = [
   {
-    role: "Software Developer",
-    organization: "Scrollganizer (team project)",
-    startDate: "2026",
+    role: "Machine Learning Intern",
+    organization: "FlyRank AI",
+    location: "Remote",
+    startDate: "Oct. 2026",
+    endDate: "Present",
     highlights: [
-      "Developed a Chrome side-panel extension with a team of three that lets people search their saved TikTok posts by caption, creator, hashtag, or collection.",
-      "Built with TypeScript, Preact, and SQLite (WebAssembly), and tested with Vitest and Playwright.",
+      "Participating in FlyRank AI's self-paced Machine Learning track, completing technical assignments and practical AI/ML coursework.",
+      "Developing skills in machine learning workflows, reproducible Python analysis, and model evaluation while working toward a reviewed capstone project.",
     ],
   },
   {
-    role: "Computer Science Student",
+    role: "Autonomous Programming Lead",
+    organization: "Drive Gears #20261, FIRST Tech Challenge",
+    startDate: "2024",
+    highlights: [
+      "Developed Java-based autonomous robot programs in Android Studio, implementing ordered movement routines and task sequences to operate without driver input.",
+      "Structured autonomous control logic into sequential actions, refining movement order and timing parameters to coordinate robot behavior during autonomous operation.",
+      "Tested and debugged Java autonomous routines on the physical robot, identifying sequencing and timing issues and iteratively adjusting code based on observed behavior.",
+    ],
+  },
+  {
+    role: "Honours Computer Science (Co-op)",
     organization: "University of Waterloo",
     location: "Waterloo, ON",
     startDate: "2026",
     endDate: "Present",
     highlights: [
+      "Expected to finish in 2031.",
+      "Awards: John Platter Scholarship; University of Waterloo Merit Scholarship.",
       "Focusing on data structures and algorithms, object-oriented programming, and full-stack development.",
-      "Exploring AI and machine learning alongside core computer science fundamentals.",
     ],
   },
 ];
