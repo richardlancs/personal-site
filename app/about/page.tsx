@@ -40,6 +40,11 @@ export default function AboutPage() {
               </a>
             </li>
             <li>
+              <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+                Résumé (PDF)
+              </a>
+            </li>
+            <li>
               <Link href="/contact" className="text-link">
                 The phone booth
               </Link>{" "}

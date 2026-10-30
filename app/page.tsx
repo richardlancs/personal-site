@@ -33,6 +33,9 @@ export default function Home() {
           <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link">
             LinkedIn
           </a>
+          <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+            Résumé
+          </a>
         </div>
       </section>
 

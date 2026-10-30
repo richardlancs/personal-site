@@ -6,13 +6,12 @@ import { placeById } from "../data/world";
 
 export const metadata: Metadata = {
   title: "Contact",
-  description: "How to reach Richard Lan: email, GitHub and LinkedIn.",
+  description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé.",
 };
 
 // Shows a URL without "https://" and "www." so it reads cleanly
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "");
 
-// No résumé file yet: add one to public/ and a line here when there is
 const lines = [
   ...profile.emails.map((email) => ({
     label: email.label,
@@ -22,6 +21,7 @@ const lines = [
   })),
   { label: "GitHub", value: shortUrl(profile.githubUrl), href: profile.githubUrl },
   { label: "LinkedIn", value: shortUrl(profile.linkedinUrl), href: profile.linkedinUrl },
+  { label: "Résumé", value: "Download PDF", href: profile.resumeUrl },
 ];
 
 // The phone booth by the park gate

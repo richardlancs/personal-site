@@ -52,6 +52,8 @@ export const profile = {
   ],
   githubUrl: "https://github.com/richardlancs",
   linkedinUrl: "https://www.linkedin.com/in/richard-lan-0312072a8",
+  // The PDF in public/resume/; replace the file to update it
+  resumeUrl: "/resume/richard-lan-resume.pdf",
 };
 
 // Background song, played only when a visitor presses the music button.
