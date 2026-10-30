@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import type { Experience } from "../../data/portfolio";
 import { useWorld, world } from "../world3d/store";
 
@@ -9,9 +10,42 @@ const when = (stop: Experience) => (stop.endDate ? `${stop.startDate} – ${stop
 // (world3d/scenes/Station.tsx) shows the same lines; choosing one here or
 // there turns its flap over, and the notice for it turns over below,
 // line by line.
+//
+// On wide screens the wheel steps through the lines, once the page itself
+// has no more to scroll that way. Phones scroll the page as usual.
 export default function Timetable({ stops }: { stops: Experience[] }) {
   const selected = useWorld((s) => s.sel.line);
   const stop = stops[selected];
+
+  useEffect(() => {
+    const wide = matchMedia("(orientation: landscape) and (min-width: 768px)");
+    let pending = 0;
+    let lastStep = 0;
+    function onWheel(e: WheelEvent) {
+      if (!wide.matches || e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
+      const down = e.deltaY > 0;
+      const page = document.scrollingElement ?? document.documentElement;
+      const canScroll = down ? page.scrollTop + innerHeight < page.scrollHeight - 1 : page.scrollTop > 0;
+      if (canScroll) return;
+      const line = world.get().sel.line;
+      const next = line + (down ? 1 : -1);
+      if (next < 0 || next >= stops.length) return;
+      e.preventDefault();
+      // A trackpad sends a stream of small deltas: add them up, and wait
+      // out the glide after each step
+      const now = performance.now();
+      if (now - lastStep < 450) return;
+      if (Math.sign(pending) !== Math.sign(e.deltaY)) pending = 0;
+      pending += e.deltaY;
+      if (Math.abs(pending) < 40) return;
+      pending = 0;
+      lastStep = now;
+      world.select("line", next);
+      world.set({ focus: "timetable" });
+    }
+    addEventListener("wheel", onWheel, { passive: false });
+    return () => removeEventListener("wheel", onWheel);
+  }, [stops.length]);
 
   function choose(index: number) {
     world.select("line", index);

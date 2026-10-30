@@ -127,7 +127,7 @@ export function sceneForPath(pathname: string): { scene: SceneId; focus: string 
     case "/projects":
       return { scene: "workshop", focus: "monitor" };
     case "/experience":
-      return { scene: "station", focus: null };
+      return { scene: "station", focus: "timetable" };
     case "/interests":
       return { scene: "arcade", focus: "cabinet" };
     case "/about":

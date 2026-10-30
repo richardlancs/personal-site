@@ -1,7 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { experience } from "../../../data/portfolio";
 import { at, blob, box, buildBush, buildTree, buildVine, grass, merge, treeKinds, tube } from "../geometry";
@@ -26,12 +26,12 @@ const when = (i: number) => {
 function rowTexture(i: number, selected: boolean) {
   const e = experience[i];
   return textPanel(`timetable-row-${i}-${selected}`, 512, 96, {
-    background: selected ? "#5d7b62" : "#22382b",
+    background: selected ? "#e4d3a4" : "#22382b",
     padding: 16,
     valign: "middle",
     lines: [
-      { text: e.role, size: e.role.length > 28 ? 21 : 25, color: selected ? "#fff6e0" : "#ece3c9", weight: 600, gap: 4 },
-      { text: `${when(i)}  ·  ${e.organization}`, size: when(i).length + e.organization.length > 40 ? 16 : 19, color: selected ? "#ffd9b8" : "#c8c1a8" },
+      { text: e.role, size: e.role.length > 28 ? 21 : 25, color: selected ? "#1f2a1f" : "#ece3c9", weight: 600, gap: 4 },
+      { text: `${when(i)}  ·  ${e.organization}`, size: when(i).length + e.organization.length > 40 ? 16 : 19, color: selected ? "#3d3220" : "#c8c1a8" },
     ],
   });
 }
@@ -241,11 +241,17 @@ export default function Station({ active, quality }: SceneProps) {
         const flap = new THREE.Mesh(new THREE.PlaneGeometry(BOARD.w - 0.12, 0.34), new THREE.MeshLambertMaterial({ map: rowTexture(i, false) }));
         flap.castShadow = false;
         pivot.add(flap);
-        built.board.add(pivot);
         return { pivot, flap };
       }),
-    [built],
+    [],
   );
+  // Hung on the board here, not while rendering, so a render React throws
+  // away can't leave a second set of flaps behind
+  useEffect(() => {
+    const pivots = rows.map((row) => row.pivot);
+    built.board.add(...pivots);
+    return () => void built.board.remove(...pivots);
+  }, [built, rows]);
   const flip = useRef(experience.map(() => 0));
   const shown = useRef(-1);
   const tap = useRef(0);

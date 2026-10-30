@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 // listed in app/data/portfolio.ts
 export default function ExperiencePage() {
   return (
-    <Location place={placeById("station")} side="right" intro="Work and education, on the old timetable. The clock above it stopped long ago.">
+    <Location place={placeById("station")} side="right" intro="Work and education, on the old timetable. Choose a line, or scroll, to read down it.">
       <Timetable stops={experience} />
     </Location>
   );
