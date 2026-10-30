@@ -8,6 +8,7 @@ import * as THREE from "three";
 import { anchors } from "./anchors";
 import { windUniforms } from "./paint";
 import { routesFromPark, sceneForPath, scenes, type Pose, type SceneId, type V3 } from "./scenes";
+import Painterly from "./Painterly";
 import Arcade from "./scenes/Arcade";
 import Booth from "./scenes/Booth";
 import Library from "./scenes/Library";
@@ -468,6 +469,7 @@ export default function World3D() {
         aria-hidden="true"
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} />
+        <Painterly brushwork={quality === "high"} />
         <Wind />
         <LabelProjector active={active} />
         {order

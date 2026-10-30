@@ -22,7 +22,7 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
     <div className="take-clicks">
       <div className="timetable">
         <div className="timetable-head" aria-hidden="true">
-          <span>時刻表</span>
+          <span>时刻表</span>
           <span>Timetable</span>
         </div>
         <table className="timetable-table">

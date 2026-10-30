@@ -279,7 +279,7 @@ function buildArcadeScene(quality: "high" | "low") {
   beam.rotation.set(0, 0, 0.9);
   root.add(beam);
   root.add(buildDust(quality === "low" ? 30 : 90, [7, 3, 6], [1, 1.8, 0]));
-  const sky = buildSky({ top: "#86a6c2", horizon: "#f3d1a0", sun: "#ffd29a", sunDir: [0.8, 0.3, 0.2] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd29a", sunDir: [0.8, 0.3, 0.2] });
   root.add(sky);
   root.add(mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false }));
   return { root, cabinets, sky, neonMat };

@@ -117,6 +117,7 @@ export function blob(r: Rng, radius: number, squash = 0.8, lumps = 0.22, detail 
 
 export type TreeKind = {
   palette: Palette;
+  fall?: THREE.ColorRepresentation; // the colour its leaves take as they fall (multiplies the leaf texture)
   height: number;
   trunk: number; // radius at the base
   spread: number; // how far branches reach out
@@ -128,10 +129,10 @@ export type TreeKind = {
 };
 
 export const treeKinds = {
-  zelkova: { palette: "green", height: 9, trunk: 0.38, spread: 4.5, levels: 3, clump: 1.7, bark: "#6b5a48", inner: "#4a6430" },
-  ginkgo: { palette: "ginkgo", height: 8, trunk: 0.3, spread: 2.8, levels: 3, clump: 1.4, bark: "#6e5e4c", inner: "#a88a34" },
-  maple: { palette: "maple", height: 6, trunk: 0.25, spread: 3.2, levels: 3, clump: 1.3, bark: "#5e4a3c", inner: "#9a4a24" },
-  pine: { palette: "bush", height: 10, trunk: 0.32, spread: 3.6, levels: 2, clump: 1.6, bark: "#5a4636", inner: "#2f4224", density: 1.2 },
+  zelkova: { fall: "#b8cf72", palette: "green", height: 9, trunk: 0.38, spread: 4.5, levels: 3, clump: 1.7, bark: "#6b5a48", inner: "#2f5838" },
+  ginkgo: { fall: "#fff08a", palette: "ginkgo", height: 8, trunk: 0.3, spread: 2.8, levels: 3, clump: 1.4, bark: "#6e5e4c", inner: "#a88a34" },
+  maple: { fall: "#ffffff", palette: "maple", height: 6, trunk: 0.25, spread: 3.2, levels: 3, clump: 1.3, bark: "#5e4a3c", inner: "#9a4a24" },
+  pine: { fall: "#a3b47a", palette: "bush", height: 10, trunk: 0.32, spread: 3.6, levels: 2, clump: 1.6, bark: "#5a4636", inner: "#264a34", density: 1.2 },
 } satisfies Record<string, TreeKind>;
 
 type Clump = { center: THREE.Vector3; radius: number };

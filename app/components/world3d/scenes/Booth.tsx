@@ -11,6 +11,7 @@ import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { flagstones, groundTexture } from "../textures";
 import { Hitbox, SunLight, type SceneProps } from "./common";
+import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -54,6 +55,10 @@ function buildBoothScene(quality: "high" | "low") {
   const tree2 = buildTree(302, treeKinds.zelkova, { scale: 1.1 });
   tree2.position.set(6, 0, -5);
   root.add(tree2);
+  const shakeable: ShakeTree[] = [
+    { group: tree, crown: v(-3.8, treeKinds.maple.height * 1.2 * 0.72, -3.2), radius: treeKinds.maple.spread * 0.72, height: treeKinds.maple.height * 1.2, tint: treeKinds.maple.fall },
+    { group: tree2, crown: v(6, treeKinds.zelkova.height * 1.1 * 0.72, -5), radius: treeKinds.zelkova.spread * 0.66, height: treeKinds.zelkova.height * 1.1, tint: treeKinds.zelkova.fall },
+  ];
   for (let i = 0; i < 7; i++) {
     const b = buildBush(310 + i, r.range(0.6, 1.1), r() < 0.3 ? "maple" : "bush");
     b.position.set(r.range(-9, 9), 0, r.range(-3.6, -2.2));
@@ -83,9 +88,9 @@ function buildBoothScene(quality: "high" | "low") {
   const cityR = rng(55);
   root.add(buildCity(21, Array.from({ length: 22 }, () => ({ x: cityR.range(-90, 90), z: cityR.range(-90, -35), w: cityR.range(9, 14), d: cityR.range(9, 12), h: cityR.range(12, 38) }))));
   root.add(buildDust(quality === "low" ? 20 : 50, [6, 3, 5], [0, 1.6, 1.5]));
-  const sky = buildSky({ top: "#7ea3c2", horizon: "#f2d6a6", sun: "#ffd9a0", sunDir: [-0.7, 0.3, 0.5] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [-0.7, 0.3, 0.5] });
   root.add(sky);
-  return { root, booth, sky, falling };
+  return { root, booth, sky, falling, shakeable };
 }
 
 export default function Booth({ active, quality }: SceneProps) {
@@ -118,6 +123,7 @@ export default function Booth({ active, quality }: SceneProps) {
   return (
     <group visible={active}>
       <primitive object={built.root} />
+      <ShakeableTrees trees={built.shakeable} active={active} />
       <SunLight active={active} position={[-26, 16, 18]} target={[0, 0, 0]} color="#ffd39a" intensity={2.6} size={14} quality={quality} />
       <hemisphereLight args={["#f2dcb4", "#5a6338", 1.15]} />
       {active && (

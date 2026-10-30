@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { anchors } from "../anchors";
 import { buildArcade, buildCity, buildHills, buildPavilion, buildRailing, buildStation, buildWorkshop } from "../buildings";
-import { blob, buildBush, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds } from "../geometry";
+import { blob, buildBush, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
 import {
   M,
@@ -30,6 +30,7 @@ import { rng } from "../rng";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
 import { Hitbox, SunLight, type SceneProps } from "./common";
+import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -48,7 +49,9 @@ const PLAZA = { x: 0, z: 4, r: 6.6 };
 export const parkPlaces = {
   library: { pos: [-10, 0, -6.3] as const, ry: 0.75, label: [-7.4, 3.4, -3.2] as const, hit: [8, 6.5, 6] as const, light: [-7.5, 2.5, -3.8] as const },
   workshop: { pos: [17.5, 0, -29] as const, ry: -0.6, label: [17.5, 8.2, -29] as const, hit: [13, 7, 8.5] as const, light: [15.4, 3, -24] as const },
-  station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 20, 7] as const, light: [4, 4, -44] as const },
+  // The station's box is just its hall; the tower has its own (below), so
+  // the trees in front of the empty air beside the tower can be shaken
+  station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 6.6, 7] as const, light: [4, 4, -44] as const },
   arcade: { pos: [27, 0, -26] as const, ry: -0.7, label: [27, 8, -26] as const, hit: [10.5, 7, 8.5] as const, light: [24, 3, -22] as const },
   booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.4, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
   board: { pos: [4.25, 0, -1.6] as const, ry: -0.18, label: [4.25, 3.1, -1.6] as const, hit: [2.6, 2.8, 0.8] as const, light: [4.1, 2.4, 0] as const },
@@ -148,10 +151,10 @@ function buildPark(quality: "high" | "low") {
     root.add(lamp);
   }
   const sign = buildSignpost([
-    { ja: "工房", label: "Workshop", angle: 1.0 },
-    { ja: "駅", label: "Station", angle: 1.43 },
-    { ja: "ゲーム", label: "Arcade", angle: 0.68 },
-    { ja: "東屋", label: "Pavilion", angle: 2.82 },
+    { zh: "工坊", label: "Workshop", angle: 1.0 },
+    { zh: "车站", label: "Station", angle: 1.43 },
+    { zh: "游戏厅", label: "Arcade", angle: 0.68 },
+    { zh: "凉亭", label: "Pavilion", angle: 2.82 },
   ]);
   sign.group.position.set(-2.7, 0, -2.4);
   root.add(sign.group);
@@ -192,13 +195,16 @@ function buildPark(quality: "high" | "low") {
     ["zelkova", 40, -26, 1.3],
   ];
   const crowns: { center: THREE.Vector3; radius: number }[] = [];
+  const shakeable: ShakeTree[] = [];
   trees.forEach(([kind, x, z, scale], i) => {
     if (quality === "low" && i > 15) return;
-    const t = buildTree(100 + i, treeKinds[kind], { shadows: Math.hypot(x, z - 4) < 34 });
+    const k: TreeKind = treeKinds[kind];
+    const t = buildTree(100 + i, k, { shadows: Math.hypot(x, z - 4) < 34 });
     t.position.set(x, 0, z);
     t.scale.setScalar(scale);
     t.rotation.y = r() * Math.PI * 2;
     root.add(t);
+    shakeable.push({ group: t, crown: v(x, k.height * scale * 0.72, z), radius: k.spread * 0.6 * scale, height: k.height * scale, tint: k.fall ?? "#ffffff" });
     if (Math.hypot(x, z) < 26) crowns.push({ center: v(x, treeKinds[kind].height * scale * 0.75, z), radius: 2.5 * scale });
   });
 
@@ -263,10 +269,10 @@ function buildPark(quality: "high" | "low") {
   root.add(mesh(merge(belt), mat("treeBelt", () => paint({ color: "#4e6632", brush: 0.45, brushScale: 0.3 })), { cast: false }));
 
   root.add(buildDust(quality === "low" ? 50 : 140, [26, 6, 26], [-2, 3, 6]));
-  const sky = buildSky({ top: "#7ea3c2", horizon: "#f2d6a6", sun: "#ffd9a0", sunDir: [-0.75, 0.32, 0.25] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [-0.75, 0.32, 0.25] });
   root.add(sky);
 
-  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain };
+  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable };
 }
 
 export default function Park({ active, quality, navigate }: SceneProps) {
@@ -332,6 +338,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   return (
     <group visible={active}>
       <primitive object={built.root} />
+      <ShakeableTrees trees={built.shakeable} active={active} />
       <SunLight active={active} position={[-48, 34, 20]} target={[0, 0, -8]} color="#ffd09a" intensity={3.1} size={44} quality={quality} />
       <hemisphereLight args={["#fbe6bf", "#6a6f42", 1.35]} />
       {Object.entries(parkPlaces).map(([id, p]) => (
@@ -356,6 +363,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
           <Hitbox id="park:fountain" position={[PLAZA.x, 1.15, PLAZA.z]} size={[1.8, 1.7, 1.8]} onSelect={runFountain} />
         </>
       )}
+      {active && <Hitbox id="park:station" position={[4, 10, -48]} size={[3.8, 20, 3.8]} onSelect={() => navigate("/experience")} />}
       {active && <Hitbox id="park:swing" position={[-8, 1.3, 3.5]} rotation={0.35} size={[3, 2.6, 2]} onSelect={kickSwing} />}
     </group>
   );

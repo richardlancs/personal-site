@@ -245,7 +245,7 @@ function buildWorkshopScene(quality: "high" | "low") {
   const outside = buildTree(90, treeKinds.zelkova, { shadows: false });
   outside.position.set(12, 0, -1);
   root.add(outside);
-  const sky = buildSky({ top: "#8fb0c8", horizon: "#f2d6a6", sun: "#ffd9a0", sunDir: [0.8, 0.35, -0.3] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [0.8, 0.35, -0.3] });
   root.add(sky);
   const ground = mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false });
   root.add(ground);

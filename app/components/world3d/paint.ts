@@ -218,9 +218,16 @@ ${NOISE}`,
   float lum = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
   float base = max(dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)), 1e-3);
   float shade = lum / base;
-  float stepped = mix(shade, floor(shade * 3.0 + 0.5) / 3.0, 0.22);
+  // Light and shade blocked in, the way a background painter lays them
+  float stepped = mix(shade, floor(shade * 3.0 + 0.5) / 3.0, 0.3);
   outgoingLight *= stepped / max(shade, 1e-3);
-  outgoingLight = mix(outgoingLight * vec3(0.8, 0.9, 1.08), outgoingLight * vec3(1.06, 1.0, 0.9), smoothstep(0.25, 1.1, shade));
+  // Shade is never grey: it leans blue-green, and holds its colour.
+  // Sunlit sides warm up and lift a little.
+  vec3 cool = outgoingLight * vec3(0.72, 0.9, 1.14) + diffuseColor.rgb * vec3(0.02, 0.05, 0.09);
+  vec3 warm = outgoingLight * vec3(1.1, 1.03, 0.86);
+  outgoingLight = mix(cool, warm, smoothstep(0.3, 1.05, shade));
+  float grey = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
+  outgoingLight = mix(vec3(grey), outgoingLight, 1.12);
 }
 #include <opaque_fragment>`,
       );

@@ -82,7 +82,7 @@
 
   /* Set in layout.tsx with next/font */
   --font-sans: var(--font-zen-kaku), "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-shippori), "Hiragino Mincho ProN", "Iowan Old Style", Georgia, serif;
+  --font-display: var(--font-shippori), var(--font-noto-sc), "Songti SC", "Iowan Old Style", Georgia, serif;
 }
 
 body {

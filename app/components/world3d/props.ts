@@ -102,7 +102,7 @@ export function buildVending() {
   const g = new THREE.Group();
   const front = textPanel("vending", 256, 512, {
     background: "#c9d4cf",
-    lines: [{ text: "つめたい", size: 22, color: "#3a6ea5", weight: 700 }],
+    lines: [{ text: "冰镇", size: 22, color: "#3a6ea5", weight: 700 }],
   });
   const body = mesh(box(0.95, 1.85, 0.72), mat("vendingBody", () => paint({ map: enamel(200, 18, 70), rust: 0.35, grime: 0.6 })));
   body.position.y = 0.95;
@@ -150,7 +150,7 @@ export function buildBooth() {
     background: "#efe8d4",
     padding: 6,
     valign: "middle",
-    lines: [{ text: "公衆電話", size: 38, font: "display", color: "#2f5a3c", weight: 600, align: "center" }],
+    lines: [{ text: "公用电话", size: 38, font: "display", color: "#2f5a3c", weight: 600, align: "center" }],
   });
   const signMat = mat("boothSign", () => paint({ map: signTex, brush: 0.15, emissive: "#ffe8b8", emissiveIntensity: 0.12 }));
   for (let i = 0; i < 4; i++) {
@@ -441,7 +441,7 @@ export function buildNoticeBoard() {
 }
 
 // The signpost at the fork, pointing the way
-export function buildSignpost(arms: { label: string; ja: string; angle: number }[]) {
+export function buildSignpost(arms: { label: string; zh: string; angle: number }[]) {
   const g = new THREE.Group();
   g.add(mesh(at(box(0.12, 2.6, 0.12), 0, 1.3, 0), M.darkWood()));
   const swing: THREE.Object3D[] = [];
@@ -450,7 +450,7 @@ export function buildSignpost(arms: { label: string; ja: string; angle: number }
       background: "#cdb48a",
       padding: 10,
       valign: "middle",
-      lines: [{ text: `${arm.ja}  ${arm.label} →`, size: 26, font: "display", color: "#3a2a1c", weight: 600 }],
+      lines: [{ text: `${arm.zh}  ${arm.label} →`, size: 26, font: "display", color: "#3a2a1c", weight: 600 }],
     });
     const pivot = new THREE.Group();
     pivot.position.y = 2.2 - i * 0.36;
@@ -580,13 +580,23 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
         vec3 col = mix(uHorizon, uTop, pow(smoothstep(-0.02, 0.65, h), 0.75));
         float s = max(dot(d, uSunDir), 0.0);
         col += uSun * (pow(s, 6.0) * 0.35 + pow(s, 80.0) * 0.8);
-        vec2 uv = d.xz / (max(d.y, 0.0) + 0.22) * 0.9 + vec2(uTime * 0.003, uTime * 0.001);
-        float c = fbm(uv * 1.4);
-        float cloud = smoothstep(0.5, 0.75, c) * smoothstep(0.0, 0.18, h);
-        float shade = fbm(uv * 1.4 + vec2(0.05, 0.08));
-        vec3 cloudCol = mix(vec3(0.95, 0.72, 0.62), vec3(1.0, 0.93, 0.8), smoothstep(0.45, 0.8, shade));
-        cloudCol = mix(cloudCol, cloudCol * vec3(1.05, 0.95, 0.85), s);
-        col = mix(col, cloudCol, cloud * 0.85);
+        // Cumulus: big soft heaps in a band above the horizon, with crisp
+        // painted edges, bright creamy tops and lavender-blue undersides
+        vec2 drift = vec2(uTime * 0.004, uTime * 0.0015);
+        vec2 uv = d.xz / (max(d.y, 0.0) + 0.2) * 0.5 + drift;
+        float c = fbm(uv * 1.15) + 0.22 * fbm(uv * 3.4);
+        vec3 up = normalize(d + vec3(0.0, 0.035, 0.0));
+        vec2 uvUp = up.xz / (max(up.y, 0.0) + 0.2) * 0.5 + drift;
+        float cUp = fbm(uvUp * 1.15) + 0.22 * fbm(uvUp * 3.4);
+        float band = smoothstep(0.0, 0.1, h) * smoothstep(0.85, 0.3, h);
+        float cloud = smoothstep(0.6, 0.645, c) * band;
+        float lit = 0.25 + 0.75 * smoothstep(-0.03, 0.05, c - cUp);
+        vec3 cloudCol = mix(vec3(0.68, 0.72, 0.88), vec3(1.0, 0.97, 0.9), lit);
+        cloudCol += uSun * pow(s, 3.0) * 0.18;
+        // A few high wisps
+        float wisp = smoothstep(0.58, 0.8, fbm(vec2(uv.x * 0.7, uv.y * 3.0) + 9.0)) * smoothstep(0.35, 0.7, h) * 0.35;
+        col = mix(col, vec3(1.0, 0.98, 0.94), wisp);
+        col = mix(col, cloudCol, cloud * 0.95);
         gl_FragColor = vec4(col, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -658,6 +668,106 @@ export function buildFallingLeaves(count: number, sources: { center: THREE.Vecto
   const group = new THREE.Group();
   meshes.forEach((im) => group.add(im));
   return { group, update };
+}
+
+// Leaves shaken loose from a tree: a pool that's empty until a tree is
+// shaken, then a handful flutter down from its crown, lie on the ground a
+// few seconds and shrink away. Tinted to match the tree.
+export function buildLeafBursts(capacity: number) {
+  const r = rng(91);
+  const m = paint({ map: singleLeaves(), alphaTest: 0.5, side: THREE.DoubleSide, brush: 0 });
+  const per = Math.ceil(capacity / 4);
+  const meshes = [0, 1, 2, 3].map((k) => {
+    // Larger than life, so they read from across the park
+    const im = new THREE.InstancedMesh(leafQuad(k, 0.6), m, per);
+    im.frustumCulled = false;
+    im.castShadow = false;
+    for (let i = 0; i < per; i++) im.setColorAt(i, new THREE.Color("#ffffff"));
+    return im;
+  });
+  type Leaf = { on: boolean; p: THREE.Vector3; vel: THREE.Vector3; phase: number; spin: THREE.Vector3; rot: THREE.Euler; rest: number; size: number };
+  const leaves: Leaf[] = Array.from({ length: per * 4 }, () => ({
+    on: false,
+    p: new THREE.Vector3(),
+    vel: new THREE.Vector3(),
+    phase: 0,
+    spin: v(r.range(-3, 3), r.range(-3, 3), r.range(-3, 3)),
+    rot: new THREE.Euler(),
+    rest: 0,
+    size: 0,
+  }));
+  let next = 0;
+  const color = new THREE.Color();
+  const burst = (center: THREE.Vector3, radius: number, n: number, tint: THREE.ColorRepresentation) => {
+    for (let k = 0; k < n; k++) {
+      const i = next;
+      next = (next + 1) % leaves.length;
+      const leaf = leaves[i];
+      const a = r() * Math.PI * 2;
+      const d = Math.sqrt(r()) * radius * 0.9;
+      leaf.on = true;
+      leaf.p.set(center.x + Math.cos(a) * d, center.y + r.range(-0.6, 0.4) * radius, center.z + Math.sin(a) * d);
+      // Thrown out a little by the shake, then falling and drifting
+      leaf.vel.set(Math.cos(a) * r.range(0.4, 1.2), r.range(-0.2, 0.6), Math.sin(a) * r.range(0.4, 1.2));
+      leaf.phase = r() * 10;
+      leaf.rest = 0;
+      leaf.size = r.range(0.8, 1.25);
+      color.set(tint).offsetHSL(r.range(-0.03, 0.03), 0, r.range(-0.06, 0.06));
+      meshes[i % 4].setColorAt(Math.floor(i / 4), color);
+    }
+    for (const im of meshes) if (im.instanceColor) im.instanceColor.needsUpdate = true;
+  };
+  const m4 = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const scale = new THREE.Vector3();
+  const update = (dt: number, t: number) => {
+    const gust = windUniforms.uGust.value;
+    const dir = windUniforms.uGustDir.value;
+    leaves.forEach((leaf, i) => {
+      let s = 0;
+      if (leaf.on) {
+        if (leaf.p.y <= 0.03) {
+          // On the ground: lie flat, then shrink away
+          leaf.rest += dt;
+          leaf.p.y = 0.02;
+          leaf.rot.set(-Math.PI / 2, 0, leaf.rot.z);
+          s = leaf.size * Math.max(0, 1 - Math.max(0, leaf.rest - 5) / 1.5);
+          if (leaf.rest > 6.5) leaf.on = false;
+        } else {
+          const sway = Math.sin(t * 2.1 + leaf.phase);
+          // Air slows the throw; gravity wins slowly, as it does for a leaf
+          leaf.vel.x *= Math.exp(-dt * 1.6);
+          leaf.vel.z *= Math.exp(-dt * 1.6);
+          leaf.vel.y = Math.max(leaf.vel.y - dt * 4, -1.9);
+          leaf.p.x += (leaf.vel.x + dir.x * gust * 1.2 + sway * 0.6) * dt;
+          leaf.p.z += (leaf.vel.z + dir.y * gust * 1.2) * dt;
+          // Each swing of the leaf checks its fall for a moment
+          leaf.p.y += (leaf.vel.y + Math.abs(sway) * 0.5) * dt;
+          // Flutters, mostly showing its face: rocks side to side and
+          // tips forward and back, turning slowly
+          leaf.rot.set(Math.sin(t * 3.1 + leaf.phase) * 0.7, leaf.rot.y + leaf.spin.y * 0.4 * dt, sway * 1.1);
+          s = leaf.size;
+        }
+      }
+      // Seen from the camera's side, so a leaf is never just a sliver
+      q.setFromEuler(leaf.rot);
+      if (leaf.p.y > 0.03 && facing) q.premultiply(facing);
+      m4.compose(leaf.p, q, scale.setScalar(s));
+      meshes[i % 4].setMatrixAt(Math.floor(i / 4), m4);
+    });
+    for (const im of meshes) im.instanceMatrix.needsUpdate = true;
+  };
+  let facing: THREE.Quaternion | null = null;
+  // Turn the leaves in the air to face the camera (call once a frame)
+  const face = (camera: THREE.Camera) => {
+    facing ??= new THREE.Quaternion();
+    facing.copy(camera.quaternion);
+  };
+  const group = new THREE.Group();
+  meshes.forEach((im) => group.add(im));
+  // How many are in the air or on the ground, and the highest one
+  const stats = () => ({ on: leaves.filter((l) => l.on).length, top: Math.max(0, ...leaves.filter((l) => l.on).map((l) => +l.p.y.toFixed(2))), at: leaves.filter((l) => l.on).slice(0, 4).map((l) => l.p.toArray().map((n) => +n.toFixed(2))) });
+  return { group, burst, update, stats, face };
 }
 
 // Leaves lying on the ground, thicker along edges

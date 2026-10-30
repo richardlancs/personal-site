@@ -224,7 +224,7 @@ function buildLibraryScene(quality: "high" | "low") {
   beam.rotation.set(0, 0, 0.85);
   root.add(beam);
   root.add(buildDust(quality === "low" ? 25 : 70, [4, 2.5, 3], [2, 1.6, 0]));
-  const sky = buildSky({ top: "#8fb0c8", horizon: "#f3d4a2", sun: "#ffd29a", sunDir: [0.9, 0.3, 0.2] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd29a", sunDir: [0.9, 0.3, 0.2] });
   root.add(sky);
   root.add(mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false }));
   return { root, notebook, sky, lampShade };

@@ -33,6 +33,7 @@ export function Hitbox({
     <mesh
       position={position}
       rotation-y={rotation}
+      userData={{ hitbox: id }}
       onClick={(e: ThreeEvent<MouseEvent>) => {
         if (e.delta > 8) return;
         e.stopPropagation();

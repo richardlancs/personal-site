@@ -91,7 +91,7 @@ function buildStationScene(quality: "high" | "low") {
     background: "#1b2a22",
     padding: 16,
     valign: "middle",
-    lines: [{ text: "時刻表   TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],
+    lines: [{ text: "时刻表   TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],
   });
   const headMesh = new THREE.Mesh(new THREE.PlaneGeometry(BOARD.w, 0.34), mat("timetableHead", () => paint({ map: head, brush: 0.12, emissive: "#ffffff", emissiveIntensity: 0.05 })));
   headMesh.position.set(0, BOARD.h / 2 - 0.2, 0.045);
@@ -126,8 +126,8 @@ function buildStationScene(quality: "high" | "low") {
     padding: 8,
     valign: "middle",
     lines: [
-      { text: "ひかり公園", size: 46, font: "display", color: "#22392b", weight: 600, align: "center", gap: 2 },
-      { text: "HIKARI-KŌEN", size: 22, color: "#22392b", weight: 500, align: "center" },
+      { text: "光明公园", size: 46, font: "display", color: "#22392b", weight: 600, align: "center", gap: 2 },
+      { text: "GUĀNGMÍNG GŌNGYUÁN", size: 22, color: "#22392b", weight: 500, align: "center" },
     ],
   });
   const sign = new THREE.Group();
@@ -223,7 +223,7 @@ function buildStationScene(quality: "high" | "low") {
     ),
   );
   root.add(buildDust(quality === "low" ? 30 : 80, [10, 3, 5], [1, TOP + 1.8, 0]));
-  const sky = buildSky({ top: "#86a6c2", horizon: "#f3d1a0", sun: "#ffd29a", sunDir: [0.8, 0.25, 0.5] });
+  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd29a", sunDir: [0.8, 0.25, 0.5] });
   root.add(sky);
   // A blob of rubble at the end of the platform
   root.add(mesh(blob(r, 0.6, 0.5, 0.4, 1).translate(-12.2, TOP + 0.15, 1.4), M.concrete()));

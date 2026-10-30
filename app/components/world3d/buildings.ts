@@ -119,7 +119,7 @@ export function buildWorkshop() {
     background: "#e2d5b8",
     padding: 12,
     valign: "middle",
-    lines: [{ text: "工房  WORKSHOP", size: 58, font: "display", color: "#3b2a1a", weight: 600, align: "center" }],
+    lines: [{ text: "工坊  WORKSHOP", size: 58, font: "display", color: "#3b2a1a", weight: 600, align: "center" }],
   });
   const board = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), mat("workshopSign", () => paint({ map: sign, brush: 0.3, brushScale: 3, grime: 0.4 })));
   board.position.set(0, 3.95, 4.05);
@@ -159,7 +159,7 @@ export function buildStation() {
     background: "#f0e8d6",
     padding: 12,
     valign: "middle",
-    lines: [{ text: "ひかり公園駅", size: 64, font: "display", color: "#22392b", weight: 600, align: "center" }],
+    lines: [{ text: "光明公园站", size: 64, font: "display", color: "#22392b", weight: 600, align: "center" }],
   });
   const board = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), mat("stationSignBoard", () => paint({ map: sign, brush: 0.2, grime: 0.3 })));
   board.position.set(0, 4.6, 3.62);
@@ -177,7 +177,7 @@ export function buildArcade() {
     background: "#2f3a3c",
     padding: 10,
     valign: "middle",
-    lines: [{ text: "ゲームセンター", size: 64, font: "display", color: "#e6a2a0", weight: 600, align: "center" }],
+    lines: [{ text: "游戏厅", size: 64, font: "display", color: "#e6a2a0", weight: 600, align: "center" }],
   });
   const signMat = mat("arcadeSign", () => paint({ map: sign, emissive: "#c66f78", emissiveIntensity: 0.18, emissiveMap: sign, brush: 0.25, grime: 0.4 }));
   const board = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.6), signMat);

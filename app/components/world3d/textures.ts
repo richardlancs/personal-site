@@ -28,13 +28,31 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
   t.anisotropy = 4;
   if (opts.repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   if (opts.text && typeof document !== "undefined" && document.fonts) {
-    document.fonts.ready.then(() => {
+    fontsReady().then(() => {
       paintIt();
       t.needsUpdate = true;
     });
   }
   cache.set(key, t);
   return t;
+}
+
+// Every Chinese character on a sign or notice in the world. A canvas
+// doesn't make the browser fetch a font's Unicode slices the way page text
+// does, so they're asked for up front, before the signs are painted.
+const CHINESE = "工坊光明公园站游戏厅导览图寻猫启事联系夏日祭傍晚开始通知冰镇用电话车凉亭时刻表";
+let ready: Promise<unknown> | null = null;
+function fontsReady() {
+  if (!ready) {
+    const f = fonts();
+    ready = Promise.all([
+      document.fonts.ready,
+      document.fonts.load(`600 40px ${f.display}`, CHINESE).catch(() => null),
+      document.fonts.load(`500 40px ${f.display}`, "Ag").catch(() => null),
+      document.fonts.load(`500 20px ${f.text}`, "Ag").catch(() => null),
+    ]);
+  }
+  return ready;
 }
 
 function hash(s: string) {
@@ -47,8 +65,10 @@ function hash(s: string) {
 export function fonts() {
   if (typeof document === "undefined") return { display: "serif", text: "sans-serif" };
   const css = getComputedStyle(document.documentElement);
+  // Latin from Shippori Mincho, Chinese from Noto Serif SC
+  const chinese = css.getPropertyValue("--font-noto-sc").trim();
   return {
-    display: `${css.getPropertyValue("--font-shippori").trim() || "serif"}, "Hiragino Mincho ProN", serif`,
+    display: `${css.getPropertyValue("--font-shippori").trim() || "serif"}, ${chinese ? `${chinese}, ` : ""}"Songti SC", serif`,
     text: `${css.getPropertyValue("--font-zen-kaku").trim() || "sans-serif"}, "Hiragino Sans", sans-serif`,
   };
 }
@@ -374,12 +394,13 @@ export const groundTexture = () =>
 // picks the season of the tree.
 export type Palette = "green" | "ginkgo" | "maple" | "ivy" | "bush";
 const palettes: Record<Palette, [number, number, number][]> = {
+  // Lush and sunlit: yellow-green on top, deep blue-green within
   green: [
-    [88, 38, 30],
-    [95, 35, 38],
-    [80, 40, 45],
-    [70, 45, 52],
-    [100, 30, 24],
+    [92, 46, 30],
+    [100, 42, 38],
+    [84, 52, 48],
+    [72, 60, 58],
+    [140, 30, 24],
   ],
   ginkgo: [
     [48, 75, 55],
@@ -401,10 +422,10 @@ const palettes: Record<Palette, [number, number, number][]> = {
     [85, 40, 36],
   ],
   bush: [
-    [78, 35, 32],
-    [70, 40, 40],
-    [88, 30, 26],
-    [55, 45, 45],
+    [86, 44, 34],
+    [76, 50, 44],
+    [130, 32, 26],
+    [60, 52, 50],
   ],
 };
 
@@ -608,7 +629,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
       g.strokeStyle = "#2b2f27";
       if (kind === "map") {
         g.font = `600 26px ${f.display}`;
-        g.fillText("公園案内図", 20, 40);
+        g.fillText("公园导览图", 20, 40);
         g.font = `500 14px ${f.text}`;
         g.fillText("Park map", 20, 60);
         g.lineWidth = 3;
@@ -645,10 +666,10 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
         }
       } else if (kind === "cat") {
         g.font = `600 30px ${f.display}`;
-        g.fillText("迷い猫", 20, 46);
+        g.fillText("寻猫启事", 20, 46);
         g.font = `500 15px ${f.text}`;
         g.fillText("Lost cat. Grey tabby,", 20, 74);
-        g.fillText("answers to Mochi.", 20, 94);
+        g.fillText("answers to Mantou.", 20, 94);
         g.fillStyle = "#9a9384";
         g.fillRect(40, 116, 176, 130);
         g.fillStyle = "#6e6a5e";
@@ -670,7 +691,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
           g.translate(24 + i * 38, 270);
           g.rotate(-Math.PI / 2);
           g.font = `400 10px ${f.text}`;
-          g.fillText("連絡 ...", -40, 4);
+          g.fillText("联系 ...", -40, 4);
           g.restore();
         }
       } else if (kind === "festival") {
@@ -680,10 +701,10 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
         g.fill();
         g.fillStyle = "#2b2f27";
         g.font = `600 40px ${f.display}`;
-        g.fillText("夏祭り", 20, 170);
+        g.fillText("夏日祭", 20, 170);
         g.font = `500 16px ${f.text}`;
         g.fillText("Summer festival", 22, 196);
-        g.fillText("8.24  夕方から", 22, 222);
+        g.fillText("8.24  傍晚开始", 22, 222);
         g.strokeStyle = "rgba(43,47,39,0.6)";
         for (let i = 0; i < 6; i++) {
           g.beginPath();
@@ -693,7 +714,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
       } else {
         g.globalAlpha = 0.35;
         g.font = `600 22px ${f.display}`;
-        g.fillText("お知らせ", 20, 46);
+        g.fillText("通知", 20, 46);
         g.font = `400 13px ${f.text}`;
         for (let i = 0; i < 9; i++) g.fillRect(20, 80 + i * 22, r.range(120, 210), 6);
         g.globalAlpha = 1;

@@ -35,8 +35,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     },
     frame: "center",
     threshold: "#e9cf9c",
-    fog: { color: "#e6cfa2", near: 22, far: 125 },
-    background: "#e6cfa2",
+    fog: { color: "#cfd8d0", near: 20, far: 135 },
+    background: "#cfd8d0",
   },
   workshop: {
     offset: [400, 0, 0],
@@ -63,8 +63,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     },
     frame: "left",
     threshold: "#f1dcae",
-    fog: { color: "#e6c896", near: 18, far: 90 },
-    background: "#e6c896",
+    fog: { color: "#d2d9cf", near: 18, far: 100 },
+    background: "#d2d9cf",
   },
   arcade: {
     offset: [1200, 0, 0],
@@ -105,8 +105,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     },
     frame: "right",
     threshold: "#2f4a36",
-    fog: { color: "#d9bf8f", near: 14, far: 70 },
-    background: "#d9bf8f",
+    fog: { color: "#d4d8c8", near: 14, far: 80 },
+    background: "#d4d8c8",
   },
 };
 
