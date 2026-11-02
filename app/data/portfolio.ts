@@ -43,7 +43,7 @@ export type Interest = {
 
 export const profile = {
   name: "Richard Lan",
-  headline: "Computer Science Student at the University of Waterloo",
+  headline: "CS student @uwaterloo",
   intro:
     "Lately I've been building MarketLab, a stock market simulator with paper trading and a strategy backtester, and, with a team of three, Scrollganizer, a Chrome extension that makes saved TikToks searchable. Next I'm digging into AI and machine learning, and looking for a software engineering internship or co-op.",
   emails: [

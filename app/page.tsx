@@ -1,42 +1,35 @@
 import Link from "next/link";
-import ShowPlaces from "./components/world/ShowPlaces";
 import { profile } from "./data/portfolio";
 import { places } from "./data/world";
 
 // The site opens in the park (components/world3d, in the layout).
-// This page is what sits over it: the introduction in the open sky, and
+// This page is what sits over it: my name and links, quiet in the open sky, and
 // on phones a plain list of the places below the painting.
 export default function Home() {
   return (
     <main className="over-world">
       <section aria-labelledby="park-name" className="park-intro arrive">
-        <h1 id="park-name" className="park-name font-display font-semibold tracking-tight">
+        <h1 id="park-name" className="park-name font-display">
           {profile.name}
         </h1>
-        <p className="mt-2 text-[17px] font-medium">{profile.headline}</p>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">{profile.intro}</p>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          This is a park, long after everyone left. Walk to a place to find my work, or{" "}
-          <Link href="/projects" className="text-link">
-            go straight to my projects
-          </Link>
-          .
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm font-medium">
-          <Link href="/map" className="hover-grow rounded-full bg-foreground px-4 py-2 text-background">
-            Open the map
-          </Link>
-          <ShowPlaces />
-          <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-            GitHub
-          </a>
-          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-            LinkedIn
-          </a>
-          <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-            Résumé
-          </a>
-        </div>
+        <p className="park-headline">{profile.headline}</p>
+        <ul aria-label="Links" className="park-links">
+          <li>
+            <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer">
+              GitHub
+            </a>
+          </li>
+          <li>
+            <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
+              LinkedIn
+            </a>
+          </li>
+          <li>
+            <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer">
+              Résumé
+            </a>
+          </li>
+        </ul>
       </section>
 
       {/* Phones: every place as a plain list under the painting */}
