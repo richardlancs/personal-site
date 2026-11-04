@@ -149,6 +149,38 @@ export const projects: Project[] = [
       },
     ],
   },
+  {
+    title: "Codebase Puzzles",
+    description:
+      "A LeetCode-style site where every puzzle is set inside a real open-source repository, pinned to a commit: 100 puzzles across 15 TypeScript and Python projects, including FastAPI, Flask, Zod and Hono. You read the code in a browser IDE and answer by clicking on symbols, files or lines, and the server grades each answer by exact ID. A Python pipeline indexes every repository with SCIP to build the code index the puzzles and grader rely on. I'm building it with one other developer; so far I've added browsing by difficulty and topic, written 15 of the puzzles and the difficulty rules, and fixed grading, rate-limiting and macOS setup issues.",
+    technologies: [
+      "TypeScript",
+      "Next.js",
+      "React",
+      "Monaco Editor",
+      "PostgreSQL",
+      "Python (SCIP code indexing)",
+      "Zod",
+      "Vitest",
+      "Playwright",
+    ],
+    githubUrl: "https://github.com/anshiwang8/codespaceleetcode",
+    // Captured from a local run; the site isn't deployed yet
+    screenshots: [
+      {
+        src: "/projects/codebase-puzzles/puzzle.png",
+        alt: "A Codebase Puzzles trace puzzle in Hono: the prompt, a file tree and outline, the code viewer, and the answer tray with Hono.request added",
+        width: 1440,
+        height: 900,
+      },
+      {
+        src: "/projects/codebase-puzzles/list.png",
+        alt: "The Codebase Puzzles list: 100 puzzles split by difficulty, with filters for type, topic and repo",
+        width: 1440,
+        height: 900,
+      },
+    ],
+  },
 ];
 
 export const experience: Experience[] = [

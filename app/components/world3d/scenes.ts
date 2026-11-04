@@ -46,6 +46,7 @@ export const scenes: Record<SceneId, SceneDef> = {
     focus: {
       "monitor-0": { pos: [-2.25, 1.47, -2.15], target: [-2.4, 1.37, -3.62] },
       "monitor-1": { pos: [1.95, 1.47, -2.15], target: [1.8, 1.37, -3.62] },
+      "monitor-2": { pos: [5.35, 1.47, -2.15], target: [5.2, 1.37, -3.62] },
       toolwall: { pos: [-3.4, 1.75, 0.9], target: [-6.9, 1.65, 0.9] },
     },
     frame: "right",

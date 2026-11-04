@@ -18,6 +18,7 @@ const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const monitorSpots = [
   [-2.4, 0.94, -3.62],
   [1.8, 0.94, -3.62],
+  [5.2, 0.94, -3.62],
 ] as const;
 
 const SCREEN = { w: 0.86, h: 0.54 };
@@ -171,16 +172,10 @@ function buildWorkshopScene(quality: "high" | "low") {
   for (const [x] of monitorSpots) cables.push(tube([v(x, 1.2, -3.78), v(x + 0.2, 0.8, -3.95), v(x + 0.6, 0.05, -3.9), v(x + 1.4, 0.03, -3.4)], () => 0.013, 16, 4));
   cables.push(tube([v(-0.6, 0.03, -3.4), v(0.5, 0.03, -2.6), v(2.2, 0.03, -2.9), v(4, 0.03, -2.2)], () => 0.016, 20, 4));
   root.add(mesh(merge(cables), mat("cable", () => paint({ color: "#2b2b26", brush: 0.1 })), { cast: false }));
-  // A third desk with a dead CRT
-  const desk = buildBench(3, 1.6);
+  // A third desk, by the wall (wide enough that its clutter clears the keyboard)
+  const desk = buildBench(3, 2.4);
   desk.position.set(5.2, 0, -3.6);
   root.add(desk);
-  const crt = mesh(merge([at(box(0.55, 0.48, 0.45), 0, 0.24, 0), at(box(0.38, 0.34, 0.25), 0, 0.24, -0.3)]), mat("crt", () => paint({ color: "#d4ccb4", brush: 0.3, brushScale: 6, grime: 0.6 })));
-  crt.position.set(5.2, 0.94, -3.6);
-  root.add(crt);
-  const crtGlass = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.34), mat("screenGlass", () => paint({ map: deadScreen() })));
-  crtGlass.position.set(5.2, 1.18, -3.37);
-  root.add(crtGlass);
   // A stool, knocked over
   const stool = mesh(merge([at(new THREE.CylinderGeometry(0.2, 0.2, 0.05, 14), 0, 0.6, 0), ...[0, 1, 2].map((i) => tube([v(Math.cos(i * 2.1) * 0.15, 0.6, Math.sin(i * 2.1) * 0.15), v(Math.cos(i * 2.1) * 0.24, 0, Math.sin(i * 2.1) * 0.24)], () => 0.018, 2, 4))]), M.iron());
   stool.position.set(-0.4, 0.22, -1.6);
@@ -306,8 +301,9 @@ export default function Workshop({ active, quality }: SceneProps) {
       <hemisphereLight args={["#f3e2c2", "#6a5440", 1.5]} />
       <pointLight position={[0, 3.6, 1]} color="#ffcf8f" intensity={7} distance={14} decay={1.3} />
       <pointLight position={[-4.5, 3, 2.5]} color="#ffd8a8" intensity={4} distance={10} decay={1.4} />
-      <pointLight position={[-2, 1.6, -2.2]} color="#9fc8b0" intensity={sel.project === 0 && arrived ? 1.2 : 0} distance={3} />
-      <pointLight position={[1.8, 1.6, -2.2]} color="#9fc8b0" intensity={sel.project === 1 && arrived ? 1.2 : 0} distance={3} />
+      {monitorSpots.map(([x], i) => (
+        <pointLight key={i} position={[x, 1.6, -2.2]} color="#9fc8b0" intensity={sel.project === i && arrived ? 1.2 : 0} distance={3} />
+      ))}
       {active && (
         <>
           {monitorSpots.map(([x, y, z], i) => (
