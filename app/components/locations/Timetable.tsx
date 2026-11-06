@@ -114,7 +114,7 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
         </div>
 
         <section id="timetable-notice" key={selected} aria-live="polite" className="timetable-notice">
-          <p className="flap tabular-nums text-sm font-semibold text-warm" style={{ "--i": 0 } as React.CSSProperties}>
+          <p className="flap tabular-nums text-sm font-semibold text-mark" style={{ "--i": 0 } as React.CSSProperties}>
             {when(stop)}
             {stop.location && `, ${stop.location}`}
           </p>

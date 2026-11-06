@@ -6,7 +6,9 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { FLAT_QUERY, WORLD_QUERY } from "../app/components/world/flat.ts";
 import { about, experience, interests, profile, projects, skillGroups } from "../app/data/portfolio.ts";
-import { places } from "../app/data/world.ts";
+import { places, sectionForAnchor, sectionForPath, sections } from "../app/sections/registry.ts";
+import { glyphs } from "../app/components/world/glyphs.ts";
+import { scenes } from "../app/components/world3d/scenes.ts";
 
 const root = new URL("..", import.meta.url).pathname;
 const isSentence = (text) => /[.!?]$/.test(text.trim());
@@ -65,10 +67,48 @@ test("contact details point somewhere real", () => {
   for (const email of profile.emails) assert.match(email.address, /^[^@\s]+@[^@\s]+\.[a-z]+$/);
 });
 
-test("every place has a page", () => {
-  const hrefs = places.map((place) => place.href);
-  assert.equal(new Set(hrefs).size, hrefs.length);
-  for (const href of hrefs) assert.ok(existsSync(`${root}app${href}/page.tsx`), `${href} has no page`);
+test("every section in the registry is complete and has a page", () => {
+  const ids = sections.map((s) => s.id);
+  const hrefs = sections.map((s) => s.href);
+  assert.equal(new Set(ids).size, ids.length, "ids are unique");
+  assert.equal(new Set(hrefs).size, hrefs.length, "addresses are unique");
+  for (const s of sections) {
+    const dir = s.href === "/" ? "" : s.href;
+    assert.ok(existsSync(`${root}app${dir}/page.tsx`), `${s.href} has no page`);
+    assert.ok(s.glyph in glyphs, `${s.id}: no glyph "${s.glyph}"`);
+    assert.ok(s.scene.id in scenes, `${s.id}: no scene "${s.scene.id}"`);
+    if (s.scene.focus && !["monitor", "cabinet"].includes(s.scene.focus)) assert.ok(s.scene.focus in scenes[s.scene.id].focus, `${s.id}: scene has no focus "${s.scene.focus}"`);
+    assert.ok(s.metadata.title && s.metadata.description, `${s.id}: metadata`);
+    assert.ok(isSentence(s.summary), `${s.id}: summary "${s.summary}"`);
+  }
+  // Every listed place is on the painting and (when it has a building) on the map
+  for (const s of places) {
+    assert.ok(s.tag, `${s.id} has no tag on the painting`);
+    if (s.anchor && s.id !== "map") assert.ok(s.map, `${s.id} has no pin on the map`);
+  }
+  // Addresses resolve both ways, and unknown ones fall back to the park
+  for (const s of sections) assert.equal(sectionForPath(s.href).id, s.id);
+  assert.equal(sectionForPath("/nowhere").id, "home");
+  for (const s of sections) if (s.anchor) assert.equal(sectionForAnchor(s.anchor)?.id, s.id);
+});
+
+test("the theme is fixed: no dark theme, no toggle, no saved preference", () => {
+  const css = readFileSync(`${root}app/globals.css`, "utf8");
+  assert.doesNotMatch(css, /data-theme|prefers-color-scheme|theme-transition/, "globals.css has no second theme");
+  assert.match(css, /--background: var\(--cream\)/, "the background is the palette's cream");
+  for (const hex of ["#fff9f2", "#55c6f0", "#1e107a", "#e5ddd4", "#1d1e1e", "#fb5745"]) assert.ok(css.includes(hex), `palette colour ${hex} is defined`);
+  assert.ok(!existsSync(`${root}app/components/ThemeToggle.tsx`), "the toggle is gone");
+  const layout = readFileSync(`${root}app/layout.tsx`, "utf8");
+  assert.doesNotMatch(layout, /data-theme|localStorage\.getItem\("theme"\)/, "nothing reads a saved theme");
+  const walk = (dir, out = []) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path, out);
+      else if (/\.tsx?$/.test(entry.name)) out.push(path);
+    }
+    return out;
+  };
+  for (const file of walk(`${root}app`)) assert.doesNotMatch(readFileSync(file, "utf8"), /localStorage\.setItem\("theme"/, `${file} saves a theme`);
 });
 
 test("the flat and world layouts use the same media queries in CSS and in code", () => {

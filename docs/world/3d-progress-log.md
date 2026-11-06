@@ -118,3 +118,43 @@ through the image optimizer. Numbers and the full list:
   (`app/fonts/signs.txt`); `npm test` checks every character used is in
   it. The painting on phones is served at 1920px / quality 65 (118 KB,
   was 159) and the 3D monitors' screenshots at 1200px (was 3840).
+
+## The overhaul (6 November 2026, evening)
+
+- **One theme.** Monkeytype's Soaring Skies palette, as six named colours
+  and a set of semantic tokens at the top of `globals.css`; the dark theme,
+  its toggle, the inline theme script and the `theme` storage key are
+  gone (the key is cleared on the next visit). The scenes' skies are the
+  palette's blue, fog and thresholds are tinted to match, the station's
+  board is indigo, and the grade pass shades toward sky instead of
+  blue-green.
+- **Section registry.** `app/sections/registry.ts` is the one list of
+  sections; `data/world.ts`, the hard-coded tag/pin tables and the Park's
+  name-tag list are gone. `/greenhouse` is an unlisted starter that proves
+  a section can be added without touching navigation, the Director or the
+  renderer (`docs/adding-a-section.md`).
+- **Seamless arrival.** The words never wait: `--arrive-delay` is 0.08 s
+  (was 1.5 s after the first page), `.arrive` is 0.28 s, the map unfolds in
+  0.3 s. Camera journeys are about half as long (park → place 1.7 s, was
+  2.7 s; first arrival 1.6/1.1 s, was 3.2/2 s). The painting of the park
+  stands in while the world loads instead of a flat haze, and the canvas
+  fades in over it. The other scenes are built in idle time
+  (`requestIdleCallback`) rather than on a 3.5 s timer; the frame loop
+  stops when the tab is hidden as well as when the world is off screen;
+  the workshop's screenshots load on demand (the chosen project first, the
+  rest when idle) and are disposed if the scene goes.
+- **Trees.** The composer now renders into a 4x multisampled target
+  (2x on low-power devices): before, the canvas's antialiasing never
+  reached the screen because every frame went through a plain render
+  target, which was the main cause of jagged silhouettes. Leaf cards use
+  alpha-to-coverage with a low cut, and the leaf-cluster texture has a
+  soft mass behind more, smaller leaves that fade at the rim, so a crown
+  reads as a rounded painted shape. The wind shader gained a slow shared
+  breath, a flutter made of two beats that never align (the 4.3 Hz sine
+  looked mechanical), and gusts that lean the crown more than the trunk.
+  On phones the painting drifts very slowly on its own layer, still under
+  reduced motion.
+- **Still to do.** Real-device checks (only Chromium emulation here);
+  the three.js chunk (281 KB gz) is now the largest single asset on wide
+  screens; the Noto subset must be regenerated if a sign gains a
+  character (`npm test` says so).

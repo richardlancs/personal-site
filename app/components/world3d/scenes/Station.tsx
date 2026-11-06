@@ -26,7 +26,7 @@ const when = (i: number) => {
 function rowTexture(i: number, selected: boolean) {
   const e = experience[i];
   return textPanel(`timetable-row-${i}-${selected}`, 512, 96, {
-    background: selected ? "#e4d3a4" : "#22382b",
+    background: selected ? "#bfe9f8" : "#1e107a",
     padding: 16,
     valign: "middle",
     lines: [
@@ -88,7 +88,7 @@ function buildStationScene(quality: "high" | "low") {
   board.position.set(BOARD.x, BOARD.y, BOARD.z);
   board.add(mesh(box(BOARD.w + 0.16, BOARD.h + 0.16, 0.08), mat("boardFrame", () => paint({ map: enamel(150, 25, 20), rust: 0.5, brush: 0.2 }))));
   const head = textPanel("timetable-head", 512, 80, {
-    background: "#1b2a22",
+    background: "#15105a",
     padding: 16,
     valign: "middle",
     lines: [{ text: "时刻表   TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],
@@ -223,7 +223,7 @@ function buildStationScene(quality: "high" | "low") {
     ),
   );
   root.add(buildDust(quality === "low" ? 30 : 80, [10, 3, 5], [1, TOP + 1.8, 0]));
-  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd29a", sunDir: [0.8, 0.25, 0.5] });
+  const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [0.8, 0.25, 0.5] });
   root.add(sky);
   // A blob of rubble at the end of the platform
   root.add(mesh(blob(r, 0.6, 0.5, 0.4, 1).translate(-12.2, TOP + 0.15, 1.4), M.concrete()));

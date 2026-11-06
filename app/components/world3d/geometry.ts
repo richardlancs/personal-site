@@ -224,7 +224,10 @@ function materialsFor(kind: TreeKind, height: number) {
       inner: paint({ color: kind.inner ?? "#3e5228", brush: 0.3, brushScale: 0.7, wind: { amp: 0.32, ...wind, flutter: 0 } }),
       leaves: paint({
         map: leafCluster(kind.palette),
-        alphaTest: 0.45,
+        // A low cut with alpha-to-coverage: the painted edge of each
+        // cluster fades instead of breaking into jagged steps
+        alphaTest: 0.12,
+        alphaToCoverage: true,
         side: THREE.DoubleSide,
         brush: 0.18,
         brushScale: 0.5,

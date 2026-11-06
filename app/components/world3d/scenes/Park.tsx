@@ -26,7 +26,9 @@ import {
   buildWires,
   mat,
 } from "../props";
+import { onIdle } from "../idle";
 import { rng } from "../rng";
+import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
 import { Hitbox, SunLight, type SceneProps } from "./common";
@@ -196,15 +198,23 @@ function buildPark(quality: "high" | "low") {
   ];
   const crowns: { center: THREE.Vector3; radius: number }[] = [];
   const shakeable: ShakeTree[] = [];
+  // The far trees are built later, in idle time (see `late`), so the
+  // first frame comes sooner. The random draws stay in order either way.
+  const lateTrees: (() => void)[] = [];
   trees.forEach(([kind, x, z, scale], i) => {
     if (quality === "low" && i > 15) return;
     const k: TreeKind = treeKinds[kind];
-    const t = buildTree(100 + i, k, { shadows: Math.hypot(x, z - 4) < 34 });
-    t.position.set(x, 0, z);
-    t.scale.setScalar(scale);
-    t.rotation.y = r() * Math.PI * 2;
-    root.add(t);
-    shakeable.push({ group: t, crown: v(x, k.height * scale * 0.72, z), radius: k.spread * 0.6 * scale, height: k.height * scale, tint: k.fall ?? "#ffffff" });
+    const ry = r() * Math.PI * 2;
+    const build = () => {
+      const t = buildTree(100 + i, k, { shadows: Math.hypot(x, z - 4) < 34 });
+      t.position.set(x, 0, z);
+      t.scale.setScalar(scale);
+      t.rotation.y = ry;
+      root.add(t);
+      shakeable.push({ group: t, crown: v(x, k.height * scale * 0.72, z), radius: k.spread * 0.6 * scale, height: k.height * scale, tint: k.fall ?? "#ffffff" });
+    };
+    if (Math.hypot(x, z) < 30) build();
+    else lateTrees.push(build);
     if (Math.hypot(x, z) < 26) crowns.push({ center: v(x, treeKinds[kind].height * scale * 0.75, z), radius: 2.5 * scale });
   });
 
@@ -245,34 +255,39 @@ function buildPark(quality: "high" | "low") {
   const falling = buildFallingLeaves(quality === "low" ? 16 : 36, crowns);
   root.add(falling.group);
 
-  // The empty city
-  const cityR = rng(404);
-  const spots = [];
-  for (let i = 0; i < 46; i++) {
-    const a = cityR.range(-Math.PI * 0.98, -Math.PI * 0.02);
-    const d = cityR.range(68, 130);
-    spots.push({ x: Math.cos(a) * d, z: Math.sin(a) * d - 10, w: cityR.range(9, 16), d: cityR.range(9, 14), h: cityR.range(12, 44) });
-  }
-  for (let i = 0; i < 10; i++) {
-    const side = i % 2 ? 1 : -1;
-    spots.push({ x: side * cityR.range(62, 90), z: cityR.range(-5, 40), w: cityR.range(9, 14), d: cityR.range(9, 14), h: cityR.range(10, 30) });
-  }
-  root.add(buildCity(7, spots));
-  root.add(buildHills());
-  // Dark masses of trees between the park and the city
-  const belt: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 70; i++) {
-    const a = cityR.range(-Math.PI * 1.1, Math.PI * 0.1);
-    const d = cityR.range(46, 62);
-    belt.push(blob(cityR, cityR.range(3, 6), 0.9, 0.45, 2).translate(Math.cos(a) * d, cityR.range(3, 6), Math.sin(a) * d - 6));
-  }
-  root.add(mesh(merge(belt), mat("treeBelt", () => paint({ color: "#4e6632", brush: 0.45, brushScale: 0.3 })), { cast: false }));
+  // The empty city, the hills and the far trees: past the fog's reach
+  // at first, so they're built once the first frame is up
+  const late = () => {
+    for (const build of lateTrees) build();
+    lateTrees.length = 0;
+    const cityR = rng(404);
+    const spots = [];
+    for (let i = 0; i < 46; i++) {
+      const a = cityR.range(-Math.PI * 0.98, -Math.PI * 0.02);
+      const d = cityR.range(68, 130);
+      spots.push({ x: Math.cos(a) * d, z: Math.sin(a) * d - 10, w: cityR.range(9, 16), d: cityR.range(9, 14), h: cityR.range(12, 44) });
+    }
+    for (let i = 0; i < 10; i++) {
+      const side = i % 2 ? 1 : -1;
+      spots.push({ x: side * cityR.range(62, 90), z: cityR.range(-5, 40), w: cityR.range(9, 14), d: cityR.range(9, 14), h: cityR.range(10, 30) });
+    }
+    root.add(buildCity(7, spots));
+    root.add(buildHills());
+    // Dark masses of trees between the park and the city
+    const belt: THREE.BufferGeometry[] = [];
+    for (let i = 0; i < 70; i++) {
+      const a = cityR.range(-Math.PI * 1.1, Math.PI * 0.1);
+      const d = cityR.range(46, 62);
+      belt.push(blob(cityR, cityR.range(3, 6), 0.9, 0.45, 2).translate(Math.cos(a) * d, cityR.range(3, 6), Math.sin(a) * d - 6));
+    }
+    root.add(mesh(merge(belt), mat("treeBelt", () => paint({ color: "#4e6632", brush: 0.45, brushScale: 0.3 })), { cast: false }));
+  };
 
   root.add(buildDust(quality === "low" ? 50 : 140, [26, 6, 26], [-2, 3, 6]));
-  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [-0.75, 0.32, 0.25] });
+  const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [-0.75, 0.32, 0.25] });
   root.add(sky);
 
-  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable };
+  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable, late };
 }
 
 export default function Park({ active, quality, navigate }: SceneProps) {
@@ -287,6 +302,9 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   useEffect(() => {
     for (const [id, p] of Object.entries(parkPlaces)) anchors.set(`park:${id}`, v(p.label[0], p.label[1], p.label[2]));
   }, []);
+
+  // The far scenery, once the browser has a moment
+  useEffect(() => onIdle(built.late, 1500), [built]);
 
   useFrame(({ camera, clock }, dt) => {
     if (!active) return;
@@ -352,7 +370,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
             position={[p.pos[0], p.hit[1] / 2, p.pos[2]]}
             rotation={p.ry}
             size={p.hit}
-            onSelect={() => navigate(id === "board" ? "/map" : `/${{ library: "about", workshop: "projects", station: "experience", arcade: "interests", booth: "contact" }[id]}`)}
+            onSelect={() => navigate(sectionForAnchor(id as keyof typeof parkPlaces)?.href ?? "/")}
           />
         ))}
       <pointLight ref={fountainLight} position={[PLAZA.x + 0.8, 2.6, PLAZA.z + 2.4]} color="#ffcf8a" intensity={0} distance={8} decay={1.4} />
@@ -363,7 +381,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
           <Hitbox id="park:fountain" position={[PLAZA.x, 1.15, PLAZA.z]} size={[1.8, 1.7, 1.8]} onSelect={runFountain} />
         </>
       )}
-      {active && <Hitbox id="park:station" position={[4, 10, -48]} size={[3.8, 20, 3.8]} onSelect={() => navigate("/experience")} />}
+      {active && <Hitbox id="park:station" position={[4, 10, -48]} size={[3.8, 20, 3.8]} onSelect={() => navigate(sectionForAnchor("station")?.href ?? "/")} />}
       {active && <Hitbox id="park:swing" position={[-8, 1.3, 3.5]} rotation={0.35} size={[3, 2.6, 2]} onSelect={kickSwing} />}
     </group>
   );

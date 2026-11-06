@@ -86,9 +86,9 @@ const Grade = {
       }
       col += glow / 8.0 * 0.55 * vec3(1.0, 0.94, 0.82);
 
-      // Shade toward blue-green, light toward warm cream
-      col += vec3(0.015, 0.045, 0.075) * pow(1.0 - lum, 2.0);
-      col = mix(col, col * vec3(1.04, 1.0, 0.93), smoothstep(0.55, 1.0, lum));
+      // Shade toward the sky's blue, light toward warm cream
+      col += vec3(0.02, 0.055, 0.085) * pow(1.0 - lum, 2.0);
+      col = mix(col, col * vec3(1.04, 1.0, 0.94), smoothstep(0.55, 1.0, lum));
       // Fuller colour in the midtones, as painted
       float grey = dot(col, vec3(0.299, 0.587, 0.114));
       col = mix(vec3(grey), col, 1.0 + 0.14 * (1.0 - abs(grey - 0.5) * 2.0));
@@ -99,16 +99,20 @@ const Grade = {
       // Fixed, like the grain of real paper: it doesn't crawl
       col += (hash(floor(vUv / uTexel)) - 0.5) * 0.022;
       vec2 e = vUv - 0.5;
-      col *= mix(vec3(1.0), vec3(0.92, 0.89, 0.85), smoothstep(0.35, 0.85, dot(e, e) * 2.2));
+      col *= mix(vec3(1.0), vec3(0.9, 0.91, 0.95), smoothstep(0.35, 0.85, dot(e, e) * 2.2));
       gl_FragColor = vec4(col, 1.0);
     }`,
 };
 
-export default function Painterly({ brushwork }: { brushwork: boolean }) {
+export default function Painterly({ brushwork, samples }: { brushwork: boolean; samples: number }) {
   const { gl, scene, camera, size } = useThree();
 
   const { composer, brush, grade } = useMemo(() => {
-    const composer = new EffectComposer(gl);
+    // The composer's own target has no antialiasing; the canvas's is
+    // never seen because every frame goes through here. A multisampled
+    // target keeps the edges of leaves, branches and wires smooth.
+    const target = new THREE.WebGLRenderTarget(1, 1, { samples, type: THREE.HalfFloatType });
+    const composer = new EffectComposer(gl, target);
     composer.addPass(new RenderPass(scene, camera));
     const brush = new ShaderPass(Brushwork);
     composer.addPass(brush);
@@ -116,7 +120,7 @@ export default function Painterly({ brushwork }: { brushwork: boolean }) {
     const grade = new ShaderPass(Grade);
     composer.addPass(grade);
     return { composer, brush, grade };
-  }, [gl, scene, camera]);
+  }, [gl, scene, camera, samples]);
 
   useEffect(() => {
     const ratio = gl.getPixelRatio();

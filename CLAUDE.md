@@ -74,6 +74,13 @@ camera there. Each page's HTML panel and its 3D objects share state through
 `world3d/store.ts`. Progress, decisions and limits:
 `docs/world/3d-progress-log.md`.
 
+Every section is one entry in `app/sections/registry.ts` (address, names,
+glyph, scene, where it is in the painting and on the map, metadata) plus
+one page file. The menu, the home page's tags and list, the map, the park's
+name tags and the links at the foot of each page are generated from the
+registry: never keep a second list of sections anywhere. To add one, follow
+`docs/adding-a-section.md`; `/greenhouse` is the unlisted starter.
+
 Phones, portrait tablets and short windows get the flat layout instead: no
 3D at all (three.js is never downloaded there). Each page opens with the
 painting, moved in on that place (`components/world/Plate.tsx`), and the
@@ -102,15 +109,23 @@ busy scenery. Real content stays in HTML.
 
 ## Color Palette
 
-All colors are tokens in `app/globals.css` (day in `:root`, night in
-`[data-theme="dark"]`): paper, green-black ink, leaf green and rust. The
-painting stays the same in both themes for now.
+One fixed theme, Monkeytype's "Soaring Skies": cream `#fff9f2`, sky
+`#55c6f0`, indigo `#1e107a`, sand `#e5ddd4`, ink `#1d1e1e`, error
+`#fb5745`. The six are named once at the top of `app/globals.css`; every
+component uses the semantic tokens derived from them (`--background`,
+`--paper`, `--surface-2`, `--surface-deep`, `--foreground`, `--muted`,
+`--accent`, `--mark`, `--highlight`, `--focus`, `--shadow`, …). Sky blue
+is decorative (marks, washes, lamps): it is 1.9:1 on cream, so text and
+controls use indigo or `--accent-hover`. There is no dark theme and no
+toggle; `npm test` checks that none comes back. The 3D scenes' skies, fog
+and thresholds are tuned to the same family; the landscape stays natural.
 
 Avoid:
 - large areas of pure black or pure white
 - neon or highly saturated colors
 - rainbow gradients
 - excessive glassmorphism
+- a second theme, or anything keyed on `prefers-color-scheme`
 
 Keep text contrast at 4.5:1 or better on paper and on every sky.
 
@@ -232,7 +247,10 @@ Avoid:
 
 ## Motion
 
-Animations should be subtle.
+Animations should be subtle. Words never wait for the world: a page's
+content comes in within about 0.1 s of arriving (`--arrive-delay`) while
+the camera's journey, a second or so, plays behind it. Interface
+transitions are 150–300 ms. The world stops drawing when the tab is hidden.
 
 Preferred:
 - opacity transitions

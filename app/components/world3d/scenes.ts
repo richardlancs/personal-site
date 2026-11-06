@@ -34,9 +34,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       board: { pos: [3.55, 1.72, 1.45], target: [4.35, 1.62, -1.6] },
     },
     frame: "center",
-    threshold: "#e9cf9c",
-    fog: { color: "#cfd8d0", near: 20, far: 135 },
-    background: "#cfd8d0",
+    threshold: "#e9e2d8",
+    fog: { color: "#d7e4ec", near: 20, far: 135 },
+    background: "#d7e4ec",
   },
   workshop: {
     offset: [400, 0, 0],
@@ -50,9 +50,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       toolwall: { pos: [-3.4, 1.75, 0.9], target: [-6.9, 1.65, 0.9] },
     },
     frame: "right",
-    threshold: "#2a2118",
-    fog: { color: "#b49a74", near: 7, far: 38 },
-    background: "#b49a74",
+    threshold: "#221c3e",
+    fog: { color: "#c1b19e", near: 7, far: 38 },
+    background: "#c1b19e",
   },
   station: {
     offset: [800, 0, 0],
@@ -63,9 +63,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       timetable: { pos: [-1.6, 2.35, 1.25], target: [-2.25, 2.05, -2.85] },
     },
     frame: "left",
-    threshold: "#f1dcae",
-    fog: { color: "#d2d9cf", near: 18, far: 100 },
-    background: "#d2d9cf",
+    threshold: "#efe7dc",
+    fog: { color: "#d8e4ea", near: 18, far: 100 },
+    background: "#d8e4ea",
   },
   arcade: {
     offset: [1200, 0, 0],
@@ -79,9 +79,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       "cabinet-3": { pos: [3.75, 1.62, -1.15], target: [3.6, 1.42, -3.3] },
     },
     frame: "right",
-    threshold: "#221b26",
-    fog: { color: "#7a6458", near: 6, far: 32 },
-    background: "#7a6458",
+    threshold: "#1a1452",
+    fog: { color: "#6e6482", near: 6, far: 32 },
+    background: "#6e6482",
   },
   library: {
     offset: [1600, 0, 0],
@@ -92,9 +92,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       notebook: { pos: [1.15, 1.62, -0.2], target: [1.2, 0.82, -1.3] },
     },
     frame: "left",
-    threshold: "#3a2a1c",
-    fog: { color: "#a88e6c", near: 6, far: 34 },
-    background: "#a88e6c",
+    threshold: "#2a2140",
+    fog: { color: "#b3a28c", near: 6, far: 34 },
+    background: "#b3a28c",
   },
   booth: {
     offset: [2000, 0, 0],
@@ -105,9 +105,9 @@ export const scenes: Record<SceneId, SceneDef> = {
       phone: { pos: [0.08, 1.6, 0.95], target: [0, 1.42, -0.4] },
     },
     frame: "right",
-    threshold: "#2f4a36",
-    fog: { color: "#d4d8c8", near: 14, far: 80 },
-    background: "#d4d8c8",
+    threshold: "#24306a",
+    fog: { color: "#dbe4e8", near: 14, far: 80 },
+    background: "#dbe4e8",
   },
 };
 
@@ -121,31 +121,5 @@ export const routesFromPark: Partial<Record<SceneId, { path: V3[]; look: V3 }>> 
   booth: { path: [[4.6, 2.0, 9.5], [7.6, 1.75, 5.2]], look: [9.5, 1.45, 1.6] },
 };
 
-// Which place each address shows, and what the camera looks at there.
-// "monitor" and "cabinet" mean the one that's chosen (World3D resolves them).
-export function sceneForPath(pathname: string): { scene: SceneId; focus: string | null } {
-  switch (pathname) {
-    case "/projects":
-      return { scene: "workshop", focus: "monitor" };
-    case "/experience":
-      return { scene: "station", focus: "timetable" };
-    case "/interests":
-      return { scene: "arcade", focus: "cabinet" };
-    case "/about":
-      return { scene: "library", focus: "notebook" };
-    case "/contact":
-      return { scene: "booth", focus: null };
-    case "/map":
-      return { scene: "park", focus: "board" };
-    default:
-      return { scene: "park", focus: null };
-  }
-}
-
-export const hrefFor: Record<Exclude<SceneId, "park">, string> = {
-  workshop: "/projects",
-  station: "/experience",
-  arcade: "/interests",
-  library: "/about",
-  booth: "/contact",
-};
+// Which scene each address shows, and what the camera looks at there, is
+// in the section registry (sections/registry.ts: `scene`).

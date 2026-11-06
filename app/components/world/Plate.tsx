@@ -2,29 +2,20 @@ import Image from "next/image";
 import painting from "../../assets/park/park-v04.png";
 import { WORLD_QUERY } from "./flat";
 
-// Where each place is in the painting (percent across and down), and how
-// far the plate moves in on it
-const views = {
-  park: { x: 50, y: 50, zoom: 1 },
-  pavilion: { x: 9, y: 49, zoom: 1.9 },
-  workshop: { x: 30, y: 27, zoom: 1.9 },
-  station: { x: 58, y: 15, zoom: 1.9 },
-  arcade: { x: 88, y: 31, zoom: 1.9 },
-  booth: { x: 94, y: 53, zoom: 1.9 },
-  board: { x: 70, y: 45, zoom: 1.9 },
-} as const;
-
-export type PlateView = keyof typeof views;
+// Where in the painting to look (percent across and down), and how far to
+// move in. Each section says where it is (sections/registry.ts).
+export type PlateView = { x: number; y: number; zoom: number };
 
 // The flat layout's picture: the painting of the park, moved in on one
 // place. Every plate is the same image file, so going from page to page
 // downloads nothing new. Wide screens have the 3D world instead and never
 // fetch it (the plate is hidden there, and lazy images that are hidden
-// aren't loaded).
+// aren't loaded). The picture drifts very slowly, like a held breath, and
+// holds still for anyone who asked for less motion.
 export default function Plate({ view, children }: { view: PlateView; children?: React.ReactNode }) {
-  const { x, y, zoom } = views[view];
+  const { x, y, zoom } = view;
   return (
-    <div className="plate" data-view={view}>
+    <div className="plate" data-view={zoom === 1 ? "park" : "place"}>
       <div className="plate-picture" aria-hidden="true">
         <Image
           src={painting}

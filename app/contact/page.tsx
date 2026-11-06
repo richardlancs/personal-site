@@ -1,13 +1,9 @@
-import type { Metadata } from "next";
 import Payphone from "../components/locations/Payphone";
 import Location from "../components/world/Location";
 import { profile } from "../data/portfolio";
-import { placeById } from "../data/world";
+import { section, sectionMetadata } from "../sections/registry";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé.",
-};
+export const metadata = sectionMetadata("contact");
 
 // Shows a URL without "https://" and "www." so it reads cleanly
 const shortUrl = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "");
@@ -27,7 +23,7 @@ const lines = [
 // The phone booth by the park gate
 export default function ContactPage() {
   return (
-    <Location place={placeById("booth")} side="left" intro="The light inside still comes on, and the line still works.">
+    <Location section={section("contact")}>
       <Payphone lines={lines} />
     </Location>
   );

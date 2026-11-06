@@ -2,33 +2,25 @@ import Link from "next/link";
 import PlaceGlyph from "./components/world/PlaceGlyph";
 import Plate from "./components/world/Plate";
 import { profile } from "./data/portfolio";
-import { places } from "./data/world";
+import { places, section, sectionMetadata } from "./sections/registry";
 
-// Where each place stands in the painting (percent across and down): the
-// flat layout pins a tag there
-const tags = [
-  { href: "/about", label: "About", x: 14, y: 39 },
-  { href: "/projects", label: "Projects", x: 33.5, y: 27 },
-  { href: "/experience", label: "Experience", x: 56.5, y: 16.5 },
-  { href: "/interests", label: "Interests", x: 82, y: 27.5 },
-  // Under the board, clear of the booth's tag beside it
-  { href: "/map", label: "Map", x: 66.5, y: 52.5, below: true },
-  // The booth is at the painting's right edge: its tag hangs to the left
-  { href: "/contact", label: "Contact", x: 93, y: 41.5, edge: true },
-];
+export const metadata = sectionMetadata("home");
 
 // The site opens in the park. On wide screens that's the 3D world
 // (components/world3d, in the layout) with my name and links quiet in the
 // open sky. On the flat layout it's the painting of the park with a tag on
-// every place, then who I am, then every place as a plain list.
+// every section, then who I am, then every section as a plain list. The
+// tags and the list come from the section registry.
 export default function Home() {
+  const home = section("home");
+  const tagged = places.filter((s) => s.tag);
   return (
     <main className="over-world">
-      <Plate view="park">
-        <nav aria-label="Places in the painting" className="plate-tags">
-          {tags.map((tag) => (
-            <Link key={tag.href} href={tag.href} className="plate-tag" data-edge={tag.edge || undefined} data-below={tag.below || undefined} style={{ left: `${tag.x}%`, top: `${tag.y}%` }}>
-              {tag.label}
+      <Plate view={home.plate}>
+        <nav aria-label="Sections, on the painting" className="plate-tags">
+          {tagged.map((s) => (
+            <Link key={s.id} href={s.href} className="plate-tag" data-edge={s.tag!.edge || undefined} data-below={s.tag!.below || undefined} style={{ left: `${s.tag!.x}%`, top: `${s.tag!.y}%` }}>
+              {s.title}
             </Link>
           ))}
         </nav>
@@ -68,26 +60,17 @@ export default function Home() {
           Sections
         </h2>
         <ul role="list">
-          {places.map((place) => (
-            <li key={place.id}>
-              <Link href={place.href} className="place-row">
-                <PlaceGlyph id={place.id} className="place-row-glyph" />
+          {places.map((s) => (
+            <li key={s.id}>
+              <Link href={s.href} className="place-row">
+                <PlaceGlyph id={s.glyph} className="place-row-glyph" />
                 <span className="place-row-text">
-                  <span className="place-row-section">{place.section}</span>
-                  <span className="place-row-summary">{place.summary}</span>
+                  <span className="place-row-section">{s.title}</span>
+                  <span className="place-row-summary">{s.summary}</span>
                 </span>
               </Link>
             </li>
           ))}
-          <li>
-            <Link href="/map" className="place-row">
-              <PlaceGlyph id="board" className="place-row-glyph" />
-              <span className="place-row-text">
-                <span className="place-row-section">Map</span>
-                <span className="place-row-summary">Every section on one sheet, drawn in ink.</span>
-              </span>
-            </Link>
-          </li>
         </ul>
         <p className="location-footer">© 2026 {profile.name}</p>
       </nav>

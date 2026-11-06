@@ -2,12 +2,13 @@
 
 import { useFrame } from "@react-three/fiber";
 import { getImageProps } from "next/image";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { projects, skillGroups } from "../../../data/portfolio";
 import { at, blob, box, buildBush, buildTree, buildVine, merge, treeKinds, tube } from "../geometry";
 import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
+import { onIdle } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { deadScreen, planks, plaster, textPanel } from "../textures";
@@ -24,21 +25,42 @@ export const monitorSpots = [
 
 const SCREEN = { w: 0.86, h: 0.54 };
 
-function screenshotTextures() {
+// A screenshot for a monitor: fetched only when a monitor needs it (the
+// chosen project's first, the rest in idle time), through the image
+// optimizer at 1200px across, all a monitor in the scene can show
+type Shot = { url: string; aspect: number; texture: THREE.Texture | null; loading: boolean; load: () => void; dispose: () => void };
+
+function screenshotTextures(): Shot[][] {
   const loader = new THREE.TextureLoader();
   return projects.map((project) =>
     (project.screenshots ?? []).map((shot) => {
-      // Through the image optimizer, like the page's own pictures, at
-      // 1200px across: all a monitor in the scene can show, and a tenth of
-      // the PNG's weight
       const width = Math.min(1200, shot.width);
       const { props } = getImageProps({ src: shot.src, alt: "", width, height: Math.round((width * shot.height) / shot.width) });
       // props.src is the 2x candidate; the first srcSet entry is the 1x one
-      const t = loader.load(props.srcSet?.split(",")[0].trim().split(" ")[0] ?? props.src);
-      t.colorSpace = THREE.SRGBColorSpace;
-      t.anisotropy = 8;
-      t.userData.aspect = shot.width / shot.height;
-      return t;
+      const url = props.srcSet?.split(",")[0].trim().split(" ")[0] ?? props.src;
+      const entry: Shot = {
+        url,
+        aspect: shot.width / shot.height,
+        texture: null,
+        loading: false,
+        load() {
+          if (entry.texture || entry.loading) return;
+          entry.loading = true;
+          loader.load(url, (t) => {
+            t.colorSpace = THREE.SRGBColorSpace;
+            t.anisotropy = 8;
+            t.userData.aspect = entry.aspect;
+            entry.texture = t;
+            entry.loading = false;
+          });
+        },
+        dispose() {
+          entry.texture?.dispose();
+          entry.texture = null;
+          entry.loading = false;
+        },
+      };
+      return entry;
     }),
   );
 }
@@ -247,7 +269,7 @@ function buildWorkshopScene(quality: "high" | "low") {
   const outside = buildTree(90, treeKinds.zelkova, { shadows: false });
   outside.position.set(12, 0, -1);
   root.add(outside);
-  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [0.8, 0.35, -0.3] });
+  const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [0.8, 0.35, -0.3] });
   root.add(sky);
   const ground = mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false });
   root.add(ground);
@@ -260,6 +282,16 @@ export default function Workshop({ active, quality }: SceneProps) {
   const shots = useMemo(() => screenshotTextures(), []);
   const sel = useWorld((s) => s.sel);
   const arrived = useWorld((s) => s.arrived);
+
+  // Fetch the chosen project's screenshots first, then the others' once
+  // the browser is idle, and let them all go if the scene ever goes
+  useEffect(() => {
+    if (!active) return;
+    for (const shot of shots[sel.project] ?? []) shot.load();
+    const rest = shots.flatMap((list, i) => (i === sel.project ? [] : list));
+    return onIdle(() => rest.forEach((shot) => shot.load()), 4000);
+  }, [active, sel.project, shots]);
+  useEffect(() => () => shots.flat().forEach((shot) => shot.dispose()), [shots]);
   const power = useRef(built.monitors.map(() => 0));
   const shown = useRef<(THREE.Texture | null)[]>(built.monitors.map(() => null));
   const flicker = useRef(built.monitors.map(() => 0));
@@ -270,7 +302,9 @@ export default function Workshop({ active, quality }: SceneProps) {
     const t = clock.elapsedTime;
     built.monitors.forEach((m, i) => {
       const on = i === sel.project && arrived;
-      const tex = shots[i]?.[on ? sel.shot : 0] ?? null;
+      const entry = shots[i]?.[on ? sel.shot : 0] ?? null;
+      if (entry && !entry.texture) entry.load();
+      const tex = entry?.texture ?? null;
       if (tex && tex !== shown.current[i]) {
         shown.current[i] = tex;
         (m.picture.material as THREE.MeshBasicMaterial).map = tex;
@@ -281,7 +315,7 @@ export default function Workshop({ active, quality }: SceneProps) {
       flicker.current[i] = Math.max(0, flicker.current[i] - dt);
       const p = power.current[i];
       // Fit the picture inside the glass
-      const aspect = tex?.userData.aspect ?? 1.6;
+      const aspect = entry?.aspect ?? 1.6;
       const w = Math.min(SCREEN.w, SCREEN.h * aspect);
       const h = w / aspect;
       // Switching on: a bright line opens into the picture
@@ -291,7 +325,7 @@ export default function Workshop({ active, quality }: SceneProps) {
       mat.opacity = Math.min(1, p * 3);
       const jitter = flicker.current[i] > 0 ? 0.7 + 0.3 * Math.abs(Math.sin(t * 60)) : 1;
       mat.color.setScalar((1 + (1 - open) * 1.6) * jitter);
-      (m.lamp.material as THREE.MeshBasicMaterial).color.set(on ? "#7fe08a" : "#3a4a3a");
+      (m.lamp.material as THREE.MeshBasicMaterial).color.set(on ? "#55c6f0" : "#3a3c5a");
     });
   });
 

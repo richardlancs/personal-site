@@ -59,17 +59,22 @@ vec3 ph_wind(vec3 world, float localY) {
   float h = clamp((localY - uWindBase) / uWindHeight, 0.0, 1.6);
   h *= h;
   float t = uTime;
-  // Slow sway, a faster secondary, and a flutter for leaves and grass.
-  // Phases come from the world position, so nothing moves in step.
+  // A slow breath the whole crown shares, a sway, a secondary, and for
+  // leaves and grass a flutter made of two beats that never line up.
+  // Phases come from the world position, so no two trees move in step,
+  // and branches on one tree lead and lag each other.
+  float breath = sin(t * 0.35 + world.x * 0.05 + world.z * 0.04) * 0.3;
   float sway = sin(t * 0.9 + world.x * 0.31 + world.z * 0.23) * 0.55
     + sin(t * 1.7 + world.x * 0.83 - world.z * 0.61) * 0.25
-    + sin(t * 4.3 + dot(world, vec3(1.7, 2.3, 1.3))) * 0.2 * uFlutter;
-  // A gust is a wave moving across the world
+    + sin(t * 2.9 + world.x * 1.9 + world.y * 1.1) * sin(t * 2.3 + world.z * 1.7 - world.y * 0.7) * 0.28 * uFlutter;
+  // A gust is a wave moving across the world; it builds, holds and dies
+  // away (World3D.tsx), and leans the crown more than the trunk
   float wave = 0.55 + 0.45 * sin(t * 1.1 - dot(world.xz, uGustDir) * 0.18);
-  float gust = uGust * wave;
+  float gust = uGust * wave * (0.7 + 0.3 * h);
   vec2 dir = normalize(uGustDir + vec2(0.25 * sin(t * 0.21), 0.0));
-  vec3 d = vec3(dir.x, 0.0, dir.y) * (sway * 0.3 + gust) * uWindAmp * h;
-  d.y -= length(d) * 0.3;
+  vec3 d = vec3(dir.x, 0.0, dir.y) * ((sway + breath) * 0.3 + gust) * uWindAmp * h;
+  // Leaves lift a little as they turn in the wind, and droop as it drops
+  d.y += (sin(t * 1.3 + world.x * 0.9 + world.z * 0.5) * 0.12 * uFlutter - length(d) * 0.3);
   return d;
 }
 `;
@@ -96,6 +101,7 @@ export type PaintOptions = {
   map?: THREE.Texture | null;
   alphaMap?: THREE.Texture | null;
   alphaTest?: number;
+  alphaToCoverage?: boolean; // soft cut-out edges, with a multisampled target
   vertexColors?: boolean;
   emissive?: THREE.ColorRepresentation;
   emissiveIntensity?: number;
@@ -132,6 +138,8 @@ export function paint(options: PaintOptions = {}): THREE.MeshLambertMaterial {
     depthWrite: options.depthWrite ?? true,
     fog: options.fog ?? true,
   });
+
+  material.alphaToCoverage = options.alphaToCoverage ?? false;
 
   const uniforms = {
     uBrush: { value: options.brush ?? 0.22 },

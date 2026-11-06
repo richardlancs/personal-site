@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import WorldShell from "./components/world3d/WorldShell";
 import WorldControls from "./components/world/WorldControls";
@@ -54,22 +54,20 @@ export const metadata: Metadata = {
     "Portfolio of Richard Lan, a Computer Science student at the University of Waterloo seeking software engineering internship and co-op roles.",
 };
 
-// Runs before the page is drawn: if the visitor previously chose a theme,
-// apply it right away so the page doesn't flash light-then-dark.
-const themeScript = `(function(){try{var t=localStorage.getItem("theme");if(t==="dark"||t==="light")document.documentElement.setAttribute("data-theme",t)}catch(e){}})()`;
+// One theme, always (globals.css): the browser is told so too, so form
+// controls and scrollbars never switch to a dark style on their own
+export const viewport: Viewport = {
+  colorScheme: "light",
+  themeColor: "#fff9f2",
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      data-theme="light"
       data-scroll-behavior="smooth"
       className={`${display.variable} ${chinese.variable} ${text.variable}`}
-      suppressHydrationWarning
     >
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body>
         <a href="#content" className="skip-link">
           Skip to the page

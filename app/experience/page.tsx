@@ -1,19 +1,15 @@
-import type { Metadata } from "next";
 import Timetable from "../components/locations/Timetable";
 import Location from "../components/world/Location";
 import { experience } from "../data/portfolio";
-import { placeById } from "../data/world";
+import { section, sectionMetadata } from "../sections/registry";
 
-export const metadata: Metadata = {
-  title: "Experience",
-  description: "Richard Lan's experience and education.",
-};
+export const metadata = sectionMetadata("experience");
 
 // The station under the clock tower: the timetable, newest first as
 // listed in app/data/portfolio.ts
 export default function ExperiencePage() {
   return (
-    <Location place={placeById("station")} side="right" intro="Work and education, on the old timetable." hint="Choose a line, or scroll, to read down it.">
+    <Location section={section("experience")}>
       <Timetable stops={experience} />
     </Location>
   );

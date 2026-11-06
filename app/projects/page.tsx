@@ -1,20 +1,16 @@
-import type { Metadata } from "next";
 import Workbench from "../components/locations/Workbench";
 import FocusButton from "../components/world/FocusButton";
 import Location from "../components/world/Location";
 import { projects, skillGroups } from "../data/portfolio";
-import { placeById } from "../data/world";
+import { section, sectionMetadata } from "../sections/registry";
 
-export const metadata: Metadata = {
-  title: "Projects",
-  description: "Software projects by Richard Lan, with screenshots, code and live demos.",
-};
+export const metadata = sectionMetadata("projects");
 
 // The workshop: a monitor on the benches for each project, and the tool
 // wall with the skills
 export default function ProjectsPage() {
   return (
-    <Location place={placeById("workshop")} side="left" intro="Old screens on the benches, still wired up. Choose one to switch it on.">
+    <Location section={section("projects")}>
       <Workbench projects={projects} />
 
       <section id="skills" aria-labelledby="skills-title" className="tool-wall take-clicks">

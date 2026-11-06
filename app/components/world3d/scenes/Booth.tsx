@@ -88,7 +88,7 @@ function buildBoothScene(quality: "high" | "low") {
   const cityR = rng(55);
   root.add(buildCity(21, Array.from({ length: 22 }, () => ({ x: cityR.range(-90, 90), z: cityR.range(-90, -35), w: cityR.range(9, 14), d: cityR.range(9, 12), h: cityR.range(12, 38) }))));
   root.add(buildDust(quality === "low" ? 20 : 50, [6, 3, 5], [0, 1.6, 1.5]));
-  const sky = buildSky({ top: "#5f94cc", horizon: "#f4e2bc", sun: "#ffd9a0", sunDir: [-0.7, 0.3, 0.5] });
+  const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [-0.7, 0.3, 0.5] });
   root.add(sky);
   return { root, booth, sky, falling, shakeable };
 }

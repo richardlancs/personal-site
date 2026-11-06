@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef } from "react";
-import { places } from "../../data/world";
+import { useEffect } from "react";
+import { listed } from "../../sections/registry";
 import MusicToggle from "../MusicToggle";
-import ThemeToggle from "../ThemeToggle";
 
 // The few controls that sit over the world, in its corners. There is no
 // row of tabs: you get around by going to places in the park. The Places
-// menu is the plain alternative, one step from anywhere.
+// menu is the plain alternative, one step from anywhere; its entries come
+// from the section registry.
 export default function WorldControls() {
   const pathname = usePathname();
   const router = useRouter();
@@ -28,16 +28,20 @@ export default function WorldControls() {
     return () => window.removeEventListener("keydown", onKey);
   }, [pathname, router]);
 
-  // The first page shows its words almost at once. After that, pages wait
-  // for the camera's journey (see --arrive-delay in globals.css): mark the
-  // document once the visitor has gone somewhere.
-  const arrivedAt = useRef(pathname);
-  useLayoutEffect(() => {
-    if (arrivedAt.current !== pathname) document.documentElement.dataset.travelled = "";
-  }, [pathname]);
+  // The site had a light/dark toggle once; the theme is fixed now. Clear
+  // the preference it saved, so nothing of it is left behind.
+  useEffect(() => {
+    try {
+      localStorage.removeItem("theme");
+    } catch {
+      // Storage can be unavailable (some private windows); nothing to clear
+    }
+  }, []);
 
   // Close the menu once a place is chosen (the page changes underneath)
   const close = () => document.getElementById("places-menu")?.hidePopover();
+
+  const menu = listed.filter((s) => s.id !== "map");
 
   return (
     <div className="world-controls">
@@ -66,33 +70,24 @@ export default function WorldControls() {
         <span className="control-round">
           <MusicToggle />
         </span>
-        <span className="control-round">
-          <ThemeToggle />
-        </span>
       </div>
 
       <nav id="places-menu" popover="auto" aria-label="Places" className="places-menu paper">
         <ul>
-          <li>
-            <Link href="/" onClick={close} aria-current={pathname === "/" ? "page" : undefined}>
-              <span className="places-menu-section">Home</span>
-              <span className="places-menu-place only-world">The park</span>
-            </Link>
-          </li>
-          {places.map((place) => (
-            <li key={place.id}>
-              <Link href={place.href} onClick={close} aria-current={pathname === place.href ? "page" : undefined}>
-                <span className="places-menu-section">{place.section}</span>
-                <span className="places-menu-place only-world">{place.name}</span>
+          {menu.map((s) => (
+            <li key={s.id}>
+              <Link href={s.href} onClick={close} aria-current={pathname === s.href ? "page" : undefined}>
+                <span className="places-menu-section">{s.title}</span>
+                <span className="places-menu-place only-world">{s.place}</span>
               </Link>
+              {s.subsections?.map((sub) => (
+                <Link key={sub.href} href={sub.href} onClick={close}>
+                  <span className="places-menu-section">{sub.title}</span>
+                  <span className="places-menu-place only-world">{sub.place}</span>
+                </Link>
+              ))}
             </li>
           ))}
-          <li>
-            <Link href="/projects#skills" onClick={close}>
-              <span className="places-menu-section">Skills</span>
-              <span className="places-menu-place only-world">The workshop&apos;s tool wall</span>
-            </Link>
-          </li>
         </ul>
         <Link href="/map" onClick={close} className="places-menu-map text-link">
           <span className="only-flat">Open the map</span>

@@ -1,37 +1,63 @@
 @import "tailwindcss";
 
 /*
-  Color tokens. Change these to restyle the whole site.
-  The site is a painted park in late-afternoon light (app/assets/park).
-  The interface around it is paper, ink and leaf green. The dark theme
-  keeps the same painting for now and dresses the paper for night.
+  Colour tokens: one fixed theme, Monkeytype's "Soaring Skies"
+  (https://github.com/monkeytypegame/monkeytype/blob/master/frontend/src/ts/constants/themes.ts).
+  The six palette colours are named first; everything else is a semantic
+  token derived from them, and components only ever use the semantic ones.
+  There is no dark theme and no toggle: the site renders this theme
+  whatever the system appearance.
 */
 :root {
   color-scheme: light;
 
-  --background: #ece6d6; /* page base: warm, slightly green paper */
-  /* Sheets and notes: warm paper the world shows through, softly */
-  --paper: rgb(251 243 225 / 0.8);
-  --paper-edge: rgb(255 249 234 / 0.6); /* a light edge, as if lit */
-  --foreground: #2b2f27; /* ink: green-black, never pure black */
-  --muted: #474c42; /* secondary text, 4.5:1 or better on paper over any scene */
-  --border: rgb(43 47 39 / 0.13);
-  /* Links and small marks are dark enough to keep 4.5:1 on paper even
-     where a dark part of the world shows through it (measured: paper gets
-     as dark as #ccc8b7 over the station) */
-  --accent: #2f5a3c; /* links: leaf green */
-  --accent-hover: #224430;
-  --warm: #823f1f; /* dates and small marks: rust */
-  --nav: rgb(249 246 237 / 0.78);
-  --label: rgb(251 243 225 / 0.78); /* name tags in the world */
-  /* What sits behind paper: the world, blurred and warmed */
-  --veil: blur(14px) saturate(1.15) brightness(1.04);
-  --float: 0 18px 44px -20px rgb(120 78 28 / 0.32), 0 1px 0 rgb(255 252 240 / 0.55) inset;
+  /* The palette */
+  --cream: #fff9f2; /* background */
+  --sky: #55c6f0; /* primary accent: decorative, never for small text */
+  --indigo: #1e107a; /* secondary accent: links, marks, dark surfaces */
+  --sand: #e5ddd4; /* secondary surface */
+  --ink: #1d1e1e; /* text */
+  --error: #fb5745;
 
-  /* Theme toggle: pastel peach with a warm sun */
-  --toggle-bg: #f5e8db;
-  --toggle-bg-hover: #f0dccb;
-  --toggle-icon: #a86b32;
+  /* Backgrounds and surfaces */
+  --background: var(--cream);
+  /* Sheets and notes: cream paper the world shows through, softly */
+  --paper: rgb(255 249 242 / 0.82);
+  --paper-edge: rgb(255 255 255 / 0.7); /* a light edge, as if lit */
+  --surface-2: var(--sand); /* secondary surface: boards, shells, tabs */
+  --surface-deep: var(--indigo); /* enamel, cabinets, the phone's line */
+  --surface-deep-2: #15105a; /* its darker edge */
+  --sheet: #fffdf8; /* an opaque sheet (the map) */
+  --nav: rgb(255 249 242 / 0.8);
+  --label: rgb(255 249 242 / 0.8); /* name tags in the world */
+
+  /* Text */
+  --foreground: var(--ink);
+  --muted: #45474a; /* secondary text: 6:1 or better on paper over any scene */
+  --on-deep: var(--cream); /* text on the deep surfaces */
+  --on-deep-muted: #c9c2e8;
+
+  /* Lines */
+  --border: rgb(29 30 30 / 0.14);
+  --rule: rgb(85 198 240 / 0.45); /* ruled lines, dividers that are drawn */
+
+  /* Accents */
+  --accent: var(--indigo); /* links and chosen things: text-safe */
+  --accent-hover: #0f6f93; /* the sky, dark enough to read (5.4:1 on cream) */
+  --mark: #0f6f93; /* dates, dashes and small marks */
+  --highlight: rgb(85 198 240 / 0.28); /* a wash of sky behind something chosen */
+  --error-ink: #c93a2b; /* the error colour, dark enough for text */
+  --focus: var(--indigo);
+
+  /* Light and shadow */
+  --veil: blur(14px) saturate(1.1) brightness(1.03);
+  --shadow: 30 16 122; /* shadows are indigo, like shade under a blue sky */
+  --float: 0 18px 44px -20px rgb(var(--shadow) / 0.22), 0 1px 0 rgb(255 255 255 / 0.6) inset;
+
+  /* The scene's own colours, for anything on the page that stands in for
+     it: the haze while the world loads, the painting's edge */
+  --scene-haze: #e9e2d8;
+  --scene-sky: #bfe5f5;
 
   /* Height of the fixed navbar (Navbar.tsx sets the same rows) */
   --nav-h: 5.5rem;
@@ -41,32 +67,6 @@
   :root {
     --nav-h: 3.5rem;
   }
-}
-
-/* Night: deep blue paper, never pure black */
-:root[data-theme="dark"] {
-  color-scheme: dark;
-
-  --background: #1a2133;
-  /* The world stays daytime at night, so this paper lets less through:
-     at 0.8 a sunlit patch behind it took text down to 3.6:1 */
-  --paper: rgb(30 36 46 / 0.88);
-  --paper-edge: rgb(255 236 200 / 0.14);
-  --foreground: #ece6d8;
-  --muted: #b2b5aa;
-  --border: rgb(255 255 255 / 0.1);
-  --accent: #a6cfa4;
-  --accent-hover: #c6e3c2;
-  --warm: #e5a57c;
-  --nav: rgb(26 32 46 / 0.8);
-  --label: rgb(30 36 46 / 0.78);
-  --veil: blur(14px) saturate(1.1) brightness(0.9);
-  --float: 0 18px 44px -20px rgb(0 0 0 / 0.45), 0 1px 0 rgb(255 236 200 / 0.08) inset;
-
-  /* Theme toggle: pastel lavender with a soft moon */
-  --toggle-bg: rgb(201 191 242 / 0.12);
-  --toggle-bg-hover: rgb(201 191 242 / 0.2);
-  --toggle-icon: #c9bff2;
 }
 
 /* Makes the tokens usable as Tailwind classes, e.g. bg-paper, text-muted */
@@ -79,11 +79,11 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
-  --color-warm: var(--warm);
+  --color-mark: var(--mark);
+  --color-sky: var(--sky);
+  --color-indigo: var(--indigo);
+  --color-sand: var(--sand);
   --color-nav: var(--nav);
-  --color-toggle-bg: var(--toggle-bg);
-  --color-toggle-bg-hover: var(--toggle-bg-hover);
-  --color-toggle-icon: var(--toggle-icon);
 
   /* Set in layout.tsx with next/font */
   --font-sans: var(--font-zen-kaku), "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
@@ -98,12 +98,12 @@ body {
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  background: var(--highlight);
 }
 
 /* Clear, consistent keyboard focus ring for every link and button */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -113,7 +113,7 @@ body {
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper);
-  box-shadow: 0 18px 40px -28px rgb(50 40 20 / 0.45);
+  box-shadow: 0 18px 40px -28px rgb(var(--shadow) / 0.35);
 }
 
 /* Text links inside content */
@@ -157,7 +157,7 @@ body {
   width: 0.5rem;
   height: 2px;
   border-radius: 1px;
-  background: var(--warm);
+  background: var(--mark);
 }
 
 /*
@@ -172,7 +172,7 @@ body {
   inset: 0;
   z-index: 0;
   overflow: hidden;
-  background: #e2c99c; /* the park's haze, while it loads */
+  background: var(--scene-haze); /* the park's haze, while it loads */
 }
 
 .world3d canvas {
@@ -180,10 +180,33 @@ body {
   touch-action: pan-y;
 }
 
+/* While the world loads, and where it can't be drawn: the painting of
+   the park (WorldShell.tsx puts it in), so the first view is never a
+   blank */
+.world3d-loading,
+.world3d-fallback {
+  background: linear-gradient(var(--scene-sky), var(--scene-haze));
+}
+
 .world3d-loading {
-  background:
-    radial-gradient(ellipse at 30% 20%, rgb(255 240 210 / 0.8), transparent 60%),
-    linear-gradient(#e9d3a6, #c9b07a);
+  background-size: cover;
+  background-position: center;
+}
+
+.world3d-fallback img {
+  object-fit: cover;
+}
+
+.world3d-canvas {
+  position: absolute;
+  inset: 0;
+  animation: world-in 0.5s ease-out both;
+}
+
+@keyframes world-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* The threshold between places: the colour of the doorway closing in
@@ -194,7 +217,7 @@ body {
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: #e9cf9c;
+  background: var(--scene-haze);
   mask-image: radial-gradient(
     circle at 50% 52%,
     transparent calc((1 - var(--iris)) * 85vmax),
@@ -230,7 +253,7 @@ body {
   color: var(--foreground);
   white-space: nowrap;
   text-align: center;
-  box-shadow: 0 8px 18px -12px rgb(40 30 10 / 0.55);
+  box-shadow: 0 8px 18px -12px rgb(var(--shadow) / 0.4);
   translate: -50% 0;
   opacity: 0;
   pointer-events: auto;
@@ -252,7 +275,7 @@ body {
 }
 
 .world-label:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -276,11 +299,6 @@ body {
   }
 }
 
-/* Without WebGL: the painting of the park */
-.world3d-fallback {
-  background: #c9a865;
-}
-
 /* The park's introduction, in the open sky at the upper left */
 .park-intro {
   position: absolute;
@@ -296,16 +314,10 @@ body {
   pointer-events: auto;
 }
 
-/* The world is daytime in both themes, so text over it stays ink.
-   Behind it, a band of late-afternoon haze softens the far skyline, so
-   the text stays readable without a card. */
+/* Behind the words, a band of haze softens the far skyline, so the text
+   stays readable without a card */
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
   .park-intro {
-    --foreground: #2b2f27;
-    --muted: #3e443a;
-    --accent: #2f5a3c;
-    --background: #f4ecda;
-    color: var(--foreground);
     isolation: isolate;
   }
 
@@ -316,9 +328,9 @@ body {
     z-index: -1;
     background: radial-gradient(
       closest-side,
-      rgb(243 231 205 / 0.9) 50%,
-      rgb(243 231 205 / 0.6) 75%,
-      rgb(243 231 205 / 0)
+      rgb(255 249 242 / 0.92) 50%,
+      rgb(255 249 242 / 0.65) 75%,
+      rgb(255 249 242 / 0)
     );
     pointer-events: none;
   }
@@ -349,7 +361,7 @@ body {
   width: 100%;
   height: 2px;
   border-radius: 2px;
-  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 0%, transparent));
+  background: linear-gradient(90deg, var(--sky), color-mix(in srgb, var(--sky) 0%, transparent));
   transform: scaleX(0.18);
   transform-origin: left;
   opacity: 0.6;
@@ -407,15 +419,9 @@ body {
 /* Page content sits over the world. Only its objects take clicks, so the
    world around them stays clickable. */
 :root {
-  /* When a place's page comes in. Arriving on the site, almost at once:
-     the words shouldn't wait for the world to load. */
-  --arrive-delay: 0.15s;
-}
-
-/* Going from place to place inside the site (WorldControls.tsx marks it):
-   as the camera walks into the place */
-:root[data-travelled] {
-  --arrive-delay: 1.5s;
+  /* When a place's page comes in: almost at once. The words never wait
+     for the world to load or for the camera to finish its journey. */
+  --arrive-delay: 0.08s;
 }
 
 .over-world {
@@ -430,36 +436,14 @@ body {
 
 /* A place's page comes in once the camera has nearly arrived */
 .arrive {
-  animation: arrive 0.6s cubic-bezier(0.22, 1, 0.36, 1) var(--arrive-delay) both;
+  animation: arrive 0.28s cubic-bezier(0.22, 1, 0.36, 1) var(--arrive-delay) both;
 }
 
 @keyframes arrive {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
-}
-
-/*
-  Theme change: <ThemeToggle> adds this class to <html> for a moment so
-  every color fades to the new theme instead of switching instantly.
-  The toggle icon is left out because it has its own animation below.
-*/
-html.theme-transition {
-  transition:
-    background-color 0.4s ease,
-    color 0.4s ease !important;
-}
-
-html.theme-transition *:not(.theme-icon, .theme-icon *) {
-  transition:
-    background-color 0.4s ease,
-    color 0.4s ease,
-    border-color 0.4s ease,
-    fill 0.4s ease,
-    stroke 0.4s ease,
-    opacity 0.4s ease,
-    text-decoration-color 0.4s ease !important;
 }
 
 /*
@@ -485,62 +469,10 @@ html.theme-transition *:not(.theme-icon, .theme-icon *) {
   transform: scale(0.96);
 }
 
-/* Keep the grow smooth even while the theme colors are fading */
-html.theme-transition .hover-grow {
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.4s ease,
-    color 0.4s ease !important;
-}
-
-/*
-  Theme toggle icon: a sun that morphs into a crescent moon.
-  - the rays rotate, shrink and fade out
-  - the center circle grows
-  - a hidden "bite" circle slides in to cut the crescent shape
-*/
-.theme-icon,
-.theme-icon-core,
-.theme-icon-rays,
-.theme-icon-bite {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.3s ease;
-}
-
-.theme-icon {
-  transform: rotate(-45deg);
-}
-
-.theme-icon-bite {
-  transform: translate(10px, -10px); /* parked outside the sun */
-}
-
-[data-theme="dark"] .theme-icon {
-  transform: rotate(0deg);
-}
-
-[data-theme="dark"] .theme-icon-core {
-  transform: scale(1.6);
-}
-
-[data-theme="dark"] .theme-icon-rays {
-  transform: rotate(45deg) scale(0.5);
-  opacity: 0;
-}
-
-[data-theme="dark"] .theme-icon-bite {
-  transform: translate(0, 0);
-}
-
 /* Respect users who have asked their OS for less motion: the world holds
    still, and the camera cuts instead of moving (World3D.tsx) */
 @media (prefers-reduced-motion: reduce) {
-  .world-label,
-  .theme-icon,
-  .theme-icon * {
+  .world-label {
     transition: none !important;
   }
   .arrive,
@@ -605,7 +537,7 @@ html.theme-transition .hover-grow {
   color: var(--foreground);
   font-size: 0.875rem;
   font-weight: 500;
-  box-shadow: 0 8px 18px -14px rgb(40 30 10 / 0.6);
+  box-shadow: 0 8px 18px -14px rgb(var(--shadow) / 0.45);
 }
 
 .control-round {
@@ -614,7 +546,7 @@ html.theme-transition .hover-grow {
   border: 1px solid var(--paper-edge);
   border-radius: 999px;
   background: var(--label);
-  box-shadow: 0 8px 18px -14px rgb(40 30 10 / 0.6);
+  box-shadow: 0 8px 18px -14px rgb(var(--shadow) / 0.45);
 }
 
 /* The Places menu: a slip of paper under its button */
@@ -679,16 +611,11 @@ html.theme-transition .hover-grow {
 */
 :root {
   /* Paper grain, for anything that's paper */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.18 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  --sheet: #f6f1e3;
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.28 0 0 0 0 0.38 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   /* Corners: one family of soft edges, large for panels, small for pieces */
   --radius-lg: 18px;
   --radius: 14px;
   --radius-sm: 9px;
-}
-
-:root[data-theme="dark"] {
-  --sheet: #262c33;
 }
 
 .location {
@@ -726,7 +653,7 @@ html.theme-transition .hover-grow {
 
 /* The notebook lies open: two pages need a little more room */
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
-  .location[data-place="pavilion"] {
+  .location[data-place="about"] {
     --column: min(38rem, 46vw);
   }
 }
@@ -740,7 +667,7 @@ html.theme-transition .hover-grow {
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
-  box-shadow: 0 14px 30px -22px rgb(40 30 10 / 0.7);
+  box-shadow: 0 14px 30px -22px rgb(var(--shadow) / 0.5);
 }
 
 .location-place {
@@ -796,9 +723,9 @@ html.theme-transition .hover-grow {
   display: grid;
   padding: 10px;
   border-radius: var(--radius-lg);
-  /* The cover, under the pages */
-  background: linear-gradient(135deg, #6b4630, #4f3222);
-  box-shadow: 0 26px 50px -30px rgb(30 18 8 / 0.8);
+  /* The cover, under the pages: indigo cloth */
+  background: linear-gradient(135deg, #2b1f92, var(--surface-deep-2));
+  box-shadow: 0 26px 50px -30px rgb(var(--shadow) / 0.6);
   perspective: 1800px;
 }
 
@@ -819,17 +746,17 @@ html.theme-transition .hover-grow {
 .notebook-page,
 .notebook-leaf,
 .notebook-sheet {
-  /* Ruled paper with a red margin line */
-  background-color: #f7f2e2;
+  /* Ruled paper: sky-blue lines and a red margin line */
+  background-color: var(--sheet);
   background-image:
     var(--grain),
-    linear-gradient(to right, transparent var(--margin), rgb(176 82 60 / 0.3) var(--margin), rgb(176 82 60 / 0.3) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
-    repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), rgb(74 110 140 / 0.17) calc(var(--rule) - 1px) var(--rule));
+    linear-gradient(to right, transparent var(--margin), rgb(251 87 69 / 0.4) var(--margin), rgb(251 87 69 / 0.4) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
+    repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), var(--rule) calc(var(--rule) - 1px) var(--rule));
   background-position:
     0 0,
     0 0,
     0 2.75rem;
-  color: #2b2f27;
+  color: var(--foreground);
 }
 
 /* Every page in one hand: the same face and size, on the ruled lines */
@@ -854,12 +781,12 @@ html.theme-transition .hover-grow {
 
 .notebook-page[data-side="left"] {
   border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-  box-shadow: inset -22px 0 26px -22px rgb(70 45 20 / 0.45);
+  box-shadow: inset -22px 0 26px -22px rgb(var(--shadow) / 0.35);
 }
 
 .notebook-page[data-side="right"] {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-  box-shadow: inset 22px 0 26px -22px rgb(70 45 20 / 0.45);
+  box-shadow: inset 22px 0 26px -22px rgb(var(--shadow) / 0.35);
 }
 
 .notebook-page-body > * + * {
@@ -869,7 +796,7 @@ html.theme-transition .hover-grow {
 /* Headings are the same writing, in rust ink, with their points straight
    underneath: one to a line or two, each starting on a ruled line */
 .notebook-note {
-  color: #8f4a26;
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -878,12 +805,7 @@ html.theme-transition .hover-grow {
 }
 
 .notebook-points li::before {
-  background: #8f4a26;
-}
-
-.notebook-page .text-link,
-.notebook-sheet .text-link {
-  color: #2f5a3c;
+  background: var(--mark);
 }
 
 .notebook-folio {
@@ -892,7 +814,7 @@ html.theme-transition .hover-grow {
   right: 1.2rem;
   font-family: var(--font-display);
   font-size: 0.8rem;
-  color: #6b6a5c;
+  color: var(--muted);
 }
 
 .notebook-page[data-side="left"] .notebook-folio {
@@ -910,7 +832,7 @@ html.theme-transition .hover-grow {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   opacity: 0;
   transform-origin: left center;
-  box-shadow: 0 0 30px -8px rgb(60 40 20 / 0.45);
+  box-shadow: 0 0 30px -8px rgb(var(--shadow) / 0.35);
   pointer-events: none;
 }
 
@@ -958,7 +880,7 @@ html.theme-transition .hover-grow {
 .notebook-sheet {
   padding: 2.75rem 1.6rem 2.5rem 3.2rem;
   border-radius: var(--radius);
-  box-shadow: 0 26px 50px -30px rgb(30 18 8 / 0.8);
+  box-shadow: 0 26px 50px -30px rgb(var(--shadow) / 0.6);
 }
 
 .notebook-sheet > * + * {
@@ -986,14 +908,14 @@ html.theme-transition .hover-grow {
   padding: 0.5rem 1rem 0.55rem 0.8rem;
   border: 1px solid var(--paper-edge);
   border-radius: 10px 10px 4px 4px;
-  background: linear-gradient(#ddd4bd, #c3b898);
-  color: #2b2f27;
+  background: linear-gradient(var(--sheet), var(--surface-2));
+  color: var(--foreground);
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.5),
-    0 10px 20px -14px rgb(30 20 10 / 0.8);
+    0 10px 20px -14px rgb(var(--shadow) / 0.6);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1008,15 +930,15 @@ html.theme-transition .hover-grow {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #4a564a;
+  background: #b9b1a7;
   transition:
     background-color 0.3s ease,
     box-shadow 0.3s ease;
 }
 
 .bench-tab[aria-pressed="true"] .bench-tab-lamp {
-  background: #7fe08a;
-  box-shadow: 0 0 6px #7fe08a;
+  background: var(--sky);
+  box-shadow: 0 0 6px var(--sky);
 }
 
 .shot-strip {
@@ -1031,7 +953,7 @@ html.theme-transition .hover-grow {
   overflow: hidden;
   border: 2px solid transparent;
   border-radius: var(--radius-sm);
-  background: #101310;
+  background: var(--ink);
   opacity: 0.7;
   transition:
     opacity 0.2s ease,
@@ -1062,7 +984,7 @@ html.theme-transition .hover-grow {
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
-  box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
+  box-shadow: 0 22px 40px -28px rgb(var(--shadow) / 0.55);
   transform: rotate(0.4deg);
 }
 
@@ -1075,7 +997,7 @@ html.theme-transition .hover-grow {
   width: 4.5rem;
   height: 16px;
   border-radius: 4px;
-  background: linear-gradient(#8d9089, #5d605a);
+  background: linear-gradient(#b8b0a6, #857d74);
   transform: translateX(-50%);
   box-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
 }
@@ -1098,7 +1020,7 @@ html.theme-transition .hover-grow {
   margin-right: 0.3rem;
   font-family: var(--font-display);
   font-weight: 600;
-  color: var(--warm);
+  color: var(--mark);
 }
 
 .project-links {
@@ -1145,7 +1067,7 @@ html.theme-transition .hover-grow {
   width: 1.1rem;
   text-align: center;
   font-weight: 700;
-  color: var(--warm);
+  color: var(--mark);
 }
 
 /* The tool wall: a pegboard with the skills hung on it */
@@ -1154,16 +1076,12 @@ html.theme-transition .hover-grow {
   margin-top: 2.75rem;
   padding: 1.5rem 1.5rem 1.75rem;
   border-radius: var(--radius);
-  background-color: #b99c70;
-  background-image: radial-gradient(circle, rgb(70 48 24 / 0.38) 1.6px, transparent 2.2px);
+  background-color: var(--surface-2);
+  background-image: radial-gradient(circle, rgb(var(--shadow) / 0.22) 1.6px, transparent 2.2px);
   background-size: 22px 22px;
-  color: #2b2f27;
+  color: var(--foreground);
   scroll-margin-top: 5rem;
-  box-shadow: 0 26px 50px -32px rgb(30 18 8 / 0.8);
-}
-
-.tool-wall .text-muted {
-  color: #3b3a2e;
+  box-shadow: 0 26px 50px -32px rgb(var(--shadow) / 0.6);
 }
 
 .tool-boards {
@@ -1176,8 +1094,8 @@ html.theme-transition .hover-grow {
   position: relative;
   padding: 0.85rem 1.1rem 1.05rem;
   border-radius: var(--radius-sm);
-  background: #f4eedc var(--grain);
-  box-shadow: 0 10px 18px -12px rgb(30 18 8 / 0.7);
+  background: var(--sheet) var(--grain);
+  box-shadow: 0 10px 18px -12px rgb(var(--shadow) / 0.5);
 }
 
 .tool-board:nth-child(2) {
@@ -1198,11 +1116,11 @@ html.theme-transition .hover-grow {
 .tool-tags li {
   position: relative;
   padding: 0.2rem 0.55rem 0.2rem 1.15rem;
-  border: 1px solid rgb(110 86 52 / 0.3);
+  border: 1px solid rgb(var(--shadow) / 0.25);
   border-radius: 4px 8px 8px 4px;
-  background: #fbf7ea;
+  background: var(--sheet);
   font-size: 0.875rem;
-  color: #2b2f27;
+  color: var(--foreground);
 }
 
 .tool-tags li::before {
@@ -1213,7 +1131,7 @@ html.theme-transition .hover-grow {
   top: 50%;
   width: 5px;
   height: 5px;
-  border: 1px solid rgb(110 86 52 / 0.55);
+  border: 1px solid rgb(var(--shadow) / 0.45);
   border-radius: 50%;
   transform: translateY(-50%);
 }
@@ -1221,13 +1139,13 @@ html.theme-transition .hover-grow {
 /* ---------- The station: an enamel timetable ---------- */
 .timetable {
   padding: 1rem 1.25rem 1.25rem;
-  border: 6px solid #1b2a22;
+  border: 6px solid var(--surface-deep-2);
   border-radius: var(--radius);
-  background: linear-gradient(170deg, #2a4033, #20332a);
-  color: #ece3c9;
+  background: linear-gradient(170deg, #2a1d8e, var(--surface-deep));
+  color: var(--on-deep);
   box-shadow:
-    inset 0 0 0 1px rgb(236 227 201 / 0.35),
-    0 26px 50px -30px rgb(10 14 10 / 0.85);
+    inset 0 0 0 1px rgb(255 249 242 / 0.3),
+    0 26px 50px -30px rgb(var(--shadow) / 0.7);
 }
 
 .timetable-head {
@@ -1235,7 +1153,7 @@ html.theme-transition .hover-grow {
   align-items: baseline;
   justify-content: space-between;
   padding-bottom: 0.6rem;
-  border-bottom: 1px solid rgb(236 227 201 / 0.4);
+  border-bottom: 1px solid rgb(255 249 242 / 0.4);
   font-family: var(--font-display);
   font-size: 1.25rem;
   letter-spacing: 0.08em;
@@ -1244,7 +1162,7 @@ html.theme-transition .hover-grow {
 .timetable-head span + span {
   font-size: 0.85rem;
   letter-spacing: 0.04em;
-  color: #c8c1a8;
+  color: var(--on-deep-muted);
 }
 
 .timetable-table {
@@ -1259,29 +1177,29 @@ html.theme-transition .hover-grow {
   font-size: 0.75rem;
   font-weight: 500;
   text-align: left;
-  color: #c8c1a8;
+  color: var(--on-deep-muted);
 }
 
 .timetable-table td {
   padding: 0.65rem 0.5rem;
-  border-top: 1px dashed rgb(236 227 201 / 0.25);
+  border-top: 1px dashed rgb(255 249 242 / 0.25);
   vertical-align: top;
 }
 
 .timetable-table tr[data-selected] td {
-  background: rgb(236 227 201 / 0.09);
+  background: rgb(85 198 240 / 0.14);
 }
 
 .timetable-table tr[data-selected] td:first-child {
-  box-shadow: inset 3px 0 0 #e5a57c;
+  box-shadow: inset 3px 0 0 var(--sky);
 }
 
 .timetable-line {
   text-align: left;
   font-weight: 600;
-  color: #f4ecd6;
+  color: var(--on-deep);
   text-decoration: underline;
-  text-decoration-color: rgb(244 236 214 / 0.3);
+  text-decoration-color: rgb(85 198 240 / 0.55);
   text-underline-offset: 4px;
 }
 
@@ -1290,18 +1208,18 @@ html.theme-transition .hover-grow {
 }
 
 .timetable-line:focus-visible {
-  outline-color: #e5a57c;
+  outline-color: var(--sky);
 }
 
 /* The notice for the chosen line, turning over like flaps */
 .timetable-notice {
   margin-top: 1rem;
   padding: 1.25rem 1.4rem 1.4rem;
-  border-top: 4px solid var(--warm);
+  border-top: 4px solid var(--sky);
   border-radius: 0 0 var(--radius) var(--radius);
   background: var(--paper) var(--grain);
   perspective: 900px;
-  box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
+  box-shadow: 0 22px 40px -28px rgb(var(--shadow) / 0.55);
 }
 
 .flap {
@@ -1330,12 +1248,12 @@ html.theme-transition .hover-grow {
   gap: 0.45rem;
   padding: 0.6rem 0.4rem 0.65rem;
   border-radius: 12px 12px 6px 6px;
-  background: linear-gradient(#3b3640, #27232b);
-  color: #f3ead6;
+  background: linear-gradient(#2a1f8e, var(--surface-deep-2));
+  color: var(--on-deep);
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 12px 22px -14px rgb(10 8 12 / 0.9);
+  box-shadow: 0 12px 22px -14px rgb(var(--shadow) / 0.7);
   transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1351,8 +1269,8 @@ html.theme-transition .hover-grow {
   width: 100%;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
-  background: #0b0d0c;
-  color: #4b5a52;
+  background: #120c48;
+  color: #6f66b8;
   transition:
     background-color 0.35s ease,
     color 0.35s ease,
@@ -1360,9 +1278,9 @@ html.theme-transition .hover-grow {
 }
 
 .cabinet-button[aria-pressed="true"] .cabinet-button-screen {
-  background: #141a22;
-  color: #f2c9a4;
-  box-shadow: inset 0 0 14px rgb(242 201 164 / 0.35);
+  background: var(--surface-deep);
+  color: var(--sky);
+  box-shadow: inset 0 0 14px rgb(85 198 240 / 0.4);
 }
 
 .cabinet-card {
@@ -1374,7 +1292,7 @@ html.theme-transition .hover-grow {
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
-  box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
+  box-shadow: 0 22px 40px -28px rgb(var(--shadow) / 0.55);
   animation: card-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1404,10 +1322,10 @@ html.theme-transition .hover-grow {
   gap: 0.75rem 1rem;
   padding: 0.85rem 1rem;
   border-radius: var(--radius);
-  /* The booth's green enamel */
-  background: linear-gradient(170deg, #35593f, #284433);
-  color: #f1e9d2;
-  box-shadow: 0 20px 40px -28px rgb(10 16 10 / 0.85);
+  /* Enamel, like the timetable */
+  background: linear-gradient(170deg, #2a1d8e, var(--surface-deep));
+  color: var(--on-deep);
+  box-shadow: 0 20px 40px -28px rgb(var(--shadow) / 0.6);
 }
 
 .phone-handset {
@@ -1416,8 +1334,8 @@ html.theme-transition .hover-grow {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 999px;
-  background: #f1e9d2;
-  color: #22392b;
+  background: var(--cream);
+  color: var(--indigo);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -1444,7 +1362,7 @@ html.theme-transition .hover-grow {
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
   transform: rotate(-0.5deg);
-  box-shadow: 0 26px 46px -30px rgb(30 20 10 / 0.8);
+  box-shadow: 0 26px 46px -30px rgb(var(--shadow) / 0.6);
 }
 
 .directory::before {
@@ -1456,7 +1374,7 @@ html.theme-transition .hover-grow {
   width: 11px;
   height: 11px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d98b62, #8f4a26);
+  background: radial-gradient(circle at 35% 35%, #8fdcf6, var(--indigo));
   box-shadow: 1px 2px 2px rgb(0 0 0 / 0.3);
 }
 
@@ -1484,7 +1402,7 @@ html.theme-transition .hover-grow {
 }
 
 .phone-line[data-up] + .directory li[data-first] {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  background: var(--highlight);
 }
 
 .directory-dial {
@@ -1492,11 +1410,11 @@ html.theme-transition .hover-grow {
   place-items: center;
   width: 1.5rem;
   height: 1.5rem;
-  border: 1.5px solid var(--warm);
+  border: 1.5px solid var(--mark);
   border-radius: 50%;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--warm);
+  color: var(--mark);
 }
 
 .directory-label {
@@ -1528,9 +1446,9 @@ html.theme-transition .hover-grow {
   border-radius: var(--radius);
   background: var(--sheet) var(--grain);
   color: var(--foreground);
-  box-shadow: 0 30px 60px -30px rgb(20 14 6 / 0.85);
+  box-shadow: 0 30px 60px -30px rgb(var(--shadow) / 0.6);
   transform-origin: 50% 0;
-  animation: unfold 0.75s cubic-bezier(0.22, 1, 0.36, 1) var(--arrive-delay) both;
+  animation: unfold 0.3s cubic-bezier(0.22, 1, 0.36, 1) var(--arrive-delay) both;
 }
 
 .map-sheet::before {
@@ -1542,7 +1460,7 @@ html.theme-transition .hover-grow {
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d98b62, #8f4a26);
+  background: radial-gradient(circle at 35% 35%, #8fdcf6, var(--indigo));
   box-shadow: 1px 2px 2px rgb(0 0 0 / 0.3);
 }
 
@@ -1599,13 +1517,13 @@ html.theme-transition .hover-grow {
 }
 
 .map-trees {
-  stroke: var(--accent);
+  stroke: var(--mark);
   stroke-width: 1.5;
   opacity: 0.7;
 }
 
 .map-here {
-  fill: var(--warm);
+  fill: var(--error);
   stroke: none;
 }
 
@@ -1620,7 +1538,7 @@ html.theme-transition .hover-grow {
 }
 
 .map-here-label {
-  color: var(--warm);
+  color: var(--error-ink);
   font-weight: 500;
 }
 
@@ -1655,7 +1573,7 @@ html.theme-transition .hover-grow {
 
 .map-pin:hover .map-pin-label,
 .map-pin:focus-visible .map-pin-label {
-  background: color-mix(in srgb, var(--accent) 14%, var(--sheet));
+  background: color-mix(in srgb, var(--sky) 30%, var(--sheet));
 }
 
 .map-pin:hover .map-pin-section {
@@ -1734,39 +1652,39 @@ html.theme-transition .hover-grow {
 
 /* The pieces that are objects, not paper, take on some of the light too */
 .timetable {
-  border-color: rgb(27 42 34 / 0.75);
+  border-color: rgb(21 16 90 / 0.8);
   border-radius: var(--radius-lg);
-  background: linear-gradient(170deg, rgb(42 64 51 / 0.86), rgb(32 51 42 / 0.86));
+  background: linear-gradient(170deg, rgb(42 29 142 / 0.9), rgb(30 16 122 / 0.9));
   backdrop-filter: var(--veil);
   box-shadow:
-    inset 0 0 0 1px rgb(236 227 201 / 0.3),
-    0 18px 44px -20px rgb(20 30 20 / 0.45);
+    inset 0 0 0 1px rgb(255 249 242 / 0.3),
+    0 18px 44px -20px rgb(var(--shadow) / 0.4);
 }
 
 .phone-line {
   border-radius: var(--radius-lg);
-  background: linear-gradient(170deg, rgb(53 89 63 / 0.85), rgb(40 68 51 / 0.85));
+  background: linear-gradient(170deg, rgb(42 29 142 / 0.9), rgb(30 16 122 / 0.9));
   backdrop-filter: var(--veil);
-  box-shadow: 0 18px 44px -20px rgb(20 40 25 / 0.45);
+  box-shadow: 0 18px 44px -20px rgb(var(--shadow) / 0.4);
 }
 
 .bench-tab {
   border-color: var(--paper-edge);
   border-radius: var(--radius);
-  background: linear-gradient(rgb(231 220 192 / 0.85), rgb(205 191 156 / 0.85));
+  background: linear-gradient(rgb(255 253 248 / 0.85), rgb(229 221 212 / 0.85));
   backdrop-filter: var(--veil);
   box-shadow: var(--float);
 }
 
 .cabinet-button-screen {
-  background: rgb(11 13 12 / 0.7);
+  background: rgb(18 12 72 / 0.75);
 }
 
 .cabinet-button {
   border-radius: 14px 14px 6px 6px;
-  background: linear-gradient(rgb(59 54 64 / 0.82), rgb(39 35 43 / 0.82));
+  background: linear-gradient(rgb(42 31 142 / 0.85), rgb(21 16 90 / 0.85));
   backdrop-filter: var(--veil);
-  box-shadow: 0 16px 36px -18px rgb(20 12 24 / 0.55);
+  box-shadow: 0 16px 36px -18px rgb(var(--shadow) / 0.45);
 }
 
 /* The clip on the project notes and the pin on the directory sit on top
@@ -1774,7 +1692,7 @@ html.theme-transition .hover-grow {
 .project-notes::before,
 .directory::before,
 .map-sheet::before {
-  box-shadow: 0 2px 3px rgb(60 40 20 / 0.25);
+  box-shadow: 0 2px 3px rgb(var(--shadow) / 0.3);
 }
 
 /* The map is drawn on its sheet, and the notices behind it would muddle
@@ -1807,24 +1725,16 @@ html.theme-transition .hover-grow {
 
   /* Nothing is behind the paper here but the page, so the sheets are
      plain and opaque: no blur to compute */
-  :root,
-  :root[data-travelled] {
+  :root {
     --arrive-delay: 0s;
   }
 
   :root {
-    --paper: #f9f3e4;
-    --paper-edge: rgb(255 252 242 / 0.9);
-    --label: #f9f3e4;
+    --paper: #fffcf7;
+    --paper-edge: rgb(255 255 255 / 0.9);
+    --label: #fffcf7;
     --veil: none;
-    --float: 0 14px 30px -22px rgb(120 78 28 / 0.45), 0 1px 0 rgb(255 252 240 / 0.6) inset;
-  }
-
-  :root[data-theme="dark"] {
-    --paper: #252c39;
-    --paper-edge: rgb(255 236 200 / 0.12);
-    --label: #252c39;
-    --float: 0 14px 30px -22px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 236 200 / 0.06) inset;
+    --float: 0 14px 30px -22px rgb(var(--shadow) / 0.3), 0 1px 0 rgb(255 255 255 / 0.6) inset;
   }
 
   body {
@@ -1889,7 +1799,7 @@ html.theme-transition .hover-grow {
   .plate {
     position: relative;
     overflow: hidden;
-    background: #d9bf8c; /* the painting's haze, while it loads */
+    background: var(--scene-haze); /* the painting's haze, while it loads */
     container-type: inline-size; /* the tags size themselves to the picture */
   }
 
@@ -1902,9 +1812,23 @@ html.theme-transition .hover-grow {
     object-fit: cover;
   }
 
-  /* Night: the same painting, turned down */
-  :root[data-theme="dark"] .plate-picture {
-    filter: brightness(0.78) saturate(0.9);
+  /* The picture drifts very slowly, like a held breath: a transform on
+     its own layer, nothing to repaint. Still for anyone who asked for
+     less motion. */
+  @media (prefers-reduced-motion: no-preference) {
+    .plate-picture {
+      animation: plate-drift 36s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+  }
+
+  @keyframes plate-drift {
+    from {
+      transform: scale(1) translate(0, 0);
+    }
+    to {
+      transform: scale(1.04) translate(-0.6%, 0.5%);
+    }
   }
 
   /* The park: the whole painting, never taller than the screen */
@@ -1951,7 +1875,7 @@ html.theme-transition .hover-grow {
     font-weight: 600;
     line-height: 1.2;
     white-space: nowrap;
-    box-shadow: 0 6px 14px -8px rgb(40 30 10 / 0.75);
+    box-shadow: 0 6px 14px -8px rgb(var(--shadow) / 0.5);
     transform: translate(-50%, calc(-100% - 0.4rem));
   }
 
@@ -2192,7 +2116,7 @@ html.theme-transition .hover-grow {
   .notebook-sheet {
     --margin: 1.9rem;
     padding: 2.75rem 1.1rem 2rem 2.6rem;
-    border: 7px solid #5d3c29; /* the cover */
+    border: 7px solid var(--surface-deep); /* the cover */
     border-radius: var(--radius);
     box-shadow: var(--float);
   }
@@ -2217,11 +2141,11 @@ html.theme-transition .hover-grow {
     position: relative;
     display: block;
     margin-top: 0.6rem;
-    border: 7px solid #cfc6ae;
+    border: 7px solid var(--surface-2);
     border-bottom-width: 16px;
     border-radius: var(--radius);
-    background: #101310;
-    box-shadow: 0 12px 22px -16px rgb(30 20 10 / 0.8);
+    background: var(--ink);
+    box-shadow: 0 12px 22px -16px rgb(var(--shadow) / 0.6);
   }
 
   .project-screen::after {
@@ -2232,8 +2156,8 @@ html.theme-transition .hover-grow {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #7fe08a;
-    box-shadow: 0 0 5px #7fe08a;
+    background: var(--sky);
+    box-shadow: 0 0 5px var(--sky);
   }
 
   .project-screen img {
@@ -2273,13 +2197,13 @@ html.theme-transition .hover-grow {
   /* ---------- The station: every line written out ---------- */
   .timetable-stack {
     padding: 0.9rem 0.8rem 0.8rem;
-    border: 5px solid #1b2a22;
+    border: 5px solid var(--surface-deep-2);
     border-radius: 12px;
-    background: linear-gradient(170deg, #2a4033, #20332a);
-    color: #ece3c9;
+    background: linear-gradient(170deg, #2a1d8e, var(--surface-deep));
+    color: var(--on-deep);
     box-shadow:
-      inset 0 0 0 1px rgb(236 227 201 / 0.3),
-      0 14px 30px -22px rgb(10 14 10 / 0.8);
+      inset 0 0 0 1px rgb(255 249 242 / 0.3),
+      0 14px 30px -22px rgb(var(--shadow) / 0.6);
   }
 
   .timetable-stack .timetable-head {
@@ -2307,7 +2231,7 @@ html.theme-transition .hover-grow {
     gap: 0 1rem;
     font-size: 0.875rem;
     font-weight: 700;
-    color: var(--warm);
+    color: var(--mark);
   }
 
   .timetable-stop-role {
@@ -2348,8 +2272,8 @@ html.theme-transition .hover-grow {
   .cabinet-ticket-screen {
     display: grid;
     place-items: center;
-    background: linear-gradient(#3b3640, #27232b);
-    color: #f2c9a4;
+    background: linear-gradient(#2a1f8e, var(--surface-deep-2));
+    color: var(--sky);
   }
 
   .cabinet-ticket-screen svg {
@@ -2357,8 +2281,8 @@ html.theme-transition .hover-grow {
     height: 3.75rem;
     padding: 0.55rem;
     border-radius: 6px;
-    background: #141a22;
-    box-shadow: inset 0 0 14px rgb(242 201 164 / 0.35);
+    background: var(--surface-deep);
+    box-shadow: inset 0 0 14px rgb(85 198 240 / 0.4);
   }
 
   .cabinet-ticket-text {

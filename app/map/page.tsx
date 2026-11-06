@@ -1,33 +1,22 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import PlaceGlyph, { glyphs } from "../components/world/PlaceGlyph";
 import Plate from "../components/world/Plate";
-import { places } from "../data/world";
+import { places, section, sectionMetadata } from "../sections/registry";
 
-export const metadata: Metadata = {
-  title: "Map of the park",
-  description: "A map of the park and every place in it: about, projects, experience, interests and contact.",
-};
+export const metadata = sectionMetadata("map");
 
-// Where each place is drawn on the map (percent of the sheet), seen from
-// above: the same layout as the painting, folded flat. `label` is where
-// its name goes on small sheets, where the station, the workshop and the
-// arcade would otherwise write over each other.
-const pins: Record<string, { x: number; y: number; label?: "right" | "side" }> = {
-  pavilion: { x: 16, y: 55.5 },
-  workshop: { x: 66.7, y: 23.5 },
-  station: { x: 52, y: 13, label: "side" },
-  arcade: { x: 81, y: 27, label: "right" },
-  booth: { x: 85, y: 60.5 },
-};
+// Where each section is drawn on the map comes from the registry (`map`:
+// percent of the sheet, seen from above: the same layout as the painting,
+// folded flat). Sections without a pin are left off the sheet.
+const pinned = places.filter((s) => s.map);
 
 // The map pinned to the notice board. The camera has moved up close to the
-// board (World.tsx); the map is drawn in ink on a sheet over it. Every
+// board (World3D.tsx); the map is drawn in ink on a sheet over it. Every
 // place on it is a link.
 export default function MapPage() {
   return (
-    <main className="over-world location" data-side="middle" data-place="board">
-      <Plate view="board" />
+    <main className="over-world location" data-side="middle" data-place="map">
+      <Plate view={section("map").plate} />
       <div className="map-sheet arrive take-clicks">
         <div className="map-head">
           <div>
@@ -61,8 +50,8 @@ export default function MapPage() {
             />
             {/* The places, drawn small (world/PlaceGlyph.tsx) */}
             <g className="map-building">
-              {places.map((place) => (
-                <path key={place.id} d={glyphs[place.id].d} />
+              {pinned.map((s) => (
+                <path key={s.id} d={glyphs[s.glyph].d} />
               ))}
             </g>
             {/* The steps */}
@@ -81,17 +70,12 @@ export default function MapPage() {
           </span>
 
           <ul>
-            {places.map((place) => (
-              <li key={place.id}>
-                <Link
-                  href={place.href}
-                  className="map-pin"
-                  data-label={pins[place.id].label}
-                  style={{ left: `${pins[place.id].x}%`, top: `${pins[place.id].y}%` }}
-                >
+            {pinned.map((s) => (
+              <li key={s.id}>
+                <Link href={s.href} className="map-pin" data-label={s.map!.label} style={{ left: `${s.map!.x}%`, top: `${s.map!.y}%` }}>
                   <span className="map-pin-label">
-                    <span className="map-pin-section">{place.section}</span>
-                    <span className="map-pin-place only-world">{place.name}</span>
+                    <span className="map-pin-section">{s.title}</span>
+                    <span className="map-pin-place only-world">{s.place}</span>
                   </span>
                 </Link>
               </li>
@@ -101,13 +85,13 @@ export default function MapPage() {
 
         {/* The same places as a list of sections, with what's in each */}
         <ul role="list" className="map-key only-flat">
-          {places.map((place) => (
-            <li key={place.id}>
-              <Link href={place.href} className="place-row">
-                <PlaceGlyph id={place.id} className="place-row-glyph" />
+          {pinned.map((s) => (
+            <li key={s.id}>
+              <Link href={s.href} className="place-row">
+                <PlaceGlyph id={s.glyph} className="place-row-glyph" />
                 <span className="place-row-text">
-                  <span className="place-row-section">{place.section}</span>
-                  <span className="place-row-summary">{place.summary}</span>
+                  <span className="place-row-section">{s.title}</span>
+                  <span className="place-row-summary">{s.summary}</span>
                 </span>
               </Link>
             </li>

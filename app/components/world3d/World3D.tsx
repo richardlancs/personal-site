@@ -6,8 +6,10 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { anchors } from "./anchors";
+import { onIdle } from "./idle";
 import { windUniforms } from "./paint";
-import { routesFromPark, sceneForPath, scenes, type Pose, type SceneId, type V3 } from "./scenes";
+import { places, sectionForPath } from "../../sections/registry";
+import { routesFromPark, scenes, type Pose, type SceneId, type V3 } from "./scenes";
 import Painterly from "./Painterly";
 import Arcade from "./scenes/Arcade";
 import Booth from "./scenes/Booth";
@@ -54,7 +56,7 @@ function Director({
   onSwap,
   iris,
 }: {
-  target: { scene: SceneId; focus: string | null };
+  target: { id: SceneId; focus: string | null };
   active: SceneId;
   onSwap: (scene: SceneId) => void;
   iris: React.RefObject<HTMLDivElement | null>;
@@ -89,7 +91,7 @@ function Director({
   // Plan the journey whenever the address changes
   useEffect(() => {
     const s = st.current;
-    const to = target.scene;
+    const to = target.id;
     const from = s.started ? s.active : null;
     const sameScene = from === to;
     // Arrive looking at what's chosen in the place
@@ -111,20 +113,20 @@ function Director({
       const start = inWorld(to, scenes[to].enter);
       s.queue = [
         { kind: "swap", scene: to, pose: start },
-        { kind: "move", dur: to === "park" && !focusId ? 3.2 : 2, ease: easeInOut, to: [final], iris: { to: 0, from: 0.05, until: 0.45 } },
+        { kind: "move", dur: to === "park" && !focusId ? 1.6 : 1.1, ease: easeInOut, to: [final], iris: { to: 0, from: 0.05, until: 0.45 } },
       ];
       s.started = true;
       return;
     }
     if (sameScene) {
       s.queue = [];
-      if (s.iris > 0) s.queue.push({ kind: "move", dur: 0.6, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } });
+      if (s.iris > 0) s.queue.push({ kind: "move", dur: 0.4, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } });
       return;
     }
     const enterTo = inWorld(to, scenes[to].enter);
     const arrive: Seg[] = [
       { kind: "swap", scene: to, pose: enterTo },
-      { kind: "move", dur: 1.25, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 0.45 } },
+      { kind: "move", dur: 0.8, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 0.45 } },
     ];
     if (from === "park") {
       // Fly the path to the place's door, the threshold closes in
@@ -136,7 +138,7 @@ function Director({
         return { pos, target: s.look.clone().lerp(look, t * t) };
       });
       pts[pts.length - 1].target = look;
-      s.queue = [{ kind: "move", dur: 1.45, ease: easeInOut, to: pts, iris: { to: 1, from: 0.66, until: 1 } }, ...arrive];
+      s.queue = [{ kind: "move", dur: 0.9, ease: easeInOut, to: pts, iris: { to: 1, from: 0.6, until: 1 } }, ...arrive];
     } else if (to === "park") {
       // Back out of the door, and step back from the place to the park
       const route = routesFromPark[from]!;
@@ -145,15 +147,15 @@ function Director({
       const look = add(route.look, scenes.park.offset);
       const back = [...route.path].reverse().slice(1).map((p) => ({ pos: add(p, scenes.park.offset), target: look.clone().lerp(final.target, 0.5) }));
       s.queue = [
-        { kind: "move", dur: 0.85, ease: easeIn, to: [exit], iris: { to: 1, from: 0.35, until: 1 } },
+        { kind: "move", dur: 0.55, ease: easeIn, to: [exit], iris: { to: 1, from: 0.35, until: 1 } },
         { kind: "swap", scene: "park", pose: { pos: door, target: look } },
-        { kind: "move", dur: 1.6, ease: easeInOut, to: [...back, final], iris: { to: 0, from: 0, until: 0.35 } },
+        { kind: "move", dur: 1.0, ease: easeInOut, to: [...back, final], iris: { to: 0, from: 0, until: 0.35 } },
       ];
     } else {
       // From one place straight to another
-      s.queue = [{ kind: "move", dur: 0.75, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
+      s.queue = [{ kind: "move", dur: 0.5, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
     }
-  }, [target.scene, target.focus, iris]);
+  }, [target.id, target.focus, iris]);
 
   // Look around by dragging; parallax follows the mouse
   useEffect(() => {
@@ -367,15 +369,9 @@ function LabelProjector({ active }: { active: SceneId }) {
 }
 
 // The places in the park, as links pinned to their buildings. They're the
-// park's keyboard and screen-reader way in, and its name tags.
-const parkLinks = [
-  { id: "library", href: "/about", name: "The pavilion", section: "About" },
-  { id: "workshop", href: "/projects", name: "The workshop", section: "Projects" },
-  { id: "station", href: "/experience", name: "The station", section: "Experience" },
-  { id: "arcade", href: "/interests", name: "The arcade", section: "Interests" },
-  { id: "booth", href: "/contact", name: "The phone booth", section: "Contact" },
-  { id: "board", href: "/map", name: "The notice board", section: "Map of the park" },
-];
+// park's keyboard and screen-reader way in, and its name tags. Every
+// listed section with a building (an anchor) gets one.
+const parkLinks = places.filter((s) => s.anchor).map((s) => ({ id: s.anchor!, href: s.href, name: s.place, section: s.title }));
 
 function Labels({ active }: { active: SceneId }) {
   const hover = useWorld((s) => s.hover);
@@ -414,42 +410,55 @@ function detectQuality(): "high" | "low" {
 export default function World3D() {
   const pathname = usePathname();
   const router = useRouter();
-  const target = sceneForPath(pathname);
-  const [active, setActive] = useState<SceneId>(target.scene);
-  const [mounted, setMounted] = useState<SceneId[]>([target.scene]);
+  const target = sectionForPath(pathname).scene;
+  const [active, setActive] = useState<SceneId>(target.id);
+  const [mounted, setMounted] = useState<SceneId[]>([target.id]);
   const [quality] = useState(detectQuality);
   const [visible, setVisible] = useState(true);
   const iris = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
 
   // The place you're going to is built straight away; the rest are built
-  // quietly one by one once the first is showing, so later journeys
-  // don't wait
-  if (!mounted.includes(target.scene)) setMounted([...mounted, target.scene]);
+  // one by one in the browser's idle time once the first is showing, so
+  // later journeys don't wait and the first one isn't slowed down
+  if (!mounted.includes(target.id)) setMounted([...mounted, target.id]);
   useEffect(() => {
-    let i = 0;
-    let timer = 0;
+    let cancel = () => {};
+    let cancelled = false;
     const next = () => {
-      const missing = order.filter((s) => !mounted.includes(s));
-      if (!missing.length) return;
-      setMounted((m) => (m.includes(missing[0]) ? m : [...m, missing[0]]));
-      timer = window.setTimeout(next, 700);
+      if (cancelled) return;
+      setMounted((m) => {
+        const missing = order.find((s) => !m.includes(s));
+        if (!missing) return m;
+        cancel = onIdle(next, 4000);
+        return [...m, missing];
+      });
     };
-    timer = window.setTimeout(next, 3500 + i);
-    i++;
-    return () => window.clearTimeout(timer);
+    cancel = onIdle(next, 6000);
+    return () => {
+      cancelled = true;
+      cancel();
+    };
     // Once, after the first place is up
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Stop drawing when the world is scrolled out of view (phones) or the
-  // tab is hidden
+  // Stop drawing when the world is scrolled out of view, or the tab is
+  // hidden: no frames, no wind, no clock
   useEffect(() => {
     const el = box.current;
     if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setVisible(entry.isIntersecting));
+    let inView = true;
+    const update = () => setVisible(inView && document.visibilityState !== "hidden");
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      update();
+    });
     observer.observe(el);
-    return () => observer.disconnect();
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", update);
+    };
   }, []);
 
   const navigate = (href: string) => router.push(href);
@@ -457,6 +466,7 @@ export default function World3D() {
   return (
     <div ref={box} className="world3d" data-scene={active}>
       <Canvas
+        className="world3d-canvas"
         shadows
         dpr={quality === "low" ? [1, 1.5] : [1, 1.75]}
         frameloop={visible ? "always" : "never"}
@@ -469,7 +479,7 @@ export default function World3D() {
         aria-hidden="true"
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} />
-        <Painterly brushwork={quality === "high"} />
+        <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
         <Wind />
         <LabelProjector active={active} />
         {order

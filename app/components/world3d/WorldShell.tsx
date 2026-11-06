@@ -17,14 +17,19 @@ const World3D = dynamic(() => import("./World3D"), {
   loading: () => <Loading />,
 });
 
+// While the world loads, the painting's own blur placeholder (a few
+// hundred bytes, already in the page) stands in, so the first view is
+// the park's colours and not a blank, and nothing is downloaded for it;
+// then the world fades in over it. Where the world can't be drawn, the
+// painting itself stays.
 function Loading() {
-  return <div className="world3d world3d-loading" aria-hidden="true" />;
+  return <div className="world3d world3d-loading" aria-hidden="true" style={{ backgroundImage: `url(${painting.blurDataURL})` }} />;
 }
 
 function Fallback() {
   return (
     <div className="world3d world3d-fallback" aria-hidden="true">
-      <Image src={painting} alt="" fill sizes="100vw" placeholder="blur" className="object-cover" />
+      <Image src={painting} alt="" fill sizes="100vw" placeholder="blur" />
     </div>
   );
 }

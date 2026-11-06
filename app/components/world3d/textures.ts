@@ -432,17 +432,34 @@ const palettes: Record<Palette, [number, number, number][]> = {
 export const leafCluster = (palette: Palette) =>
   texture(`leaves-${palette}`, 256, 256, (g, r) => {
     const colors = palettes[palette];
-    const leaves = palette === "ivy" ? 22 : 46;
+    const ivy = palette === "ivy";
+    // A soft mass behind the leaves, so a cluster reads as one rounded
+    // shape with leaves at its edge, not a scatter of cut-outs. Its edge
+    // fades (alpha-to-coverage draws that as a soft rim).
+    if (!ivy) {
+      const [h, s, l] = colors[colors.length - 1];
+      const mass = g.createRadialGradient(118, 124, 10, 128, 128, 84);
+      mass.addColorStop(0, hsl(h, s, l + 4, 0.8));
+      mass.addColorStop(0.45, hsl(h, s, l - 2, 0.6));
+      mass.addColorStop(1, hsl(h, s, l - 6, 0));
+      g.fillStyle = mass;
+      g.beginPath();
+      g.ellipse(128, 128, 84, 78, 0.3, 0, Math.PI * 2);
+      g.fill();
+    }
+    const leaves = ivy ? 22 : 64;
     for (let i = 0; i < leaves; i++) {
       const a = r() * Math.PI * 2;
-      const d = Math.sqrt(r()) * 92;
+      const d = Math.sqrt(r()) * 100;
       const x = 128 + Math.cos(a) * d;
       const y = 128 + Math.sin(a) * d;
       const [h, s, l] = r.pick(colors);
-      const size = r.range(12, 22) * (palette === "ivy" ? 1.4 : 1);
+      const size = r.range(10, 19) * (ivy ? 1.4 : 1);
       g.save();
       g.translate(x, y);
       g.rotate(a + Math.PI / 2 + r.range(-0.6, 0.6));
+      // Leaves at the rim fade a little, so the edge of the mass is soft
+      g.globalAlpha = ivy ? 1 : 1 - 0.45 * Math.max(0, (d - 70) / 30);
       // Lighter toward the top of the cluster, where the sun is
       const lift = (128 - y) / 128;
       g.fillStyle = hsl(h, s, l + lift * 9 + r.range(-4, 4));

@@ -1,18 +1,16 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import Notebook from "../components/locations/Notebook";
+import Points from "../components/ui/Points";
 import Location from "../components/world/Location";
 import { about, githubNote, profile } from "../data/portfolio";
-import { placeById } from "../data/world";
+import { section, sectionMetadata } from "../sections/registry";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: "About Richard Lan, a Computer Science student at the University of Waterloo.",
-};
+export const metadata = sectionMetadata("about");
 
 // The pavilion: a notebook left open on the desk, the window lit behind it.
-// Each entry in `about` is a page: a heading in rust ink and a few short
-// points. The last page says where to find me.
+// Each entry in `about` is a page: a heading in indigo ink and a few short
+// points. The last page says where to find me. The same pages are on the
+// notebook in the world (world3d/scenes/Library.tsx).
 export default function AboutPage() {
   const pages = [
     ...about.map((entry) => ({
@@ -20,11 +18,7 @@ export default function AboutPage() {
       content: (
         <>
           <h2 className="notebook-note">{entry.heading}</h2>
-          <ul role="list" className="notebook-points">
-            {entry.points.map((point) => (
-              <li key={point}>{point}</li>
-            ))}
-          </ul>
+          <Points variant="notebook" items={entry.points} />
         </>
       ),
     })),
@@ -71,7 +65,7 @@ export default function AboutPage() {
   ];
 
   return (
-    <Location place={placeById("pavilion")} side="right" intro="A notebook someone left open on the desk, by the lit window.">
+    <Location section={section("about")}>
       <Notebook pages={pages} />
     </Location>
   );
