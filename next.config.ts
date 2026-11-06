@@ -4,6 +4,13 @@ const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
     agentFeedback: true,
+    // Turbopack's on-disk cache has twice served a stale globals.css here:
+    // once in `next dev` after scripted edits, and once in a Vercel build
+    // (new HTML shipped with the previous deploy's stylesheet). Builds
+    // take about 20 s without it; a wrong stylesheet in production costs
+    // more.
+    turbopackFileSystemCacheForDev: false,
+    turbopackFileSystemCacheForBuild: false,
   },
   cacheComponents: true,
   partialPrefetching: true,
