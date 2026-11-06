@@ -1040,10 +1040,6 @@ html.theme-transition .hover-grow {
   transform: translateY(-2px);
 }
 
-.bench-tab:not([aria-selected="true"]) {
-  color: var(--muted);
-}
-
 .shot-strip {
   display: flex;
   flex-wrap: wrap;
@@ -1431,10 +1427,6 @@ html.theme-transition .hover-grow {
     inset 0 0 0 2px color-mix(in srgb, currentColor 65%, transparent),
     0 16px 36px -18px rgb(20 12 24 / 0.55);
   transform: translateY(-3px);
-}
-
-.cabinet-button:not([aria-selected="true"]) {
-  opacity: 0.88;
 }
 
 .cabinet-card {
