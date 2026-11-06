@@ -938,9 +938,20 @@ html.theme-transition .hover-grow {
 }
 
 .notebook-turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--accent);
+  transition: background-color 0.2s ease;
+}
+
+.notebook-turn:not([aria-disabled="true"]):hover {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 
 .notebook-turn[aria-disabled="true"] {
@@ -1280,6 +1291,11 @@ html.theme-transition .hover-grow {
   padding: 0.65rem 0.5rem;
   border-top: 1px dashed rgb(236 227 201 / 0.25);
   vertical-align: top;
+}
+
+/* Dates stay on one line; the other columns take the wrapping */
+.timetable-table td:first-child {
+  white-space: nowrap;
 }
 
 .timetable-table tr[data-selected] td {
