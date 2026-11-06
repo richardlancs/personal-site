@@ -19,6 +19,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Browser-audit scripts and screenshots (disposable, not in git)
+    ".playwright-mcp/**",
   ]),
 ]);
 

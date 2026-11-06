@@ -1,6 +1,7 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
+import { getImageProps } from "next/image";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { projects, skillGroups } from "../../../data/portfolio";
@@ -27,7 +28,13 @@ function screenshotTextures() {
   const loader = new THREE.TextureLoader();
   return projects.map((project) =>
     (project.screenshots ?? []).map((shot) => {
-      const t = loader.load(shot.src);
+      // Through the image optimizer, like the page's own pictures, at
+      // 1200px across: all a monitor in the scene can show, and a tenth of
+      // the PNG's weight
+      const width = Math.min(1200, shot.width);
+      const { props } = getImageProps({ src: shot.src, alt: "", width, height: Math.round((width * shot.height) / shot.width) });
+      // props.src is the 2x candidate; the first srcSet entry is the 1x one
+      const t = loader.load(props.srcSet?.split(",")[0].trim().split(" ")[0] ?? props.src);
       t.colorSpace = THREE.SRGBColorSpace;
       t.anisotropy = 8;
       t.userData.aspect = shot.width / shot.height;

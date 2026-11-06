@@ -6,7 +6,7 @@ export type Place = {
   name: string; // the place in the world
   section: string; // what's there
   href: string;
-  summary: string; // one line for the map and the places list
+  summary: string; // what's there, in one line (the flat layout's lists)
 };
 
 export const places: Place[] = [
@@ -15,35 +15,35 @@ export const places: Place[] = [
     name: "The pavilion",
     section: "About",
     href: "/about",
-    summary: "A reading room, a notebook left open on the desk. Who I am and what I'm working toward.",
+    summary: "Who I am and what I'm working toward.",
   },
   {
     id: "workshop",
     name: "The workshop",
     section: "Projects",
     href: "/projects",
-    summary: "Old screens on the workbenches, still wired up. The software I've built, and my tools.",
+    summary: "The software I've built, and my tools.",
   },
   {
     id: "station",
     name: "The station",
     section: "Experience",
     href: "/experience",
-    summary: "The timetable under the stopped clock. Where I've worked and studied.",
+    summary: "Where I've worked and studied.",
   },
   {
     id: "arcade",
     name: "The arcade",
     section: "Interests",
     href: "/interests",
-    summary: "Cabinets under the vines. What I do away from the keyboard.",
+    summary: "What I do away from the keyboard.",
   },
   {
     id: "booth",
     name: "The phone booth",
     section: "Contact",
     href: "/contact",
-    summary: "The line still works. Email, GitHub and LinkedIn.",
+    summary: "Email, GitHub, LinkedIn and my résumé.",
   },
 ];
 

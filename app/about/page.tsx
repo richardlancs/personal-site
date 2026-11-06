@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Notebook from "../components/locations/Notebook";
 import Location from "../components/world/Location";
-import { about, profile } from "../data/portfolio";
+import { about, githubNote, profile } from "../data/portfolio";
 import { placeById } from "../data/world";
 
 export const metadata: Metadata = {
@@ -10,29 +10,35 @@ export const metadata: Metadata = {
   description: "About Richard Lan, a Computer Science student at the University of Waterloo.",
 };
 
-// The pavilion: a notebook left open on the bench, the window lit behind it
+// The pavilion: a notebook left open on the desk, the window lit behind it.
+// Each entry in `about` is a page: a heading in rust ink and a few short
+// points. The last page says where to find me.
 export default function AboutPage() {
-  const [lead, ...rest] = about;
-
   const pages = [
-    {
-      id: "lead",
-      content: <p>{lead}</p>,
-    },
-    ...rest.map((paragraph, i) => ({
-      id: `page-${i}`,
-      content: <p>{paragraph}</p>,
-    })),
-    {
-      id: "next",
+    ...about.map((entry) => ({
+      id: entry.heading,
       content: (
         <>
-          <p className="notebook-note">Where to find me</p>
-          <ul className="notebook-list">
+          <h2 className="notebook-note">{entry.heading}</h2>
+          <ul role="list" className="notebook-points">
+            {entry.points.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        </>
+      ),
+    })),
+    {
+      id: "find-me",
+      content: (
+        <>
+          <h2 className="notebook-note">Where to find me</h2>
+          <ul role="list" className="notebook-points">
             <li>
               <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
                 GitHub
               </a>
+              , {githubNote}
             </li>
             <li>
               <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link">
@@ -46,25 +52,26 @@ export default function AboutPage() {
             </li>
             <li>
               <Link href="/contact" className="text-link">
-                The phone booth
-              </Link>{" "}
-              for email
+                <span className="only-world">The phone booth</span>
+                <span className="only-flat">Contact</span>
+              </Link>
+              , for email
+            </li>
+            <li>
+              <Link href="/projects" className="text-link">
+                <span className="only-world">The workshop</span>
+                <span className="only-flat">Projects</span>
+              </Link>
+              , for what I&apos;ve made
             </li>
           </ul>
-          <p className="notebook-note mt-6">What I&apos;ve made</p>
-          <p>
-            <Link href="/projects" className="text-link">
-              Over at the workshop
-            </Link>
-            .
-          </p>
         </>
       ),
     },
   ];
 
   return (
-    <Location place={placeById("pavilion")} side="right" intro="A notebook someone left open on the bench, by the lit window.">
+    <Location place={placeById("pavilion")} side="right" intro="A notebook someone left open on the desk, by the lit window.">
       <Notebook pages={pages} />
     </Location>
   );

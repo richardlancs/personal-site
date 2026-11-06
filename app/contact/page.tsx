@@ -21,7 +21,7 @@ const lines = [
   })),
   { label: "GitHub", value: shortUrl(profile.githubUrl), href: profile.githubUrl },
   { label: "LinkedIn", value: shortUrl(profile.linkedinUrl), href: profile.linkedinUrl },
-  { label: "Résumé", value: "Download PDF", href: profile.resumeUrl },
+  { label: "Résumé", value: "Open the PDF", href: profile.resumeUrl },
 ];
 
 // The phone booth by the park gate

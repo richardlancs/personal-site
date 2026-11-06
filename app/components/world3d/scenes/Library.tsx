@@ -16,19 +16,31 @@ const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const NOTEBOOK = { x: 1.2, y: 0.8, z: -1.3 };
 const PAGE = { w: 0.26, h: 0.34 };
 
-// The notebook's pages: the same text as the About page
-export const notebookPages = [...about, `Where to find me: GitHub (${profile.githubUrl.replace("https://", "")}), LinkedIn, and the phone booth for email. My projects are at the workshop.`];
+// The notebook's pages: the same entries as the About page, and a last
+// page saying where to find me
+export const notebookPages = [
+  ...about,
+  {
+    heading: "Where to find me",
+    points: [`GitHub: ${profile.githubUrl.replace("https://", "")}`, "LinkedIn, and my résumé", "The phone booth, for email", "The workshop, for what I've made"],
+  },
+];
 
 function pageTexture(i: number) {
-  const text = notebookPages[i];
+  const page = notebookPages[i];
   return textPanel(`page-${i}`, 384, 500, {
-    background: i < 0 || !text ? "#f4efdf" : "#f6f1e1",
+    background: i < 0 || !page ? "#f4efdf" : "#f6f1e1",
     grain: true,
     rule: "rgba(74,110,140,0.16)",
     padding: 30,
     wrap: true,
-    // Every page in the same face and size
-    lines: text ? [{ text, size: 23, font: "display", color: "#2b2f27", weight: 500 }] : [],
+    // Every page in the same face and size: the heading in rust ink
+    lines: page
+      ? [
+          { text: page.heading, size: 23, font: "display", color: "#8f4a26", weight: 600, gap: 12 },
+          ...page.points.map((point) => ({ text: `– ${point}`, size: 21, font: "display" as const, color: "#2b2f27", weight: 500, gap: 9 })),
+        ]
+      : [],
   });
 }
 

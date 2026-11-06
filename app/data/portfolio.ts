@@ -12,7 +12,10 @@ export type Screenshot = {
 
 export type Project = {
   title: string;
-  description: string;
+  summary: string; // one sentence: what it is
+  role?: string; // my place on the team, when it isn't only mine
+  features: string[]; // what the product does, as short bullets
+  contributions?: string[]; // what I did myself, kept apart from the team's work
   technologies: string[];
   githubUrl: string;
   liveUrl?: string; // optional: leave it out if there is no live demo
@@ -44,8 +47,9 @@ export type Interest = {
 export const profile = {
   name: "Richard Lan",
   headline: "CS student @uwaterloo",
+  // Two short sentences, shown under the name on phones
   intro:
-    "Lately I've been building MarketLab, a stock market simulator with paper trading and a strategy backtester, and, with a team of three, Scrollganizer, a Chrome extension that makes saved TikToks searchable. Next I'm digging into AI and machine learning, and looking for a software engineering internship or co-op.",
+    "I build practical software, lately a stock market simulator and a Chrome extension for searching saved TikToks. I'm looking for a software engineering internship or co‑op.",
   emails: [
     { label: "School email", address: "r6lan@uwaterloo.ca" },
     { label: "Personal email", address: "lanrichard159@gmail.com" },
@@ -66,17 +70,55 @@ export const backgroundMusic = {
   src: "/audio/chill-lofi.mp3",
 };
 
-export const about: string[] = [
-  "I'm a Computer Science student at the University of Waterloo, interested in software development, artificial intelligence, and building practical projects.",
-  "Outside of code, I play badminton and basketball, lift weights, and play poker. They keep me active and competitive, and poker especially has taught me to think in probabilities and make calm decisions with incomplete information.",
-  "I use GitHub to document what I'm learning and to share the projects I build throughout university.",
+// The notebook in the pavilion: one entry to a page, each a heading and a
+// few short points. The last page (where to find me) is built from
+// `profile` in app/about/page.tsx.
+export type AboutPage = {
+  heading: string;
+  points: string[];
+};
+
+export const about: AboutPage[] = [
+  {
+    heading: "Who I am",
+    points: [
+      "Computer Science student at the University of Waterloo.",
+      "Interested in software development, artificial intelligence, and building practical projects.",
+    ],
+  },
+  {
+    heading: "Building and learning",
+    points: [
+      "MarketLab, a stock market simulator.",
+      "Scrollganizer, a Chrome extension for searching saved TikToks, with a team of three.",
+      "Next: digging into AI and machine learning.",
+      "Looking for a software engineering internship or co‑op.",
+    ],
+  },
+  {
+    heading: "Away from the keyboard",
+    points: [
+      "Badminton, basketball, lifting weights, and poker.",
+      "They keep me active and competitive.",
+      "Poker has taught me to think in probabilities and stay calm with incomplete information.",
+    ],
+  },
 ];
+
+// The line beside the GitHub link on the notebook's last page
+export const githubNote = "where I document what I'm learning and share what I build";
 
 export const projects: Project[] = [
   {
     title: "MarketLab",
-    description:
-      "A stock market web app that runs on simulated prices: a dashboard and screener for about 95 US stocks, paper trading, portfolio risk analytics, and a strategy backtester with walk-forward testing. It also has price alerts with push notifications, monthly trading competitions, and short lessons with quizzes. Heavier analytics run in a separate Python service.",
+    summary: "A stock market simulator: a web app that runs on simulated prices, not real market data.",
+    features: [
+      "Market dashboard and a screener covering about 95 US stocks.",
+      "Paper trading, with portfolio risk analytics.",
+      "Strategy backtester with walk-forward testing.",
+      "Price alerts with push notifications, monthly trading competitions, and short lessons with quizzes.",
+      "Heavier analytics run in a separate Python service.",
+    ],
     technologies: [
       "TypeScript",
       "Next.js",
@@ -115,8 +157,13 @@ export const projects: Project[] = [
   },
   {
     title: "Scrollganizer",
-    description:
-      "A Chrome side-panel extension I worked on as a software developer on a team of three. It builds a searchable library of saved TikTok videos and photo posts in the browser, so they can be found by caption, creator, hashtag, or collection instead of scrolling through Favorites. The library stays on the user's device and can be exported or imported as JSON.",
+    summary: "A Chrome side-panel extension that makes saved TikTok videos and photo posts searchable.",
+    role: "Software developer on a team of three.",
+    features: [
+      "Builds a library of saved videos and photo posts, right in the browser.",
+      "Search by caption, creator, hashtag, or collection instead of scrolling through Favorites.",
+      "The library stays on the user's device, and can be exported or imported as JSON.",
+    ],
     technologies: [
       "TypeScript",
       "Preact",
@@ -151,8 +198,19 @@ export const projects: Project[] = [
   },
   {
     title: "Codebase Puzzles",
-    description:
-      "A LeetCode-style site where every puzzle is set inside a real open-source repository, pinned to a commit: 100 puzzles across 15 TypeScript and Python projects, including FastAPI, Flask, Zod and Hono. You read the code in a browser IDE and answer by clicking on symbols, files or lines, and the server grades each answer by exact ID. A Python pipeline indexes every repository with SCIP to build the code index the puzzles and grader rely on. I'm building it with one other developer; so far I've added browsing by difficulty and topic, written 15 of the puzzles and the difficulty rules, and fixed grading, rate-limiting and macOS setup issues.",
+    summary: "A LeetCode-style site where every puzzle is set inside a real open-source repository.",
+    role: "Building it with one other developer.",
+    features: [
+      "100 puzzles across 15 TypeScript and Python repositories, including FastAPI, Flask, Zod and Hono, each pinned to a commit.",
+      "Read the code in a browser IDE and answer by clicking on symbols, files or lines.",
+      "The server grades every answer by exact ID.",
+      "A Python pipeline indexes each repository with SCIP, building the code index the puzzles and the grader rely on.",
+    ],
+    contributions: [
+      "Added browsing by difficulty and topic.",
+      "Wrote 15 of the puzzles, and the difficulty rules.",
+      "Fixed grading, rate-limiting and macOS setup issues.",
+    ],
     technologies: [
       "TypeScript",
       "Next.js",
@@ -191,8 +249,9 @@ export const experience: Experience[] = [
     startDate: "Oct. 2026",
     endDate: "Present",
     highlights: [
-      "Participating in FlyRank AI's self-paced Machine Learning track, completing technical assignments and practical AI/ML coursework.",
-      "Developing skills in machine learning workflows, reproducible Python analysis, and model evaluation while working toward a reviewed capstone project.",
+      "Working through FlyRank AI's self-paced Machine Learning track: technical assignments and practical AI/ML coursework.",
+      "Building skills in machine learning workflows, reproducible Python analysis, and model evaluation.",
+      "Working toward a reviewed capstone project.",
     ],
   },
   {
@@ -200,9 +259,9 @@ export const experience: Experience[] = [
     organization: "Drive Gears #20261, FIRST Tech Challenge",
     startDate: "2024",
     highlights: [
-      "Developed Java-based autonomous robot programs in Android Studio, implementing ordered movement routines and task sequences to operate without driver input.",
-      "Structured autonomous control logic into sequential actions, refining movement order and timing parameters to coordinate robot behavior during autonomous operation.",
-      "Tested and debugged Java autonomous routines on the physical robot, identifying sequencing and timing issues and iteratively adjusting code based on observed behavior.",
+      "Developed the robot's autonomous programs in Java with Android Studio, so it could run its routines without driver input.",
+      "Structured the control logic as a sequence of actions, tuning movement order and timing to coordinate the robot.",
+      "Tested on the physical robot and debugged iteratively, adjusting the code to match how it actually behaved.",
     ],
   },
   {
@@ -212,9 +271,9 @@ export const experience: Experience[] = [
     startDate: "2026",
     endDate: "Present",
     highlights: [
-      "Expected to finish in 2031.",
+      "Expected graduation: 2031.",
       "Awards: John Platter Scholarship; University of Waterloo Merit Scholarship.",
-      "Focusing on data structures and algorithms, object-oriented programming, and full-stack development.",
+      "Focus: data structures and algorithms, object-oriented programming, and full-stack development.",
     ],
   },
 ];

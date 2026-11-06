@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 // The arcade: a cabinet for each interest
 export default function InterestsPage() {
   return (
-    <Location place={placeById("arcade")} side="left" intro="The power came back on in a few of the cabinets. Choose one to play.">
+    <Location place={placeById("arcade")} side="left" intro="The power came back on in a few of the cabinets." hint="Choose one to play.">
       <Cabinets interests={interests} />
     </Location>
   );

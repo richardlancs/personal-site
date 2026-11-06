@@ -52,6 +52,7 @@ function Sketch({ scene }: { scene: Interest["scene"] }) {
 // The arcade's cabinets, one for each interest. Choosing one here or in
 // the world (world3d/scenes/Arcade.tsx) walks up to that cabinet and
 // switches it on; its card comes out below, like a prize from the tray.
+// The flat layout has all four cards out already.
 export default function Cabinets({ interests }: { interests: Interest[] }) {
   const selected = useWorld((s) => s.sel.interest);
   const interest = interests[selected];
@@ -62,27 +63,43 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
   }
 
   return (
-    <div className="take-clicks">
-      <div role="group" aria-label="Cabinets" className="cabinet-row">
-        {interests.map((item, index) => (
-          <button key={item.name} type="button" className="cabinet-button" aria-pressed={index === selected} aria-controls="cabinet-card" onClick={() => choose(index)}>
-            <span className="cabinet-button-screen" aria-hidden="true">
+    <>
+      <ul role="list" className="cabinet-stack only-flat">
+        {interests.map((item) => (
+          <li key={item.name} className="cabinet-ticket">
+            <span className="cabinet-ticket-screen" aria-hidden="true">
               <Sketch scene={item.scene} />
             </span>
-            {item.name}
-          </button>
+            <div className="cabinet-ticket-text">
+              <h2 className="font-display text-xl font-semibold tracking-tight">{item.name}</h2>
+              <p>{item.description}</p>
+            </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <section id="cabinet-card" key={interest.name} aria-live="polite" className="cabinet-card">
-        <span className="cabinet-card-sketch">
-          <Sketch scene={interest.scene} />
-        </span>
-        <div>
-          <h2 className="font-display text-2xl font-semibold tracking-tight">{interest.name}</h2>
-          <p className="mt-2 leading-relaxed text-muted">{interest.description}</p>
+      <div className="take-clicks only-world">
+        <div role="group" aria-label="Cabinets" className="cabinet-row">
+          {interests.map((item, index) => (
+            <button key={item.name} type="button" className="cabinet-button" aria-pressed={index === selected} aria-controls="cabinet-card" onClick={() => choose(index)}>
+              <span className="cabinet-button-screen" aria-hidden="true">
+                <Sketch scene={item.scene} />
+              </span>
+              {item.name}
+            </button>
+          ))}
         </div>
-      </section>
-    </div>
+
+        <section id="cabinet-card" key={interest.name} aria-live="polite" className="cabinet-card">
+          <span className="cabinet-card-sketch">
+            <Sketch scene={interest.scene} />
+          </span>
+          <div>
+            <h2 className="font-display text-2xl font-semibold tracking-tight">{interest.name}</h2>
+            <p className="mt-2 leading-relaxed text-muted">{interest.description}</p>
+          </div>
+        </section>
+      </div>
+    </>
   );
 }

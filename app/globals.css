@@ -16,9 +16,12 @@
   --foreground: #2b2f27; /* ink: green-black, never pure black */
   --muted: #474c42; /* secondary text, 4.5:1 or better on paper over any scene */
   --border: rgb(43 47 39 / 0.13);
-  --accent: #3b6849; /* links: leaf green */
-  --accent-hover: #2b4f37;
-  --warm: #8f4a26; /* dates and small marks: rust */
+  /* Links and small marks are dark enough to keep 4.5:1 on paper even
+     where a dark part of the world shows through it (measured: paper gets
+     as dark as #ccc8b7 over the station) */
+  --accent: #2f5a3c; /* links: leaf green */
+  --accent-hover: #224430;
+  --warm: #823f1f; /* dates and small marks: rust */
   --nav: rgb(249 246 237 / 0.78);
   --label: rgb(251 243 225 / 0.78); /* name tags in the world */
   /* What sits behind paper: the world, blurred and warmed */
@@ -45,7 +48,9 @@
   color-scheme: dark;
 
   --background: #1a2133;
-  --paper: rgb(30 36 46 / 0.8);
+  /* The world stays daytime at night, so this paper lets less through:
+     at 0.8 a sunlit patch behind it took text down to 3.6:1 */
+  --paper: rgb(30 36 46 / 0.88);
   --paper-edge: rgb(255 236 200 / 0.14);
   --foreground: #ece6d8;
   --muted: #b2b5aa;
@@ -100,13 +105,13 @@ body {
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 /* A sheet of paper for content */
 .paper {
   border: 1px solid var(--paper-edge);
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: var(--paper);
   box-shadow: 0 18px 40px -28px rgb(50 40 20 / 0.45);
 }
@@ -127,12 +132,40 @@ body {
   text-decoration-color: currentColor;
 }
 
+/* Short points on paper (project notes, the timetable's notice): a small
+   rust dash hung in the margin, so wrapped lines stay aligned */
+.points {
+  display: grid;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.points li,
+.notebook-points li {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.points li::before,
+.notebook-points li::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: calc(0.5lh - 1px);
+  width: 0.5rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--warm);
+}
+
 /*
   The world (components/world3d/)
 
-  A WebGL canvas behind every page. On wide screens it fills the window
-  and pages sit over it; on phones and portrait screens it's a band at the
-  top of the page and the page follows below.
+  A WebGL canvas behind every page, on wide screens: it fills the window
+  and pages sit over it. Phones and portrait screens get the flat layout
+  at the end of this file instead, and never load it.
 */
 .world3d {
   position: fixed;
@@ -192,7 +225,7 @@ body {
   margin: -1.6rem 0 0;
   padding: 0.4rem 0.7rem 0.45rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--label);
   color: var(--foreground);
   white-space: nowrap;
@@ -266,7 +299,7 @@ body {
 /* The world is daytime in both themes, so text over it stays ink.
    Behind it, a band of late-afternoon haze softens the far skyline, so
    the text stays readable without a card. */
-@media (orientation: landscape) and (min-width: 768px) {
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
   .park-intro {
     --foreground: #2b2f27;
     --muted: #3e443a;
@@ -371,15 +404,17 @@ body {
   text-decoration-color: currentColor;
 }
 
-/* The places list, for phones */
-.park-places {
-  display: none;
-}
-
 /* Page content sits over the world. Only its objects take clicks, so the
    world around them stays clickable. */
 :root {
-  /* When a place's page comes in: as the camera walks into the place */
+  /* When a place's page comes in. Arriving on the site, almost at once:
+     the words shouldn't wait for the world to load. */
+  --arrive-delay: 0.15s;
+}
+
+/* Going from place to place inside the site (WorldControls.tsx marks it):
+   as the camera walks into the place */
+:root[data-travelled] {
   --arrive-delay: 1.5s;
 }
 
@@ -402,54 +437,6 @@ body {
   from {
     opacity: 0;
     transform: translateY(14px);
-  }
-}
-
-/*
-  Phones and portrait tablets: the world is a band at the top of the page
-  (taller in the park), and the page follows below it. Drag across the
-  band to look around.
-*/
-@media (orientation: portrait), (max-width: 767px) {
-  .world3d {
-    position: relative;
-    inset: auto;
-    height: 62svh;
-    min-height: 22rem;
-  }
-
-  .world3d:not([data-scene="park"]) {
-    height: 44svh;
-    min-height: 17rem;
-  }
-
-  .park-intro {
-    position: static;
-    width: auto;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 1.75rem 1.25rem 0.5rem;
-    pointer-events: auto;
-  }
-
-  .park-name {
-    font-size: 2rem;
-  }
-
-  .park-places {
-    display: block;
-  }
-
-  .world-label {
-    padding: 0.25rem 0.55rem;
-  }
-
-  .world-label-place {
-    font-size: 0.8rem;
-  }
-
-  .world-label-section {
-    display: none;
   }
 }
 
@@ -657,7 +644,7 @@ html.theme-transition .hover-grow {
   align-items: baseline;
   gap: 0.75rem;
   padding: 0.55rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 .places-menu a[href]:not(.text-link):hover,
@@ -683,18 +670,6 @@ html.theme-transition .hover-grow {
   font-weight: 500;
 }
 
-@media (orientation: portrait), (max-width: 767px) {
-  .world-controls {
-    position: absolute;
-    padding: 0.75rem;
-  }
-
-  .places-menu {
-    position: absolute;
-    inset: 3.4rem 0.75rem auto auto;
-  }
-}
-
 /*
   Places (components/world/Location.tsx and components/locations/).
   Each page sits on the open side of the view the camera turned to. Each
@@ -706,6 +681,10 @@ html.theme-transition .hover-grow {
   /* Paper grain, for anything that's paper */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.35 0 0 0 0 0.28 0 0 0 0 0.18 0 0 0 0.07 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
   --sheet: #f6f1e3;
+  /* Corners: one family of soft edges, large for panels, small for pieces */
+  --radius-lg: 18px;
+  --radius: 14px;
+  --radius-sm: 9px;
 }
 
 :root[data-theme="dark"] {
@@ -713,9 +692,14 @@ html.theme-transition .hover-grow {
 }
 
 .location {
+  /* The content takes one half of the screen and the place the other.
+     The column sits in the middle of its half (not against the edge),
+     so wide screens stay balanced instead of piling everything on one
+     side. */
+  --column: min(36rem, 42vw);
   display: flex;
   min-height: 100svh;
-  padding: 5rem 4vw 2.5rem;
+  padding: 5rem max(4vw, calc(25vw - var(--column) / 2)) 2.5rem;
 }
 
 .location[data-side="right"] {
@@ -733,11 +717,18 @@ html.theme-transition .hover-grow {
 }
 
 .location-column {
-  width: min(34rem, 40vw);
+  width: var(--column);
 }
 
 .location[data-side="below"] .location-column {
   width: min(70rem, 100%);
+}
+
+/* The notebook lies open: two pages need a little more room */
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  .location[data-place="pavilion"] {
+    --column: min(38rem, 46vw);
+  }
 }
 
 /* The place's sign: its name, what's there, a line about it */
@@ -747,7 +738,7 @@ html.theme-transition .hover-grow {
   margin-bottom: 1.25rem;
   padding: 0.8rem 1.2rem 0.95rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 4px;
+  border-radius: var(--radius);
   background: var(--paper) var(--grain);
   box-shadow: 0 14px 30px -22px rgb(40 30 10 / 0.7);
 }
@@ -774,11 +765,26 @@ html.theme-transition .hover-grow {
   color: var(--muted);
 }
 
+/* The notice for an address with no page (not-found.tsx) */
+.lost-notice {
+  max-width: 28rem;
+  padding: 1.5rem 1.6rem 1.7rem;
+  border-radius: 12px;
+}
+
+.lost-notice-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  margin-top: 1.1rem;
+  font-weight: 500;
+}
+
 .location-footer {
   margin-top: 2rem;
   width: fit-content;
   padding: 0.2rem 0.6rem;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
   font-size: 0.75rem;
   color: var(--muted);
@@ -789,26 +795,35 @@ html.theme-transition .hover-grow {
   position: relative;
   display: grid;
   padding: 10px;
-  border-radius: 7px;
+  border-radius: var(--radius-lg);
   /* The cover, under the pages */
   background: linear-gradient(135deg, #6b4630, #4f3222);
   box-shadow: 0 26px 50px -30px rgb(30 18 8 / 0.8);
   perspective: 1800px;
 }
 
+/* The space between ruled lines: every line of writing sits on one */
+.notebook,
+.notebook-sheet {
+  --rule: 2rem;
+  --margin: 2.4rem; /* where the red margin line is drawn */
+}
+
+/* Two pages side by side are narrow, so the writing is a little smaller */
 .notebook[data-wide] {
+  --rule: 1.75rem;
   grid-template-columns: 1fr 1fr;
+  font-size: 1rem;
 }
 
 .notebook-page,
 .notebook-leaf,
 .notebook-sheet {
   /* Ruled paper with a red margin line */
-  --rule: 2rem;
   background-color: #f7f2e2;
   background-image:
     var(--grain),
-    linear-gradient(to right, transparent 2.4rem, rgb(176 82 60 / 0.3) 2.4rem, rgb(176 82 60 / 0.3) calc(2.4rem + 1px), transparent calc(2.4rem + 1px)),
+    linear-gradient(to right, transparent var(--margin), rgb(176 82 60 / 0.3) var(--margin), rgb(176 82 60 / 0.3) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
     repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), rgb(74 110 140 / 0.17) calc(var(--rule) - 1px) var(--rule));
   background-position:
     0 0,
@@ -818,42 +833,52 @@ html.theme-transition .hover-grow {
 }
 
 /* Every page in one hand: the same face and size, on the ruled lines */
+.notebook,
+.notebook-sheet {
+  font-size: 1.08rem;
+}
+
 .notebook-page,
 .notebook-sheet {
   font-family: var(--font-display);
-  font-size: 1.08rem;
   font-weight: 500;
-  line-height: 2rem;
+  line-height: var(--rule);
 }
 
 .notebook-page {
   position: relative;
   min-height: 25rem;
   padding: 2.75rem 1.6rem 2.5rem 3.2rem;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
 .notebook-page[data-side="left"] {
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
   box-shadow: inset -22px 0 26px -22px rgb(70 45 20 / 0.45);
 }
 
 .notebook-page[data-side="right"] {
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   box-shadow: inset 22px 0 26px -22px rgb(70 45 20 / 0.45);
 }
 
 .notebook-page-body > * + * {
-  margin-top: 2rem;
+  margin-top: var(--rule);
 }
 
-/* Notes to self are the same writing, in rust ink */
+/* Headings are the same writing, in rust ink, with their points straight
+   underneath: one to a line or two, each starting on a ruled line */
 .notebook-note {
   color: #8f4a26;
+  font-weight: 600;
 }
 
-.notebook-list {
-  list-style: none;
+.notebook-page-body > .notebook-note + .notebook-points {
+  margin-top: 0;
+}
+
+.notebook-points li::before {
+  background: #8f4a26;
 }
 
 .notebook-page .text-link,
@@ -882,7 +907,7 @@ html.theme-transition .hover-grow {
   bottom: 10px;
   left: 50%;
   width: calc(50% - 10px);
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   opacity: 0;
   transform-origin: left center;
   box-shadow: 0 0 30px -8px rgb(60 40 20 / 0.45);
@@ -908,7 +933,7 @@ html.theme-transition .hover-grow {
   gap: 0.5rem 1rem;
   margin-top: 0.9rem;
   padding: 0.5rem 0.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
 }
 
@@ -918,31 +943,31 @@ html.theme-transition .hover-grow {
   color: var(--accent);
 }
 
-.notebook-turn:disabled {
+.notebook-turn[aria-disabled="true"] {
   color: var(--muted);
   opacity: 0.55;
+  cursor: default;
 }
 
 .notebook-controls + .text-link {
   padding: 0.2rem 0.6rem;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
 }
 
 .notebook-sheet {
   padding: 2.75rem 1.6rem 2.5rem 3.2rem;
-  border-radius: 4px;
-  line-height: 2rem;
+  border-radius: var(--radius);
   box-shadow: 0 26px 50px -30px rgb(30 18 8 / 0.8);
 }
 
 .notebook-sheet > * + * {
-  margin-top: 2rem;
+  margin-top: var(--rule);
 }
 
 .notebook-sheet + .text-link {
   padding: 0.2rem 0.6rem;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   background: var(--paper);
 }
 
@@ -960,7 +985,7 @@ html.theme-transition .hover-grow {
   gap: 0.55rem;
   padding: 0.5rem 1rem 0.55rem 0.8rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 6px 6px 3px 3px;
+  border-radius: 10px 10px 4px 4px;
   background: linear-gradient(#ddd4bd, #c3b898);
   color: #2b2f27;
   font-family: var(--font-display);
@@ -1005,7 +1030,7 @@ html.theme-transition .hover-grow {
   width: 6.5rem;
   overflow: hidden;
   border: 2px solid transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: #101310;
   opacity: 0.7;
   transition:
@@ -1035,7 +1060,7 @@ html.theme-transition .hover-grow {
   position: relative;
   padding: 1.75rem 1.5rem 1.5rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--paper) var(--grain);
   box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
   transform: rotate(0.4deg);
@@ -1055,6 +1080,36 @@ html.theme-transition .hover-grow {
   box-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
 }
 
+/* What it is, in one sentence, a size up from the points below */
+.project-summary {
+  margin-top: 0.6rem;
+  font-size: 1.0625rem;
+  line-height: 1.5;
+}
+
+.project-role {
+  margin-top: 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.project-role-label {
+  margin-right: 0.3rem;
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--warm);
+}
+
+.project-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin-top: 0.7rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
 .project-notes-label {
   margin-top: 1.25rem;
   font-family: var(--font-display);
@@ -1062,19 +1117,35 @@ html.theme-transition .hover-grow {
   font-weight: 600;
 }
 
+.project-notes-label + .points {
+  margin-top: 0.5rem;
+}
+
+/* Built with: one quiet line of parts, a rust dot between them */
 .project-parts {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem 0.5rem;
-  margin-top: 0.5rem;
-  font-size: 0.8125rem;
+  margin: 0.4rem 0 0 -1.1rem;
+  /* Hides the dot in front of the first part on each line */
+  clip-path: inset(0 0 0 1.1rem);
+  font-size: 0.875rem;
+  line-height: 1.7;
   color: var(--muted);
 }
 
 .project-parts li {
-  padding: 0.1rem 0.45rem;
-  border: 1px solid var(--border);
-  border-radius: 3px;
+  position: relative;
+  padding-left: 1.1rem;
+}
+
+.project-parts li::before {
+  content: "·";
+  position: absolute;
+  left: 0;
+  width: 1.1rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--warm);
 }
 
 /* The tool wall: a pegboard with the skills hung on it */
@@ -1082,7 +1153,7 @@ html.theme-transition .hover-grow {
   display: block;
   margin-top: 2.75rem;
   padding: 1.5rem 1.5rem 1.75rem;
-  border-radius: 4px;
+  border-radius: var(--radius);
   background-color: #b99c70;
   background-image: radial-gradient(circle, rgb(70 48 24 / 0.38) 1.6px, transparent 2.2px);
   background-size: 22px 22px;
@@ -1097,15 +1168,14 @@ html.theme-transition .hover-grow {
 
 .tool-boards {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1.25rem;
+  gap: 0.9rem;
   margin-top: 1rem;
 }
 
 .tool-board {
   position: relative;
-  padding: 1rem 1.1rem 1.2rem;
-  border-radius: 3px;
+  padding: 0.85rem 1.1rem 1.05rem;
+  border-radius: var(--radius-sm);
   background: #f4eedc var(--grain);
   box-shadow: 0 10px 18px -12px rgb(30 18 8 / 0.7);
 }
@@ -1129,7 +1199,7 @@ html.theme-transition .hover-grow {
   position: relative;
   padding: 0.2rem 0.55rem 0.2rem 1.15rem;
   border: 1px solid rgb(110 86 52 / 0.3);
-  border-radius: 2px 6px 6px 2px;
+  border-radius: 4px 8px 8px 4px;
   background: #fbf7ea;
   font-size: 0.875rem;
   color: #2b2f27;
@@ -1152,7 +1222,7 @@ html.theme-transition .hover-grow {
 .timetable {
   padding: 1rem 1.25rem 1.25rem;
   border: 6px solid #1b2a22;
-  border-radius: 6px;
+  border-radius: var(--radius);
   background: linear-gradient(170deg, #2a4033, #20332a);
   color: #ece3c9;
   box-shadow:
@@ -1228,7 +1298,7 @@ html.theme-transition .hover-grow {
   margin-top: 1rem;
   padding: 1.25rem 1.4rem 1.4rem;
   border-top: 4px solid var(--warm);
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 var(--radius) var(--radius);
   background: var(--paper) var(--grain);
   perspective: 900px;
   box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
@@ -1259,7 +1329,7 @@ html.theme-transition .hover-grow {
   justify-items: center;
   gap: 0.45rem;
   padding: 0.6rem 0.4rem 0.65rem;
-  border-radius: 8px 8px 4px 4px;
+  border-radius: 12px 12px 6px 6px;
   background: linear-gradient(#3b3640, #27232b);
   color: #f3ead6;
   font-family: var(--font-display);
@@ -1280,7 +1350,7 @@ html.theme-transition .hover-grow {
   place-items: center;
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 4px;
+  border-radius: 6px;
   background: #0b0d0c;
   color: #4b5a52;
   transition:
@@ -1302,7 +1372,7 @@ html.theme-transition .hover-grow {
   margin-top: 1.25rem;
   padding: 1.4rem 1.4rem 1.5rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--paper) var(--grain);
   box-shadow: 0 22px 40px -28px rgb(30 20 10 / 0.75);
   animation: card-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -1333,7 +1403,7 @@ html.theme-transition .hover-grow {
   align-items: center;
   gap: 0.75rem 1rem;
   padding: 0.85rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   /* The booth's green enamel */
   background: linear-gradient(170deg, #35593f, #284433);
   color: #f1e9d2;
@@ -1371,7 +1441,7 @@ html.theme-transition .hover-grow {
   margin-top: 1.1rem;
   padding: 1.5rem 1.5rem 1.25rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--paper) var(--grain);
   transform: rotate(-0.5deg);
   box-shadow: 0 26px 46px -30px rgb(30 20 10 / 0.8);
@@ -1455,7 +1525,7 @@ html.theme-transition .hover-grow {
   width: min(52rem, 94vw);
   padding: 1.6rem 1.75rem 1.5rem;
   border: 1px solid var(--paper-edge);
-  border-radius: 3px;
+  border-radius: var(--radius);
   background: var(--sheet) var(--grain);
   color: var(--foreground);
   box-shadow: 0 30px 60px -30px rgb(20 14 6 / 0.85);
@@ -1498,7 +1568,7 @@ html.theme-transition .hover-grow {
   aspect-ratio: 600 / 360;
   margin-top: 1rem;
   border: 1px solid var(--border);
-  border-radius: 2px;
+  border-radius: var(--radius-sm);
 }
 
 .map-ink {
@@ -1576,7 +1646,7 @@ html.theme-transition .hover-grow {
   display: grid;
   justify-items: center;
   padding: 0.15rem 0.45rem;
-  border-radius: 3px;
+  border-radius: 6px;
   background: color-mix(in srgb, var(--sheet) 88%, transparent);
   text-align: center;
   transform: translateX(-50%);
@@ -1603,88 +1673,6 @@ html.theme-transition .hover-grow {
   font-size: 0.75rem;
   color: var(--muted);
   white-space: nowrap;
-}
-
-.map-key {
-  display: none;
-}
-
-/* Phones: everything follows the painting down the page */
-@media (orientation: portrait), (max-width: 767px) {
-  .over-world {
-    pointer-events: auto;
-  }
-
-  .location,
-  .location[data-side] {
-    display: block;
-    min-height: 0;
-    padding: 1.25rem 1rem 2.5rem;
-  }
-
-  .location-column,
-  .location[data-side="below"] .location-column {
-    width: auto;
-  }
-
-  .location-header {
-    display: block;
-    margin-top: -3.25rem;
-    position: relative;
-  }
-
-  .tool-boards {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .directory-lines li {
-    grid-template-columns: 1.75rem minmax(0, 1fr);
-  }
-
-  .cabinet-button {
-    font-size: 0.8rem;
-  }
-
-  .directory-value {
-    grid-column: 2;
-  }
-
-  .map-sheet {
-    width: auto;
-    margin-top: -3.5rem;
-    padding: 1.25rem 1rem;
-  }
-
-  .map-pin-place,
-  .map-here-label,
-  .map-small-label {
-    display: none;
-  }
-
-  .map-pin-section {
-    font-size: 0.85rem;
-  }
-
-  .map-pin {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
-  .map-key {
-    display: block;
-    margin-top: 1rem;
-  }
-
-  .map-key li + li {
-    border-top: 1px solid var(--border);
-  }
-
-  .map-key a {
-    display: grid;
-    gap: 0.1rem;
-    padding: 0.7rem 0;
-    font-size: 0.9375rem;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1734,20 +1722,20 @@ html.theme-transition .hover-grow {
 .timetable-notice,
 .map-sheet,
 .places-menu {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
 }
 
 .notebook-controls,
 .location-footer,
 .notebook-controls + .text-link,
 .notebook-sheet + .text-link {
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
 }
 
 /* The pieces that are objects, not paper, take on some of the light too */
 .timetable {
   border-color: rgb(27 42 34 / 0.75);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(170deg, rgb(42 64 51 / 0.86), rgb(32 51 42 / 0.86));
   backdrop-filter: var(--veil);
   box-shadow:
@@ -1756,7 +1744,7 @@ html.theme-transition .hover-grow {
 }
 
 .phone-line {
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(170deg, rgb(53 89 63 / 0.85), rgb(40 68 51 / 0.85));
   backdrop-filter: var(--veil);
   box-shadow: 0 18px 44px -20px rgb(20 40 25 / 0.45);
@@ -1764,7 +1752,7 @@ html.theme-transition .hover-grow {
 
 .bench-tab {
   border-color: var(--paper-edge);
-  border-radius: 10px;
+  border-radius: var(--radius);
   background: linear-gradient(rgb(231 220 192 / 0.85), rgb(205 191 156 / 0.85));
   backdrop-filter: var(--veil);
   box-shadow: var(--float);
@@ -1775,7 +1763,7 @@ html.theme-transition .hover-grow {
 }
 
 .cabinet-button {
-  border-radius: 12px 12px 6px 6px;
+  border-radius: 14px 14px 6px 6px;
   background: linear-gradient(rgb(59 54 64 / 0.82), rgb(39 35 43 / 0.82));
   backdrop-filter: var(--veil);
   box-shadow: 0 16px 36px -18px rgb(20 12 24 / 0.55);
@@ -1793,4 +1781,682 @@ html.theme-transition .hover-grow {
    the ink: this one sheet stays nearly opaque */
 .map-sheet {
   background-color: color-mix(in srgb, var(--sheet) 94%, transparent);
+}
+
+/*
+  The flat layout (components/world/flat.ts has the same two queries).
+
+  Phones, portrait tablets and short windows don't get the 3D world. Each
+  page opens with the painting of the park, moved in on the place
+  (world/Plate.tsx), and everything below it is paper: the same sheets,
+  signs and objects as the wide layout, laid out in one column, with
+  nothing to choose or wait for before the words can be read.
+*/
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  .only-flat,
+  .plate {
+    display: none !important;
+  }
+}
+
+@media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
+  .only-world,
+  .world3d {
+    display: none !important;
+  }
+
+  /* Nothing is behind the paper here but the page, so the sheets are
+     plain and opaque: no blur to compute */
+  :root,
+  :root[data-travelled] {
+    --arrive-delay: 0s;
+  }
+
+  :root {
+    --paper: #f9f3e4;
+    --paper-edge: rgb(255 252 242 / 0.9);
+    --label: #f9f3e4;
+    --veil: none;
+    --float: 0 14px 30px -22px rgb(120 78 28 / 0.45), 0 1px 0 rgb(255 252 240 / 0.6) inset;
+  }
+
+  :root[data-theme="dark"] {
+    --paper: #252c39;
+    --paper-edge: rgb(255 236 200 / 0.12);
+    --label: #252c39;
+    --float: 0 14px 30px -22px rgb(0 0 0 / 0.6), 0 1px 0 rgb(255 236 200 / 0.06) inset;
+  }
+
+  body {
+    background-image: var(--grain);
+  }
+
+  .over-world {
+    pointer-events: auto;
+  }
+
+  /* Pages are simply there: no camera to wait for */
+  .arrive,
+  .map-sheet {
+    animation: none;
+  }
+
+  .points {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  /* ---------- The bar along the top: the way back, and Places ---------- */
+  .world-controls {
+    position: sticky;
+    top: 0;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--background);
+    pointer-events: auto;
+  }
+
+  .control-tag,
+  .control-round {
+    border-color: var(--border);
+    box-shadow: none;
+  }
+
+  .control-tag {
+    height: 2.75rem;
+  }
+
+  .control-round button {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .places-menu {
+    inset: 4.1rem 0.75rem auto auto;
+    max-height: calc(100svh - 5rem);
+    overflow-y: auto;
+  }
+
+  .places-menu a[href]:not(.text-link) {
+    padding: 0.7rem 0.75rem;
+  }
+
+  .places-menu-map {
+    padding: 0.5rem 0;
+  }
+
+  /* ---------- The plate: the painting, moved in on the place ---------- */
+  .plate {
+    position: relative;
+    overflow: hidden;
+    background: #d9bf8c; /* the painting's haze, while it loads */
+    container-type: inline-size; /* the tags size themselves to the picture */
+  }
+
+  .plate-picture {
+    position: absolute;
+    inset: 0;
+  }
+
+  .plate-picture img {
+    object-fit: cover;
+  }
+
+  /* Night: the same painting, turned down */
+  :root[data-theme="dark"] .plate-picture {
+    filter: brightness(0.78) saturate(0.9);
+  }
+
+  /* The park: the whole painting, never taller than the screen */
+  .plate[data-view="park"] {
+    aspect-ratio: 3 / 2;
+    width: min(100%, 105svh);
+    margin-inline: auto;
+  }
+
+  /* A place: a strip of the painting, fading into the page */
+  .plate:not([data-view="park"]) {
+    height: clamp(9.5rem, 44vw, 17rem);
+    max-height: 46svh;
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  .places-menu a[href]:not(.text-link) {
+    grid-template-columns: 1fr;
+  }
+
+  .plate:not([data-view="park"])::after {
+    content: "";
+    position: absolute;
+    inset: auto 0 0;
+    height: 42%;
+    background: linear-gradient(to bottom, transparent, var(--background));
+  }
+
+  /* A tag on each place in the painting, like the name tags in the world */
+  .plate-tags {
+    position: absolute;
+    inset: 0;
+  }
+
+  .plate-tag {
+    position: absolute;
+    padding: 0.3rem 0.6rem 0.35rem;
+    border: 1px solid var(--paper-edge);
+    border-radius: var(--radius-sm);
+    background: var(--label);
+    color: var(--foreground);
+    font-family: var(--font-display);
+    font-size: clamp(0.8125rem, 2.6cqw, 1.05rem);
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    box-shadow: 0 6px 14px -8px rgb(40 30 10 / 0.75);
+    transform: translate(-50%, calc(-100% - 0.4rem));
+  }
+
+  .plate-tag[data-edge] {
+    transform: translate(-82%, calc(-100% - 0.4rem));
+  }
+
+  /* The string down to the place */
+  .plate-tag::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: 1.5px;
+    height: 0.4rem;
+    background: var(--label);
+  }
+
+  .plate-tag[data-edge]::after {
+    left: 82%;
+  }
+
+  .plate-tag[data-below] {
+    transform: translate(-50%, 0.4rem);
+  }
+
+  .plate-tag[data-below]::after {
+    top: auto;
+    bottom: 100%;
+  }
+
+  /* A bigger area to tap than the tag itself */
+  .plate-tag::before {
+    content: "";
+    position: absolute;
+    inset: -0.55rem -0.3rem;
+  }
+
+  /* ---------- The park: who I am, then every place ---------- */
+  .park-intro {
+    position: static;
+    width: auto;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 0;
+    pointer-events: auto;
+  }
+
+  .park-name {
+    font-size: clamp(2.25rem, 10vw, 3rem);
+    color: var(--foreground);
+  }
+
+  .park-headline {
+    margin-top: 0.75rem;
+    font-size: 0.9375rem;
+  }
+
+  .park-about {
+    margin-top: 0.9rem;
+    max-width: 34rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
+  .park-links {
+    gap: 0.5rem;
+    margin-top: 1.1rem;
+  }
+
+  .park-links a,
+  .project-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--paper);
+    font-size: 0.9375rem;
+    text-decoration: none;
+  }
+
+  .park-places {
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 2rem 1.25rem 2.5rem;
+  }
+
+  .park-places-title,
+  .onward-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 600;
+  }
+
+  .park-places ul,
+  .map-key {
+    margin-top: 0.6rem;
+    border-block: 1px solid var(--border);
+  }
+
+  .park-places li + li,
+  .map-key li + li {
+    border-top: 1px solid var(--border);
+  }
+
+  /* A place in a list: its drawing from the map, what's there, a line
+     about it */
+  .place-row {
+    display: grid;
+    grid-template-columns: 2.75rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.9rem 0.25rem;
+  }
+
+  .place-row-glyph {
+    width: 2.75rem;
+    color: var(--foreground);
+    opacity: 0.85;
+  }
+
+  .place-row-text {
+    display: grid;
+    row-gap: 0.1rem;
+  }
+
+  .place-row-section {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .place-row-summary {
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  /* ---------- A place's page ---------- */
+  .location,
+  .location[data-side] {
+    display: block;
+    min-height: 0;
+    padding: 0 0 2.5rem;
+  }
+
+  .location-column,
+  .location[data-side="below"] .location-column {
+    width: auto;
+    max-width: 40rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+
+  /* The sign hangs over the foot of the painting */
+  .location-header {
+    display: block;
+    position: relative;
+    margin-top: -2.75rem;
+    padding: 0.9rem 1.1rem 1rem;
+  }
+
+  .location-intro {
+    font-size: 1rem;
+  }
+
+  .lost-notice {
+    margin: 1.5rem 1rem;
+  }
+
+  .lost-notice-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .location-footer {
+    margin-top: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  /* The rest of the park, at the foot of every place's page */
+  .onward {
+    margin-top: 2.5rem;
+    padding-top: 1.4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .onward ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .onward li a {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 3rem;
+    padding: 0.35rem 0.7rem 0.4rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--paper);
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+
+  .onward-glyph {
+    flex: none;
+    width: 2.25rem;
+    opacity: 0.85;
+  }
+
+  .onward-back {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    margin-top: 0.6rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+
+  /* ---------- The pavilion: one sheet from the notebook ---------- */
+  /* Links in the notebook: the whole ruled line is the place to tap */
+  .notebook-points a {
+    padding-block: 0.3rem;
+  }
+
+  .notebook-sheet {
+    --margin: 1.9rem;
+    padding: 2.75rem 1.1rem 2rem 2.6rem;
+    border: 7px solid #5d3c29; /* the cover */
+    border-radius: var(--radius);
+    box-shadow: var(--float);
+  }
+
+  /* ---------- The workshop ---------- */
+  .bench-tabs {
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .bench-tab {
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .project-notes {
+    padding: 1.6rem 1.15rem 1.4rem;
+  }
+
+  /* The chosen screenshot, on an old monitor: beige shell, a power light */
+  .project-screen {
+    position: relative;
+    display: block;
+    margin-top: 0.6rem;
+    border: 7px solid #cfc6ae;
+    border-bottom-width: 16px;
+    border-radius: var(--radius);
+    background: #101310;
+    box-shadow: 0 12px 22px -16px rgb(30 20 10 / 0.8);
+  }
+
+  .project-screen::after {
+    content: "";
+    position: absolute;
+    right: 6px;
+    bottom: -11px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7fe08a;
+    box-shadow: 0 0 5px #7fe08a;
+  }
+
+  .project-screen img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 21rem;
+    object-fit: contain;
+  }
+
+  .shot-strip {
+    margin-top: 0.6rem;
+  }
+
+  .shot-strip + .text-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    margin-top: 0;
+  }
+
+  .shot-thumb {
+    width: 5.5rem;
+  }
+
+  .shot-thumb img {
+    height: 3.4rem;
+  }
+
+  .tool-wall {
+    margin-top: 2rem;
+    padding: 1.25rem 1rem 1.4rem;
+    border-radius: 12px;
+    scroll-margin-top: 4.5rem;
+  }
+
+  /* ---------- The station: every line written out ---------- */
+  .timetable-stack {
+    padding: 0.9rem 0.8rem 0.8rem;
+    border: 5px solid #1b2a22;
+    border-radius: 12px;
+    background: linear-gradient(170deg, #2a4033, #20332a);
+    color: #ece3c9;
+    box-shadow:
+      inset 0 0 0 1px rgb(236 227 201 / 0.3),
+      0 14px 30px -22px rgb(10 14 10 / 0.8);
+  }
+
+  .timetable-stack .timetable-head {
+    padding: 0 0.3rem 0.6rem;
+  }
+
+  .timetable-stack ol {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 0.8rem;
+  }
+
+  /* One line of the board: a paper flap with everything about it */
+  .timetable-stop {
+    padding: 0.95rem 1rem 1.1rem;
+    border-radius: 6px;
+    background: var(--paper) var(--grain);
+    color: var(--foreground);
+  }
+
+  .timetable-stop-when {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0 1rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--warm);
+  }
+
+  .timetable-stop-role {
+    margin-top: 0.3rem;
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+
+  .timetable-stop-to {
+    margin-top: 0.15rem;
+    color: var(--muted);
+  }
+
+  .timetable-stop .points {
+    margin-top: 0.8rem;
+  }
+
+  /* ---------- The arcade: every card out of the tray ---------- */
+  .cabinet-stack {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .cabinet-ticket {
+    display: grid;
+    grid-template-columns: 5.25rem minmax(0, 1fr);
+    overflow: hidden;
+    border: 1px solid var(--paper-edge);
+    border-radius: 12px;
+    background: var(--paper) var(--grain);
+    box-shadow: var(--float);
+  }
+
+  /* The cabinet's side, with its screen lit */
+  .cabinet-ticket-screen {
+    display: grid;
+    place-items: center;
+    background: linear-gradient(#3b3640, #27232b);
+    color: #f2c9a4;
+  }
+
+  .cabinet-ticket-screen svg {
+    width: 3.75rem;
+    height: 3.75rem;
+    padding: 0.55rem;
+    border-radius: 6px;
+    background: #141a22;
+    box-shadow: inset 0 0 14px rgb(242 201 164 / 0.35);
+  }
+
+  .cabinet-ticket-text {
+    padding: 0.9rem 1rem 1.05rem;
+  }
+
+  .cabinet-ticket-text p {
+    margin-top: 0.3rem;
+    line-height: 1.55;
+    color: var(--muted);
+  }
+
+  /* ---------- The phone booth ---------- */
+  .phone-handset {
+    min-height: 2.75rem;
+  }
+
+  .directory {
+    padding: 1.5rem 1.15rem 1rem;
+  }
+
+  .directory-lines li {
+    grid-template-columns: 1.75rem minmax(0, 1fr);
+    row-gap: 0;
+    padding: 0.7rem 0.1rem 0.45rem;
+  }
+
+  .directory-value {
+    grid-column: 2;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .directory-value a {
+    display: inline-block;
+    padding: 0.5rem 0;
+    font-size: 1rem;
+  }
+
+  .directory-copy {
+    min-height: 2.5rem;
+    padding: 0 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    text-decoration: none;
+  }
+
+  /* ---------- The notice board: the map ---------- */
+  .map-sheet {
+    width: auto;
+    max-width: 38rem;
+    margin: -2.75rem 1rem 0;
+    padding: 1.4rem 1rem 0.5rem;
+  }
+
+  @media (min-width: 40rem) {
+    .map-sheet {
+      margin-inline: auto;
+    }
+  }
+
+  .map-pin {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  .map-pin-label {
+    bottom: 74%;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .map-pin-section {
+    font-size: clamp(0.8125rem, 3.6vw, 0.9375rem);
+  }
+
+  /* Small sheets: keep the names clear of each other. The station's goes
+     beside its tower, the arcade's starts at its dome and runs right. */
+  .map-pin[data-label="side"] .map-pin-label {
+    left: auto;
+    right: 76%;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+
+  .map-pin[data-label="right"] .map-pin-label {
+    left: 32%;
+    transform: none;
+  }
+
+  .map-here-label,
+  .map-small-label {
+    display: none;
+  }
+
+  .map-key {
+    margin-top: 1.1rem;
+    border-bottom: 0;
+  }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { WORLD_QUERY } from "../world/flat";
 import { useWorld, world } from "../world3d/store";
 
 export type NotebookPage = { id: string; content: React.ReactNode };
@@ -9,10 +10,11 @@ const TURN_MS = 560;
 
 // The notebook on the pavilion's desk. The one in the world
 // (world3d/scenes/Library.tsx) turns its pages with this one. Here: two
-// pages at a time on wide screens and one on phones. Turning a page sweeps a leaf across the
+// pages at a time where there's room for both, one otherwise. Turning a page sweeps a leaf across the
 // spread; the words underneath change halfway through, so it's quick, and
 // every page is one press (or arrow key) away. "All the pages" lays them
-// out in one column for anyone who'd rather just read.
+// out in one column for anyone who'd rather just read, and that sheet is
+// all the flat layout shows: nothing to turn before reading.
 export default function Notebook({ pages }: { pages: NotebookPage[] }) {
   const page = useWorld((s) => s.sel.page); // the first page showing
   const setPage = (n: number) => {
@@ -24,7 +26,7 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
   const leaf = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const query = matchMedia("(min-width: 900px) and (orientation: landscape)");
+    const query = matchMedia(`${WORLD_QUERY} and (min-width: 1200px)`);
     const update = () => setWide(query.matches);
     update();
     query.addEventListener("change", update);
@@ -64,17 +66,21 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
     if (event.key === "ArrowLeft") turn(-1);
   }
 
+  const sheet = (
+    <div className="notebook-sheet">
+      {pages.map((item) => (
+        <div key={item.id} className="notebook-page-body">
+          {item.content}
+        </div>
+      ))}
+    </div>
+  );
+
   if (all) {
     return (
       <div className="take-clicks">
-        <div className="notebook-sheet">
-          {pages.map((item) => (
-            <div key={item.id} className="notebook-page-body">
-              {item.content}
-            </div>
-          ))}
-        </div>
-        <button type="button" className="text-link mt-4 text-sm font-medium" onClick={() => setAll(false)}>
+        {sheet}
+        <button type="button" className="text-link only-world mt-4 text-sm font-medium" onClick={() => setAll(false)}>
           Back to the notebook
         </button>
       </div>
@@ -84,38 +90,43 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
   const showing = pages.slice(first, first + step);
 
   return (
-    <div className="take-clicks" onKeyDown={onKey}>
-      <div className="notebook" data-wide={wide || undefined}>
-        {showing.map((item, i) => (
-          <section
-            key={item.id}
-            className="notebook-page"
-            data-side={wide ? (i === 0 ? "left" : "right") : "single"}
-            aria-label={`Page ${first + i + 1} of ${pages.length}`}
-          >
-            <div className="notebook-page-body">{item.content}</div>
-            <span className="notebook-folio" aria-hidden="true">
-              {first + i + 1}
-            </span>
-          </section>
-        ))}
-        <div ref={leaf} className="notebook-leaf" aria-hidden="true" />
-      </div>
+    <>
+      <div className="take-clicks only-flat">{sheet}</div>
+      <div className="take-clicks only-world" onKeyDown={onKey}>
+        <div className="notebook" data-wide={wide || undefined}>
+          {showing.map((item, i) => (
+            <section
+              key={item.id}
+              className="notebook-page"
+              data-side={wide ? (i === 0 ? "left" : "right") : "single"}
+              aria-label={`Page ${first + i + 1} of ${pages.length}`}
+            >
+              <div className="notebook-page-body">{item.content}</div>
+              <span className="notebook-folio" aria-hidden="true">
+                {first + i + 1}
+              </span>
+            </section>
+          ))}
+          <div ref={leaf} className="notebook-leaf" aria-hidden="true" />
+        </div>
 
-      <div className="notebook-controls">
-        <button type="button" onClick={() => turn(-1)} disabled={!canBack} className="notebook-turn">
-          <span aria-hidden="true">←</span> Previous page
-        </button>
-        <span className="text-sm text-muted" aria-live="polite">
-          {showing.length > 1 ? `Pages ${first + 1}–${first + showing.length}` : `Page ${first + 1}`} of {pages.length}
-        </span>
-        <button type="button" onClick={() => turn(1)} disabled={!canOn} className="notebook-turn">
-          Next page <span aria-hidden="true">→</span>
+        <div className="notebook-controls">
+          {/* aria-disabled, not disabled: a disabled button drops the keyboard's
+              focus, and with it the arrow keys, on reaching the last page */}
+          <button type="button" onClick={() => turn(-1)} aria-disabled={!canBack} className="notebook-turn">
+            <span aria-hidden="true">←</span> Previous page
+          </button>
+          <span className="text-sm text-muted" aria-live="polite">
+            {showing.length > 1 ? `Pages ${first + 1}–${first + showing.length}` : `Page ${first + 1}`} of {pages.length}
+          </span>
+          <button type="button" onClick={() => turn(1)} aria-disabled={!canOn} className="notebook-turn">
+            Next page <span aria-hidden="true">→</span>
+          </button>
+        </div>
+        <button type="button" className="text-link mt-3 text-sm font-medium" onClick={() => setAll(true)}>
+          Read all the pages at once
         </button>
       </div>
-      <button type="button" className="text-link mt-3 text-sm font-medium" onClick={() => setAll(true)}>
-        Read all the pages at once
-      </button>
-    </div>
+    </>
   );
 }

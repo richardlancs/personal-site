@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import PlaceGlyph, { glyphs } from "../components/world/PlaceGlyph";
+import Plate from "../components/world/Plate";
 import { places } from "../data/world";
 
 export const metadata: Metadata = {
@@ -8,12 +10,14 @@ export const metadata: Metadata = {
 };
 
 // Where each place is drawn on the map (percent of the sheet), seen from
-// above: the same layout as the painting, folded flat
-const pins: Record<string, { x: number; y: number }> = {
+// above: the same layout as the painting, folded flat. `label` is where
+// its name goes on small sheets, where the station, the workshop and the
+// arcade would otherwise write over each other.
+const pins: Record<string, { x: number; y: number; label?: "right" | "side" }> = {
   pavilion: { x: 16, y: 55.5 },
   workshop: { x: 66.7, y: 23.5 },
-  station: { x: 52, y: 13 },
-  arcade: { x: 81, y: 27 },
+  station: { x: 52, y: 13, label: "side" },
+  arcade: { x: 81, y: 27, label: "right" },
   booth: { x: 85, y: 60.5 },
 };
 
@@ -22,14 +26,15 @@ const pins: Record<string, { x: number; y: number }> = {
 // place on it is a link.
 export default function MapPage() {
   return (
-    <main className="over-world location" data-side="middle">
+    <main className="over-world location" data-side="middle" data-place="board">
+      <Plate view="board" />
       <div className="map-sheet arrive take-clicks">
         <div className="map-head">
           <div>
             <h1 className="font-display text-3xl font-semibold tracking-tight">Map of the park</h1>
             <p className="mt-1 text-sm text-muted">Pinned to the notice board. Choose where to go.</p>
           </div>
-          <Link href="/" className="text-link text-sm font-medium">
+          <Link href="/" className="text-link only-world text-sm font-medium">
             Back to the park
           </Link>
         </div>
@@ -54,19 +59,11 @@ export default function MapPage() {
               d="M24 128 q11 -15 22 0 q11 -15 22 0 q11 -15 22 0 M380 120 q10 -14 20 0 q10 -14 20 0 M30 300 q10 -14 20 0 q10 -14 20 0 M410 320 q10 -14 20 0 q10 -14 20 0 M530 300 q10 -14 20 0 q10 -14 20 0"
               className="map-trees"
             />
-            {/* The places, drawn small */}
+            {/* The places, drawn small (world/PlaceGlyph.tsx) */}
             <g className="map-building">
-              {/* Pavilion: a tiled roof on posts */}
-              <path d="M78 196 q18 -14 36 0 M84 196 v12 M108 196 v12 M84 208 h24" />
-              {/* Workshop: a sawtooth roof */}
-              <path d="M384 90 v-12 l8 8 v-8 l8 8 v-8 l8 8 v-8 l8 8 v12 Z" />
-              {/* Station: the clock tower */}
-              <path d="M305 60 v-22 l7 -9 l7 9 v22 Z" />
-              <circle cx="312" cy="43" r="3.2" />
-              {/* Greenhouse: a glass dome */}
-              <path d="M470 106 a16 15 0 0 1 32 0 Z M478 106 a8 13 0 0 1 16 0 M486 91 v15" />
-              {/* Phone booth */}
-              <path d="M504 228 v-20 h12 v20 Z M502 208 l8 -5 l8 5 M507 214 h6" />
+              {places.map((place) => (
+                <path key={place.id} d={glyphs[place.id].d} />
+              ))}
             </g>
             {/* The steps */}
             <path d="M282 340 h36 M286 347 h28 M290 354 h20" className="map-feature" />
@@ -89,11 +86,12 @@ export default function MapPage() {
                 <Link
                   href={place.href}
                   className="map-pin"
+                  data-label={pins[place.id].label}
                   style={{ left: `${pins[place.id].x}%`, top: `${pins[place.id].y}%` }}
                 >
                   <span className="map-pin-label">
                     <span className="map-pin-section">{place.section}</span>
-                    <span className="map-pin-place">{place.name}</span>
+                    <span className="map-pin-place only-world">{place.name}</span>
                   </span>
                 </Link>
               </li>
@@ -101,13 +99,16 @@ export default function MapPage() {
           </ul>
         </div>
 
-        {/* The same places as a list, with what's there */}
-        <ul className="map-key">
+        {/* The same places as a list of sections, with what's in each */}
+        <ul role="list" className="map-key only-flat">
           {places.map((place) => (
             <li key={place.id}>
-              <Link href={place.href} className="group">
-                <span className="font-display font-semibold group-hover:text-accent">{place.section}</span>
-                <span className="text-muted">{place.summary}</span>
+              <Link href={place.href} className="place-row">
+                <PlaceGlyph id={place.id} className="place-row-glyph" />
+                <span className="place-row-text">
+                  <span className="place-row-section">{place.section}</span>
+                  <span className="place-row-summary">{place.summary}</span>
+                </span>
               </Link>
             </li>
           ))}

@@ -8,7 +8,8 @@ export type Line = { label: string; value: string; href: string; copy?: boolean 
 // The phone booth: the directory card pinned inside, with every way to get
 // in touch as a plain link, and the phone itself. Picking up the receiver
 // (here, or on the phone in the booth) lifts it off the hook in the world
-// and steps up to it; nothing waits on it.
+// and steps up to it; nothing waits on it. The flat layout has no phone to
+// lift, so the booth's plate is one button that starts an email.
 export default function Payphone({ lines }: { lines: Line[] }) {
   const up = useWorld((s) => s.phoneUp);
   const [copied, setCopied] = useState<string | null>(null);
@@ -24,9 +25,22 @@ export default function Payphone({ lines }: { lines: Line[] }) {
     }
   }
 
+  const email = lines.find((line) => line.href.startsWith("mailto:"));
+
   return (
     <div className="take-clicks">
-      <div className="phone-line" data-up={up || undefined}>
+      {email && (
+        <div className="phone-line only-flat">
+          <a href={email.href} className="phone-handset">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3.5 6.5h17v11h-17Z M3.5 7l8.5 6.5L20.5 7" />
+            </svg>
+            Write me an email
+          </a>
+          <p className="phone-status">The line still works. Email is the quickest way through.</p>
+        </div>
+      )}
+      <div className="phone-line only-world" data-up={up || undefined}>
         <button type="button" className="phone-handset hover-grow" aria-pressed={up} onClick={() => setReceiver(!up)}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
@@ -44,7 +58,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
           <span className="text-sm text-muted">Richard Lan</span>
         </p>
         <p className="mt-3 text-[15px] leading-relaxed text-muted">
-          I&apos;m looking for software engineering internship and co-op roles. Email is the best way to reach me.
+          I&apos;m looking for software engineering internship and co‑op roles. Email is the best way to reach me.
         </p>
         <ol className="directory-lines">
           {lines.map((line, index) => (

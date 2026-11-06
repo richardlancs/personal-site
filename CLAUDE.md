@@ -74,8 +74,17 @@ camera there. Each page's HTML panel and its 3D objects share state through
 `world3d/store.ts`. Progress, decisions and limits:
 `docs/world/3d-progress-log.md`.
 
-On phones and portrait screens the world is a band at the top of the page,
-with the page below it.
+Phones, portrait tablets and short windows get the flat layout instead: no
+3D at all (three.js is never downloaded there). Each page opens with the
+painting, moved in on that place (`components/world/Plate.tsx`), and the
+page follows on paper in one column, with everything written out: nothing
+to choose or wait for before reading. There the park's names stay out of
+the way: pages, lists and the menu are labelled by section (About,
+Projects, …), not by place. Both layouts render the same content from
+`app/data/`. The two media queries that decide which layout a screen
+gets are in `components/world/flat.ts` and, identically, in `globals.css`
+(`npm test` checks they match). Use `.only-flat` / `.only-world` for
+anything that belongs to one layout.
 
 The overall feeling should be:
 
@@ -109,9 +118,18 @@ Keep text contrast at 4.5:1 or better on paper and on every sky.
 
 ## Typography
 
-Two typefaces from `next/font/google`, set in `app/layout.tsx`: Shippori
-Mincho B1 for headings and place names (`font-display`), Zen Kaku Gothic
-New for text (`font-sans`).
+Two typefaces, set in `app/layout.tsx`: Shippori Mincho B1 for headings and
+place names (`font-display`), Zen Kaku Gothic New for text (`font-sans`).
+Only their Latin is used, so they load with `next/font/local` from the five
+Latin files in `app/fonts/`. Don't move them back to `next/font/google`:
+for these Japanese families it ships every Unicode slice (about 200 KB of
+CSS, and 8 MB of preloaded files). Noto Serif SC, for the Chinese on the
+world's signs, is a 9 KB local subset of just the characters the signs
+use (`app/fonts/signs.txt`; `npm test` checks nothing is missing, and
+says how to regenerate the file).
+
+Body copy is written as short points, not paragraphs: `.points` (a rust
+dash in the margin) on paper, `.notebook-points` in the notebook.
 
 Prefer:
 
@@ -152,9 +170,16 @@ park; the camera moves there. The plain alternatives, always one step away:
   Skills)
 - the notice board's map (`/map`)
 - "Back to the park" and Escape on every place's page
+- on the flat layout: the bar along the top (the way back, Places), tags on
+  the painting, and "Elsewhere in the park" at the foot of each page
 
 Every place is a real URL, so browser history, deep links and the keyboard
 work. Keep the corner controls small and on paper.
+
+On wide screens a page's column takes one half of the screen and its place
+the other, and sits in the middle of its half (`.location` in
+`globals.css`), so wide monitors stay balanced. Corners come from the
+`--radius*` tokens: one family of soft edges everywhere.
 
 ---
 
@@ -341,3 +366,5 @@ After significant code changes, run:
 
 ```bash
 npm run lint
+npm test
+```

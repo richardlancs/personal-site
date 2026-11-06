@@ -8,8 +8,9 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // 85 for the park painting; 75 (the default) for everything else
-    qualities: [75, 85],
+    // 65 for the painting on the flat layout (a painting, seen small);
+    // 85 for it full-size; 75 (the default) for everything else
+    qualities: [65, 75, 85],
     formats: ["image/avif", "image/webp"],
   },
   turbopack: {

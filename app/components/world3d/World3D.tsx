@@ -15,13 +15,13 @@ import Library from "./scenes/Library";
 import Park from "./scenes/Park";
 import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
+import { isFlat } from "../world/flat";
 import { useWorld, world } from "./store";
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const narrowLayout = () => matchMedia("(orientation: portrait), (max-width: 767px)").matches;
 
 const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
@@ -279,7 +279,7 @@ function Director({
 
     // Frame the place to one side on wide screens, leaving room for the page
     const cam = camera as THREE.PerspectiveCamera;
-    const wide = !narrowLayout() && size.width >= 900;
+    const wide = !isFlat() && size.width >= 900;
     const frame = scenes[s.active].frame;
     const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : 0;
     s.shift += (want - s.shift) * (1 - Math.exp(-dt * 2.5));

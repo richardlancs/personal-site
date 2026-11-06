@@ -79,7 +79,42 @@ layout; no WebGL (painting fallback, content intact). 60 fps on this machine at
 - Models are procedural and fairly simple up close (the receiver and keyboard
   are blocky, the neon sign is a few strokes). Hand-modelled or licensed assets
   would raise the detail; none could be made or fetched here.
-- Not tested on real phones or low-end GPUs: only Chromium on this Mac at phone
-  sizes. Phones get the lower-quality settings (fewer blades of grass, fewer
-  trees, smaller shadow maps) based on pointer type and screen width.
-- No résumé link: there's no résumé file.
+- Phones don't run the world at all any more (see "The flat layout" below),
+  so its low-quality settings now only matter for touch laptops and small
+  landscape tablets. Still not tested on real low-end GPUs.
+
+## The flat layout (6 November 2026)
+
+Phones, portrait tablets and windows under 481px tall don't get the world.
+`WorldShell.tsx` decides from one media query (`world/flat.ts`, the same
+query as in `globals.css`) and only imports `World3D` on wide screens, so
+three.js is never downloaded on a phone. Each page opens with the painting
+moved in on its place (`world/Plate.tsx`: one image file for every page) and
+the content follows on paper, with everything written out: all three
+timetable lines, all four interests, the whole notebook on one sheet.
+Rotating a tablet swaps between the two.
+
+Also changed that day: the two typefaces load from five local Latin files
+(`app/fonts/`) instead of Google's 240 slices; Escape goes back to the park;
+a page's words show 0.15 s after a direct visit instead of 1.5 s (journeys
+inside the site keep the camera's timing); the monitors' screenshots come
+through the image optimizer. Numbers and the full list:
+`docs/world/overnight-2026-11-06.md`.
+
+## Evening of 6 November 2026: balance, corners, labels, weight
+
+- Wide screens: a page's column sits in the middle of its half of the
+  screen instead of against the edge (`--column`, `.location` padding), and
+  grows to 42vw / 36rem. On a 1920px monitor the content no longer piles
+  up on one side.
+- Corners: `--radius-lg/--radius/--radius-sm` (18/14/9px) replace the
+  scattered 2–7px values on the notebook, timetable, tool wall, map sheet,
+  thumbnails, labels and the flat layout's picture.
+- The flat layout is labelled by section only: no "The pavilion" kicker,
+  the home list is "Sections", the menu button "Sections", the way back
+  "Home", the foot of each page "Other sections", the notebook's links
+  "Contact" and "Projects".
+- Noto Serif SC is a 9 KB local subset of the 39 sign characters
+  (`app/fonts/signs.txt`); `npm test` checks every character used is in
+  it. The painting on phones is served at 1920px / quality 65 (118 KB,
+  was 159) and the 3D monitors' screenshots at 1200px (was 3840).

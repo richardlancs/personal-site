@@ -4,14 +4,22 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Component, useSyncExternalStore, type ReactNode } from "react";
 import painting from "../../assets/park/park-v04.png";
+import { isFlat, watchFlat } from "../world/flat";
 
-// The 3D world loads after the page, so the words are there first. If the
-// browser can't draw it (no WebGL, or the renderer fails), the painting
-// of the park stands in, and every page still works.
+// The 3D world loads after the page, so the words are there first, and
+// only on wide screens: the flat layout (phones, portrait tablets) has the
+// painting in each page instead (world/Plate.tsx) and never downloads the
+// world or three.js. If a wide screen can't draw it (no WebGL, or the
+// renderer fails), the painting of the park stands in, and every page
+// still works.
 const World3D = dynamic(() => import("./World3D"), {
   ssr: false,
-  loading: () => <div className="world3d world3d-loading" aria-hidden="true" />,
+  loading: () => <Loading />,
 });
+
+function Loading() {
+  return <div className="world3d world3d-loading" aria-hidden="true" />;
+}
 
 function Fallback() {
   return (
@@ -43,12 +51,19 @@ function webgl() {
   }
   return supported;
 }
-const noop = () => () => {};
+
+// Which layout this screen gets. Unknown on the server and while the page
+// is waking up: until then only the haze is drawn (and CSS hides that on
+// flat screens).
+type Layout = "unknown" | "flat" | "world" | "painting";
+const layout = (): Layout => (isFlat() ? "flat" : webgl() ? "world" : "painting");
+const unknown = (): Layout => "unknown";
 
 export default function WorldShell() {
-  // Assume yes while rendering on the server; check in the browser
-  const ok = useSyncExternalStore(noop, webgl, () => true);
-  if (!ok) return <Fallback />;
+  const kind = useSyncExternalStore(watchFlat, layout, unknown);
+  if (kind === "flat") return null;
+  if (kind === "unknown") return <Loading />;
+  if (kind === "painting") return <Fallback />;
   return (
     <Guard>
       <World3D />

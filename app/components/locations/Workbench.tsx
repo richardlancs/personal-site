@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect } from "react";
 import type { Project } from "../../data/portfolio";
+import { WORLD_QUERY } from "../world/flat";
 import { useWorld, world } from "../world3d/store";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -10,7 +11,8 @@ const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 // The workshop's notes. The projects' screenshots are on the monitors on
 // the benches (world3d/scenes/Workshop.tsx); choosing a project here, or
 // its monitor there, switches that monitor on and walks over to it. The
-// address keeps the project (#marketlab) so it can be linked to.
+// address keeps the project (#marketlab) so it can be linked to. The flat
+// layout has no monitors, so the chosen screenshot is shown on one here.
 export default function Workbench({ projects }: { projects: Project[] }) {
   const selected = useWorld((s) => s.sel.project);
   const shot = useWorld((s) => s.sel.shot);
@@ -29,9 +31,12 @@ export default function Workbench({ projects }: { projects: Project[] }) {
     return () => window.removeEventListener("hashchange", fromHash);
   }, [projects]);
 
-  // Keep the address in step when a monitor is chosen in the world
+  // Keep the address in step when a monitor is chosen in the world. This
+  // reads the store, not `selected`: on arrival by a link like #scrollganizer
+  // the effect above has just chosen that project, and `selected` here is
+  // still the old one, which would write the wrong project back.
   useEffect(() => {
-    const hash = `#${slug(projects[selected].title)}`;
+    const hash = `#${slug(projects[world.get().sel.project].title)}`;
     if (window.location.hash && window.location.hash !== hash) history.replaceState(null, "", hash);
   }, [selected, projects]);
 
@@ -61,11 +66,57 @@ export default function Workbench({ projects }: { projects: Project[] }) {
         <h2 id={titleId} className="font-display text-3xl font-semibold tracking-tight">
           {project.title}
         </h2>
-        <p className="mt-3 leading-relaxed text-muted">{project.description}</p>
+        <p className="project-summary">{project.summary}</p>
+        {project.role && (
+          <p className="project-role">
+            <span className="project-role-label">My role</span> {project.role}
+          </p>
+        )}
+        <p className="project-links">
+          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+            Code on GitHub
+          </a>
+          {project.liveUrl && (
+            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+              Live demo
+            </a>
+          )}
+        </p>
+
+        <h3 className="project-notes-label">What it does</h3>
+        <ul role="list" className="points">
+          {project.features.map((feature) => (
+            <li key={feature}>{feature}</li>
+          ))}
+        </ul>
+
+        {project.contributions && (
+          <>
+            <h3 className="project-notes-label">My part so far</h3>
+            <ul role="list" className="points">
+              {project.contributions.map((contribution) => (
+                <li key={contribution}>{contribution}</li>
+              ))}
+            </ul>
+          </>
+        )}
 
         {screenshots.length > 0 && (
           <>
             <h3 className="project-notes-label">On the screen</h3>
+            {screenshots[shot] && (
+              <a href={screenshots[shot].src} target="_blank" rel="noopener noreferrer" className="project-screen only-flat">
+                <Image
+                  key={screenshots[shot].src}
+                  src={screenshots[shot].src}
+                  alt={screenshots[shot].alt}
+                  width={screenshots[shot].width}
+                  height={screenshots[shot].height}
+                  sizes={`${WORLD_QUERY} 1px, (min-width: 640px) 36rem, 92vw`}
+                />
+                <span className="sr-only"> (open full size)</span>
+              </a>
+            )}
             <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
               {screenshots.map((item, index) => (
                 <button
@@ -94,16 +145,6 @@ export default function Workbench({ projects }: { projects: Project[] }) {
             <li key={technology}>{technology}</li>
           ))}
         </ul>
-        <p className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
-          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-            Code on GitHub
-          </a>
-          {project.liveUrl && (
-            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-              Live demo
-            </a>
-          )}
-        </p>
       </article>
     </div>
   );
