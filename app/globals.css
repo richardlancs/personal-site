@@ -2527,9 +2527,17 @@ html.theme-transition .hover-grow {
     transform: translateY(-50%);
   }
 
+  /* The arcade's name ends at its dome's right edge, inside the sheet; the
+     workshop's goes under its roof, out of the arcade's way */
   .map-pin[data-label="right"] .map-pin-label {
-    left: 32%;
+    left: auto;
+    right: -0.25rem;
     transform: none;
+  }
+
+  .map-pin[href="/projects"] .map-pin-label {
+    top: 76%;
+    bottom: auto;
   }
 
   .map-here-label,
