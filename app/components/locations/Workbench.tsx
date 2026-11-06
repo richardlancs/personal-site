@@ -119,17 +119,14 @@ export default function Workbench({ projects }: { projects: Project[] }) {
           <>
             <h3 className="project-notes-label">On the screen</h3>
             {screenshots[shot] && (
-              <a href={screenshots[shot].src} target="_blank" rel="noopener noreferrer" className="project-screen only-flat">
-                <Image
-                  key={screenshots[shot].src}
-                  src={screenshots[shot].src}
-                  alt={screenshots[shot].alt}
-                  width={screenshots[shot].width}
-                  height={screenshots[shot].height}
-                  sizes={`${WORLD_QUERY} 1px, (min-width: 640px) 36rem, 92vw`}
-                />
-                <span className="sr-only"> (open full size in a new tab)</span>
-              </a>
+              // The flat layout's monitor, with the caption under it; the
+              // caption names the picture, so the link carries the action
+              <figure className="only-flat">
+                <a href={screenshots[shot].src} target="_blank" rel="noopener noreferrer" className="project-screen" aria-label="Open this screenshot full size (opens in a new tab)">
+                  <Image key={screenshots[shot].src} src={screenshots[shot].src} alt="" width={screenshots[shot].width} height={screenshots[shot].height} sizes={`${WORLD_QUERY} 1px, (min-width: 640px) 36rem, 92vw`} />
+                </a>
+                <figcaption className="shot-caption">{screenshots[shot].alt}</figcaption>
+              </figure>
             )}
             <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
               {screenshots.map((item, index) => (
@@ -147,6 +144,9 @@ export default function Workbench({ projects }: { projects: Project[] }) {
                 </button>
               ))}
             </div>
+            {/* On wide screens the picture is on the monitor in the workshop:
+                this line says what it shows */}
+            {screenshots[shot] && <p className="shot-caption only-world">{screenshots[shot].alt}</p>}
             <a href={screenshots[shot]?.src} target="_blank" rel="noopener noreferrer" className="text-link mt-2 inline-block text-sm">
               Open this screenshot full size{newTab}
             </a>

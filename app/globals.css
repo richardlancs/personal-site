@@ -1080,6 +1080,14 @@ html.theme-transition .hover-grow {
   border-color: var(--accent);
 }
 
+/* What the chosen screenshot shows */
+.shot-caption {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 /* The project's notes, clipped to a board */
 .project-notes {
   position: relative;
@@ -1293,9 +1301,13 @@ html.theme-transition .hover-grow {
   vertical-align: top;
 }
 
-/* Dates stay on one line; the other columns take the wrapping */
-.timetable-table td:first-child {
-  white-space: nowrap;
+/* Where the column is wide enough, dates stay on one line and the other
+   columns take the wrapping; in a narrow column (a 1024px laptop) that
+   would squeeze the Service and To columns to a word a line */
+@media (min-width: 1200px) {
+  .timetable-table td:first-child {
+    white-space: nowrap;
+  }
 }
 
 .timetable-table tr[data-selected] td {
@@ -2333,7 +2345,7 @@ html.theme-transition .hover-grow {
     margin-top: 0.6rem;
   }
 
-  .shot-strip + .text-link {
+  .shot-strip ~ .text-link {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
