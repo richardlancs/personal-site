@@ -860,9 +860,20 @@ body {
 }
 
 .notebook-turn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--accent);
+  transition: background-color 0.2s ease;
+}
+
+.notebook-turn:not([aria-disabled="true"]):hover {
+  background: color-mix(in srgb, var(--foreground) 7%, transparent);
 }
 
 .notebook-turn[aria-disabled="true"] {
@@ -936,9 +947,19 @@ body {
     box-shadow 0.3s ease;
 }
 
-.bench-tab[aria-pressed="true"] .bench-tab-lamp {
+.bench-tab[aria-selected="true"] .bench-tab-lamp {
   background: var(--sky);
   box-shadow: 0 0 6px var(--sky);
+}
+
+/* The chosen tab: pulled forward, with an ink rule drawn round it, so it
+   reads as chosen without its lamp */
+.bench-tab[aria-selected="true"] {
+  color: var(--foreground);
+  box-shadow:
+    inset 0 0 0 2px var(--accent),
+    0 10px 20px -14px rgb(30 20 10 / 0.8);
+  transform: translateY(-2px);
 }
 
 .shot-strip {
@@ -975,6 +996,14 @@ body {
 
 .shot-thumb[aria-pressed="true"] {
   border-color: var(--accent);
+}
+
+/* What the chosen screenshot shows */
+.shot-caption {
+  margin-top: 0.6rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted);
 }
 
 /* The project's notes, clipped to a board */
@@ -1186,6 +1215,15 @@ body {
   vertical-align: top;
 }
 
+/* Where the column is wide enough, dates stay on one line and the other
+   columns take the wrapping; in a narrow column (a 1024px laptop) that
+   would squeeze the Service and To columns to a word a line */
+@media (min-width: 1200px) {
+  .timetable-table td:first-child {
+    white-space: nowrap;
+  }
+}
+
 .timetable-table tr[data-selected] td {
   background: rgb(85 198 240 / 0.14);
 }
@@ -1207,8 +1245,26 @@ body {
   text-decoration-color: currentColor;
 }
 
-.timetable-line:focus-visible {
-  outline-color: var(--sky);
+/* The chosen line is the one without an underline: the others are the
+   ones left to choose */
+.timetable-line[aria-pressed="true"] {
+  text-decoration: none;
+}
+
+/* The focus ring on dark objects takes the object's own text colour, so
+   it shows whatever the palette */
+.timetable-line:focus-visible,
+.cabinet-button:focus-visible {
+  outline-color: currentColor;
+}
+
+.cabinet-button:focus-visible {
+  outline-offset: -3px;
+}
+
+/* The handset is light on the booth's dark enamel: the ring sits inside it */
+.phone-handset:focus-visible {
+  outline-offset: -4px;
 }
 
 /* The notice for the chosen line, turning over like flaps */
@@ -1277,10 +1333,18 @@ body {
     box-shadow 0.35s ease;
 }
 
-.cabinet-button[aria-pressed="true"] .cabinet-button-screen {
+.cabinet-button[aria-selected="true"] .cabinet-button-screen {
   background: var(--surface-deep);
   color: var(--sky);
   box-shadow: inset 0 0 14px rgb(85 198 240 / 0.4);
+}
+
+/* The cabinet that's on stands forward of the row, with a lit edge */
+.cabinet-button[aria-selected="true"] {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, currentColor 65%, transparent),
+    0 16px 36px -18px rgb(20 12 24 / 0.55);
+  transform: translateY(-3px);
 }
 
 .cabinet-card {
@@ -1429,12 +1493,37 @@ body {
   gap: 0.25rem 0.75rem;
 }
 
+/* Long addresses break where they must, not mid-word when they needn't */
+.directory-value a {
+  overflow-wrap: anywhere;
+}
+
+/* Copy: a small button, big enough to hit */
 .directory-copy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.directory-copy:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
+.directory-copy[data-copied] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 /* ---------- The notice board: the map ---------- */
@@ -2172,7 +2261,7 @@ body {
     margin-top: 0.6rem;
   }
 
-  .shot-strip + .text-link {
+  .shot-strip ~ .text-link {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
@@ -2325,10 +2414,7 @@ body {
   .directory-copy {
     min-height: 2.5rem;
     padding: 0 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
     font-size: 0.8125rem;
-    text-decoration: none;
   }
 
   /* ---------- The notice board: the map ---------- */
@@ -2369,9 +2455,17 @@ body {
     transform: translateY(-50%);
   }
 
+  /* The arcade's name ends at its dome's right edge, inside the sheet; the
+     workshop's goes under its roof, out of the arcade's way */
   .map-pin[data-label="right"] .map-pin-label {
-    left: 32%;
+    left: auto;
+    right: -0.25rem;
     transform: none;
+  }
+
+  .map-pin[data-label="below"] .map-pin-label {
+    top: 76%;
+    bottom: auto;
   }
 
   .map-here-label,
