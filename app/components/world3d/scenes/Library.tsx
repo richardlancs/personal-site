@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { about, profile } from "../../../data/portfolio";
+import { timed } from "../idle";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "../geometry";
 import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
@@ -243,7 +244,7 @@ function buildLibraryScene(quality: "high" | "low") {
 }
 
 export default function Library({ active, quality }: SceneProps) {
-  const built = useMemo(() => buildLibraryScene(quality), [quality]);
+  const built = useMemo(() => timed("library", () => buildLibraryScene(quality)), [quality]);
   const page = useWorld((s) => s.sel.page);
   const state = useRef({ shown: -1, turn: 0, dir: 1, from: 0 });
 

@@ -8,7 +8,7 @@ import { projects, skillGroups } from "../../../data/portfolio";
 import { at, blob, box, buildBush, buildTree, buildVine, merge, treeKinds, tube } from "../geometry";
 import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
-import { onIdle } from "../idle";
+import { onIdle, timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { deadScreen, planks, plaster, textPanel } from "../textures";
@@ -278,7 +278,7 @@ function buildWorkshopScene(quality: "high" | "low") {
 }
 
 export default function Workshop({ active, quality }: SceneProps) {
-  const built = useMemo(() => buildWorkshopScene(quality), [quality]);
+  const built = useMemo(() => timed("workshop", () => buildWorkshopScene(quality)), [quality]);
   const shots = useMemo(() => screenshotTextures(), []);
   const sel = useWorld((s) => s.sel);
   const arrived = useWorld((s) => s.arrived);

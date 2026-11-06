@@ -141,7 +141,9 @@ export const sections: Section[] = [
     anchor: "arcade",
     plate: closeUp(88, 31),
     tag: { x: 82, y: 27.5 },
-    map: { x: 81, y: 27, label: "right" },
+    // In the world the arcade stands to the left, past the pavilion (the
+    // painting still has it on the right); the map follows the world
+    map: { x: 38, y: 21, label: "below" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
   {

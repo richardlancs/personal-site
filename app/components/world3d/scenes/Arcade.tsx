@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { interests, type Interest } from "../../../data/portfolio";
+import { timed } from "../idle";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "../geometry";
 import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
@@ -286,7 +287,7 @@ function buildArcadeScene(quality: "high" | "low") {
 }
 
 export default function Arcade({ active, quality }: SceneProps) {
-  const built = useMemo(() => buildArcadeScene(quality), [quality]);
+  const built = useMemo(() => timed("arcade", () => buildArcadeScene(quality)), [quality]);
   const interest = useWorld((s) => s.sel.interest);
   const arrived = useWorld((s) => s.arrived);
   const power = useRef(built.cabinets.map(() => 0));

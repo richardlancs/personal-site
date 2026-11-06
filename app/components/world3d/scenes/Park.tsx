@@ -26,7 +26,7 @@ import {
   buildWires,
   mat,
 } from "../props";
-import { onIdle } from "../idle";
+import { onIdle, timed } from "../idle";
 import { rng } from "../rng";
 import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
@@ -37,24 +37,34 @@ import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
 // The paths through the park, [x, z], and how wide they are
+// The paths through the park, [x, z], and how wide they are: up from the
+// steps to the fountain, then one to each place
 const paths: { points: [number, number][]; width: number }[] = [
   { points: [[0, 26], [0, 15], [0, 9.5]], width: 3 },
-  { points: [[-4, 2.5], [-6.5, -1], [-7.7, -3.6]], width: 2 },
+  { points: [[-4.5, 2.5], [-7, -2], [-8.6, -5.6]], width: 2 },
   { points: [[3, -2], [8, -11], [12.5, -19.5], [15.2, -25.6]], width: 2.2 },
   { points: [[0, -2], [1, -14], [3, -30], [4, -45]], width: 2.6 },
-  { points: [[4, -1], [11, -9], [19, -17], [24.5, -23]], width: 2.2 },
+  { points: [[-3, -1], [-5, -12], [-7.3, -22], [-8.4, -28]], width: 2.2 },
   { points: [[5, 6], [8.3, 2.9]], width: 1.6 },
 ];
 const PLAZA = { x: 0, z: 4, r: 6.6 };
 
-// Where the places stand, and where their name tags go
+// Where the places stand, and where their name tags go. Seen from the
+// steps, the park is composed across the whole view: the pavilion near on
+// the left and the arcade's sign past it, the fountain and the station's
+// tower in the middle, the workshop far on the right with the booth and
+// the notice board near. Moving one means moving its path (above), its
+// footprint (below), its route in scenes.ts and its pin in the registry's
+// map.
 export const parkPlaces = {
-  library: { pos: [-10, 0, -6.3] as const, ry: 0.75, label: [-7.4, 3.4, -3.2] as const, hit: [8, 6.5, 6] as const, light: [-7.5, 2.5, -3.8] as const },
+  library: { pos: [-11, 0, -9] as const, ry: 0.75, label: [-8.4, 3.4, -5.9] as const, hit: [8, 6.5, 6] as const, light: [-8.5, 2.5, -6.5] as const },
   workshop: { pos: [17.5, 0, -29] as const, ry: -0.6, label: [17.5, 8.2, -29] as const, hit: [13, 7, 8.5] as const, light: [15.4, 3, -24] as const },
   // The station's box is just its hall; the tower has its own (below), so
   // the trees in front of the empty air beside the tower can be shaken
   station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 6.6, 7] as const, light: [4, 4, -44] as const },
-  arcade: { pos: [27, 0, -26] as const, ry: -0.7, label: [27, 8, -26] as const, hit: [10.5, 7, 8.5] as const, light: [24, 3, -22] as const },
+  // Turned a little toward the fountain, so its front and sign read from
+  // the steps and clear the pavilion's roof
+  arcade: { pos: [-10, 0, -33] as const, ry: 0.37, label: [-10, 8, -33] as const, hit: [10.5, 7, 8.5] as const, light: [-8.5, 3, -29] as const },
   booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.4, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
   board: { pos: [4.25, 0, -1.6] as const, ry: -0.18, label: [4.25, 3.1, -1.6] as const, hit: [2.6, 2.8, 0.8] as const, light: [4.1, 2.4, 0] as const },
 };
@@ -66,10 +76,10 @@ function onPath(x: number, z: number, margin = 0) {
 
 // Footprints the grass and trees keep out of
 const footprints: [number, number, number][] = [
-  [-10, -6.3, 5],
+  [-11, -9, 5],
   [17.5, -29, 8],
   [4, -50, 9],
-  [27, -26, 7],
+  [-10, -33, 7],
   [9.5, 1.5, 1.2],
   [11, 0, 1],
   [4.25, -1.6, 1.4],
@@ -80,6 +90,13 @@ const blocked = (x: number, z: number) => footprints.some(([fx, fz, r]) => Math.
 function buildPark(quality: "high" | "low") {
   const root = new THREE.Group();
   const r = rng(2026);
+  // Marks on the performance timeline for each part of the build
+  let stage = performance.now();
+  const mark = (name: string) => {
+    const now = performance.now();
+    performance.measure(`park:${name}`, { start: stage, end: now });
+    stage = now;
+  };
 
   // Ground, paths and the plaza
   const groundTex = groundTexture();
@@ -93,6 +110,7 @@ function buildPark(quality: "high" | "low") {
   root.add(mesh(plaza.translate(PLAZA.x, 0.02, PLAZA.z), M.paving(), { cast: false }));
   // The steps up into the park
   for (let i = 0; i < 3; i++) root.add(mesh(new THREE.BoxGeometry(5, 0.18, 0.9).translate(0, 0.09 - i * 0.18 + 0.36 - 0.18, 23.2 + i * 0.9), M.stone()));
+  mark("ground");
 
   // The places
   const place = (obj: THREE.Object3D, key: keyof typeof parkPlaces) => {
@@ -112,6 +130,7 @@ function buildPark(quality: "high" | "low") {
   place(booth.group, "booth");
   const board = buildNoticeBoard();
   place(board.group, "board");
+  mark("places");
 
   // Things left behind
   const fountain = buildFountain();
@@ -144,7 +163,7 @@ function buildPark(quality: "high" | "low") {
   for (const [x, z, lit] of [
     [-2.4, 13, false],
     [2.6, -7, true],
-    [-6.5, -13, false],
+    [-7.6, -13, false],
     [11.6, -5.5, false],
   ] as const) {
     const lamp = buildLamp({ lit });
@@ -152,11 +171,12 @@ function buildPark(quality: "high" | "low") {
     lamp.rotation.y = r() * 6;
     root.add(lamp);
   }
+  // Each arm points at its place (the angle is atan2(-dz, dx) from here)
   const sign = buildSignpost([
     { zh: "工坊", label: "Workshop", angle: 1.0 },
     { zh: "车站", label: "Station", angle: 1.43 },
-    { zh: "游戏厅", label: "Arcade", angle: 0.68 },
-    { zh: "凉亭", label: "Pavilion", angle: 2.82 },
+    { zh: "游戏厅", label: "Arcade", angle: 1.80 },
+    { zh: "凉亭", label: "Pavilion", angle: 2.47 },
   ]);
   sign.group.position.set(-2.7, 0, -2.4);
   root.add(sign.group);
@@ -169,20 +189,23 @@ function buildPark(quality: "high" | "low") {
     root.add(pole);
   }
   root.add(buildWires(poleSpots, [8.3, 7.6]));
+  mark("props");
 
   // Trees
   const trees: [keyof typeof treeKinds, number, number, number][] = [
     ["zelkova", -7.8, 19.5, 1.2],
     ["maple", 8.2, 18.8, 1.1],
     ["zelkova", -17, 6, 1],
-    ["ginkgo", -3.6, -10.5, 0.9],
+    // The ginkgo stands by the pavilion, out of the line from the steps to
+    // the arcade's sign
+    ["ginkgo", -16.5, -1.5, 0.9],
     ["zelkova", -24, -9, 1.1],
     ["zelkova", 14.5, 10.5, 1],
     ["zelkova", 18, -3.5, 1.15],
     ["maple", 8, -14.5, 1],
     ["maple", -11.5, 12.5, 0.9],
     ["zelkova", 25, -14, 1],
-    ["zelkova", -8.5, -28, 1.1],
+    ["zelkova", -20, -27, 1.1],
     ["ginkgo", -14, -16, 1],
     ["ginkgo", 6.5, -31, 1],
     ["zelkova", 23, -40, 1.2],
@@ -192,9 +215,11 @@ function buildPark(quality: "high" | "low") {
     ["pine", 38, 6, 1],
     ["pine", -20, -46, 1.1],
     ["zelkova", 22, -44, 1.1],
-    ["maple", -16, -36, 0.9],
+    ["maple", -22, -40, 0.9],
     ["zelkova", -38, -34, 1.3],
     ["zelkova", 40, -26, 1.3],
+    // Where the arcade stood, past the workshop
+    ["zelkova", 28, -26, 1.2],
   ];
   const crowns: { center: THREE.Vector3; radius: number }[] = [];
   const shakeable: ShakeTree[] = [];
@@ -217,6 +242,7 @@ function buildPark(quality: "high" | "low") {
     else lateTrees.push(build);
     if (Math.hypot(x, z) < 26) crowns.push({ center: v(x, treeKinds[kind].height * scale * 0.75, z), radius: 2.5 * scale });
   });
+  mark("trees");
 
   // Bushes along the edges of paths and buildings
   let bushes = 0;
@@ -230,6 +256,7 @@ function buildPark(quality: "high" | "low") {
     root.add(b);
     bushes++;
   }
+  mark("bushes");
 
   // Grass: thick near the eye, thinner far off, a few blades between the
   // stones of the paths
@@ -243,6 +270,7 @@ function buildPark(quality: "high" | "low") {
     return { x, z, h: rr.range(0.3, 0.75) * edge * (near ? 1 : 1.25) };
   });
   root.add(blades);
+  mark("grass");
 
   // Leaves on the ground, gathered along the edges of the paths
   root.add(
@@ -254,6 +282,7 @@ function buildPark(quality: "high" | "low") {
   );
   const falling = buildFallingLeaves(quality === "low" ? 16 : 36, crowns);
   root.add(falling.group);
+  mark("leaves");
 
   // The empty city, the hills and the far trees: past the fog's reach
   // at first, so they're built once the first frame is up
@@ -286,12 +315,13 @@ function buildPark(quality: "high" | "low") {
   root.add(buildDust(quality === "low" ? 50 : 140, [26, 6, 26], [-2, 3, 6]));
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [-0.75, 0.32, 0.25] });
   root.add(sky);
+  mark("sky");
 
   return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable, late };
 }
 
 export default function Park({ active, quality, navigate }: SceneProps) {
-  const built = useMemo(() => buildPark(quality), [quality]);
+  const built = useMemo(() => timed("park", () => buildPark(quality)), [quality]);
   const hover = useWorld((s) => s.hover);
   const focus = useWorld((s) => s.focus);
   const lights = useRef<Record<string, THREE.PointLight | null>>({});

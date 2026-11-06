@@ -7,6 +7,7 @@ import { box, buildBush, buildTree, buildVine, grass, treeKinds } from "../geome
 import { mesh, paint } from "../paint";
 import { M, buildBooth, buildDust, buildFallenLeaves, buildFallingLeaves, buildLamp, buildPole, buildSky, buildVending, buildWires } from "../props";
 import { buildCity } from "../buildings";
+import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { flagstones, groundTexture } from "../textures";
@@ -94,7 +95,7 @@ function buildBoothScene(quality: "high" | "low") {
 }
 
 export default function Booth({ active, quality }: SceneProps) {
-  const built = useMemo(() => buildBoothScene(quality), [quality]);
+  const built = useMemo(() => timed("booth", () => buildBoothScene(quality)), [quality]);
   const arrived = useWorld((s) => s.arrived);
   const phoneUp = useWorld((s) => s.phoneUp);
   const focus = useWorld((s) => s.focus);

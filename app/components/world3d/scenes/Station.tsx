@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { experience } from "../../../data/portfolio";
+import { timed } from "../idle";
 import { at, blob, box, buildBush, buildTree, buildVine, grass, merge, treeKinds, tube } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
 import { M, buildBeam, buildBench, buildDust, buildFallenLeaves, buildPole, buildSky, buildVending, buildWires, mat } from "../props";
@@ -231,7 +232,7 @@ function buildStationScene(quality: "high" | "low") {
 }
 
 export default function Station({ active, quality }: SceneProps) {
-  const built = useMemo(() => buildStationScene(quality), [quality]);
+  const built = useMemo(() => timed("station", () => buildStationScene(quality)), [quality]);
   const line = useWorld((s) => s.sel.line);
   const rows = useMemo(
     () =>

@@ -10,7 +10,7 @@ export const glyphs = {
   // The clock tower
   station: { d: "M305 60 v-22 l7 -9 l7 9 v22 Z M308.8 43 a3.2 3.2 0 1 0 6.4 0 a3.2 3.2 0 1 0 -6.4 0", box: "288 27 48 34" },
   // A glass dome
-  arcade: { d: "M470 106 a16 15 0 0 1 32 0 Z M478 106 a8 13 0 0 1 16 0 M486 91 v15", box: "462 81 48 34" },
+  arcade: { d: "M212 76 a16 15 0 0 1 32 0 Z M220 76 a8 13 0 0 1 16 0 M228 61 v15", box: "204 51 48 34" },
   // The phone booth
   booth: { d: "M504 228 v-20 h12 v20 Z M502 208 l8 -5 l8 5 M507 214 h6", box: "486 198 48 34" },
   // The notice board, with the map pinned to it
