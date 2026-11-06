@@ -13,19 +13,23 @@ export type Line = { label: string; value: string; href: string; copy?: boolean 
 export default function Payphone({ lines }: { lines: Line[] }) {
   const up = useWorld((s) => s.phoneUp);
   const [copied, setCopied] = useState<string | null>(null);
+  const [status, setStatus] = useState(""); // read out by screen readers
   const setReceiver = (lift: boolean) => world.set({ phoneUp: lift, focus: "phone" });
 
   async function copy(value: string) {
     try {
       await navigator.clipboard.writeText(value);
       setCopied(value);
+      setStatus(`Copied ${value}`);
       window.setTimeout(() => setCopied((current) => (current === value ? null : current)), 2000);
     } catch {
       // Clipboard blocked: the address is still there to select
+      setStatus(`Couldn't copy. Select ${value} to copy it.`);
     }
   }
 
   const email = lines.find((line) => line.href.startsWith("mailto:"));
+  const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
   return (
     <div className="take-clicks">
@@ -73,12 +77,13 @@ export default function Payphone({ lines }: { lines: Line[] }) {
                   // Email links open the mail app; web links open in a new tab
                   target={line.href.startsWith("mailto:") ? undefined : "_blank"}
                   rel="noopener noreferrer"
-                  className="text-link break-all"
+                  className="text-link"
                 >
                   {line.value}
+                  {!line.href.startsWith("mailto:") && newTab}
                 </a>
                 {line.copy && (
-                  <button type="button" className="directory-copy" onClick={() => copy(line.value)}>
+                  <button type="button" className="directory-copy" data-copied={copied === line.value || undefined} onClick={() => copy(line.value)}>
                     {copied === line.value ? "Copied" : "Copy"}
                     <span className="sr-only"> {line.value}</span>
                   </button>
@@ -87,6 +92,9 @@ export default function Payphone({ lines }: { lines: Line[] }) {
             </li>
           ))}
         </ol>
+        <p role="status" className="sr-only">
+          {status}
+        </p>
       </div>
     </div>
   );

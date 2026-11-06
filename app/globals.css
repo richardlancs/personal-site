@@ -1555,12 +1555,37 @@ html.theme-transition .hover-grow {
   gap: 0.25rem 0.75rem;
 }
 
+/* Long addresses break where they must, not mid-word when they needn't */
+.directory-value a {
+  overflow-wrap: anywhere;
+}
+
+/* Copy: a small button, big enough to hit */
 .directory-copy {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.directory-copy:hover {
+  color: var(--foreground);
+  border-color: var(--foreground);
+}
+
+.directory-copy[data-copied] {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
 /* ---------- The notice board: the map ---------- */
@@ -2445,10 +2470,7 @@ html.theme-transition .hover-grow {
   .directory-copy {
     min-height: 2.5rem;
     padding: 0 0.85rem;
-    border: 1px solid var(--border);
-    border-radius: 999px;
     font-size: 0.8125rem;
-    text-decoration: none;
   }
 
   /* ---------- The notice board: the map ---------- */
