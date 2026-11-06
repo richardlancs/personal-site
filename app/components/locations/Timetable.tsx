@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { Experience } from "../../data/portfolio";
 import { WORLD_QUERY } from "../world/flat";
 import { useWorld, world } from "../world3d/store";
+import { onChoiceKey } from "./selector";
 
 const when = (stop: Experience) => (stop.endDate ? `${stop.startDate} – ${stop.endDate}` : stop.startDate);
 
@@ -89,7 +90,7 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
             <span>Timetable</span>
           </div>
           <table className="timetable-table">
-            <caption className="sr-only">Work and education. Choose a line to read about it.</caption>
+            <caption className="sr-only">Work and education. Choose a line to read about it; the up and down arrows move along the lines.</caption>
             <thead>
               <tr>
                 <th scope="col">When</th>
@@ -97,12 +98,14 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
                 <th scope="col">To</th>
               </tr>
             </thead>
-            <tbody>
+            {/* The lines stay a table (when, service, to), so each is its own
+                tab stop; the arrows move along them too (selector.ts) */}
+            <tbody onKeyDown={(event) => onChoiceKey(event, selected, stops.length, choose)}>
               {stops.map((item, index) => (
                 <tr key={`${item.role}-${item.organization}`} data-selected={index === selected || undefined}>
                   <td className="tabular-nums">{when(item)}</td>
                   <td>
-                    <button type="button" className="timetable-line" aria-pressed={index === selected} aria-controls="timetable-notice" onClick={() => choose(index)}>
+                    <button type="button" className="timetable-line" aria-pressed={index === selected} aria-controls="timetable-notice" data-choice onClick={() => choose(index)}>
                       {item.role}
                     </button>
                   </td>
@@ -113,25 +116,29 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
           </table>
         </div>
 
-        <section id="timetable-notice" key={selected} aria-live="polite" className="timetable-notice">
-          <p className="flap tabular-nums text-sm font-semibold text-warm" style={{ "--i": 0 } as React.CSSProperties}>
-            {when(stop)}
-            {stop.location && `, ${stop.location}`}
-          </p>
-          <h2 className="flap mt-1 font-display text-2xl font-semibold tracking-tight" style={{ "--i": 1 } as React.CSSProperties}>
-            {stop.role}
-          </h2>
-          <p className="flap text-muted" style={{ "--i": 2 } as React.CSSProperties}>
-            {stop.organization}
-          </p>
-          <ul role="list" className="points mt-4">
-            {stop.highlights.map((highlight, i) => (
-              <li key={highlight} className="flap" style={{ "--i": i + 3 } as React.CSSProperties}>
-                {highlight}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {/* The live region stays put; only the notice inside it is replaced,
+            so the new line is announced */}
+        <div id="timetable-notice" aria-live="polite">
+          <section key={selected} aria-labelledby="timetable-notice-role" className="timetable-notice">
+            <p className="flap tabular-nums text-sm font-semibold text-warm" style={{ "--i": 0 } as React.CSSProperties}>
+              {when(stop)}
+              {stop.location && `, ${stop.location}`}
+            </p>
+            <h2 id="timetable-notice-role" className="flap mt-1 font-display text-2xl font-semibold tracking-tight" style={{ "--i": 1 } as React.CSSProperties}>
+              {stop.role}
+            </h2>
+            <p className="flap text-muted" style={{ "--i": 2 } as React.CSSProperties}>
+              {stop.organization}
+            </p>
+            <ul role="list" className="points mt-4">
+              {stop.highlights.map((highlight, i) => (
+                <li key={highlight} className="flap" style={{ "--i": i + 3 } as React.CSSProperties}>
+                  {highlight}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       </div>
     </>
   );

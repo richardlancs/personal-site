@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import type { Project } from "../../data/portfolio";
 import { WORLD_QUERY } from "../world/flat";
 import { useWorld, world } from "../world3d/store";
+import { onChoiceKey } from "./selector";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -50,19 +51,32 @@ export default function Workbench({ projects }: { projects: Project[] }) {
   const project = projects[selected];
   const screenshots = project.screenshots ?? [];
   const titleId = `project-${slug(project.title)}`;
+  const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
   return (
     <div className="take-clicks">
-      <div role="group" aria-label="Projects on the benches" className="bench-tabs">
+      {/* One tab stop for the row; the arrow keys move along it (selector.ts) */}
+      <div role="tablist" aria-label="Projects on the benches" className="bench-tabs" onKeyDown={(event) => onChoiceKey(event, selected, projects.length, choose)}>
         {projects.map((item, index) => (
-          <button key={item.title} type="button" aria-pressed={index === selected} aria-controls="project-notes" className="bench-tab" onClick={() => choose(index)}>
+          <button
+            key={item.title}
+            type="button"
+            role="tab"
+            id={`tab-${slug(item.title)}`}
+            aria-selected={index === selected}
+            aria-controls="project-notes"
+            tabIndex={index === selected ? 0 : -1}
+            data-choice
+            className="bench-tab"
+            onClick={() => choose(index)}
+          >
             <span className="bench-tab-lamp" aria-hidden="true" />
             {item.title}
           </button>
         ))}
       </div>
 
-      <article id="project-notes" key={project.title} aria-labelledby={titleId} className="project-notes">
+      <article id="project-notes" key={project.title} role="tabpanel" aria-labelledby={`tab-${slug(project.title)}`} className="project-notes">
         <h2 id={titleId} className="font-display text-3xl font-semibold tracking-tight">
           {project.title}
         </h2>
@@ -74,11 +88,11 @@ export default function Workbench({ projects }: { projects: Project[] }) {
         )}
         <p className="project-links">
           <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-            Code on GitHub
+            Code on GitHub{newTab}
           </a>
           {project.liveUrl && (
             <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-              Live demo
+              Live demo{newTab}
             </a>
           )}
         </p>
@@ -114,7 +128,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
                   height={screenshots[shot].height}
                   sizes={`${WORLD_QUERY} 1px, (min-width: 640px) 36rem, 92vw`}
                 />
-                <span className="sr-only"> (open full size)</span>
+                <span className="sr-only"> (open full size in a new tab)</span>
               </a>
             )}
             <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
@@ -134,7 +148,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
               ))}
             </div>
             <a href={screenshots[shot]?.src} target="_blank" rel="noopener noreferrer" className="text-link mt-2 inline-block text-sm">
-              Open this screenshot full size
+              Open this screenshot full size{newTab}
             </a>
           </>
         )}

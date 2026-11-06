@@ -2,6 +2,9 @@
 
 import type { Interest } from "../../data/portfolio";
 import { useWorld, world } from "../world3d/store";
+import { onChoiceKey } from "./selector";
+
+const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
 // A small drawing for each interest, like the ones on its cabinet screen
 function Sketch({ scene }: { scene: Interest["scene"] }) {
@@ -79,9 +82,21 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
       </ul>
 
       <div className="take-clicks only-world">
-        <div role="group" aria-label="Cabinets" className="cabinet-row">
+        {/* One tab stop for the row; the arrow keys move along it (selector.ts) */}
+        <div role="tablist" aria-label="Cabinets" className="cabinet-row" onKeyDown={(event) => onChoiceKey(event, selected, interests.length, choose)}>
           {interests.map((item, index) => (
-            <button key={item.name} type="button" className="cabinet-button" aria-pressed={index === selected} aria-controls="cabinet-card" onClick={() => choose(index)}>
+            <button
+              key={item.name}
+              type="button"
+              role="tab"
+              id={`cabinet-${slug(item.name)}`}
+              aria-selected={index === selected}
+              aria-controls="cabinet-card"
+              tabIndex={index === selected ? 0 : -1}
+              data-choice
+              className="cabinet-button"
+              onClick={() => choose(index)}
+            >
               <span className="cabinet-button-screen" aria-hidden="true">
                 <Sketch scene={item.scene} />
               </span>
@@ -90,15 +105,19 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
           ))}
         </div>
 
-        <section id="cabinet-card" key={interest.name} aria-live="polite" className="cabinet-card">
-          <span className="cabinet-card-sketch">
-            <Sketch scene={interest.scene} />
-          </span>
-          <div>
-            <h2 className="font-display text-2xl font-semibold tracking-tight">{interest.name}</h2>
-            <p className="mt-2 leading-relaxed text-muted">{interest.description}</p>
-          </div>
-        </section>
+        {/* The live region stays put; only the card inside it is replaced,
+            so the new card is announced */}
+        <div id="cabinet-card" role="tabpanel" aria-labelledby={`cabinet-${slug(interest.name)}`} aria-live="polite">
+          <section key={interest.name} className="cabinet-card">
+            <span className="cabinet-card-sketch">
+              <Sketch scene={interest.scene} />
+            </span>
+            <div>
+              <h2 className="font-display text-2xl font-semibold tracking-tight">{interest.name}</h2>
+              <p className="mt-2 leading-relaxed text-muted">{interest.description}</p>
+            </div>
+          </section>
+        </div>
       </div>
     </>
   );
