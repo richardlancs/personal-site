@@ -65,7 +65,9 @@ export const parkPlaces = {
   // Turned a little toward the fountain, so its front and sign read from
   // the steps and clear the pavilion's roof
   arcade: { pos: [-10, 0, -33] as const, ry: 0.37, label: [-10, 8, -33] as const, hit: [10.5, 7, 8.5] as const, light: [-8.5, 3, -29] as const },
-  booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.4, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
+  // The booth's tag sits just over its roof: on a 4:3 touch screen, where
+  // every tag is up at once, a higher one met the workshop's
+  booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.0, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
   board: { pos: [4.25, 0, -1.6] as const, ry: -0.18, label: [4.25, 3.1, -1.6] as const, hit: [2.6, 2.8, 0.8] as const, light: [4.1, 2.4, 0] as const },
 };
 
