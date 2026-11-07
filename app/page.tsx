@@ -1,31 +1,19 @@
 import Link from "next/link";
 import PlaceGlyph from "./components/world/PlaceGlyph";
-import Plate from "./components/world/Plate";
 import { profile } from "./data/portfolio";
-import { places, section, sectionMetadata } from "./sections/registry";
+import { places, sectionMetadata } from "./sections/registry";
 
 export const metadata = sectionMetadata("home");
 
-// The site opens in the park. On wide screens that's the 3D world
-// (components/world3d, in the layout) with my name and links quiet in the
-// open sky. On the flat layout it's the painting of the park with a tag on
-// every section, then who I am, then every section as a plain list. The
-// tags and the list come from the section registry.
+// The site opens in the park: the 3D world (components/world3d, in the
+// layout) with my name and links quiet in the open sky. On narrow screens
+// the park fills the top of the screen, its name tags showing, and a sheet
+// comes up under it with who I am and every section as a plain list (from
+// the section registry).
 export default function Home() {
-  const home = section("home");
-  const tagged = places.filter((s) => s.tag);
   return (
     <main className="over-world">
-      <Plate view={home.plate}>
-        <nav aria-label="Sections, on the painting" className="plate-tags">
-          {tagged.map((s) => (
-            <Link key={s.id} href={s.href} className="plate-tag" data-edge={s.tag!.edge || undefined} data-below={s.tag!.below || undefined} style={{ left: `${s.tag!.x}%`, top: `${s.tag!.y}%` }}>
-              {s.title}
-            </Link>
-          ))}
-        </nav>
-      </Plate>
-
+      <div className="park-sheet">
       <section aria-labelledby="park-name" className="park-intro arrive">
         <h1 id="park-name" className="park-name font-display">
           {profile.name}
@@ -74,6 +62,7 @@ export default function Home() {
         </ul>
         <p className="location-footer">© 2026 {profile.name}</p>
       </nav>
+      </div>
     </main>
   );
 }

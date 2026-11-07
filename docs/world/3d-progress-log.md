@@ -158,3 +158,30 @@ through the image optimizer. Numbers and the full list:
   the three.js chunk (281 KB gz) is now the largest single asset on wide
   screens; the Noto subset must be regenerated if a sign gains a
   character (`npm test` says so).
+
+## The world on phones (6 November 2026, night)
+
+- The painting "plate" layout is gone: phones, portrait tablets and short
+  windows draw the same 3D world as desktop, at a mobile tier
+  (`detectQuality` → "mobile": dpr ≤ 1.25, MSAA 2x, 512px shadow maps, no
+  brushwork, `antialias: false` on the canvas since the composer's target
+  does the antialiasing, `powerPreference: "default"`). The scenes build
+  at their "low" tier there. `WorldShell` no longer has a "flat" branch;
+  the painting is only the no-WebGL fallback.
+- Framing: on narrow screens the Director offsets the view down by 16%
+  of its height (`NARROW_LIFT`), so the place sits in the upper part; the
+  fov is 62 in portrait. The horizontal ±0.17 framing is for wide screens
+  only. Drag-to-look is off on coarse pointers: a drag is a scroll.
+- The page is a sheet (`.location-column` / `.park-sheet`): cream, with a
+  grip, starting `--hero` (46svh; 38svh on short screens) down the page,
+  over the world. The frame loop stops once `scrollY` passes a screen's
+  height on the narrow layout, and when the tab is hidden.
+- Controls: `.control-tag`, `.control-round`, the notebook's controls and
+  the "read all" button are cream at 58% with a 10px blur (small shapes
+  only), 80% on hover, the sky wash when pressed; bench tabs 62%, cabinets
+  74%. Buttons on the sheet are outlined (indigo at 25%) over cream at
+  50%. Chosen states are the ring/lamp from the UI pass; disabled keeps
+  `aria-disabled` at 55%; focus is the indigo ring.
+- Registry: `plate` and `tag` are gone (no painting to crop or tag); the
+  home page's "Sections" list and the world's name tags (always up on
+  touch screens) are the ways in.

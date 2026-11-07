@@ -24,8 +24,6 @@ Add an entry to `sections` in `app/sections/registry.ts`:
   intro: "A bench under the ginkgo, a book left face down.",
   side: "left",                 // the page's side of a wide screen
   scene: { id: "park", focus: null },   // where the camera goes
-  plate: { x: 40, y: 60, zoom: 1.9 },   // where it is in the painting
-  tag: { x: 40, y: 58 },                // its tag on the home page
   map: { x: 44, y: 70 },                // its pin on the map sheet
   metadata: { title: "Reading", description: "What Richard Lan is reading." },
 }
@@ -33,9 +31,9 @@ Add an entry to `sections` in `app/sections/registry.ts`:
 
 What each field is for is commented in the registry. The only ones a new
 section must have are `id`, `href`, `title`, `place`, `summary`, `glyph`,
-`listed`, `side`, `scene`, `plate` and `metadata`; `npm test` checks the
-rest is consistent (unique addresses, a page for every entry, a glyph and a
-scene that exist, a tag and a pin for everything listed).
+`listed`, `side`, `scene` and `metadata`; `npm test` checks the rest is
+consistent (unique addresses, a page for every entry, a glyph and a scene
+that exist, a pin for every listed building).
 
 ## 2. Give it a page
 
@@ -80,9 +78,8 @@ projects and the notebook, so the content stays apart from the components.
 
 ## 3. Optional: artwork or a scene
 
-- **Phones** show the painting of the park, moved in on `plate`. Pick a
-  spot that suits the section; there's no second image to make.
-- **Wide screens** show the 3D scene named in `scene.id`. A new section
+- Every screen shows the 3D scene named in `scene.id` (phones at the
+  mobile tier, framed in the upper part of the screen). A new section
   can simply stand in the park (`{ id: "park", focus: null }`), or at an
   existing place with the camera on one of its objects (`focus` is a key
   of that scene's `focus` poses in `components/world3d/scenes.ts`).

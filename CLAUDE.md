@@ -81,17 +81,19 @@ name tags and the links at the foot of each page are generated from the
 registry: never keep a second list of sections anywhere. To add one, follow
 `docs/adding-a-section.md`; `/greenhouse` is the unlisted starter.
 
-Phones, portrait tablets and short windows get the flat layout instead: no
-3D at all (three.js is never downloaded there). Each page opens with the
-painting, moved in on that place (`components/world/Plate.tsx`), and the
-page follows on paper in one column, with everything written out: nothing
-to choose or wait for before reading. There the park's names stay out of
-the way: pages, lists and the menu are labelled by section (About,
-Projects, …), not by place. Both layouts render the same content from
-`app/data/`. The two media queries that decide which layout a screen
-gets are in `components/world/flat.ts` and, identically, in `globals.css`
-(`npm test` checks they match). Use `.only-flat` / `.only-world` for
-anything that belongs to one layout.
+Phones, portrait tablets and short windows get the same world, at the
+mobile renderer tier (`World3D.tsx`: pixel ratio capped at 1.25, 2x
+antialiasing, 512px shadow maps, no brushwork, no drag-to-look), framed
+in the upper part of the screen; the page is a cream sheet that comes up
+over the lower part (`globals.css`, the narrow-layout block, `--hero`),
+with everything written out in one column. The world stops drawing once
+the sheet has been scrolled over all of it. Where WebGL is missing the
+painting `app/assets/park/park-v04.png` stands in on every layout. Both
+layouts render the same content from `app/data/`. The two media queries
+that decide which layout a screen gets are in `components/world/flat.ts`
+and, identically, in `globals.css` (`npm test` checks they match). Use
+`.only-flat` / `.only-world` for anything that belongs to one layout.
+Controls over the world are light and slightly blurred; panels are not.
 
 The overall feeling should be:
 

@@ -7,6 +7,11 @@ import { useSyncExternalStore } from "react";
 // at. Pages set these from their HTML controls; the 3D scenes set them
 // from clicks on objects. Both stay in step.
 
+// How much the renderer does: brushwork and 4x antialiasing on a good
+// desktop GPU; no brushwork on weaker ones; and on phones a capped pixel
+// ratio, 2x antialiasing and small shadow maps
+export type Quality = "high" | "low" | "mobile";
+
 export type Selection = {
   project: number;
   shot: number;
@@ -22,7 +27,7 @@ export type WorldState = {
   fountain: number; // when the fountain was last turned on (ms), 0 if never
   doorOpen: boolean;
   arrived: boolean; // the camera has settled in the current place
-  quality: "high" | "low";
+  quality: Quality; // the renderer's tier (World3D.tsx decides it)
   sel: Selection;
 };
 
