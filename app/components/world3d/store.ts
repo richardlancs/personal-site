@@ -18,7 +18,6 @@ export type Selection = {
 export type WorldState = {
   focus: string | null; // an object in the current place, e.g. "monitor-1"
   hover: string | null;
-  labels: boolean; // "Show places"
   phoneUp: boolean;
   fountain: number; // when the fountain was last turned on (ms), 0 if never
   doorOpen: boolean;
@@ -30,7 +29,6 @@ export type WorldState = {
 let state: WorldState = {
   focus: null,
   hover: null,
-  labels: false,
   phoneUp: false,
   fountain: 0,
   doorOpen: false,

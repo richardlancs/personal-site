@@ -18,7 +18,7 @@ import Park from "./scenes/Park";
 import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
 import { isFlat } from "../world/flat";
-import { useWorld, world } from "./store";
+import { FOUNTAIN_MS, useWorld, world } from "./store";
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
@@ -61,7 +61,7 @@ function Director({
   onSwap: (scene: SceneId) => void;
   iris: React.RefObject<HTMLDivElement | null>;
 }) {
-  const { camera, gl, scene: three } = useThree();
+  const { camera, gl, scene: three, invalidate } = useThree();
   const st = useRef({
     pos: new THREE.Vector3(),
     look: new THREE.Vector3(),
@@ -78,6 +78,7 @@ function Director({
     parallax: new THREE.Vector2(),
     shift: 0,
     arrived: false,
+    framed: false,
   });
 
   // Fog and background belong to the place
@@ -176,6 +177,7 @@ function Director({
         s.lastDrag = performance.now();
         s.yaw = THREE.MathUtils.clamp(s.yaw - dx * 0.0035, -0.5, 0.5);
         s.pitch = THREE.MathUtils.clamp(s.pitch - dy * 0.0025, -0.22, 0.22);
+        invalidate(); // a frame, where the loop only runs on demand
       }
     };
     const up = () => {
@@ -190,7 +192,7 @@ function Director({
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerup", up);
     };
-  }, [gl]);
+  }, [gl, invalidate]);
 
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") (window as unknown as { __camera: THREE.Camera }).__camera = camera;
@@ -202,6 +204,11 @@ function Director({
     const dt = Math.min(rawDt, 0.05);
     const s = st.current;
     const reduce = reducedMotion();
+    // The first frame of the world, on the performance timeline
+    if (!s.framed) {
+      s.framed = true;
+      performance.mark("world:first-frame");
+    }
 
     // Next segment
     while (!s.running && s.queue.length) {
@@ -375,10 +382,9 @@ const parkLinks = places.filter((s) => s.anchor).map((s) => ({ id: s.anchor!, hr
 
 function Labels({ active }: { active: SceneId }) {
   const hover = useWorld((s) => s.hover);
-  const labels = useWorld((s) => s.labels);
   if (active !== "park") return null;
   return (
-    <nav aria-label="Places in the park" className="world-labels" data-all={labels || undefined}>
+    <nav aria-label="Places in the park" className="world-labels">
       {parkLinks.map((place) => (
         <Link
           key={place.id}
@@ -400,6 +406,35 @@ function Labels({ active }: { active: SceneId }) {
   );
 }
 
+// Under reduced motion the frame loop runs on demand: this asks for a few
+// frames whenever something changes (the address, what's chosen or
+// pointed at, the fountain), enough for the camera to cut and settle,
+// the tags to move and a light to come up, and none in between.
+function Still({ pathname }: { pathname: string }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    let lastFountain = world.get().fountain;
+    const kick = () => invalidate(20);
+    kick();
+    const unsubscribe = world.subscribe(() => {
+      kick();
+      const started = world.get().fountain;
+      if (started && started !== lastFountain) {
+        lastFountain = started;
+        // And once more when the fountain stops
+        window.setTimeout(kick, FOUNTAIN_MS + 100);
+      }
+    });
+    return () => {
+      unsubscribe();
+    };
+  }, [invalidate]);
+  useEffect(() => {
+    invalidate(30);
+  }, [pathname, invalidate]);
+  return null;
+}
+
 function detectQuality(): "high" | "low" {
   const nav = navigator as Navigator & { deviceMemory?: number };
   if (matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) return "low";
@@ -415,14 +450,29 @@ export default function World3D() {
   const [mounted, setMounted] = useState<SceneId[]>([target.id]);
   const [quality] = useState(detectQuality);
   const [visible, setVisible] = useState(true);
+  // With reduced motion the world holds still, so it's drawn only when
+  // something changes (Still, below) instead of sixty times a second
+  const [still, setStill] = useState(false);
+  useEffect(() => {
+    const query = matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setStill(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
   const iris = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
 
-  // The place you're going to is built straight away; the rest are built
-  // one by one in the browser's idle time once the first is showing, so
-  // later journeys don't wait and the first one isn't slowed down
+  // The place you're going to is built straight away. The rest are built
+  // one by one in the browser's idle time, but only once the camera has
+  // arrived there: before that, a build (the park takes most of a second)
+  // would stall the walk-in, and on a deep link it could even come before
+  // the place itself was drawn. The park goes first, since it's where
+  // most journeys go next.
   if (!mounted.includes(target.id)) setMounted([...mounted, target.id]);
+  const arrived = useWorld((s) => s.arrived);
   useEffect(() => {
+    if (!arrived) return;
     let cancel = () => {};
     let cancelled = false;
     const next = () => {
@@ -439,8 +489,8 @@ export default function World3D() {
       cancelled = true;
       cancel();
     };
-    // Once, after the first place is up
-  }, []);
+    // Once, after the first arrival
+  }, [arrived]);
 
   // Stop drawing when the world is scrolled out of view, or the tab is
   // hidden: no frames, no wind, no clock
@@ -469,7 +519,7 @@ export default function World3D() {
         className="world3d-canvas"
         shadows
         dpr={quality === "low" ? [1, 1.5] : [1, 1.75]}
-        frameloop={visible ? "always" : "never"}
+        frameloop={!visible ? "never" : still ? "demand" : "always"}
         gl={{ antialias: true, powerPreference: "high-performance" }}
         camera={{ fov: 48, near: 0.1, far: 900, position: [0, 2, 20] }}
         onCreated={({ gl }) => {
@@ -479,6 +529,7 @@ export default function World3D() {
         aria-hidden="true"
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} />
+        {still && <Still pathname={pathname} />}
         <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
         <Wind />
         <LabelProjector active={active} />

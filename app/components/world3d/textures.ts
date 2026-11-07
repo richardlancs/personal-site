@@ -22,16 +22,25 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
     g.clearRect(0, 0, w, h);
     draw(g, rng(hash(key)));
   };
-  paintIt();
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
   if (opts.repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  if (opts.text && typeof document !== "undefined" && document.fonts) {
-    fontsReady().then(() => {
-      paintIt();
-      t.needsUpdate = true;
-    });
+  // Each texture's painting time, on the performance timeline
+  const paint = () => {
+    const start = performance.now();
+    paintIt();
+    performance.measure(`tex:${key}`, { start, end: performance.now() });
+    t.needsUpdate = true;
+  };
+  if (opts.text && typeof document !== "undefined" && document.fonts && !fontsLoaded) {
+    // Words wait for the fonts (a moment, at the start). Drawn before
+    // them, the browser hunts through its own fonts for every Chinese
+    // character (a quarter of a second for the first sign) and the sign
+    // has to be painted again anyway.
+    fontsReady().then(paint);
+  } else {
+    paint();
   }
   cache.set(key, t);
   return t;
@@ -42,6 +51,7 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
 // does, so they're asked for up front, before the signs are painted.
 const CHINESE = "工坊光明公园站游戏厅导览图寻猫启事联系夏日祭傍晚开始通知冰镇用电话车凉亭时刻表";
 let ready: Promise<unknown> | null = null;
+let fontsLoaded = false;
 function fontsReady() {
   if (!ready) {
     const f = fonts();
@@ -50,7 +60,9 @@ function fontsReady() {
       document.fonts.load(`600 40px ${f.display}`, CHINESE).catch(() => null),
       document.fonts.load(`500 40px ${f.display}`, "Ag").catch(() => null),
       document.fonts.load(`500 20px ${f.text}`, "Ag").catch(() => null),
-    ]);
+    ]).then(() => {
+      fontsLoaded = true;
+    });
   }
   return ready;
 }

@@ -59,6 +59,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: "light",
   themeColor: "#fff9f2",
+  // The page may run under a phone's notch and home bar; the layout pads
+  // for them with env(safe-area-inset-*)
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { anchors } from "../anchors";
 import { buildArcade, buildCity, buildHills, buildPavilion, buildRailing, buildStation, buildWorkshop } from "../buildings";
-import { blob, buildBush, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
+import { blob, buildBushes, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
 import {
   M,
@@ -244,18 +244,16 @@ function buildPark(quality: "high" | "low") {
   });
   mark("trees");
 
-  // Bushes along the edges of paths and buildings
-  let bushes = 0;
-  while (bushes < (quality === "low" ? 18 : 34)) {
+  // Bushes along the edges of paths and buildings, merged by palette
+  const bushes: Parameters<typeof buildBushes>[0] = [];
+  while (bushes.length < (quality === "low" ? 18 : 34)) {
     const x = r.range(-30, 30);
     const z = r.range(-40, 24);
     if (onPath(x, z, 1.3) || blocked(x, z) || Math.hypot(x - 1.4, z - 16.5) < 4) continue;
     if (!onPath(x, z, 4.5) && r() < 0.6) continue;
-    const b = buildBush(300 + bushes, r.range(0.6, 1.2), r() < 0.25 ? "maple" : "bush");
-    b.position.set(x, 0, z);
-    root.add(b);
-    bushes++;
+    bushes.push({ seed: 300 + bushes.length, size: r.range(0.6, 1.2), palette: r() < 0.25 ? "maple" : "bush", x, z });
   }
+  root.add(buildBushes(bushes));
   mark("bushes");
 
   // Grass: thick near the eye, thinner far off, a few blades between the

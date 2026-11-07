@@ -186,30 +186,65 @@ function grow(r: Rng, kind: TreeKind) {
 // Leaf cards around each mass. Their normals point out from the mass, so
 // the light falls across the whole crown like a painted shape instead of
 // across hundreds of separate flat cards.
+// The cards are written straight into one buffer (a few hundred per tree,
+// dozens of trees): no geometry objects, no merging. The random draws are
+// in the same order as before, so every tree still grows the same.
+const Z = v(0, 0, 1);
+const corner = [
+  [-0.5, 0.5],
+  [0.5, 0.5],
+  [-0.5, -0.5],
+  [0.5, -0.5],
+];
 export function leafCards(r: Rng, clumps: Clump[], density = 1, size = 1) {
-  const parts: THREE.BufferGeometry[] = [];
-  for (const { center, radius } of clumps) {
-    const count = Math.round(radius * radius * 9 * density) + 4;
-    for (let i = 0; i < count; i++) {
-      const dir = v(r() - 0.5, (r() - 0.35) * 0.9, r() - 0.5).normalize();
-      const p = center.clone().add(dir.clone().multiplyScalar(radius * r.range(0.55, 1.0)));
+  const counts = clumps.map(({ radius }) => Math.round(radius * radius * 9 * density) + 4);
+  const cards = counts.reduce((a, b) => a + b, 0);
+  const pos = new Float32Array(cards * 12);
+  const nor = new Float32Array(cards * 12);
+  const uv = new Float32Array(cards * 8);
+  const index = cards * 4 > 65535 ? new Uint32Array(cards * 6) : new Uint16Array(cards * 6);
+  const q = new THREE.Quaternion();
+  const dir = v(0, 0, 0);
+  const look = v(0, 0, 0);
+  const p = v(0, 0, 0);
+  const c = v(0, 0, 0);
+  const n = v(0, 0, 0);
+  let k = 0;
+  clumps.forEach(({ center, radius }, ci) => {
+    for (let i = 0; i < counts[ci]; i++) {
+      dir.set(r() - 0.5, (r() - 0.35) * 0.9, r() - 0.5).normalize();
+      p.copy(center).addScaledVector(dir, radius * r.range(0.55, 1.0));
       const s = radius * r.range(0.7, 1.05) * size;
-      const plane = new THREE.PlaneGeometry(s, s);
       // Face mostly outward, turned a little at random
-      const look = dir.clone().add(v(r() - 0.5, r() - 0.5, r() - 0.5).multiplyScalar(0.9)).normalize();
-      plane.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(v(0, 0, 1), look));
-      plane.translate(p.x, p.y, p.z);
-      // Outward normals, leaning up toward the sky light
-      const n = plane.attributes.normal as THREE.BufferAttribute;
-      const pos = plane.attributes.position as THREE.BufferAttribute;
-      for (let k = 0; k < n.count; k++) {
-        const out = v(pos.getX(k), pos.getY(k), pos.getZ(k)).sub(center).normalize().add(v(0, 0.35, 0)).normalize();
-        n.setXYZ(k, out.x, out.y, out.z);
+      look.set(r() - 0.5, r() - 0.5, r() - 0.5).multiplyScalar(0.9).add(dir).normalize();
+      q.setFromUnitVectors(Z, look);
+      for (let j = 0; j < 4; j++) {
+        c.set(corner[j][0] * s, corner[j][1] * s, 0).applyQuaternion(q).add(p);
+        const o = (k * 4 + j) * 3;
+        pos[o] = c.x;
+        pos[o + 1] = c.y;
+        pos[o + 2] = c.z;
+        // Outward normals, leaning up toward the sky light
+        n.copy(c).sub(center).normalize();
+        n.y += 0.35;
+        n.normalize();
+        nor[o] = n.x;
+        nor[o + 1] = n.y;
+        nor[o + 2] = n.z;
+        uv[(k * 4 + j) * 2] = j & 1;
+        uv[(k * 4 + j) * 2 + 1] = j < 2 ? 1 : 0;
       }
-      parts.push(plane);
+      const a = k * 4;
+      index.set([a, a + 2, a + 1, a + 2, a + 3, a + 1], k * 6);
+      k++;
     }
-  }
-  return merge(parts);
+  });
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  g.setIndex(new THREE.BufferAttribute(index, 1));
+  return g;
 }
 
 const treeMaterials = new Map<string, { wood: THREE.MeshLambertMaterial; inner: THREE.MeshLambertMaterial; leaves: THREE.MeshLambertMaterial }>();
@@ -267,6 +302,33 @@ export function buildBush(seed: number, size: number, palette: Palette = "bush",
   return group;
 }
 
+// All the bushes of a place at once: the bushes of each palette share two
+// meshes (the dark mass inside, the leaves), so a park's worth of bushes
+// is a few draws instead of two for each. Nothing is lost: a bush never
+// moves on its own (the wind is in the material).
+export function buildBushes(bushes: { seed: number; size: number; palette?: Palette; x: number; z: number }[], inner: THREE.ColorRepresentation = "#3b4d26") {
+  const byPalette = new Map<Palette, { inner: THREE.BufferGeometry[]; leaves: THREE.BufferGeometry[]; height: number }>();
+  for (const bush of bushes) {
+    const palette = bush.palette ?? "bush";
+    const r = rng(bush.seed);
+    const clumps: Clump[] = [];
+    const n = Math.round(r.range(2, 4));
+    for (let i = 0; i < n; i++) clumps.push({ center: v(r.range(-bush.size, bush.size) * 0.6, bush.size * r.range(0.45, 0.7), r.range(-bush.size, bush.size) * 0.6), radius: bush.size * r.range(0.55, 0.8) });
+    const entry = byPalette.get(palette) ?? { inner: [], leaves: [], height: 0 };
+    entry.inner.push(merge(clumps.map((c) => blob(r, c.radius * 0.62, 0.75, 0.25, 2).translate(c.center.x, c.center.y, c.center.z))).translate(bush.x, 0, bush.z));
+    entry.leaves.push(leafCards(r, clumps, 1.5, 1.15).translate(bush.x, 0, bush.z));
+    entry.height = Math.max(entry.height, bush.size * 2);
+    byPalette.set(palette, entry);
+  }
+  const group = new THREE.Group();
+  for (const [palette, entry] of byPalette) {
+    const m = materialsFor({ palette, height: entry.height, trunk: 0, spread: 0, levels: 0, clump: 0, bark: "#000", inner }, entry.height);
+    group.add(mesh(merge(entry.inner), m.inner));
+    group.add(mesh(merge(entry.leaves), m.leaves));
+  }
+  return group;
+}
+
 // Ivy along a path (up a wall, along a fence)
 export function buildVine(seed: number, points: THREE.Vector3[], leafSize = 0.35) {
   const r = rng(seed);
@@ -321,6 +383,9 @@ export function grass(
   const blades = new THREE.InstancedMesh(bladeGeometry(), material, count);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const at = new THREE.Vector3();
+  const size = new THREE.Vector3();
   const color = new THREE.Color();
   let n = 0;
   let tries = 0;
@@ -328,8 +393,8 @@ export function grass(
     tries++;
     const spot = place(r);
     if (!spot) continue;
-    q.setFromEuler(new THREE.Euler(r.range(-0.15, 0.15), r() * Math.PI * 2, r.range(-0.15, 0.15)));
-    m.compose(v(spot.x, 0, spot.z), q, v(r.range(0.7, 1.3), spot.h * r.range(0.55, 1.0), 1));
+    q.setFromEuler(e.set(r.range(-0.15, 0.15), r() * Math.PI * 2, r.range(-0.15, 0.15)));
+    m.compose(at.set(spot.x, 0, spot.z), q, size.set(r.range(0.7, 1.3), spot.h * r.range(0.55, 1.0), 1));
     blades.setMatrixAt(n, m);
     color.setHSL(r.range(hues[0], hues[1]), r.range(0.35, 0.6), r.range(0.75, 1.1));
     blades.setColorAt(n, color);

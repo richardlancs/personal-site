@@ -268,8 +268,7 @@ body {
 }
 
 .world-label[data-on],
-.world-label:focus-visible,
-.world-labels[data-all] .world-label {
+.world-label:focus-visible {
   opacity: 1;
   scale: 1;
 }

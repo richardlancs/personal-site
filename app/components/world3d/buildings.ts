@@ -46,23 +46,21 @@ export function buildPavilion() {
   // Walls set back from the posts, with windows and a door
   const walls = mesh(merge([at(box(6.6, 2.8, 0.15), 0, 1.9, -2.2), at(box(0.15, 2.8, 4.4), -3.2, 1.9, 0), at(box(0.15, 2.8, 4.4), 3.2, 1.9, 0), at(box(2.1, 2.8, 0.15), -2.15, 1.9, 2.2), at(box(2.1, 2.8, 0.15), 2.15, 1.9, 2.2), at(box(2.2, 0.6, 0.15), 0, 3.0, 2.2)]), M.plaster());
   g.add(walls);
-  // Windows, lit from inside
-  const glow = windowGlow(1);
+  // Windows, lit from inside: all the panes in one mesh, all the frames
+  // in another
+  const panes: THREE.BufferGeometry[] = [];
+  const frames: THREE.BufferGeometry[] = [];
   for (const [x, z, ry] of [
     [-2.1, 2.29, 0],
     [2.1, 2.29, 0],
     [3.29, -0.6, Math.PI / 2],
     [3.29, 0.9, Math.PI / 2],
   ]) {
-    const w = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.9), glow);
-    w.position.set(x, 2.0, z);
-    w.rotation.y = ry;
-    g.add(w);
-    const frame = mesh(merge([at(box(1.12, 0.07, 0.06), 0, 0.48, 0), at(box(1.12, 0.07, 0.06), 0, -0.48, 0), at(box(0.06, 0.9, 0.06), 0, 0, 0), at(box(1.12, 0.05, 0.05), 0, 0, 0)]), M.darkWood());
-    frame.position.copy(w.position);
-    frame.rotation.y = ry;
-    g.add(frame);
+    panes.push(at(new THREE.PlaneGeometry(1.0, 0.9), x, 2.0, z, ry));
+    frames.push(at(merge([at(box(1.12, 0.07, 0.06), 0, 0.48, 0), at(box(1.12, 0.07, 0.06), 0, -0.48, 0), at(box(0.06, 0.9, 0.06), 0, 0, 0), at(box(1.12, 0.05, 0.05), 0, 0, 0)]), x, 2.0, z, ry));
   }
+  g.add(new THREE.Mesh(merge(panes), windowGlow(1)));
+  g.add(mesh(merge(frames), M.darkWood()));
   // The door, ajar, warm light behind it
   const door = mesh(box(1.0, 2.3, 0.07, 1), M.redWood());
   door.position.set(-0.75, 1.65, 2.6);
@@ -89,28 +87,29 @@ export function buildPavilion() {
 export function buildWorkshop() {
   const g = new THREE.Group();
   g.add(mesh(box(13, 4.6, 8, 0.35).translate(0, 2.3, 0), mat("workshopWall", () => paint({ map: plaster("grey"), grime: 0.9, grimeHeight: 2.5, moss: 0.25 }))));
-  // Sawtooth roof: four teeth with glass on their steep side
+  // Sawtooth roof: four teeth with glass on their steep side (the teeth
+  // in one mesh, the glass in another)
   const teeth = 4;
+  const toothParts: THREE.BufferGeometry[] = [];
+  const roofPanes: THREE.BufferGeometry[] = [];
   for (let i = 0; i < teeth; i++) {
     const x0 = -6.5 + (i * 13) / teeth;
     const w = 13 / teeth;
     const shape = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(w, 0), new THREE.Vector2(w, 1.6)]);
-    const tooth = new THREE.ExtrudeGeometry(shape, { depth: 8.2, bevelEnabled: false });
-    tooth.translate(x0, 4.6, -4.1);
-    g.add(mesh(tooth, mat("workshopRoof", () => paint({ map: roofTiles("rust"), moss: 0.7, rust: 0.4 }))));
-    const pane = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 8), windowGlow(0.35));
-    pane.position.set(x0 + w + 0.01, 5.4, 0);
-    pane.rotation.set(0, Math.PI / 2, 0);
-    g.add(pane);
+    toothParts.push(new THREE.ExtrudeGeometry(shape, { depth: 8.2, bevelEnabled: false }).translate(x0, 4.6, -4.1));
+    roofPanes.push(at(new THREE.PlaneGeometry(1.5, 8), x0 + w + 0.01, 5.4, 0, Math.PI / 2));
   }
+  g.add(mesh(merge(toothParts), mat("workshopRoof", () => paint({ map: roofTiles("rust"), moss: 0.7, rust: 0.4 }))));
+  g.add(new THREE.Mesh(merge(roofPanes), windowGlow(0.35)));
   // Big windows along the front and a sliding door, open
-  const glow = windowGlow(0.55);
+  const panes: THREE.BufferGeometry[] = [];
+  const frames: THREE.BufferGeometry[] = [];
   for (const x of [-4.6, -2.6, 2.6, 4.6]) {
-    const w = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.5), glow);
-    w.position.set(x, 2.6, 4.01);
-    g.add(w);
-    g.add(mesh(merge([at(box(1.7, 0.08, 0.08), x, 3.36, 4.03), at(box(1.7, 0.08, 0.08), x, 1.84, 4.03), at(box(0.06, 1.5, 0.06), x, 2.6, 4.03)]), M.iron()));
+    panes.push(at(new THREE.PlaneGeometry(1.6, 1.5), x, 2.6, 4.01));
+    frames.push(at(box(1.7, 0.08, 0.08), x, 3.36, 4.03), at(box(1.7, 0.08, 0.08), x, 1.84, 4.03), at(box(0.06, 1.5, 0.06), x, 2.6, 4.03));
   }
+  g.add(new THREE.Mesh(merge(panes), windowGlow(0.55)));
+  g.add(mesh(merge(frames), M.iron()));
   const doorway = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.2), mat("darkDoor", () => paint({ color: "#2a2118", emissive: "#3a2410", emissiveIntensity: 0.6, brush: 0.3 })));
   doorway.position.set(0, 1.6, 4.01);
   g.add(doorway);
@@ -139,22 +138,20 @@ export function buildStation() {
   g.add(mesh(box(3.2, 17, 3.2, 0.3).translate(0, 8.5, 2), wall));
   g.add(mesh(box(3.6, 0.4, 3.6, 0.3).translate(0, 14.2, 2), M.concrete()));
   g.add(mesh(hipRoof(4.6, 4.6, 3.4, 0.4).translate(0, 17, 2), mat("towerRoof", () => paint({ map: roofTiles("grey"), moss: 0.9, side: THREE.DoubleSide }))));
-  const clock = mat("clock", () => paint({ map: clockFace(), brush: 0.1, emissive: "#fff2d0", emissiveIntensity: 0.12 }));
+  // The four clock faces in one mesh
+  const faces: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 4; i++) {
     const a = (i * Math.PI) / 2;
-    const face = new THREE.Mesh(new THREE.CircleGeometry(1.2, 32), clock);
-    face.position.set(Math.sin(a) * 1.62, 15.6, 2 + Math.cos(a) * 1.62);
-    face.rotation.y = a;
-    g.add(face);
+    faces.push(at(new THREE.CircleGeometry(1.2, 32), Math.sin(a) * 1.62, 15.6, 2 + Math.cos(a) * 1.62, a));
   }
-  // Windows of the station hall
-  const glow = windowGlow(0.35);
+  g.add(new THREE.Mesh(merge(faces), mat("clock", () => paint({ map: clockFace(), brush: 0.1, emissive: "#fff2d0", emissiveIntensity: 0.12 }))));
+  // Windows of the station hall, in one mesh
+  const panes: THREE.BufferGeometry[] = [];
   for (let i = -3; i <= 3; i++) {
     if (i === 0) continue;
-    const w = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 2.2), glow);
-    w.position.set(i * 2.1, 2.4, 3.01);
-    g.add(w);
+    panes.push(at(new THREE.PlaneGeometry(1.3, 2.2), i * 2.1, 2.4, 3.01));
   }
+  g.add(new THREE.Mesh(merge(panes), windowGlow(0.35)));
   const sign = textPanel("station-sign", 512, 128, {
     background: "#f0e8d6",
     padding: 12,
