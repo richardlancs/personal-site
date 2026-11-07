@@ -58,6 +58,13 @@ git. Timing marks are on the performance timeline in production:
   "backdrop" was a dev-mode artifact, the production journey is right.
   Branch `park-polish`, landed on `main` as d9e1069; Vercel reports the
   deployment of that commit complete (GitHub commit status).
+- 7 November 2026: GaragePoker added as the fourth project (branch
+  `garagepoker-project`, merged into `main` locally, not pushed). The
+  workshop now has four monitors, two on the right bench; a test checks
+  every project has a monitor and a camera spot. Its "Not yet released"
+  point and two of its screenshots cover GaragePoker work that isn't on
+  its GitHub yet: update them once that's pushed. `garage-poker/` in this
+  folder is a separate, untracked repo; whole-folder lint picks it up.
 
 ## Remaining
 
