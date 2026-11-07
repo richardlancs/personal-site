@@ -239,6 +239,57 @@ export const projects: Project[] = [
       },
     ],
   },
+  {
+    title: "GaragePoker",
+    summary: "A free real-time poker web app for private home games: share a link and friends join, with no accounts.",
+    role: "Contributor to a project started by another developer.",
+    features: [
+      "Eight variants, from Hold'em and Omaha to Short Deck, with bomb pots, double board and run it twice.",
+      "A pure TypeScript engine, tested on every five-card hand and 100,000 random ones.",
+      "One Cloudflare Durable Object per table runs the game and sends each player only the cards they may see.",
+      "A provably fair shuffle, and a ledger that works out who owes whom at the end.",
+    ],
+    contributions: [
+      "Designed and built Tic-Tac-Toe Hold'em: a 3×3 board, played with both hole cards and one row, column or diagonal.",
+      "Made the board's shape a per-variant setting, so dealing, replays and rabbit hunt all handle the grid.",
+      "Fixed a bug that left the table blank on phones for viewers without a seat.",
+      "Not yet released: a product audit and six stages of fixes from it, among them reliability, chat and hand history.",
+    ],
+    technologies: [
+      "TypeScript",
+      "Next.js",
+      "React",
+      "Tailwind CSS",
+      "Cloudflare Workers (Durable Objects)",
+      "WebSockets",
+      "Zod",
+      "Vitest",
+      "fast-check",
+    ],
+    githubUrl: "https://github.com/anshiwang8/garagepoker",
+    liveUrl: "https://garagepoker-flax.vercel.app",
+    // From a local build that includes the unreleased improvements
+    screenshots: [
+      {
+        src: "/projects/garagepoker/tictactoe.jpg",
+        alt: "A Tic-Tac-Toe Hold'em showdown on a phone: the 3×3 board, with the winning line's cards outlined",
+        width: 390,
+        height: 844,
+      },
+      {
+        src: "/projects/garagepoker/create-table.jpg",
+        alt: "Creating a private GaragePoker table: quick starts, the eight games, blinds and seats",
+        width: 1440,
+        height: 900,
+      },
+      {
+        src: "/projects/garagepoker/table.jpg",
+        alt: "A GaragePoker table on the flop, with the chat sidebar open beside it",
+        width: 1440,
+        height: 900,
+      },
+    ],
+  },
 ];
 
 export const experience: Experience[] = [

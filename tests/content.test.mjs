@@ -42,6 +42,13 @@ test("every screenshot is a file in public/, with alt text", () => {
   }
 });
 
+test("every project has a monitor in the workshop, and a camera spot by it", () => {
+  const workshop = readFileSync(`${root}app/components/world3d/scenes/Workshop.tsx`, "utf8");
+  const spots = workshop.match(/export const monitorSpots = \[([\s\S]*?)\] as const/)?.[1].match(/\[[^\]]*\]/g) ?? [];
+  assert.ok(projects.length <= spots.length, `${projects.length} projects but ${spots.length} monitors (monitorSpots in world3d/scenes/Workshop.tsx)`);
+  for (let i = 0; i < projects.length; i++) assert.ok(`monitor-${i}` in scenes.workshop.focus, `scenes.ts: workshop has no "monitor-${i}" camera spot`);
+});
+
 test("experience entries have 2 to 4 points", () => {
   for (const stop of experience) {
     assert.ok(stop.highlights.length >= 2 && stop.highlights.length <= 4, `${stop.role}: ${stop.highlights.length} highlights`);
