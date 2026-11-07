@@ -56,7 +56,8 @@ git. Timing marks are on the performance timeline in production:
 - The two optional items are done or closed: far grass builds in the
   idle step after the first frame (no visible pop-in); the arcade
   "backdrop" was a dev-mode artifact, the production journey is right.
-  Branch `park-polish`, landed on `main` after this note.
+  Branch `park-polish`, landed on `main` as d9e1069; Vercel reports the
+  deployment of that commit complete (GitHub commit status).
 
 ## Remaining
 
