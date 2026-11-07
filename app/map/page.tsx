@@ -1,7 +1,6 @@
 import Link from "next/link";
 import PlaceGlyph, { glyphs } from "../components/world/PlaceGlyph";
-import Plate from "../components/world/Plate";
-import { places, section, sectionMetadata } from "../sections/registry";
+import { places, sectionMetadata } from "../sections/registry";
 
 export const metadata = sectionMetadata("map");
 
@@ -16,7 +15,6 @@ const pinned = places.filter((s) => s.map);
 export default function MapPage() {
   return (
     <main className="over-world location" data-side="middle" data-place="map">
-      <Plate view={section("map").plate} />
       <div className="map-sheet arrive take-clicks">
         <div className="map-head">
           <div>

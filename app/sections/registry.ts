@@ -4,7 +4,7 @@ import type { SceneId } from "../components/world3d/scenes";
 // The sections of the site, and everything the rest of the site needs to
 // know about each one: its address, its name, its place in the park, how
 // it's drawn on the map and the painting, which scene the camera goes to.
-// The Places menu, the home page's tags and list, the map, the name tags
+// The Places menu, the home page's list, the map, the name tags
 // in the world and the "Other sections" links are all generated from this
 // list, so adding a section means adding an entry here and a page for it
 // (docs/adding-a-section.md). Nothing else has to change.
@@ -21,7 +21,7 @@ export type Section = {
   place: string; // where it is in the park: "The pavilion"
   summary: string; // one line, for lists
   glyph: GlyphId; // its drawing, from the map (components/world/PlaceGlyph.tsx)
-  // In the menu, the lists, the map and the painting's tags. A section
+  // In the menu, the lists and the map. A section
   // that isn't listed still has its page; it's just not pointed at.
   listed: boolean;
   // The sign at the top of the page: a line about the place, and (on
@@ -37,13 +37,6 @@ export type Section = {
   // The park's name tag for this section, if it has a building there
   // (world3d/scenes/Park.tsx keeps the positions, by this key)
   anchor?: "library" | "workshop" | "station" | "arcade" | "booth" | "board";
-  // The flat layout's picture: where in the painting of the park this
-  // section is (percent across and down), and how far to move in on it
-  plate: { x: number; y: number; zoom: number };
-  // Its tag on the painting, on the home page (percent). `edge`: the
-  // place is at the painting's edge, so the tag hangs inward; `below`:
-  // the tag hangs under the place
-  tag?: { x: number; y: number; edge?: boolean; below?: boolean };
   // Its pin on the map sheet (percent). `label`: where the name goes on
   // small sheets, where neighbours would otherwise overlap
   map?: { x: number; y: number; label?: "right" | "side" | "below" };
@@ -51,9 +44,6 @@ export type Section = {
   subsections?: { title: string; place: string; href: `/${string}` }[];
   metadata: { title: string; description: string };
 };
-
-const park = { x: 50, y: 50, zoom: 1 };
-const closeUp = (x: number, y: number) => ({ x, y, zoom: 1.9 });
 
 export const sections: Section[] = [
   {
@@ -66,7 +56,6 @@ export const sections: Section[] = [
     listed: true,
     side: "middle",
     scene: { id: "park", focus: null },
-    plate: park,
     metadata: {
       title: "Richard Lan | Software Engineering Portfolio",
       description: "Portfolio of Richard Lan, a Computer Science student at the University of Waterloo seeking software engineering internship and co-op roles.",
@@ -84,8 +73,6 @@ export const sections: Section[] = [
     side: "right",
     scene: { id: "library", focus: "notebook" },
     anchor: "library",
-    plate: closeUp(9, 49),
-    tag: { x: 14, y: 39 },
     map: { x: 16, y: 55.5 },
     metadata: { title: "About", description: "About Richard Lan, a Computer Science student at the University of Waterloo." },
   },
@@ -102,8 +89,6 @@ export const sections: Section[] = [
     side: "left",
     scene: { id: "workshop", focus: "monitor" },
     anchor: "workshop",
-    plate: closeUp(30, 27),
-    tag: { x: 33.5, y: 27 },
     map: { x: 66.7, y: 23.5, label: "below" },
     subsections: [{ title: "Skills", place: "The workshop's tool wall", href: "/projects#skills" }],
     metadata: { title: "Projects", description: "Software projects by Richard Lan, with screenshots, code and live demos." },
@@ -121,8 +106,6 @@ export const sections: Section[] = [
     side: "right",
     scene: { id: "station", focus: "timetable" },
     anchor: "station",
-    plate: closeUp(58, 15),
-    tag: { x: 56.5, y: 16.5 },
     map: { x: 52, y: 13, label: "side" },
     metadata: { title: "Experience", description: "Richard Lan's experience and education." },
   },
@@ -139,8 +122,6 @@ export const sections: Section[] = [
     side: "left",
     scene: { id: "arcade", focus: "cabinet" },
     anchor: "arcade",
-    plate: closeUp(88, 31),
-    tag: { x: 82, y: 27.5 },
     map: { x: 81, y: 27, label: "right" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
@@ -156,9 +137,6 @@ export const sections: Section[] = [
     side: "left",
     scene: { id: "booth", focus: null },
     anchor: "booth",
-    plate: closeUp(94, 53),
-    // The booth is at the painting's right edge: its tag hangs to the left
-    tag: { x: 93, y: 41.5, edge: true },
     map: { x: 85, y: 60.5 },
     metadata: { title: "Contact", description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé." },
   },
@@ -173,9 +151,6 @@ export const sections: Section[] = [
     side: "middle",
     scene: { id: "park", focus: "board" },
     anchor: "board",
-    plate: closeUp(70, 45),
-    // Under the board, clear of the booth's tag beside it
-    tag: { x: 66.5, y: 52.5, below: true },
     metadata: { title: "Map of the park", description: "A map of the park and every place in it: about, projects, experience, interests and contact." },
   },
   {
@@ -191,7 +166,6 @@ export const sections: Section[] = [
     intro: "Glass panes and seed trays: somewhere for new things to start.",
     side: "left",
     scene: { id: "park", focus: null },
-    plate: closeUp(24, 62),
     metadata: { title: "Greenhouse", description: "A starter section for the site, not linked from anywhere." },
   },
 ];

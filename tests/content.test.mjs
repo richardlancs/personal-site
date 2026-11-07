@@ -81,11 +81,8 @@ test("every section in the registry is complete and has a page", () => {
     assert.ok(s.metadata.title && s.metadata.description, `${s.id}: metadata`);
     assert.ok(isSentence(s.summary), `${s.id}: summary "${s.summary}"`);
   }
-  // Every listed place is on the painting and (when it has a building) on the map
-  for (const s of places) {
-    assert.ok(s.tag, `${s.id} has no tag on the painting`);
-    if (s.anchor && s.id !== "map") assert.ok(s.map, `${s.id} has no pin on the map`);
-  }
+  // Every listed place with a building is on the map
+  for (const s of places) if (s.anchor && s.id !== "map") assert.ok(s.map, `${s.id} has no pin on the map`);
   // Addresses resolve both ways, and unknown ones fall back to the park
   for (const s of sections) assert.equal(sectionForPath(s.href).id, s.id);
   assert.equal(sectionForPath("/nowhere").id, "home");

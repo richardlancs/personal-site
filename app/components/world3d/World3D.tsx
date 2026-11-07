@@ -18,12 +18,22 @@ import Park from "./scenes/Park";
 import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
 import { isFlat } from "../world/flat";
-import { useWorld, world } from "./store";
+import { useWorld, world, type Quality } from "./store";
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
 
 const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// On narrow screens the page's sheet covers the lower part of the view
+// (globals.css: --hero), so the camera's subject is lifted into the upper
+// part: the view is offset down by this fraction of its height
+const NARROW_LIFT = 0.2;
+
+// How much of a narrow screen the world keeps above the sheet (the same
+// as --hero in globals.css): name tags below that line are under the
+// sheet and are hidden rather than left peeping out
+const heroHeight = (height: number) => height * (height <= 480 ? 0.38 : 0.46);
 
 const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
@@ -77,6 +87,7 @@ function Director({
     pointer: new THREE.Vector2(),
     parallax: new THREE.Vector2(),
     shift: 0,
+    shiftY: 0,
     arrived: false,
   });
 
@@ -157,8 +168,10 @@ function Director({
     }
   }, [target.id, target.focus, iris]);
 
-  // Look around by dragging; parallax follows the mouse
+  // Look around by dragging; parallax follows the mouse. Not on touch
+  // screens: there a drag is a scroll, and the camera must never catch it.
   useEffect(() => {
+    if (matchMedia("(pointer: coarse)").matches) return;
     const el = gl.domElement;
     let last: [number, number] | null = null;
     const down = (e: PointerEvent) => {
@@ -279,15 +292,20 @@ function Director({
     camera.rotateY(s.yaw);
     camera.rotateX(s.pitch);
 
-    // Frame the place to one side on wide screens, leaving room for the page
+    // Frame the place to one side on wide screens, leaving room for the
+    // page. On narrow screens the page is a sheet that comes up from
+    // below, so the place is framed in the upper part of the view instead.
     const cam = camera as THREE.PerspectiveCamera;
-    const wide = !isFlat() && size.width >= 900;
+    const narrow = isFlat();
+    const wide = !narrow && size.width >= 900;
     const frame = scenes[s.active].frame;
     const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : 0;
+    const wantY = narrow ? NARROW_LIFT : 0;
     s.shift += (want - s.shift) * (1 - Math.exp(-dt * 2.5));
-    const fov = size.width / size.height < 1 ? 58 : 48;
+    s.shiftY += (wantY - s.shiftY) * (1 - Math.exp(-dt * 2.5));
+    const fov = size.width / size.height < 1 ? 62 : 48;
     if (cam.fov !== fov) cam.fov = fov;
-    if (Math.abs(s.shift) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, 0, size.width, size.height);
+    if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
     else cam.clearViewOffset();
     cam.updateProjectionMatrix();
 
@@ -354,7 +372,8 @@ function LabelProjector({ active }: { active: SceneId }) {
         continue;
       }
       v.copy(p).project(camera);
-      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) {
+      const y = ((1 - v.y) / 2) * size.height;
+      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1 || (isFlat() && y > heroHeight(size.height) - 6)) {
         el.dataset.hidden = "";
         continue;
       }
@@ -362,7 +381,7 @@ function LabelProjector({ active }: { active: SceneId }) {
       // Keep the whole tag on screen, even for places at the edge of the view
       const half = el.offsetWidth / 2 + 12;
       const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, half, size.width - half);
-      el.style.transform = `translate3d(${x}px, ${((1 - v.y) / 2) * size.height}px, 0)`;
+      el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     }
   });
   return null;
@@ -400,12 +419,20 @@ function Labels({ active }: { active: SceneId }) {
   );
 }
 
-function detectQuality(): "high" | "low" {
+// Which tier of the renderer this device gets (store.ts: Quality).
+// Phones and tablets with touch screens get the mobile tier whatever their
+// size; narrow windows on a desktop too, since the page is laid out the
+// same way there.
+function detectQuality(): Quality {
   const nav = navigator as Navigator & { deviceMemory?: number };
-  if (matchMedia("(pointer: coarse)").matches || window.innerWidth < 768) return "low";
+  if (matchMedia("(pointer: coarse)").matches || isFlat()) return "mobile";
   if ((nav.deviceMemory ?? 8) <= 4 || (navigator.hardwareConcurrency ?? 8) <= 4) return "low";
   return "high";
 }
+
+// The scenes know two tiers (how much they build); the mobile tier builds
+// like the low one
+const sceneTier = (quality: Quality): "high" | "low" => (quality === "high" ? "high" : "low");
 
 export default function World3D() {
   const pathname = usePathname();
@@ -417,6 +444,7 @@ export default function World3D() {
   const [visible, setVisible] = useState(true);
   const iris = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  useEffect(() => world.set({ quality }), [quality]);
 
   // The place you're going to is built straight away; the rest are built
   // one by one in the browser's idle time once the first is showing, so
@@ -442,22 +470,42 @@ export default function World3D() {
     // Once, after the first place is up
   }, []);
 
-  // Stop drawing when the world is scrolled out of view, or the tab is
-  // hidden: no frames, no wind, no clock
+  // Stop drawing when the tab is hidden, when the world is out of view,
+  // or (narrow screens) once the page's sheet has been scrolled up over
+  // the whole of it: no frames, no wind, no clock
   useEffect(() => {
     const el = box.current;
     if (!el) return;
     let inView = true;
-    const update = () => setVisible(inView && document.visibilityState !== "hidden");
+    let covered = false;
+    const update = () => setVisible(inView && !covered && document.visibilityState !== "hidden");
     const observer = new IntersectionObserver(([entry]) => {
       inView = entry.isIntersecting;
       update();
     });
     observer.observe(el);
     document.addEventListener("visibilitychange", update);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        // The sheet starts --hero down the page; past a screen's height of
+        // scrolling, nothing of the world shows (a little slack so a bounce
+        // at the top doesn't flicker it)
+        const next = isFlat() && window.scrollY > window.innerHeight * 1.05;
+        if (next !== covered) {
+          covered = next;
+          update();
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       observer.disconnect();
       document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("scroll", onScroll);
     };
   }, []);
 
@@ -468,9 +516,11 @@ export default function World3D() {
       <Canvas
         className="world3d-canvas"
         shadows
-        dpr={quality === "low" ? [1, 1.5] : [1, 1.75]}
+        // Pixel ratio: capped hardest on phones, where every pixel is paid
+        // for twice (the scene, then the grade pass)
+        dpr={quality === "mobile" ? [1, 1.25] : quality === "low" ? [1, 1.5] : [1, 1.75]}
         frameloop={visible ? "always" : "never"}
-        gl={{ antialias: true, powerPreference: "high-performance" }}
+        gl={{ antialias: quality !== "mobile", powerPreference: quality === "mobile" ? "default" : "high-performance" }}
         camera={{ fov: 48, near: 0.1, far: 900, position: [0, 2, 20] }}
         onCreated={({ gl }) => {
           gl.toneMapping = THREE.NeutralToneMapping;
@@ -480,6 +530,7 @@ export default function World3D() {
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} />
         <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
+        {/* the scenes themselves know two tiers */}
         <Wind />
         <LabelProjector active={active} />
         {order
@@ -488,7 +539,7 @@ export default function World3D() {
             const Scene = components[id];
             return (
               <group key={id} position={scenes[id].offset}>
-                <Scene active={active === id} quality={quality} navigate={navigate} />
+                <Scene active={active === id} quality={sceneTier(quality)} navigate={navigate} />
               </group>
             );
           })}

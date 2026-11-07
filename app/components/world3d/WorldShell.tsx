@@ -2,16 +2,15 @@
 
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Component, useSyncExternalStore, type ReactNode } from "react";
+import { Component, useEffect, useState, useSyncExternalStore, type ReactNode } from "react";
 import painting from "../../assets/park/park-v04.png";
-import { isFlat, watchFlat } from "../world/flat";
+import { isFlat } from "../world/flat";
+import { onIdle } from "./idle";
 
-// The 3D world loads after the page, so the words are there first, and
-// only on wide screens: the flat layout (phones, portrait tablets) has the
-// painting in each page instead (world/Plate.tsx) and never downloads the
-// world or three.js. If a wide screen can't draw it (no WebGL, or the
-// renderer fails), the painting of the park stands in, and every page
-// still works.
+// The 3D world loads after the page, so the words are there first, on
+// every screen: phones get the same park, at the mobile tier
+// (World3D.tsx). Where it can't be drawn (no WebGL, or the renderer
+// fails), the painting of the park stands in, and every page still works.
 const World3D = dynamic(() => import("./World3D"), {
   ssr: false,
   loading: () => <Loading />,
@@ -57,17 +56,28 @@ function webgl() {
   return supported;
 }
 
-// Which layout this screen gets. Unknown on the server and while the page
-// is waking up: until then only the haze is drawn (and CSS hides that on
-// flat screens).
-type Layout = "unknown" | "flat" | "world" | "painting";
-const layout = (): Layout => (isFlat() ? "flat" : webgl() ? "world" : "painting");
+// Whether this screen can draw the world. Unknown on the server and while
+// the page is waking up: until then the painting's placeholder is shown.
+type Layout = "unknown" | "world" | "painting";
+const layout = (): Layout => (webgl() ? "world" : "painting");
 const unknown = (): Layout => "unknown";
+const never = () => () => {};
 
 export default function WorldShell() {
-  const kind = useSyncExternalStore(watchFlat, layout, unknown);
-  if (kind === "flat") return null;
-  if (kind === "unknown") return <Loading />;
+  const kind = useSyncExternalStore(never, layout, unknown);
+  // On narrow screens the page's sheet is painted first and the world
+  // follows when the browser has a moment: building a scene is the
+  // heaviest work the page does, and on a phone it must not hold up the
+  // words. Wide screens start the world straight away.
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!isFlat()) {
+      setReady(true);
+      return;
+    }
+    return onIdle(() => setReady(true), 1200);
+  }, []);
+  if (kind === "unknown" || !ready) return <Loading />;
   if (kind === "painting") return <Fallback />;
   return (
     <Guard>

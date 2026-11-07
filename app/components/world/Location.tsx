@@ -2,20 +2,18 @@ import Link from "next/link";
 import { profile } from "../../data/portfolio";
 import { places, type Section } from "../../sections/registry";
 import PlaceGlyph from "./PlaceGlyph";
-import Plate from "./Plate";
 
-// A section's page. On wide screens it sits over the world: the camera has
-// already turned toward the place (World3D.tsx), and this puts the page's
-// content on the open side of the screen (`section.side`). On the flat
-// layout it's the page itself: the painting moved in on the place, then
-// the section's heading, its content, and the way on to the other
-// sections. There the park's names stay out of the way: pages are
-// labelled by section only. What the content looks like is up to each
-// section.
+// A section's page, over the world: the camera has already turned toward
+// the place (World3D.tsx). On wide screens the content sits on the open
+// side of the screen (`section.side`). On narrow screens it's a sheet
+// that comes up over the lower part of the view, with the place framed
+// above it: the section's heading, its content written out, and the way
+// on to the other sections. There the park's names stay out of the way:
+// pages are labelled by section only. What the content looks like is up
+// to each section.
 export default function Location({ section, children }: { section: Section; children: React.ReactNode }) {
   return (
     <main className="over-world location" data-side={section.side} data-place={section.id}>
-      <Plate view={section.plate} />
       <div className="location-column arrive">
         <header className="location-header take-clicks">
           <p className="location-place only-world">{section.place}</p>

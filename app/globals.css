@@ -1791,53 +1791,104 @@ body {
 }
 
 /*
-  The flat layout (components/world/flat.ts has the same two queries).
+  Controls over the world: light, so the park shows through them. A small
+  blur keeps the words legible whether the sky or the foliage is behind;
+  it's only ever on these small shapes, never on a whole panel. Chosen,
+  pressed, disabled and focused states are drawn with lines and ink, not
+  colour alone.
+*/
+.control-tag,
+.control-round,
+.notebook-controls,
+.notebook-controls + .text-link,
+.notebook-sheet + .text-link {
+  border-color: rgb(255 255 255 / 0.55);
+  background-color: rgb(255 249 242 / 0.58);
+  backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow: 0 6px 16px -10px rgb(var(--shadow) / 0.35);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
 
-  Phones, portrait tablets and short windows don't get the 3D world. Each
-  page opens with the painting of the park, moved in on the place
-  (world/Plate.tsx), and everything below it is paper: the same sheets,
-  signs and objects as the wide layout, laid out in one column, with
-  nothing to choose or wait for before the words can be read.
+.control-tag:hover,
+.control-round:hover,
+.notebook-controls + .text-link:hover,
+.notebook-sheet + .text-link:hover {
+  background-color: rgb(255 249 242 / 0.8);
+}
+
+.control-tag:active,
+.notebook-turn:active,
+.notebook-controls + .text-link:active,
+.notebook-sheet + .text-link:active,
+.park-links a:active,
+.project-links a:active,
+.onward li a:active,
+.directory-copy:active,
+.phone-handset:active {
+  background-color: var(--highlight);
+}
+
+.bench-tab {
+  background: linear-gradient(rgb(255 253 248 / 0.62), rgb(229 221 212 / 0.62));
+}
+
+.cabinet-button {
+  background: linear-gradient(rgb(42 31 142 / 0.74), rgb(21 16 90 / 0.74));
+}
+
+.phone-handset {
+  background: rgb(255 249 242 / 0.85);
+}
+
+/*
+  The narrow layout (components/world/flat.ts has the same two queries).
+
+  Phones, portrait tablets and short windows get the same 3D world, at the
+  mobile tier (World3D.tsx), in the upper part of the screen (--hero); the
+  page is a cream sheet that comes up over it from below, with everything
+  written out in one column. The controls float over the world, lightly.
+  The world keeps drawing until the sheet has been scrolled up over all of
+  it, then stops.
 */
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
-  .only-flat,
-  .plate {
+  .only-flat {
     display: none !important;
+  }
+
+  /* On wide screens the sheet is only a wrapper */
+  .park-sheet {
+    display: contents;
   }
 }
 
 @media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
-  .only-world,
-  .world3d {
+  .only-world {
     display: none !important;
   }
 
-  /* Nothing is behind the paper here but the page, so the sheets are
-     plain and opaque: no blur to compute */
   :root {
-    --arrive-delay: 0s;
-  }
-
-  :root {
-    --paper: #fffcf7;
+    --hero: 46svh; /* how much of the screen the world keeps, above the sheet */
+    --arrive-delay: 0.05s;
+    /* The sheet is nearly opaque cream; the paper on it needs no blur */
+    --paper: rgb(255 252 247 / 0.94);
     --paper-edge: rgb(255 255 255 / 0.9);
-    --label: #fffcf7;
+    --label: rgb(255 249 242 / 0.84);
     --veil: none;
     --float: 0 14px 30px -22px rgb(var(--shadow) / 0.3), 0 1px 0 rgb(255 255 255 / 0.6) inset;
   }
 
-  body {
-    background-image: var(--grain);
-  }
+  /* Short screens (a phone on its side): a shorter hero, and no name tags,
+     which would crowd it; the Sections list is right below */
+  @media (max-height: 480px) {
+    :root {
+      --hero: 38svh;
+    }
 
-  .over-world {
-    pointer-events: auto;
-  }
-
-  /* Pages are simply there: no camera to wait for */
-  .arrive,
-  .map-sheet {
-    animation: none;
+    .world-labels {
+      display: none;
+    }
   }
 
   .points {
@@ -1845,20 +1896,9 @@ body {
     line-height: 1.6;
   }
 
-  /* ---------- The bar along the top: the way back, and Places ---------- */
+  /* ---------- The bar along the top: the way back, and Sections ---------- */
   .world-controls {
-    position: sticky;
-    top: 0;
-    padding: 0.5rem 0.75rem;
-    border-bottom: 1px solid var(--border);
-    background: var(--background);
-    pointer-events: auto;
-  }
-
-  .control-tag,
-  .control-round {
-    border-color: var(--border);
-    box-shadow: none;
+    padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem;
   }
 
   .control-tag {
@@ -1871,12 +1911,13 @@ body {
   }
 
   .places-menu {
-    inset: 4.1rem 0.75rem auto auto;
+    inset: calc(3.6rem + env(safe-area-inset-top)) 0.75rem auto auto;
     max-height: calc(100svh - 5rem);
     overflow-y: auto;
   }
 
   .places-menu a[href]:not(.text-link) {
+    grid-template-columns: 1fr;
     padding: 0.7rem 0.75rem;
   }
 
@@ -1884,132 +1925,110 @@ body {
     padding: 0.5rem 0;
   }
 
-  /* ---------- The plate: the painting, moved in on the place ---------- */
-  .plate {
+  /* The name tags in the park are always up on a touch screen, and are
+     the way into each place from the top of the home page */
+  .world-label {
+    padding: 0.45rem 0.8rem 0.5rem;
+  }
+
+  /* ---------- The sheet: the page, over the lower part of the world ---------- */
+  .location,
+  .location[data-side] {
+    display: block;
+    min-height: 100svh;
+    padding: 0;
+  }
+
+  .location-column,
+  .location[data-side="below"] .location-column,
+  .park-sheet {
     position: relative;
-    overflow: hidden;
-    background: var(--scene-haze); /* the painting's haze, while it loads */
-    container-type: inline-size; /* the tags size themselves to the picture */
+    width: auto;
+    margin: var(--hero) 0 0;
+    min-height: calc(100svh - var(--hero));
+    padding: 1.1rem 1rem max(2.5rem, env(safe-area-inset-bottom));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--background) var(--grain);
+    box-shadow: 0 -14px 34px -20px rgb(var(--shadow) / 0.4);
+    pointer-events: auto;
   }
 
-  .plate-picture {
-    position: absolute;
-    inset: 0;
+  /* A grip at the top of the sheet: it's there to be scrolled up */
+  .location-column::before,
+  .park-sheet::before {
+    content: "";
+    display: block;
+    width: 2.5rem;
+    height: 4px;
+    margin: -0.2rem auto 1rem;
+    border-radius: 2px;
+    background: rgb(29 30 30 / 0.16);
   }
 
-  .plate-picture img {
-    object-fit: cover;
-  }
-
-  /* The picture drifts very slowly, like a held breath: a transform on
-     its own layer, nothing to repaint. Still for anyone who asked for
-     less motion. */
-  @media (prefers-reduced-motion: no-preference) {
-    .plate-picture {
-      animation: plate-drift 36s ease-in-out infinite alternate;
-      will-change: transform;
-    }
-  }
-
-  @keyframes plate-drift {
-    from {
-      transform: scale(1) translate(0, 0);
-    }
-    to {
-      transform: scale(1.04) translate(-0.6%, 0.5%);
-    }
-  }
-
-  /* The park: the whole painting, never taller than the screen */
-  .plate[data-view="park"] {
-    aspect-ratio: 3 / 2;
-    width: min(100%, 105svh);
+  /* Wider screens (portrait tablets): the sheet's contents stay a
+     comfortable column */
+  .location-column > *,
+  .park-sheet > * {
+    max-width: 40rem;
     margin-inline: auto;
   }
 
-  /* A place: a strip of the painting, fading into the page */
-  .plate:not([data-view="park"]) {
-    height: clamp(9.5rem, 44vw, 17rem);
-    max-height: 46svh;
-    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  /* The sign is written straight on the sheet */
+  .location-header {
+    display: block;
+    margin-bottom: 1rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 
-  .places-menu a[href]:not(.text-link) {
-    grid-template-columns: 1fr;
+  .location-intro {
+    font-size: 1rem;
   }
 
-  .plate:not([data-view="park"])::after {
-    content: "";
-    position: absolute;
-    inset: auto 0 0;
-    height: 42%;
-    background: linear-gradient(to bottom, transparent, var(--background));
+  /* The map's sheet and the notices sit below the hero on their own */
+  .location[data-place="map"],
+  .location[data-side="middle"] {
+    padding-top: var(--hero);
   }
 
-  /* A tag on each place in the painting, like the name tags in the world */
-  .plate-tags {
-    position: absolute;
-    inset: 0;
+  .map-sheet {
+    width: auto;
+    max-width: 38rem;
+    margin: 0 1rem;
+    padding: 1.4rem 1rem 0.5rem;
   }
 
-  .plate-tag {
-    position: absolute;
-    padding: 0.3rem 0.6rem 0.35rem;
-    border: 1px solid var(--paper-edge);
-    border-radius: var(--radius-sm);
-    background: var(--label);
-    color: var(--foreground);
-    font-family: var(--font-display);
-    font-size: clamp(0.8125rem, 2.6cqw, 1.05rem);
-    font-weight: 600;
-    line-height: 1.2;
-    white-space: nowrap;
-    box-shadow: 0 6px 14px -8px rgb(var(--shadow) / 0.5);
-    transform: translate(-50%, calc(-100% - 0.4rem));
+  @media (min-width: 40rem) {
+    .map-sheet {
+      margin-inline: auto;
+    }
   }
 
-  .plate-tag[data-edge] {
-    transform: translate(-82%, calc(-100% - 0.4rem));
+  .lost-notice {
+    margin: 0 1rem;
   }
 
-  /* The string down to the place */
-  .plate-tag::after {
-    content: "";
-    position: absolute;
-    left: 50%;
-    top: 100%;
-    width: 1.5px;
-    height: 0.4rem;
-    background: var(--label);
+  .lost-notice-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
   }
 
-  .plate-tag[data-edge]::after {
-    left: 82%;
+  .location-footer {
+    margin-top: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
   }
 
-  .plate-tag[data-below] {
-    transform: translate(-50%, 0.4rem);
-  }
-
-  .plate-tag[data-below]::after {
-    top: auto;
-    bottom: 100%;
-  }
-
-  /* A bigger area to tap than the tag itself */
-  .plate-tag::before {
-    content: "";
-    position: absolute;
-    inset: -0.55rem -0.3rem;
-  }
-
-  /* ---------- The park: who I am, then every place ---------- */
+  /* ---------- The park: who I am, then every section ---------- */
   .park-intro {
     position: static;
     width: auto;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 1.5rem 1.25rem 0;
+    padding: 0;
     pointer-events: auto;
   }
 
@@ -2036,23 +2055,31 @@ body {
     margin-top: 1.1rem;
   }
 
+  /* Buttons on the sheet: light, drawn by their outline */
+  .park-links a,
+  .project-links a,
+  .onward li a,
+  .directory-copy,
+  .phone-handset,
+  .shot-strip ~ .text-link {
+    border: 1px solid rgb(30 16 122 / 0.25);
+    background: rgb(255 249 242 / 0.5);
+    box-shadow: none;
+  }
+
   .park-links a,
   .project-links a {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
     padding: 0 1rem;
-    border: 1px solid var(--border);
     border-radius: 999px;
-    background: var(--paper);
     font-size: 0.9375rem;
     text-decoration: none;
   }
 
   .park-places {
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 2rem 1.25rem 2.5rem;
+    padding-top: 2rem;
   }
 
   .park-places-title,
@@ -2105,52 +2132,6 @@ body {
     font-size: 0.9375rem;
     line-height: 1.5;
     color: var(--muted);
-  }
-
-  /* ---------- A place's page ---------- */
-  .location,
-  .location[data-side] {
-    display: block;
-    min-height: 0;
-    padding: 0 0 2.5rem;
-  }
-
-  .location-column,
-  .location[data-side="below"] .location-column {
-    width: auto;
-    max-width: 40rem;
-    margin: 0 auto;
-    padding: 0 1rem;
-  }
-
-  /* The sign hangs over the foot of the painting */
-  .location-header {
-    display: block;
-    position: relative;
-    margin-top: -2.75rem;
-    padding: 0.9rem 1.1rem 1rem;
-  }
-
-  .location-intro {
-    font-size: 1rem;
-  }
-
-  .lost-notice {
-    margin: 1.5rem 1rem;
-  }
-
-  .lost-notice-links a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-  }
-
-  .location-footer {
-    margin-top: 1.75rem;
-    padding: 0;
-    border: 0;
-    background: none;
-    box-shadow: none;
   }
 
   /* The rest of the park, at the foot of every place's page */
@@ -2418,19 +2399,6 @@ body {
   }
 
   /* ---------- The notice board: the map ---------- */
-  .map-sheet {
-    width: auto;
-    max-width: 38rem;
-    margin: -2.75rem 1rem 0;
-    padding: 1.4rem 1rem 0.5rem;
-  }
-
-  @media (min-width: 40rem) {
-    .map-sheet {
-      margin-inline: auto;
-    }
-  }
-
   .map-pin {
     width: 2.75rem;
     height: 2.75rem;

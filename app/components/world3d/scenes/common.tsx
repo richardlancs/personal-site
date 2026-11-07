@@ -78,7 +78,7 @@ export function SunLight({
     l.position.set(...position);
     l.target.position.set(...target);
     l.castShadow = true;
-    const res = quality === "low" ? 1024 : 2048;
+    const res = world.get().quality === "mobile" ? 512 : quality === "low" ? 1024 : 2048;
     l.shadow.mapSize.set(res, res);
     const c = l.shadow.camera;
     c.left = -size;
