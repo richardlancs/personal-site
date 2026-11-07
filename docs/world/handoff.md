@@ -1,0 +1,57 @@
+# Handoff: where the work stands (updated 6 November 2026, evening)
+
+For whoever picks this up, human or Claude. Read this first, then
+`docs/world/park-balance-2026-11-06.md` for the measurements.
+
+## Branches
+
+- `main` at f38a2dc: deployed at https://personal-site-flame-eight-52.vercel.app
+- `park-balance` (this work, worktree `.claude/worktrees/ui-polish`):
+  the park composed across the view, lighter loading, dead code gone,
+  immutable caching header. Commits f5e7c07 (composition), 6d076cc
+  (loading), 77b0743 (caching, tag tweak), plus docs. Pushed; not
+  merged; production not deployed (Vercel makes a preview deployment of
+  any pushed branch by itself).
+- `mobile-3d` (the other Claude session, ebf0dfc, pushed): the 3D world on
+  phones, replacing the painting layout. Not merged.
+
+Both branches touch `World3D.tsx` and `sections/registry.ts`. Agreed
+resolutions when they meet: keep both sets of edits (they are in
+different regions); in the arrived-gated mounting effect add
+`if (!arrived || world.get().quality === "mobile") return;` as the first
+line; `registry.ts` loses `plate` and `tag` (mobile-3d) and gains the
+arcade's new `map` entry (park-balance).
+
+## How to resume
+
+```bash
+cd /Users/richardlan/personal-site/.claude/worktrees/ui-polish   # or check out park-balance
+npm install && npm run lint && npm test && npx tsc --noEmit
+npm run build && npx next start -p 3100                           # production, for measuring
+```
+
+Measurement scripts (Playwright MCP, run with `browser_run_code_unsafe`;
+ports are literals inside): `.playwright-mcp/park-balance/scripts/`.
+Screenshots: `.playwright-mcp/park-balance/{before,after}/`. Neither is in
+git. Timing marks are on the performance timeline in production:
+`world:first-frame`, `world:<scene>`, `park:<stage>`, `tex:<name>`.
+
+## Done
+
+- Composition, clutter, loading, reduced-motion rendering, verification:
+  see `park-balance-2026-11-06.md`.
+
+## Remaining (in order)
+
+1. The user decides which branch lands first; the other rebases with the
+   resolutions above.
+2. After the next deploy: fetch a live `/_next/static/chunks/*.js` and
+   check `cache-control` is `public, max-age=31536000, immutable`
+   (today it is `max-age=0, must-revalidate` on Vercel, while `next
+   start` serves it immutable). Also grep a new token in the live CSS
+   before trusting a screenshot (Turbopack's cache once shipped a stale
+   stylesheet).
+3. Optional, not started: the arcade's interior backdrop still shows the
+   station's tower to its right (matched the old park plan); far grass
+   and far trees could move into the idle build for a slightly earlier
+   first frame (pop-in risk while the iris opens).
