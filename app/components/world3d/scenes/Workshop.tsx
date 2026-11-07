@@ -16,10 +16,13 @@ import { Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
-// Where each project's monitor stands on the benches
+// Where each project's monitor stands: one on the left bench, two on the
+// right one (placed to clear its clutter), one on the desk by the wall.
+// Each needs a "monitor-N" camera spot in scenes.ts (`npm test` checks).
 export const monitorSpots = [
   [-2.4, 0.94, -3.62],
-  [1.8, 0.94, -3.62],
+  [1.1, 0.94, -3.62],
+  [2.5, 0.94, -3.62],
   [5.2, 0.94, -3.62],
 ] as const;
 
