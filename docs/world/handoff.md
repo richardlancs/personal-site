@@ -15,12 +15,17 @@ For whoever picks this up, human or Claude. Read this first, then
 - `mobile-3d` (the other Claude session, ebf0dfc, pushed): the 3D world on
   phones, replacing the painting layout. Not merged.
 
-Both branches touch `World3D.tsx` and `sections/registry.ts`. Agreed
-resolutions when they meet: keep both sets of edits (they are in
-different regions); in the arrived-gated mounting effect add
-`if (!arrived || world.get().quality === "mobile") return;` as the first
-line; `registry.ts` loses `plate` and `tag` (mobile-3d) and gains the
-arcade's new `map` entry (park-balance).
+- `integration` (pushed): `park-balance` with `mobile-3d` merged in,
+  the two conflicts resolved as agreed (both sets of World3D edits kept;
+  the mounting effect skips prebuilds on the mobile tier; the registry
+  loses `plate`/`tag` and keeps the arcade's new `map` entry) and one
+  lint error from mobile-3d fixed (a synchronous setState in
+  WorldShell's effect). Lint, type check, 14 tests and the production
+  build pass; verified in the browser on desktop (composition and tags
+  intact, all six scenes prebuilt after arrival) and on a 390×844 phone
+  (3D hero, sheet below, only the target scene built, no overflow, no
+  console errors). Screenshots: `.playwright-mcp/park-balance/integration/`.
+  Merging `integration` into `main` lands both pieces of work at once.
 
 ## How to resume
 
@@ -43,8 +48,9 @@ git. Timing marks are on the performance timeline in production:
 
 ## Remaining (in order)
 
-1. The user decides which branch lands first; the other rebases with the
-   resolutions above.
+1. The user merges `integration` into `main` (both branches at once), or
+   picks one branch and the other rebases onto it using the resolutions
+   above. Then deploy.
 2. After the next deploy: fetch a live `/_next/static/chunks/*.js` and
    check `cache-control` is `public, max-age=31536000, immutable`
    (today it is `max-age=0, must-revalidate` on Vercel, while `next
