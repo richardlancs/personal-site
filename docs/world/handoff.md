@@ -46,18 +46,21 @@ git. Timing marks are on the performance timeline in production:
 - Composition, clutter, loading, reduced-motion rendering, verification:
   see `park-balance-2026-11-06.md`.
 
-## Remaining (in order)
+## Landed (6 November 2026, late)
 
-1. The user merges `integration` into `main` (both branches at once), or
-   picks one branch and the other rebases onto it using the resolutions
-   above. Then deploy.
-2. After the next deploy: fetch a live `/_next/static/chunks/*.js` and
-   check `cache-control` is `public, max-age=31536000, immutable`
-   (today it is `max-age=0, must-revalidate` on Vercel, while `next
-   start` serves it immutable). Also grep a new token in the live CSS
-   before trusting a screenshot (Turbopack's cache once shipped a stale
-   stylesheet).
-3. Optional, not started: the arcade's interior backdrop still shows the
-   station's tower to its right (matched the old park plan); far grass
-   and far trees could move into the idle build for a slightly earlier
-   first frame (pop-in risk while the iris opens).
+- `integration` was fast-forwarded onto `main` (07e7100) and Vercel
+  deployed it: the live page has the new markup, and its chunks under
+  `/_next/static/immutable/chunks/` are served Brotli-compressed with
+  `cache-control: public,max-age=31536000,immutable`. The `vercel.json`
+  added earlier on a misread probe was removed again.
+- The two optional items are done or closed: far grass builds in the
+  idle step after the first frame (no visible pop-in); the arcade
+  "backdrop" was a dev-mode artifact, the production journey is right.
+  Branch `park-polish`, landed on `main` after this note.
+
+## Remaining
+
+Nothing queued. If something comes up: the measurement scripts and
+timing marks above are the way to check it; grep a fresh token in the
+live CSS before trusting a live screenshot (Turbopack's cache once
+shipped a stale stylesheet).

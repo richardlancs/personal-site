@@ -1,8 +1,9 @@
 # The park composed across the view, and a lighter load (6 November 2026)
 
-Branch `park-balance`, from `main` at f38a2dc. Three commits: the
-composition (f5e7c07), the loading work (6d076cc), the caching header
-and a tag tweak (77b0743), plus this note.
+Branch `park-balance`, from `main` at f38a2dc: the composition
+(f5e7c07), the loading work (6d076cc), a tag tweak (77b0743), plus
+this note; landed on `main` through the `integration` branch with the
+other session's mobile-3d work, then the follow-up below.
 Not merged, not deployed. Screenshots and the measurement scripts are in
 `.playwright-mcp/park-balance/` in the worktree (not in git): `before/`
 (the live site before), `after/` (this branch), `scripts/`.
@@ -81,7 +82,7 @@ work on.
 | `@next/bundle-analyzer` (webpack) | same as above | superseded | not for Turbopack builds; not adopted |
 | next/image AVIF/WebP, `qualities` | screenshot and painting bytes | yes, in `next.config.ts` | nothing to add |
 | `next/font/local` | fonts (102 KB) | yes, five Latin files and a 9 KB sign subset | nothing to add |
-| Brotli and immutable caching of `/_next/static` | transfer, repeat visits | Brotli yes (live `content-encoding: br`); immutable caching no: the live chunks came back `cache-control: public, max-age=0, must-revalidate`, while `next start` marks them `max-age=31536000, immutable` | `vercel.json` now sets the immutable header for `/_next/static/(.*)` (hashed file names, so safe). Verify after the next deploy by fetching a live chunk |
+| Brotli and immutable caching of `/_next/static` | transfer, repeat visits | yes, both: the live chunks (`/_next/static/immutable/chunks/…` in Next 16) come back `content-encoding: br` and `cache-control: public,max-age=31536000,immutable` | nothing to add. (An earlier probe that said `max-age=0` had fetched the wrong URL, a 404 page; a `vercel.json` rule added on that reading was removed again) |
 | Lighthouse CI / Unlighthouse | regression checks | partly: the Playwright scripts in `.playwright-mcp/*/scripts` | not adopted; no CI pipeline to put it in, and the lab scripts measure what matters here (first frame, words, draws) |
 | `@react-three/drei` / `postprocessing` | convenience | no | not adopted; the two custom passes are 150 lines and would cost more bytes than they save |
 
@@ -167,14 +168,22 @@ words are readable from 95 ms.
 - The phone layout was not re-measured: the other session's branch
   (mobile-3d) replaces it.
 
+## Follow-up (the two items left open)
+
+- Far grass (28% of the blades, the taller ones beyond 22 units) is now
+  built with the far scenery in the idle step after the first frame
+  instead of before it. The grass stage of the build drops from about
+  127–150 ms to 109–120 ms; screenshots through the walk-in (0.3, 0.9,
+  1.6 and 2.6 s after the first frame, `polish/walkin-*.jpg`) show no
+  visible pop-in.
+- "The arcade's interior shows the station's tower": not so. A dev-mode
+  screenshot taken mid-journey (StrictMode runs the camera planner twice
+  there) was read as the arrival. In the production build the journey
+  is: the park at 1 s, the swap behind the threshold at 2 s, inside the
+  arcade facing the cabinets from 3.5 s (`integration/arcade-journey-*.jpg`).
+  Nothing to change.
+
 ## Open
 
-- The arcade's own interior scene (`scenes/Arcade.tsx`) still draws the
-  station's tower behind and to its right, which matched the old plan.
-  It reads fine from inside, so it was left.
 - The per-stage build numbers vary by ±30% run to run on this machine;
   the direction is consistent, the exact figures are not.
-- Branch mobile-3d (the other session) and this branch both edit
-  `World3D.tsx` and `registry.ts`; the agreed resolutions are in the
-  session messages: on the mobile tier, skip the prebuild
-  (`if (!arrived || world.get().quality === "mobile") return;`).

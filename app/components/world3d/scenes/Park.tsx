@@ -27,7 +27,7 @@ import {
   mat,
 } from "../props";
 import { onIdle, timed } from "../idle";
-import { rng } from "../rng";
+import { rng, type Rng } from "../rng";
 import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
@@ -258,18 +258,19 @@ function buildPark(quality: "high" | "low") {
   root.add(buildBushes(bushes));
   mark("bushes");
 
-  // Grass: thick near the eye, thinner far off, a few blades between the
-  // stones of the paths
-  const blades = grass(quality === "low" ? 12000 : 42000, (rr) => {
-    const near = rr() < 0.72;
+  // Grass: thick near the eye, a few blades between the stones of the
+  // paths; the thinner, taller grass far off comes with the far scenery
+  // (`late`, below), after the first frame
+  const bladeCount = quality === "low" ? 12000 : 42000;
+  const placeBlade = (rr: Rng, near: boolean) => {
     const x = near ? rr.range(-22, 22) : rr.range(-48, 48);
     const z = near ? rr.range(-18, 22) : rr.range(-55, 26);
     if (blocked(x, z)) return null;
     if (onPath(x, z, -0.15)) return rr() < 0.04 ? { x, z, h: 0.18 } : null;
     const edge = onPath(x, z, 1.2) ? 0.6 : 1;
     return { x, z, h: rr.range(0.3, 0.75) * edge * (near ? 1 : 1.25) };
-  });
-  root.add(blades);
+  };
+  root.add(grass(Math.round(bladeCount * 0.72), (rr) => placeBlade(rr, true)));
   mark("grass");
 
   // Leaves on the ground, gathered along the edges of the paths
@@ -289,6 +290,7 @@ function buildPark(quality: "high" | "low") {
   const late = () => {
     for (const build of lateTrees) build();
     lateTrees.length = 0;
+    root.add(grass(Math.round(bladeCount * 0.28), (rr) => placeBlade(rr, false), 8));
     const cityR = rng(404);
     const spots = [];
     for (let i = 0; i < 46; i++) {
