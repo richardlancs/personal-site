@@ -26,12 +26,20 @@ import { overlay as scene, precip } from "./state";
 
 type Kind = "rain" | "snow";
 const COUNT: Record<Kind, { full: number; mobile: number }> = {
-  rain: { full: 1100, mobile: 450 },
-  snow: { full: 800, mobile: 340 },
+  rain: { full: 1100, mobile: 600 },
+  snow: { full: 800, mobile: 460 },
 };
 const LOOK: Record<Kind, { box: [number, number, number]; fall: number; drift: [number, number]; sway: number; size: [number, number]; alpha: number; round: number }> = {
   rain: { box: [30, 13, 30], fall: 7.5, drift: [1.2, -0.5], sway: 0, size: [0.03, 0.5], alpha: 0.3, round: 0 },
   snow: { box: [26, 11, 26], fall: 0.75, drift: [0.25, -0.1], sway: 0.35, size: [0.075, 0.075], alpha: 0.85, round: 1 },
+};
+// On the mobile tier the world is a band above the page's sheet, drawn
+// at a capped pixel ratio and a wider lens: the same drops would be a
+// pixel or two and read as nothing. Fewer of them, in a smaller box
+// nearer the lens, larger and surer.
+const MOBILE: Record<Kind, { box: [number, number, number]; size: [number, number]; alpha: number }> = {
+  rain: { box: [18, 10, 18], size: [0.07, 1.2], alpha: 0.7 },
+  snow: { box: [16, 9, 16], size: [0.15, 0.15], alpha: 1 },
 };
 const LINGER = 20; // seconds after it stops (or you go indoors) before it's taken down
 
@@ -76,7 +84,7 @@ const vertexShader = /* glsl */ `
     vec2 ndc = gl_Position.xy / gl_Position.w;
     vec2 a = smoothstep(uMask.xy - 0.08, uMask.xy + 0.02, ndc);
     vec2 b = 1.0 - smoothstep(uMask.zw - 0.02, uMask.zw + 0.08, ndc);
-    float clear = max(a.x * a.y * b.x * b.y, smoothstep(uTop - 0.1, uTop, ndc.y));
+    float clear = max(a.x * a.y * b.x * b.y, smoothstep(uTop - 0.04, uTop, ndc.y));
     float near = smoothstep(1.6, 3.6, -mv.z);
     vAlpha = uAlpha * edge * near * (1.0 - sheltered) * (1.0 - clear * 0.92) * (0.55 + 0.45 * aSeed.w);
     vUv = vec2(position.x + 0.5, position.y);
@@ -99,11 +107,12 @@ const fragmentShader = /* glsl */ `
     #include <colorspace_fragment>
   }`;
 
-type Field = { mesh: THREE.Mesh; geometry: THREE.InstancedBufferGeometry; material: THREE.ShaderMaterial; full: number; idle: number };
+type Field = { mesh: THREE.Mesh; geometry: THREE.InstancedBufferGeometry; material: THREE.ShaderMaterial; full: number; alpha: number; idle: number };
 
 function build(kind: Kind, quality: Quality): Field {
-  const full = quality === "mobile" ? COUNT[kind].mobile : COUNT[kind].full;
-  const look = LOOK[kind];
+  const mobile = quality === "mobile";
+  const full = mobile ? COUNT[kind].mobile : COUNT[kind].full;
+  const look = mobile ? { ...LOOK[kind], ...MOBILE[kind] } : LOOK[kind];
   const r = rng(kind === "rain" ? 811 : 812);
   const geometry = new THREE.InstancedBufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(new Float32Array([-0.5, 0, 0, 0.5, 0, 0, 0.5, 1, 0, -0.5, 1, 0]), 3));
@@ -144,7 +153,7 @@ function build(kind: Kind, quality: Quality): Field {
   mesh.frustumCulled = false;
   mesh.renderOrder = 2;
   mesh.name = `precip:${kind}`;
-  return { mesh, geometry, material, full, idle: 0 };
+  return { mesh, geometry, material, full, alpha: look.alpha, idle: 0 };
 }
 
 function dispose(scene: THREE.Scene, f: Field) {
@@ -175,7 +184,8 @@ export default function Precipitation({ quality }: { quality: Quality }) {
     const any = precip.rain > 0.001 || precip.snow > 0.001 || fields.current.rain || fields.current.snow;
     if (!any) return;
 
-    // Where the words are, measured now and then rather than every frame
+    // Where the words and the controls are, measured now and then rather
+    // than every frame
     if (t.frame++ % 30 === 0) {
       const canvas = gl.domElement.getBoundingClientRect();
       const intro = document.querySelector<HTMLElement>(".park-intro");
@@ -188,7 +198,11 @@ export default function Precipitation({ quality }: { quality: Quality }) {
       } else {
         t.mask.set(2, 2, 3, 3);
       }
-      t.top = canvas.height > 0 ? 1 - (2 * 64) / canvas.height : 0.88;
+      // Clear below the corner controls (two rows on a phone): their lowest
+      // edge, and a little more
+      let bar = 0;
+      for (const el of document.querySelectorAll(".world-controls > *")) bar = Math.max(bar, el.getBoundingClientRect().bottom);
+      t.top = canvas.height > 0 ? 1 - (2 * (Math.max(bar - canvas.top, 0) + 6)) / canvas.height : 0.88;
     }
 
     const still = world.get().still;
@@ -213,7 +227,7 @@ export default function Precipitation({ quality }: { quality: Quality }) {
       f.idle = 0;
       f.geometry.instanceCount = Math.ceil(f.full * Math.min(1, amount * 1.4) * (still ? 0.5 : 1));
       const u = f.material.uniforms;
-      u.uAlpha.value = LOOK[kind].alpha * Math.min(1, amount);
+      u.uAlpha.value = f.alpha * Math.min(1, amount);
       // The box sits a little ahead of the camera, where it's looking
       const box = u.uBox.value as THREE.Vector3;
       (u.uCenter.value as THREE.Vector3).copy(camera.position).addScaledVector(t.dir, box.x * 0.32);

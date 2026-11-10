@@ -151,10 +151,11 @@ export const WEATHER: Record<WeatherPreset, WeatherLook> = {
     cover: 0.3, cloudDark: 0, sunDisc: 1,
     wet: 0, snow: 0, rain: 0, flakes: 0,
   },
-  // Diffuse light, a muted sky, gentle haze
+  // Diffuse light, a muted sky, gentle haze: a soft warm grey, so it never
+  // reads as snow's cold one
   cloudy: {
-    sunScale: 0.36, hemiScale: 1.1, grey: 0.45, tint: [0.97, 0.99, 1.03],
-    skyGrey: 0.7, skyLift: 0.98, skyTint: [0.98, 1, 1.03],
+    sunScale: 0.36, hemiScale: 1.1, grey: 0.45, tint: [1, 0.99, 0.98],
+    skyGrey: 0.7, skyLift: 0.98, skyTint: [1.03, 1, 0.95],
     fogGrey: 0.5, fogLift: 0.92, fogNear: 0.8, fogFar: 0.82,
     cover: 0.9, cloudDark: 0.12, sunDisc: 0.2,
     wet: 0, snow: 0, rain: 0, flakes: 0,
@@ -167,12 +168,13 @@ export const WEATHER: Record<WeatherPreset, WeatherLook> = {
     cover: 1, cloudDark: 0.45, sunDisc: 0.04,
     wet: 1, snow: 0, rain: 1, flakes: 0,
   },
-  // Cool diffuse light, a pale sky, snow lying on what faces up
+  // Cool diffuse light, a cold slate-blue sky the flakes show against,
+  // pale air low down, snow lying on what faces up
   snow: {
-    sunScale: 0.32, hemiScale: 1.0, grey: 0.6, tint: [0.95, 0.99, 1.07],
-    skyGrey: 0.8, skyLift: 0.96, skyTint: [0.97, 0.99, 1.04],
-    fogGrey: 0.7, fogLift: 0.96, fogNear: 0.72, fogFar: 0.82,
-    cover: 0.95, cloudDark: 0.08, sunDisc: 0.12,
+    sunScale: 0.32, hemiScale: 1.0, grey: 0.6, tint: [0.94, 0.99, 1.09],
+    skyGrey: 0.8, skyLift: 0.86, skyTint: [0.9, 0.98, 1.16],
+    fogGrey: 0.7, fogLift: 1, fogNear: 0.72, fogFar: 0.82,
+    cover: 0.95, cloudDark: 0.3, sunDisc: 0.12,
     wet: 0, snow: 1, rain: 0, flakes: 1,
   },
 };

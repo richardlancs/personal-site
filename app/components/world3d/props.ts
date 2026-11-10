@@ -3,6 +3,7 @@ import { at, blob, box, buildVine, merge, tube, wire } from "./geometry";
 import { mesh, paint, windUniforms } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
+import { envUniforms } from "./environment";
 import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
 // Props: the things people left behind, modelled from parts. Each builder
@@ -300,6 +301,7 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
       uSky: { value: new THREE.Color(sky) },
       uSplash: { value: 0 }, // 0 to 1: how hard water is falling into it
       ...waterUniforms, // the weather and the hour (atmosphere/state.ts)
+      uWet: envUniforms.uWet, // rain falling on it
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
@@ -317,18 +319,37 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
       uniform float uSplash;
       uniform vec3 uSkyTint;
       uniform float uLight;
+      uniform vec3 uSkyNow;
+      uniform float uWet;
       varying vec3 vWorld;
       varying vec2 vLocal;
+      float wh(vec2 c) { return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
       void main() {
         vec2 p = vWorld.xz;
         float ripple = sin(p.x * 3.1 + uTime * 0.9) * sin(p.y * 2.7 - uTime * 0.7) + sin(length(p) * 6.0 - uTime * 1.3) * 0.5;
         // Rings spreading out from where the water comes down
         float d = length(vLocal);
         ripple += sin(d * 11.0 - uTime * 7.0) * uSplash * 1.4 * smoothstep(2.9, 0.6, d);
+        // In rain: small rings where drops land, each opening and fading on
+        // its own beat (held still with the world's clock in still view)
+        float rings = 0.0;
+        if (uWet > 0.0) {
+          vec2 g = p * 1.3;
+          vec2 cell = floor(g);
+          float h = wh(cell);
+          float t = fract(uTime * 0.55 + h);
+          vec2 at = vec2(wh(cell + 3.7), wh(cell + 9.1)) * 0.6 + 0.2;
+          float r = length(fract(g) - at);
+          rings = smoothstep(0.045, 0.0, abs(r - t * 0.42)) * (1.0 - t) * uWet;
+        }
         vec3 view = normalize(cameraPosition - vWorld);
         float fres = pow(1.0 - max(view.y, 0.0), 3.0);
-        vec3 col = mix(uColor * uLight, uSky * uSkyTint, 0.08 + fres * 0.3 + ripple * 0.025);
-        col += vec3(1.0, 0.92, 0.75) * smoothstep(1.0, 1.45, ripple) * 0.08 * uLight;
+        // A wet pool goes dark and holds a little of the grey sky it's under,
+        // broken by rings; a dry one the warm sky it was painted with
+        vec3 sky = mix(uSky * uSkyTint, uSkyNow, uWet * 0.85);
+        vec3 deep = mix(uColor, uSkyNow * 0.3, 0.35 * uWet) * uLight * (1.0 - 0.15 * uWet);
+        vec3 col = mix(deep, sky, 0.07 + fres * (0.3 - 0.12 * uWet) + ripple * 0.025 * (1.0 + uWet) + rings * 0.5);
+        col += vec3(1.0, 0.92, 0.75) * smoothstep(1.0, 1.45, ripple) * 0.08 * uLight * (1.0 - uWet);
         gl_FragColor = vec4(col, 0.94);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

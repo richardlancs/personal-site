@@ -93,7 +93,8 @@ const PAINTED_HORIZON_INV = (() => {
   return new THREE.Color(1 / c.r, 1 / c.g, 1 / c.b);
 })();
 const SNOW_BOUNCE: RGB = [0.78, 0.8, 0.85];
-const RAIN_TONE: RGB = [0.62, 0.68, 0.78];
+// Rain a little darker and bluer than the air, so it shows against the sky
+const RAIN_TONE: RGB = [0.5, 0.56, 0.68];
 const lost = (tagged: Tagged[]) => {
   for (const t of tagged) if (!t.obj.parent) return true;
   return false;
@@ -268,6 +269,7 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         u.uHorizon.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
         // The fountain holds this sky, against the one it was painted with
         waterUniforms.uSkyTint.value.copy(u.uHorizon.value).multiply(PAINTED_HORIZON_INV);
+        waterUniforms.uSkyNow.value.copy(u.uHorizon.value);
         u.uSun.value.setRGB(d.glow[0], d.glow[1], d.glow[2], THREE.SRGBColorSpace);
         cloudColor(c, d.cloudLit, w, night);
         u.uCloudLit.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
@@ -306,7 +308,7 @@ export default function Atmosphere({ active }: { active: SceneId }) {
     // colour, snow near white, both dimmer at night
     precip.rain = indoor ? 0 : w.rain;
     precip.snow = indoor ? 0 : w.flakes;
-    mixInto(c2, s.air, RAIN_TONE, 0.4);
+    mixInto(c2, s.air, RAIN_TONE, 0.55);
     precip.rainColor.setRGB(c2[0], c2[1], c2[2], THREE.SRGBColorSpace);
     const lit = 1 - 0.5 * night;
     precip.snowColor.setRGB(0.95 * lit, 0.96 * lit, Math.min(1, 1.0 * lit + 0.04 * night), THREE.SRGBColorSpace);

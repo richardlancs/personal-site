@@ -9,6 +9,7 @@ import * as THREE from "three";
 export const waterUniforms = {
   uSkyTint: { value: new THREE.Color(1, 1, 1) },
   uLight: { value: 1 },
+  uSkyNow: { value: new THREE.Color(1, 1, 1) }, // the sky low down, as it is now (what a wet pool holds)
 };
 
 // What's drawn over the painted scene, after the brushwork (Painterly.tsx):
