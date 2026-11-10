@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { mergeGeometries, mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { mesh, paint } from "./paint";
 import { rng, type Rng } from "./rng";
-import { leafCluster, type Palette } from "./textures";
+import { leafCluster } from "./textures";
+import { crownClusters, foliageGeometry, foliageMaterial, type Foliage } from "./vegetation/foliage";
+import { vegMesh } from "./vegetation/shader";
 
 // The modeling toolkit: everything in the world is built from these, from
 // seeds, so it comes out the same every time.
@@ -116,7 +118,7 @@ export function blob(r: Rng, radius: number, squash = 0.8, lumps = 0.22, detail 
 // Trees
 
 export type TreeKind = {
-  palette: Palette;
+  palette: Foliage;
   fall?: THREE.ColorRepresentation; // the colour its leaves take as they fall (multiplies the leaf texture)
   height: number;
   trunk: number; // radius at the base
@@ -124,15 +126,15 @@ export type TreeKind = {
   levels: number;
   clump: number; // size of the leaf masses
   bark?: THREE.ColorRepresentation;
-  inner?: THREE.ColorRepresentation; // the shaded mass inside the leaves
-  density?: number;
+  squash?: number; // how flat its leaf masses are (pines grow in pads)
+  satellites?: number; // smaller masses around each one, for a lobed outline
 };
 
 export const treeKinds = {
-  zelkova: { fall: "#b8cf72", palette: "green", height: 9, trunk: 0.38, spread: 4.5, levels: 3, clump: 1.7, bark: "#6b5a48", inner: "#2f5838" },
-  ginkgo: { fall: "#fff08a", palette: "ginkgo", height: 8, trunk: 0.3, spread: 2.8, levels: 3, clump: 1.4, bark: "#6e5e4c", inner: "#a88a34" },
-  maple: { fall: "#ffffff", palette: "maple", height: 6, trunk: 0.25, spread: 3.2, levels: 3, clump: 1.3, bark: "#5e4a3c", inner: "#9a4a24" },
-  pine: { fall: "#a3b47a", palette: "bush", height: 10, trunk: 0.32, spread: 3.6, levels: 2, clump: 1.6, bark: "#5a4636", inner: "#264a34", density: 1.2 },
+  zelkova: { fall: "#b8cf72", palette: "green", height: 9, trunk: 0.38, spread: 4.5, levels: 3, clump: 1.55, bark: "#6b5a48", satellites: 2, squash: 0.85 },
+  ginkgo: { fall: "#fff08a", palette: "ginkgo", height: 8, trunk: 0.3, spread: 2.8, levels: 3, clump: 1.3, bark: "#6e5e4c", satellites: 2, squash: 0.95 },
+  maple: { fall: "#ffffff", palette: "maple", height: 6, trunk: 0.25, spread: 3.2, levels: 3, clump: 1.2, bark: "#5e4a3c", satellites: 2, squash: 0.72 },
+  pine: { fall: "#a3b47a", palette: "pine", height: 10, trunk: 0.32, spread: 3.6, levels: 2, clump: 1.55, bark: "#5a4636", satellites: 2, squash: 0.5 },
 } satisfies Record<string, TreeKind>;
 
 type Clump = { center: THREE.Vector3; radius: number };
@@ -144,14 +146,15 @@ function grow(r: Rng, kind: TreeKind) {
   const lean = v(r.range(-0.4, 0.4), 0, r.range(-0.4, 0.4));
   const trunkPts = [v(0, -0.2, 0), v(lean.x * 0.2, trunkTop * 0.4, lean.z * 0.2), v(lean.x * 0.6, trunkTop * 0.8, lean.z * 0.6), v(lean.x, trunkTop, lean.z)];
   // Roots flare at the bottom
-  wood.push(tube(trunkPts, (t) => kind.trunk * (1 - t * 0.45) * (1 + Math.max(0, 0.18 - t) * 4), 10, 8));
+  wood.push(tube(trunkPts, (t) => kind.trunk * (1 - t * 0.45) * (1 + Math.max(0, 0.18 - t) * 4), 12, 10));
 
   const branch = (start: THREE.Vector3, dir: THREE.Vector3, length: number, radius: number, depth: number) => {
     const end = start.clone().add(dir.clone().multiplyScalar(length));
     // Branches bend back toward the light
     end.y += length * 0.15 * (depth + 1);
     const mid = start.clone().lerp(end, 0.5).add(v(r.range(-0.3, 0.3), r.range(0, 0.4), r.range(-0.3, 0.3)).multiplyScalar(length * 0.3));
-    wood.push(tube([start, mid, end], (t) => radius * (1 - t * 0.6), 6, 5));
+    // Tapering to a twig, so no cut end shows where it meets the leaves
+    wood.push(tube([start, mid, end], (t) => radius * (1 - t * 0.78), 8, 6));
     if (depth >= kind.levels - 1) {
       clumps.push({ center: end.clone().add(v(0, kind.clump * 0.3, 0)), radius: kind.clump * r.range(0.8, 1.2) });
       return;
@@ -247,18 +250,17 @@ export function leafCards(r: Rng, clumps: Clump[], density = 1, size = 1) {
   return g;
 }
 
-const treeMaterials = new Map<string, { wood: THREE.MeshLambertMaterial; inner: THREE.MeshLambertMaterial; leaves: THREE.MeshLambertMaterial }>();
+// Ivy keeps its leaf cards: small leaves along a wall, seen close
+const vineMaterials = new Map<number, { wood: THREE.MeshLambertMaterial; leaves: THREE.MeshLambertMaterial }>();
 
-function materialsFor(kind: TreeKind, height: number) {
-  const key = `${kind.palette}-${kind.bark}-${kind.inner}-${height}`;
-  let m = treeMaterials.get(key);
+function vineMaterialsFor(height: number) {
+  let m = vineMaterials.get(height);
   if (!m) {
     const wind = { base: height * 0.35, height: height * 0.65 };
     m = {
-      wood: paint({ color: kind.bark ?? "#6b5a48", brush: 0.35, brushScale: 2, moss: 0.4, wind: { amp: 0.12, ...wind, flutter: 0 } }),
-      inner: paint({ color: kind.inner ?? "#3e5228", brush: 0.3, brushScale: 0.7, wind: { amp: 0.32, ...wind, flutter: 0 } }),
+      wood: paint({ color: "#4a3a2c", brush: 0.35, brushScale: 2, moss: 0.4, wind: { amp: 0.12, ...wind, flutter: 0 } }),
       leaves: paint({
-        map: leafCluster(kind.palette),
+        map: leafCluster("ivy"),
         // A low cut with alpha-to-coverage: the painted edge of each
         // cluster fades instead of breaking into jagged steps
         alphaTest: 0.12,
@@ -269,62 +271,68 @@ function materialsFor(kind: TreeKind, height: number) {
         wind: { amp: 0.34, ...wind, flutter: 1 },
       }),
     };
-    treeMaterials.set(key, m);
+    vineMaterials.set(height, m);
   }
   return m;
 }
 
-// A whole tree: trunk and branches, a dark mass inside the crown so it
-// never looks hollow, and leaf cards around it
-export function buildTree(seed: number, kind: TreeKind, { shadows = true, scale = 1 } = {}) {
+const barkMaterials = new Map<string, THREE.MeshLambertMaterial>();
+function barkFor(bark: THREE.ColorRepresentation, height: number) {
+  const key = `${bark}-${height}`;
+  let m = barkMaterials.get(key);
+  if (!m) {
+    m = paint({ color: bark, brush: 0.35, brushScale: 2, moss: 0.4, wind: { amp: 0.12, base: height * 0.35, height: height * 0.65, flutter: 0 } });
+    barkMaterials.set(key, m);
+  }
+  return m;
+}
+
+// A whole tree: trunk and branches, and its crown of leaf masses
+// (vegetation/foliage.ts). `far` trees are built with simpler masses.
+export function buildTree(seed: number, kind: TreeKind, { shadows = true, scale = 1, far = false } = {}) {
   const r = rng(seed);
   const { wood, clumps } = grow(r, kind);
-  const m = materialsFor(kind, kind.height);
+  const crown = crownClusters(r, clumps, { satellites: kind.satellites ?? 3, squash: kind.squash ?? 0.85 });
   const group = new THREE.Group();
-  group.add(mesh(wood, m.wood, { cast: shadows }));
-  const inner = merge(clumps.map((c) => blob(r, c.radius * 0.52, 0.8, 0.4, 2).translate(c.center.x, c.center.y, c.center.z)));
-  group.add(mesh(inner, m.inner, { cast: shadows }));
-  group.add(mesh(leafCards(r, clumps, (kind.density ?? 1) * 1.35, 1.15), m.leaves, { cast: shadows }));
+  group.add(mesh(wood, barkFor(kind.bark ?? "#6b5a48", kind.height), { cast: shadows }));
+  group.add(vegMesh(foliageGeometry(r, [crown], { detail: far ? 1 : 2, cards: far ? 0.6 : 1 }), foliageMaterial(kind.palette, kind.height), shadows));
   group.scale.setScalar(scale);
   return group;
 }
 
-// A low bush of leaves
-export function buildBush(seed: number, size: number, palette: Palette = "bush", inner: THREE.ColorRepresentation = "#3b4d26") {
-  const r = rng(seed);
-  const clumps: Clump[] = [];
+// The leaf masses of one bush, around its own centre
+function bushCrown(r: Rng, size: number) {
+  const ends: Clump[] = [];
   const n = Math.round(r.range(2, 4));
-  for (let i = 0; i < n; i++) clumps.push({ center: v(r.range(-size, size) * 0.6, size * r.range(0.45, 0.7), r.range(-size, size) * 0.6), radius: size * r.range(0.55, 0.8) });
-  const m = materialsFor({ palette, height: size * 2, trunk: 0, spread: 0, levels: 0, clump: 0, bark: "#000", inner }, size * 2);
+  for (let i = 0; i < n; i++) ends.push({ center: v(r.range(-size, size) * 0.6, size * r.range(0.45, 0.7), r.range(-size, size) * 0.6), radius: size * r.range(0.55, 0.8) });
+  return crownClusters(r, ends, { satellites: 2, squash: 0.8 });
+}
+
+// A low bush of leaves
+export function buildBush(seed: number, size: number, palette: "bush" | "maple" = "bush") {
+  const r = rng(seed);
   const group = new THREE.Group();
-  group.add(mesh(merge(clumps.map((c) => blob(r, c.radius * 0.62, 0.75, 0.25, 2).translate(c.center.x, c.center.y, c.center.z))), m.inner));
-  group.add(mesh(leafCards(r, clumps, 1.5, 1.15), m.leaves));
+  group.add(vegMesh(foliageGeometry(r, [bushCrown(r, size)]), foliageMaterial(palette, size * 2, 0.14), false));
   return group;
 }
 
-// All the bushes of a place at once: the bushes of each palette share two
-// meshes (the dark mass inside, the leaves), so a park's worth of bushes
-// is a few draws instead of two for each. Nothing is lost: a bush never
-// moves on its own (the wind is in the material).
-export function buildBushes(bushes: { seed: number; size: number; palette?: Palette; x: number; z: number }[], inner: THREE.ColorRepresentation = "#3b4d26") {
-  const byPalette = new Map<Palette, { inner: THREE.BufferGeometry[]; leaves: THREE.BufferGeometry[]; height: number }>();
+// All the bushes of a place at once: the bushes of each palette share one
+// mesh, so a park's worth of bushes is a draw or two. Nothing is lost: a
+// bush never moves on its own (the wind is in the material).
+export function buildBushes(bushes: { seed: number; size: number; palette?: "bush" | "maple"; x: number; z: number }[]) {
+  const byPalette = new Map<"bush" | "maple", { crowns: Clump[][]; height: number }>();
   for (const bush of bushes) {
     const palette = bush.palette ?? "bush";
-    const r = rng(bush.seed);
-    const clumps: Clump[] = [];
-    const n = Math.round(r.range(2, 4));
-    for (let i = 0; i < n; i++) clumps.push({ center: v(r.range(-bush.size, bush.size) * 0.6, bush.size * r.range(0.45, 0.7), r.range(-bush.size, bush.size) * 0.6), radius: bush.size * r.range(0.55, 0.8) });
-    const entry = byPalette.get(palette) ?? { inner: [], leaves: [], height: 0 };
-    entry.inner.push(merge(clumps.map((c) => blob(r, c.radius * 0.62, 0.75, 0.25, 2).translate(c.center.x, c.center.y, c.center.z))).translate(bush.x, 0, bush.z));
-    entry.leaves.push(leafCards(r, clumps, 1.5, 1.15).translate(bush.x, 0, bush.z));
+    const crown = bushCrown(rng(bush.seed), bush.size);
+    for (const c of crown) c.center.add(v(bush.x, 0, bush.z));
+    const entry = byPalette.get(palette) ?? { crowns: [], height: 0 };
+    entry.crowns.push(crown);
     entry.height = Math.max(entry.height, bush.size * 2);
     byPalette.set(palette, entry);
   }
   const group = new THREE.Group();
   for (const [palette, entry] of byPalette) {
-    const m = materialsFor({ palette, height: entry.height, trunk: 0, spread: 0, levels: 0, clump: 0, bark: "#000", inner }, entry.height);
-    group.add(mesh(merge(entry.inner), m.inner));
-    group.add(mesh(merge(entry.leaves), m.leaves));
+    group.add(vegMesh(foliageGeometry(rng(entry.crowns.length), entry.crowns), foliageMaterial(palette, entry.height, 0.14), false));
   }
   return group;
 }
@@ -341,7 +349,7 @@ export function buildVine(seed: number, points: THREE.Vector3[], leafSize = 0.35
     clumps.push({ center: p.add(v(r.range(-0.08, 0.08), r.range(-0.08, 0.08), r.range(-0.08, 0.08))), radius: leafSize * r.range(0.7, 1.3) });
   }
   const top = Math.max(...points.map((p) => p.y));
-  const m = materialsFor({ palette: "ivy", height: top + 1, trunk: 0, spread: 0, levels: 0, clump: 0, bark: "#4a3a2c", inner: "#2e4220" }, top + 1);
+  const m = vineMaterialsFor(top + 1);
   const group = new THREE.Group();
   group.add(mesh(tube(points, () => 0.02, steps, 4), m.wood, { cast: false }));
   group.add(mesh(leafCards(r, clumps, 1.4, 1.1), m.leaves, { cast: false }));

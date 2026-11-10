@@ -5,8 +5,10 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { anchors } from "../anchors";
 import { buildArcade, buildCity, buildHills, buildPavilion, buildRailing, buildStation, buildWorkshop } from "../buildings";
-import { blob, buildBushes, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
+import { buildBushes, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
+import { crownClusters, foliageGeometry, foliageMaterial, type Cluster } from "../vegetation/foliage";
+import { vegMesh } from "../vegetation/shader";
 import {
   M,
   buildBench,
@@ -24,7 +26,6 @@ import {
   buildSwing,
   buildVending,
   buildWires,
-  mat,
 } from "../props";
 import { onIdle, timed } from "../idle";
 import { rng, type Rng } from "../rng";
@@ -233,7 +234,8 @@ function buildPark(quality: "high" | "low") {
     const k: TreeKind = treeKinds[kind];
     const ry = r() * Math.PI * 2;
     const build = () => {
-      const t = buildTree(100 + i, k, { shadows: Math.hypot(x, z - 4) < 34 });
+      const near = Math.hypot(x, z - 4) < 34;
+      const t = buildTree(100 + i, k, { shadows: near, far: !near || quality === "low" });
       t.position.set(x, 0, z);
       t.scale.setScalar(scale);
       t.rotation.y = ry;
@@ -304,14 +306,18 @@ function buildPark(quality: "high" | "low") {
     }
     root.add(buildCity(7, spots));
     root.add(buildHills());
-    // Dark masses of trees between the park and the city
-    const belt: THREE.BufferGeometry[] = [];
+    // Stands of trees between the park and the city: each a crown of
+    // leaf masses, lit like the near trees, all in one mesh
+    const belt: Cluster[][] = [];
     for (let i = 0; i < 70; i++) {
       const a = cityR.range(-Math.PI * 1.1, Math.PI * 0.1);
       const d = cityR.range(46, 62);
-      belt.push(blob(cityR, cityR.range(3, 6), 0.9, 0.45, 2).translate(Math.cos(a) * d, cityR.range(3, 6), Math.sin(a) * d - 6));
+      const size = cityR.range(3, 6);
+      const at = v(Math.cos(a) * d, cityR.range(3, 6), Math.sin(a) * d - 6);
+      const ends = [0, 1, 2].map((k) => ({ center: at.clone().add(v(Math.cos(a + k * 2.1) * size * 0.45, k * size * 0.18, Math.sin(a + k * 2.1) * size * 0.45)), radius: size * cityR.range(0.55, 0.7) }));
+      belt.push(crownClusters(cityR, ends, { satellites: 2, squash: 0.85 }));
     }
-    root.add(mesh(merge(belt), mat("treeBelt", () => paint({ color: "#4e6632", brush: 0.45, brushScale: 0.3 })), { cast: false }));
+    root.add(vegMesh(foliageGeometry(cityR, belt, { detail: 1, cards: 0.35 }), foliageMaterial("belt", 10, 0.1), false));
   };
 
   root.add(buildDust(quality === "low" ? 50 : 140, [26, 6, 26], [-2, 3, 6]));
