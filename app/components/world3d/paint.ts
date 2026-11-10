@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { envUniforms } from "./environment";
 
 // The world's one surface: a Lambert material made to look painted.
 //
@@ -11,6 +12,10 @@ import * as THREE from "three";
 // - wind: geometry bends by its height and its place in the world, so
 //   each branch, bush and blade moves on its own; gusts travel across the
 //   world as waves (see windUniforms)
+// - weather and the hour (environment.ts, driven by atmosphere/): wet
+//   surfaces darken, and those that face up catch a little of the sky;
+//   snow lies in drifts on what faces up; lit windows and lamps glow
+//   brighter as night comes (`glow`)
 
 // Shared by every material: time, and the gust coming through
 export const windUniforms = {
@@ -118,6 +123,13 @@ export type PaintOptions = {
   rust?: number; // 0 to 1: rust blooms (for painted metal)
   wind?: { amp: number; base?: number; height?: number; flutter?: number };
   fog?: boolean;
+  // How strongly the emissive glows by day and at night (a multiplier on
+  // emissiveIntensity, following envUniforms.uNight): a lit window is
+  // { day: 1, night: 2.4 }, a lamp that's only on at night { day: 0, night: 1 }
+  glow?: { day?: number; night?: number };
+  // How much rain and snow show on this surface (0 none .. 1, the default)
+  wet?: number;
+  snow?: number;
 };
 
 const mossColor = new THREE.Color("#5f7a3a");
@@ -153,12 +165,16 @@ export function paint(options: PaintOptions = {}): THREE.MeshLambertMaterial {
     uWindBase: { value: options.wind?.base ?? 0 },
     uWindHeight: { value: options.wind?.height ?? 1 },
     uFlutter: { value: options.wind?.flutter ?? 0.5 },
+    uGlowDay: { value: options.glow?.day ?? 1 },
+    uGlowNight: { value: options.glow?.night ?? 1 },
+    uWetAmt: { value: options.wet ?? 1 },
+    uSnowAmt: { value: options.snow ?? 1 },
   };
   const wind = !!options.wind;
   material.userData.paint = uniforms;
 
   material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, uniforms, windUniforms);
+    Object.assign(shader.uniforms, uniforms, windUniforms, envUniforms);
     shader.vertexShader = shader.vertexShader
       .replace(
         "#include <common>",
@@ -189,11 +205,24 @@ uniform vec3 uMossColor;
 uniform float uGrime;
 uniform float uGrimeHeight;
 uniform float uRust;
+uniform float uGlowDay;
+uniform float uGlowNight;
+uniform float uWetAmt;
+uniform float uSnowAmt;
+uniform float uWet;
+uniform float uSnow;
+uniform float uNight;
 ${NOISE}`,
+      )
+      .replace(
+        "#include <emissivemap_fragment>",
+        `#include <emissivemap_fragment>
+totalEmissiveRadiance *= mix(uGlowDay, uGlowNight, uNight);`,
       )
       .replace(
         "#include <color_fragment>",
         `#include <color_fragment>
+float phWet = 0.0;
 {
   vec3 p = vPhWorld * uBrushScale;
   float n = ph_fbm(p);
@@ -218,6 +247,24 @@ ${NOISE}`,
     float g = low * 0.7 + smoothstep(0.55, 0.85, streak) * 0.45;
     diffuseColor.rgb *= 1.0 - clamp(g * uGrime, 0.0, 0.65) * 0.55;
   }
+  // Rain: everything darkens as it soaks; flat ground holds shallow
+  // puddles, and what faces up keeps a little sheen (below)
+  float wet = uWet * uWetAmt;
+  if (wet > 0.0) {
+    float up = smoothstep(0.35, 0.9, vPhNormal.y);
+    float puddle = smoothstep(0.56, 0.7, ph_noise(vPhWorld * 0.32 + 4.0)) * up;
+    diffuseColor.rgb *= 1.0 - wet * (0.16 + 0.12 * up + 0.14 * puddle);
+    phWet = wet * up * (0.3 + 0.7 * puddle);
+  }
+  // Snow: a light cover in drifts on what faces up, thinner where the
+  // drift runs out
+  float snow = uSnow * uSnowAmt;
+  if (snow > 0.0) {
+    float up = smoothstep(0.5, 0.92, vPhNormal.y);
+    float drift = ph_fbm(vPhWorld * 0.55 + 13.0) + (n2 - 0.5) * 0.12;
+    float cover = up * smoothstep(0.62 - snow * 0.3, 0.7 - snow * 0.26, drift);
+    diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.89, 0.94), cover * 0.88);
+  }
 }`,
       )
       .replace(
@@ -236,6 +283,17 @@ ${NOISE}`,
   outgoingLight = mix(cool, warm, smoothstep(0.3, 1.05, shade));
   float grey = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
   outgoingLight = mix(vec3(grey), outgoingLight, 1.12);
+  // A wet surface that faces up catches the sky at a glancing angle:
+  // restrained, a sheen and not a mirror
+  if (phWet > 0.0) {
+    float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
+    float sheen = pow(1.0 - facing, 4.0);
+    vec3 skyLight = vec3(0.5, 0.55, 0.62);
+    #if NUM_HEMI_LIGHTS > 0
+      skyLight = hemisphereLights[0].skyColor;
+    #endif
+    outgoingLight += skyLight * sheen * phWet * 0.2;
+  }
 }
 #include <opaque_fragment>`,
       );

@@ -73,11 +73,18 @@ export function SunLight({
   size: number;
   quality: "high" | "low";
 }) {
+  const [px, py, pz] = position;
+  const [tx, ty, tz] = target;
+  // (keyed on the numbers: the scenes pass fresh arrays on every render,
+  // and a new light each time would lose what the atmosphere set on it)
   const light = useMemo(() => {
     const l = new THREE.DirectionalLight(color, intensity);
-    l.position.set(...position);
-    l.target.position.set(...target);
+    l.position.set(px, py, pz);
+    l.target.position.set(tx, ty, tz);
     l.castShadow = true;
+    // The weather and the hour change its colour and strength
+    // (atmosphere/Atmosphere.tsx), from these as the place's own
+    l.userData.atmos = "sun";
     const res = world.get().quality === "mobile" ? 512 : quality === "low" ? 1024 : 2048;
     l.shadow.mapSize.set(res, res);
     const c = l.shadow.camera;
@@ -91,7 +98,7 @@ export function SunLight({
     l.shadow.normalBias = 0.04;
     l.shadow.radius = 4;
     return l;
-  }, [color, intensity, position, target, size, quality]);
+  }, [color, intensity, px, py, pz, tx, ty, tz, size, quality]);
   light.castShadow = active;
   return (
     <>
@@ -100,6 +107,13 @@ export function SunLight({
     </>
   );
 }
+
+// Tags for the lights the weather and the hour change (atmosphere/
+// Atmosphere.tsx), as userData: the place's sky light, and lamps that
+// come on at night (their intensity is what they give at full night).
+// One object each, so a render never hands three.js a new one.
+export const HEMI = { atmos: "hemi" } as const;
+export const NIGHT_LAMP = { atmos: "lamp", night: 6 } as const;
 
 type Opening = { x: number; y: number; w: number; h: number };
 type WallSpec = { openings?: Opening[] };

@@ -11,7 +11,7 @@ import { M, buildBeam, buildDust, buildSky, mat } from "../props";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { planks, plaster, textPanel } from "../textures";
-import { Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
+import { HEMI, Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const NOTEBOOK = { x: 1.2, y: 0.8, z: -1.3 };
@@ -295,7 +295,7 @@ export default function Library({ active, quality }: SceneProps) {
     <group visible={active}>
       <primitive object={built.root} />
       <SunLight active={active} position={[16, 9, 4]} target={[1, 0.8, -1]} color="#ffd29a" intensity={2.8} size={8} quality={quality} />
-      <hemisphereLight args={["#f3e2c2", "#6a5440", 1.3]} />
+      <hemisphereLight userData={HEMI} args={["#f3e2c2", "#6a5440", 1.3]} />
       <pointLight position={[NOTEBOOK.x - 0.5, 1.15, NOTEBOOK.z - 0.1]} color="#ffc77a" intensity={2.4} distance={4} decay={1.6} />
       <pointLight position={[0, 3, 1]} color="#ffcf8f" intensity={1.6} distance={9} decay={1.5} />
       {active && (

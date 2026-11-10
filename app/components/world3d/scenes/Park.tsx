@@ -32,7 +32,7 @@ import { rng, type Rng } from "../rng";
 import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
-import { Hitbox, SunLight, type SceneProps } from "./common";
+import { HEMI, Hitbox, NIGHT_LAMP, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -159,6 +159,7 @@ function buildPark(quality: "high" | "low") {
     bench.rotation.y = ry;
     root.add(bench);
   }
+  const lampHeads: [number, number][] = [];
   const vending = buildVending();
   vending.position.set(11.1, 0, -0.2);
   vending.rotation.y = -0.75;
@@ -173,6 +174,8 @@ function buildPark(quality: "high" | "low") {
     lamp.position.set(x, 0, z);
     lamp.rotation.y = r() * 6;
     root.add(lamp);
+    // Where its light falls at night (the head hangs 0.55 m out on its arm)
+    lampHeads.push([x + Math.cos(lamp.rotation.y) * 0.55, z - Math.sin(lamp.rotation.y) * 0.55]);
   }
   // Each arm points at its place (the angle is atan2(-dz, dx) from here)
   const sign = buildSignpost([
@@ -325,7 +328,7 @@ function buildPark(quality: "high" | "low") {
   root.add(sky);
   mark("sky");
 
-  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable, late };
+  return { root, sky, swing, sign, booth, board, falling, arcade, pavilion, fountain, shakeable, late, lampHeads };
 }
 
 export default function Park({ active, quality, navigate }: SceneProps) {
@@ -401,7 +404,14 @@ export default function Park({ active, quality, navigate }: SceneProps) {
       <primitive object={built.root} />
       <ShakeableTrees trees={built.shakeable} active={active} />
       <SunLight active={active} position={[-48, 34, 20]} target={[0, 0, -8]} color="#ffd09a" intensity={3.1} size={44} quality={quality} />
-      <hemisphereLight args={["#fbe6bf", "#6a6f42", 1.35]} />
+      <hemisphereLight userData={HEMI} args={["#fbe6bf", "#6a6f42", 1.35]} />
+      {/* The two lamps nearest the steps light the paths at night (the
+          others glow, without a light of their own: every light is paid
+          for on every pixel of the park). Always there at 0 by day, so
+          the night never asks for new shaders. */}
+      {built.lampHeads.slice(0, 2).map(([x, z], i) => (
+        <pointLight key={i} userData={NIGHT_LAMP} position={[x, 3.35, z]} color="#ffc98a" intensity={0} distance={12} decay={1.5} />
+      ))}
       {Object.entries(parkPlaces).map(([id, p]) => (
         <pointLight key={id} ref={(l) => void (lights.current[id] = l)} position={[...p.light]} color="#ffcf8a" intensity={0} distance={12} decay={1.4} />
       ))}

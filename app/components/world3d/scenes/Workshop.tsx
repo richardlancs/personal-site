@@ -12,7 +12,7 @@ import { onIdle, timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { deadScreen, planks, plaster, textPanel } from "../textures";
-import { Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
+import { HEMI, Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
@@ -369,7 +369,7 @@ export default function Workshop({ active, quality }: SceneProps) {
     <group visible={active}>
       <primitive object={built.root} />
       <SunLight active={active} position={[22, 16, -6]} target={[0, 0, 0]} color="#ffd39a" intensity={3.2} size={12} quality={quality} />
-      <hemisphereLight args={["#f3e2c2", "#6a5440", 1.5]} />
+      <hemisphereLight userData={HEMI} args={["#f3e2c2", "#6a5440", 1.5]} />
       <pointLight position={[0, 3.6, 1]} color="#ffcf8f" intensity={7} distance={14} decay={1.3} />
       <pointLight position={[-4.5, 3, 2.5]} color="#ffd8a8" intensity={4} distance={10} decay={1.4} />
       {monitorSpots.map(([x], i) => (

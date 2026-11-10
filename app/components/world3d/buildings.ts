@@ -29,7 +29,7 @@ export function hipRoof(w: number, d: number, h: number, flare = 0.25) {
 export const windowGlow = (strength = 1) =>
   mat(`windowGlow-${strength}`, () => {
     const panes = windowPanes(Math.min(0.85, 0.25 + strength * 0.45));
-    return paint({ map: panes, emissive: "#ffb867", emissiveMap: panes, emissiveIntensity: 0.55 * strength, brush: 0.2, brushScale: 6 });
+    return paint({ map: panes, emissive: "#ffb867", emissiveMap: panes, emissiveIntensity: 0.55 * strength, brush: 0.2, brushScale: 6, glow: { night: 2.4 } });
   });
 
 // The pavilion, seen from the park: a reading room on a stone base
@@ -76,6 +76,7 @@ export function buildPavilion() {
   g.add(mesh(at(box(1.2, 0.3, 0.3), 0, 5.95, 0), mat("ridge", () => paint({ color: "#4b4f50", moss: 0.6 }))));
   const light = new THREE.PointLight("#ffbf75", 3, 9, 1.5);
   light.position.set(0, 2.4, 1.2);
+  light.userData.atmos = "window"; // brighter at night (atmosphere/Atmosphere.tsx)
   g.add(light);
   // Ivy up the posts and over the eaves
   g.add(buildVine(51, [v(-3.55, 0.4, 2.55), v(-3.5, 1.8, 2.6), v(-3.6, 3.3, 2.55), v(-2.6, 3.6, 2.9), v(-1.8, 3.4, 3.1)], 0.3));
@@ -110,7 +111,7 @@ export function buildWorkshop() {
   }
   g.add(new THREE.Mesh(merge(panes), windowGlow(0.55)));
   g.add(mesh(merge(frames), M.iron()));
-  const doorway = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.2), mat("darkDoor", () => paint({ color: "#2a2118", emissive: "#3a2410", emissiveIntensity: 0.6, brush: 0.3 })));
+  const doorway = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.2), mat("darkDoor", () => paint({ color: "#2a2118", emissive: "#3a2410", emissiveIntensity: 0.6, brush: 0.3, glow: { night: 2.2 } })));
   doorway.position.set(0, 1.6, 4.01);
   g.add(doorway);
   g.add(mesh(at(box(1.4, 3.3, 0.1, 0.5), 1.9, 1.65, 4.1), M.iron()));
@@ -176,7 +177,7 @@ export function buildArcade() {
     valign: "middle",
     lines: [{ text: "游戏厅", size: 64, font: "display", color: "#e6a2a0", weight: 600, align: "center" }],
   });
-  const signMat = mat("arcadeSign", () => paint({ map: sign, emissive: "#c66f78", emissiveIntensity: 0.18, emissiveMap: sign, brush: 0.25, grime: 0.4 }));
+  const signMat = mat("arcadeSign", () => paint({ map: sign, emissive: "#c66f78", emissiveIntensity: 0.18, emissiveMap: sign, brush: 0.25, grime: 0.4, glow: { night: 2.5 } }));
   const board = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.6), signMat);
   board.position.set(0, 5.2, 4.06);
   g.add(board);

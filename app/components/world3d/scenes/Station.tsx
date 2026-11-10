@@ -12,7 +12,7 @@ import { buildCity } from "../buildings";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { clockFace, enamel, groundTexture, plaster, textPanel } from "../textures";
-import { Hitbox, SunLight, type SceneProps } from "./common";
+import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const TOP = 0.95; // the platform's surface
@@ -68,7 +68,7 @@ function buildStationScene(quality: "high" | "low") {
     [3.2, 1.4, 1.0, 0.45],
     [8.5, 1.8, 2.5, 0.15],
   ] as const) {
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(`stationOpening-${lit}`, () => paint({ color: "#3a2c20", emissive: "#ffb867", emissiveIntensity: lit, brush: 0.3 })));
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat(`stationOpening-${lit}`, () => paint({ color: "#3a2c20", emissive: "#ffb867", emissiveIntensity: lit, brush: 0.3, glow: { night: 2.2 } })));
     p.position.set(x, TOP + (h > 2 ? h / 2 : 1.6), -3.04);
     root.add(p);
   }
@@ -296,7 +296,7 @@ export default function Station({ active, quality }: SceneProps) {
     <group visible={active}>
       <primitive object={built.root} />
       <SunLight active={active} position={[30, 16, 22]} target={[0, 0, 0]} color="#ffd29a" intensity={2.8} size={22} quality={quality} />
-      <hemisphereLight args={["#f2dcb4", "#5a6338", 1.15]} />
+      <hemisphereLight userData={HEMI} args={["#f2dcb4", "#5a6338", 1.15]} />
       {active && (
         <>
           <Hitbox id="station:timetable" position={[BOARD.x, BOARD.y + BOARD.h / 2 - 0.2, BOARD.z + 0.1]} size={[BOARD.w, 0.4, 0.2]} onSelect={() => world.set({ focus: "timetable" })} />

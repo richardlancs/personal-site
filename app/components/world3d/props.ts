@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { at, blob, box, buildVine, merge, tube, wire } from "./geometry";
 import { mesh, paint, windUniforms } from "./paint";
 import { rng } from "./rng";
+import { waterUniforms } from "./atmosphere/state";
 import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
 // Props: the things people left behind, modelled from parts. Each builder
@@ -34,7 +35,9 @@ export const M = {
     mat("glass", () =>
       paint({ color: "#c9d8cf", transparent: true, opacity: 0.22, brush: 0.4, brushScale: 3, grime: 0.8, side: THREE.DoubleSide, depthWrite: false }),
     ),
-  lampGlow: () => mat("lampGlow", () => paint({ color: "#fff1c9", emissive: "#ffd99a", emissiveIntensity: 1.4, brush: 0 })),
+  lampGlow: () => mat("lampGlow", () => paint({ color: "#fff1c9", emissive: "#ffd99a", emissiveIntensity: 1.4, brush: 0, glow: { night: 1.35 } })),
+  // A lamp that only comes on when it's dark
+  lampNight: () => mat("lampNight", () => paint({ color: "#d8d4c2", emissive: "#ffd99a", emissiveIntensity: 1.6, brush: 0, glow: { day: 0, night: 1 } })),
   paper: () => mat("paper", () => paint({ color: "#efe6cf", brush: 0.15, brushScale: 4 })),
 };
 
@@ -67,14 +70,25 @@ export function buildBench({ bag = false } = {}) {
   return g;
 }
 
+// A street lamp. The one left on glows by day; at night they all come on,
+// with a soft halo (its strength follows the night: atmosphere/Atmosphere.tsx)
 export function buildLamp({ lit = false } = {}) {
   const g = new THREE.Group();
   g.add(mesh(merge([tube([v(0, 0, 0), v(0, 2, 0), v(0, 3.4, 0), v(0.12, 3.75, 0), v(0.5, 3.85, 0)], (t) => 0.07 - t * 0.03, 12, 6), at(box(0.22, 0.25, 0.22), 0, 0.12, 0)]), M.iron()));
   g.add(mesh(at(new THREE.CylinderGeometry(0.08, 0.2, 0.18, 8), 0.55, 3.78, 0), M.green()));
-  const glow = mesh(at(new THREE.SphereGeometry(0.09, 10, 8), 0.55, 3.66, 0), lit ? M.lampGlow() : M.glass(), { cast: false });
+  const glow = mesh(at(new THREE.SphereGeometry(0.09, 10, 8), 0.55, 3.66, 0), lit ? M.lampGlow() : M.lampNight(), { cast: false });
   g.add(glow);
+  const halo = new THREE.Sprite(lampHalo());
+  halo.position.set(0.55, 3.6, 0);
+  halo.scale.setScalar(1.6);
+  halo.userData.atmos = "halo";
+  g.add(halo);
   return g;
 }
+
+let halo: THREE.SpriteMaterial | null = null;
+const lampHalo = () =>
+  (halo ??= new THREE.SpriteMaterial({ map: softDot(), color: "#ffcf8a", transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
 
 // A wooden utility pole with a crossarm
 export function buildPole() {
@@ -285,6 +299,7 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
       uColor: { value: new THREE.Color(color) },
       uSky: { value: new THREE.Color(sky) },
       uSplash: { value: 0 }, // 0 to 1: how hard water is falling into it
+      ...waterUniforms, // the weather and the hour (atmosphere/state.ts)
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
@@ -300,6 +315,8 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
       uniform vec3 uColor;
       uniform vec3 uSky;
       uniform float uSplash;
+      uniform vec3 uSkyTint;
+      uniform float uLight;
       varying vec3 vWorld;
       varying vec2 vLocal;
       void main() {
@@ -310,8 +327,8 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
         ripple += sin(d * 11.0 - uTime * 7.0) * uSplash * 1.4 * smoothstep(2.9, 0.6, d);
         vec3 view = normalize(cameraPosition - vWorld);
         float fres = pow(1.0 - max(view.y, 0.0), 3.0);
-        vec3 col = mix(uColor, uSky, 0.08 + fres * 0.3 + ripple * 0.025);
-        col += vec3(1.0, 0.92, 0.75) * smoothstep(1.0, 1.45, ripple) * 0.08;
+        vec3 col = mix(uColor * uLight, uSky * uSkyTint, 0.08 + fres * 0.3 + ripple * 0.025);
+        col += vec3(1.0, 0.92, 0.75) * smoothstep(1.0, 1.45, ripple) * 0.08 * uLight;
         gl_FragColor = vec4(col, 0.94);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -536,6 +553,9 @@ export function buildBeam(length: number, width: number, color = "#ffdca0", stre
     side: THREE.DoubleSide,
   });
   const g = new THREE.Group();
+  // The sun's: it fades with cloud and is gone at night (Atmosphere.tsx)
+  g.userData.atmos = "beam";
+  g.userData.strength = m.uniforms.uStrength;
   for (const ry of [0, Math.PI / 2]) {
     const p = new THREE.Mesh(new THREE.PlaneGeometry(width, length).translate(0, -length / 2, 0), m);
     p.rotation.y = ry;
@@ -545,15 +565,27 @@ export function buildBeam(length: number, width: number, color = "#ffdca0", stre
 }
 
 // The sky: a painted gradient with the low sun and drifting clouds. It
-// follows the camera, so it's always at the horizon.
+// follows the camera, so it's always at the horizon. The weather and the
+// hour repaint it through its uniforms (atmosphere/Atmosphere.tsx): how
+// much cloud and how dark, the sun's glow or the moon, a few stars on a
+// clear night.
 export function buildSky(opts: { top: string; horizon: string; sun: string; sunDir: [number, number, number] }) {
+  const sunDir = new THREE.Vector3(...opts.sunDir).normalize();
   const m = new THREE.ShaderMaterial({
     uniforms: {
       uTime: windUniforms.uTime,
       uTop: { value: new THREE.Color(opts.top) },
       uHorizon: { value: new THREE.Color(opts.horizon) },
       uSun: { value: new THREE.Color(opts.sun) },
-      uSunDir: { value: new THREE.Vector3(...opts.sunDir).normalize() },
+      uSunDir: { value: sunDir.clone() },
+      uCloudLit: { value: new THREE.Color(1.0, 0.97, 0.9) },
+      uCloudShade: { value: new THREE.Color(0.68, 0.72, 0.88) },
+      uCover: { value: 0.5 },
+      uSunDisc: { value: 1 },
+      uMoon: { value: 0 },
+      uStars: { value: 0 },
+      uHaze: { value: new THREE.Color(1, 1, 1) }, // the air's colour (the fog's), low in the sky
+      uHazeAmt: { value: 0 },
     },
     vertexShader: /* glsl */ `
       varying vec3 vDir;
@@ -567,6 +599,14 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
       uniform vec3 uHorizon;
       uniform vec3 uSun;
       uniform vec3 uSunDir;
+      uniform vec3 uCloudLit;
+      uniform vec3 uCloudShade;
+      uniform float uCover;
+      uniform float uSunDisc;
+      uniform float uMoon;
+      uniform float uStars;
+      uniform vec3 uHaze;
+      uniform float uHazeAmt;
       varying vec3 vDir;
       float h21(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
       float n2(vec2 p) {
@@ -579,24 +619,43 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
         float h = clamp(d.y, -0.2, 1.0);
         vec3 col = mix(uHorizon, uTop, pow(smoothstep(-0.02, 0.65, h), 0.75));
         float s = max(dot(d, uSunDir), 0.0);
-        col += uSun * (pow(s, 6.0) * 0.35 + pow(s, 80.0) * 0.8);
+        // The sun's glow; at night a smaller, cooler glow and the moon's disc
+        col += uSun * (pow(s, 6.0) * 0.35 * (1.0 - uMoon * 0.55) + pow(s, 80.0) * 0.8 * (1.0 - uMoon)) * uSunDisc;
+        col = mix(col, uSun * 1.1, smoothstep(0.99935, 0.9996, s) * uMoon * uSunDisc);
+        // A few stars on a clear night, fixed (they don't twinkle)
+        if (uStars > 0.001) {
+          vec2 sg = d.xz / (max(d.y, 0.0) + 0.35) * 42.0;
+          vec2 cell = floor(sg);
+          vec2 jitter = vec2(h21(cell + 3.1), h21(cell + 7.7)) * 0.6 + 0.2;
+          float star = step(0.975, h21(cell)) * smoothstep(0.16, 0.0, length(fract(sg) - jitter));
+          col += vec3(0.85, 0.88, 1.0) * star * uStars * smoothstep(0.08, 0.35, h) * 0.55;
+        }
         // Cumulus: big soft heaps in a band above the horizon, with crisp
-        // painted edges, bright creamy tops and lavender-blue undersides
+        // painted edges, bright creamy tops and lavender-blue undersides.
+        // With more cover the heaps grow and climb, and a grey layer closes
+        // over the whole sky.
+        float over = smoothstep(0.62, 1.0, uCover);
         vec2 drift = vec2(uTime * 0.004, uTime * 0.0015);
         vec2 uv = d.xz / (max(d.y, 0.0) + 0.2) * 0.5 + drift;
         float c = fbm(uv * 1.15) + 0.22 * fbm(uv * 3.4);
         vec3 up = normalize(d + vec3(0.0, 0.035, 0.0));
         vec2 uvUp = up.xz / (max(up.y, 0.0) + 0.2) * 0.5 + drift;
         float cUp = fbm(uvUp * 1.15) + 0.22 * fbm(uvUp * 3.4);
-        float band = smoothstep(0.0, 0.1, h) * smoothstep(0.85, 0.3, h);
-        float cloud = smoothstep(0.6, 0.645, c) * band;
+        float band = smoothstep(0.0, 0.1, h) * smoothstep(0.85 + over * 0.6, 0.3, h);
+        float thr = 0.6 + (0.5 - uCover) * 0.4;
+        float cloud = smoothstep(thr, thr + 0.045 + over * 0.06, c) * band;
         float lit = 0.25 + 0.75 * smoothstep(-0.03, 0.05, c - cUp);
-        vec3 cloudCol = mix(vec3(0.68, 0.72, 0.88), vec3(1.0, 0.97, 0.9), lit);
-        cloudCol += uSun * pow(s, 3.0) * 0.18;
+        vec3 cloudCol = mix(uCloudShade, uCloudLit, lit);
+        cloudCol += uSun * pow(s, 3.0) * 0.18 * uSunDisc;
+        // The overcast layer, soft and a little darker toward the zenith
+        col = mix(col, mix(uCloudLit, uCloudShade, 0.35 + 0.4 * smoothstep(0.0, 0.8, h)), over * 0.8 * smoothstep(-0.15, 0.12, h));
         // A few high wisps
-        float wisp = smoothstep(0.58, 0.8, fbm(vec2(uv.x * 0.7, uv.y * 3.0) + 9.0)) * smoothstep(0.35, 0.7, h) * 0.35;
-        col = mix(col, vec3(1.0, 0.98, 0.94), wisp);
+        float wisp = smoothstep(0.58, 0.8, fbm(vec2(uv.x * 0.7, uv.y * 3.0) + 9.0)) * smoothstep(0.35, 0.7, h) * 0.35 * (1.0 - over);
+        col = mix(col, uCloudLit * vec3(1.0, 1.01, 1.04), wisp);
         col = mix(col, cloudCol, cloud * 0.95);
+        // In haze the sky low down is the air's own colour, so the far
+        // city and hills, fogged, sit in it rather than against it
+        col = mix(col, uHaze, uHazeAmt * (1.0 - smoothstep(-0.02, 0.32, h)));
         gl_FragColor = vec4(col, 1.0);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -608,6 +667,8 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
   const sky = new THREE.Mesh(new THREE.SphereGeometry(450, 32, 16), m);
   sky.renderOrder = -1;
   sky.frustumCulled = false;
+  sky.userData.atmos = "sky";
+  sky.userData.sunDir = sunDir; // the place's own, which the sun's height is measured against
   return sky;
 }
 

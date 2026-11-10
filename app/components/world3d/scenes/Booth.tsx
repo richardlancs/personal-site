@@ -11,7 +11,7 @@ import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { flagstones, groundTexture } from "../textures";
-import { Hitbox, SunLight, type SceneProps } from "./common";
+import { HEMI, Hitbox, NIGHT_LAMP, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -130,7 +130,9 @@ export default function Booth({ active, quality }: SceneProps) {
       <primitive object={built.root} />
       <ShakeableTrees trees={built.shakeable} active={active} />
       <SunLight active={active} position={[-26, 16, 18]} target={[0, 0, 0]} color="#ffd39a" intensity={2.6} size={14} quality={quality} />
-      <hemisphereLight args={["#f2dcb4", "#5a6338", 1.15]} />
+      <hemisphereLight userData={HEMI} args={["#f2dcb4", "#5a6338", 1.15]} />
+      {/* The street lamp beside the booth, at night (built at 0 by day) */}
+      <pointLight userData={NIGHT_LAMP} position={[-2.6 + Math.cos(0.4) * 0.55, 3.4, 1.2 - Math.sin(0.4) * 0.55]} color="#ffc98a" intensity={0} distance={12} decay={1.5} />
       {active && (
         <>
           <Hitbox

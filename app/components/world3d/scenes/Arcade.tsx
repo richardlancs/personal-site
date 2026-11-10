@@ -11,7 +11,7 @@ import { M, buildBeam, buildDust, buildSky, mat } from "../props";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { fonts, planks, plaster, textPanel } from "../textures";
-import { Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
+import { HEMI, Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const cabinetX = [-3.6, -1.2, 1.2, 3.6];
@@ -326,7 +326,7 @@ export default function Arcade({ active, quality }: SceneProps) {
     <group visible={active}>
       <primitive object={built.root} />
       <SunLight active={active} position={[18, 9, 4]} target={[0, 0, 0]} color="#ffcf92" intensity={2.6} size={10} quality={quality} />
-      <hemisphereLight args={["#ecd8c0", "#5a4438", 1.4]} />
+      <hemisphereLight userData={HEMI} args={["#ecd8c0", "#5a4438", 1.4]} />
       <pointLight position={[0, 3.2, 0.5]} color="#ffbf86" intensity={6} distance={12} decay={1.3} />
       <pointLight position={[-5.4, 3, 1.6]} color="#e07a8a" intensity={1.2} distance={4} />
       {cabinetX.map((x, i) => (
