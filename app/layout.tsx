@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { STILL_SCRIPT } from "./components/world3d/still";
 import WorldShell from "./components/world3d/WorldShell";
 import WorldControls from "./components/world/WorldControls";
 import "./globals.css";
@@ -70,7 +71,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-scroll-behavior="smooth"
       className={`${display.variable} ${chinese.variable} ${text.variable}`}
+      // The script below sets data-still on <html> before React hydrates
+      suppressHydrationWarning
     >
+      <head>
+        {/* Still view, before the first paint: the visitor's saved choice,
+            or the system's reduced-motion setting (world3d/still.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
+      </head>
       <body>
         <a href="#content" className="skip-link">
           Skip to the page

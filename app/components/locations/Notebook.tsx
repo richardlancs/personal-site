@@ -24,6 +24,18 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
   const [wide, setWide] = useState(false);
   const [all, setAll] = useState(false);
   const leaf = useRef<HTMLDivElement>(null);
+  // A turn under way: the page it's turning to, and the timer that shows it
+  const turning = useRef<{ next: number; timer: number } | null>(null);
+
+  // Leaving the notebook mid-turn: the turn is dropped, so nothing changes
+  // the world's focus after the visitor has gone somewhere else
+  useEffect(
+    () => () => {
+      if (turning.current) window.clearTimeout(turning.current.timer);
+      turning.current = null;
+    },
+    [],
+  );
 
   useEffect(() => {
     const query = matchMedia(`${WORLD_QUERY} and (min-width: 1200px)`);
@@ -40,10 +52,20 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
   const canOn = first + step <= last;
 
   function turn(direction: 1 | -1) {
-    const next = first + direction * step;
+    // Pressed again before the last turn showed its page: that page comes
+    // now, and this turn starts from it
+    const pending = turning.current;
+    if (pending) {
+      window.clearTimeout(pending.timer);
+      turning.current = null;
+      setPage(pending.next);
+    }
+    const from = pending ? pending.next : first;
+    const next = from + direction * step;
     if (next < 0 || next > last) return;
     const sweep = leaf.current;
-    if (!sweep || matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    if (!sweep || world.get().still) {
+      sweep?.getAnimations().forEach((animation) => animation.cancel());
       setPage(next);
       return;
     }
@@ -58,7 +80,11 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
       ],
       { duration: TURN_MS, easing: "cubic-bezier(0.45, 0.05, 0.3, 1)" },
     );
-    window.setTimeout(() => setPage(next), TURN_MS * 0.45);
+    const timer = window.setTimeout(() => {
+      turning.current = null;
+      setPage(next);
+    }, TURN_MS * 0.45);
+    turning.current = { next, timer };
   }
 
   function onKey(event: React.KeyboardEvent) {

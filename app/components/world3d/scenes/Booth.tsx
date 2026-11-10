@@ -103,22 +103,26 @@ export default function Booth({ active, quality }: SceneProps) {
   useFrame(({ camera, clock }, dt) => {
     if (!active) return;
     const t = clock.elapsedTime;
+    // Still view: the door and the receiver are simply where they go, the
+    // light is steady and the leaves stay where they are
+    const still = world.get().still;
+    const damp = (from: number, to: number, k: number) => (still ? to : THREE.MathUtils.damp(from, to, k, dt));
     built.sky.position.copy(camera.position);
     const { door, receiver, light, tubeMat } = built.booth;
     // The door opens once you're there
-    door.rotation.y = THREE.MathUtils.damp(door.rotation.y, arrived ? -1.75 : 0, arrived ? 2.2 : 5, dt);
+    door.rotation.y = damp(door.rotation.y, arrived ? -1.75 : 0, arrived ? 2.2 : 5);
     // The receiver lifts off the hook toward you
     const up = phoneUp ? 1 : 0;
-    receiver.position.x = THREE.MathUtils.damp(receiver.position.x, -0.17 + up * 0.12, 7, dt);
-    receiver.position.y = THREE.MathUtils.damp(receiver.position.y, 0.02 + up * 0.2, 7, dt);
-    receiver.position.z = THREE.MathUtils.damp(receiver.position.z, 0.06 + up * 0.32, 7, dt);
-    receiver.rotation.z = THREE.MathUtils.damp(receiver.rotation.z, up * 1.25, 7, dt);
-    receiver.rotation.x = THREE.MathUtils.damp(receiver.rotation.x, up * 0.35, 7, dt);
+    receiver.position.x = damp(receiver.position.x, -0.17 + up * 0.12, 7);
+    receiver.position.y = damp(receiver.position.y, 0.02 + up * 0.2, 7);
+    receiver.position.z = damp(receiver.position.z, 0.06 + up * 0.32, 7);
+    receiver.rotation.z = damp(receiver.rotation.z, up * 1.25, 7);
+    receiver.rotation.x = damp(receiver.rotation.x, up * 0.35, 7);
     // The light catches now and then; steady while the line is open
-    const flick = !phoneUp && Math.sin(t * 0.45) > 0.97 ? 0.3 + 0.7 * Math.abs(Math.sin(t * 37)) : 1;
+    const flick = !still && !phoneUp && Math.sin(t * 0.45) > 0.97 ? 0.3 + 0.7 * Math.abs(Math.sin(t * 37)) : 1;
     light.intensity = 2.4 * flick;
     tubeMat.emissiveIntensity = 1.6 * flick;
-    built.falling.update(Math.min(dt, 0.05), t);
+    if (!still) built.falling.update(Math.min(dt, 0.05), t);
   });
 
   return (

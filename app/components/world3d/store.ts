@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "./still";
 
 // What the world and the pages share: which object the camera is looking
 // at, what's been chosen in each place, and what the visitor is pointing
@@ -28,6 +29,7 @@ export type WorldState = {
   doorOpen: boolean;
   arrived: boolean; // the camera has settled in the current place
   quality: Quality; // the renderer's tier (World3D.tsx decides it)
+  still: boolean; // still view (still.ts): no decorative motion, the camera cuts
   sel: Selection;
 };
 
@@ -39,6 +41,7 @@ let state: WorldState = {
   doorOpen: false,
   arrived: false,
   quality: "high",
+  still: false,
   sel: { project: 0, shot: 0, line: 0, interest: 0, page: 0 },
 };
 
@@ -72,6 +75,45 @@ export function useWorld<T>(pick: (s: WorldState) => T): T {
 // For looking at the world's state from the browser console in development
 if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
   (window as unknown as { __world: typeof world }).__world = world;
+}
+
+// Still view, the one source of truth for motion. The page's script
+// (still.ts) has set <html data-still> before anything ran; from here on
+// the store and that attribute change together. Until the visitor chooses,
+// it follows the system's setting, live.
+let sessionChoice: boolean | null = null; // a choice storage couldn't keep
+
+// What the setting should be now: the visitor's choice, or the system's
+const currentStill = () => sessionChoice ?? storedStill() ?? systemStill();
+
+function applyStill(on: boolean) {
+  document.documentElement.setAttribute("data-still", on ? "on" : "off");
+  if (state.still !== on) world.set({ still: on });
+}
+
+// The visitor chooses: kept for their next visit, and it wins over the
+// system's setting from now on
+export function chooseStill(on: boolean) {
+  try {
+    localStorage.setItem(STILL_KEY, on ? "on" : "off");
+  } catch {
+    // Storage unavailable: the choice lasts for this visit only
+    sessionChoice = on;
+  }
+  applyStill(on);
+}
+
+// Puts the attribute back (React's development remount of <html> clears
+// what the script set; in production it's already right)
+export const syncStill = () => applyStill(currentStill());
+
+if (typeof window !== "undefined") {
+  state = { ...state, still: currentStill() };
+  matchMedia(REDUCED_MOTION).addEventListener("change", () => applyStill(currentStill()));
+  // A choice made in another tab
+  window.addEventListener("storage", (event) => {
+    if (event.key === STILL_KEY || event.key === null) applyStill(currentStill());
+  });
 }
 
 // How long the fountain runs once turned on

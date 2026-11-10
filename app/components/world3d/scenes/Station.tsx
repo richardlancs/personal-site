@@ -261,10 +261,13 @@ export default function Station({ active, quality }: SceneProps) {
     if (!active) return;
     built.sky.position.copy(camera.position);
     const t = clock.elapsedTime;
+    // Still view: a line's flap shows its new printing without turning
+    // over, and the sign hangs still
+    const still = world.get().still;
     if (shown.current !== line) {
       // The chosen line turns over; the one before turns back
       rows.forEach((_, i) => {
-        if (i === line || i === shown.current) flip.current[i] = 1;
+        if (!still && (i === line || i === shown.current)) flip.current[i] = 1;
       });
       shown.current = line;
     }
@@ -283,9 +286,9 @@ export default function Station({ active, quality }: SceneProps) {
     });
     // The broken sign swings on its last chain
     const gust = windUniforms.uGust.value;
-    built.sign.rotation.z = Math.sin(t * 1.3) * (0.03 + gust * 0.08);
+    built.sign.rotation.z = still ? 0 : Math.sin(t * 1.3) * (0.03 + gust * 0.08);
     // The clock's hand tries to move, then gives up
-    tap.current = Math.max(0, tap.current - dt);
+    tap.current = still ? 0 : Math.max(0, tap.current - dt);
     built.hand.rotation.z = -(17 / 60) * Math.PI * 2 - Math.sin(tap.current * 30) * tap.current * 0.08;
   });
 

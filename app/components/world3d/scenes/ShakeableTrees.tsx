@@ -39,7 +39,8 @@ export default function ShakeableTrees({ trees, active }: { trees: ShakeTree[]; 
     for (const [i, shake] of shakes.current) {
       shake.t += dt;
       const tree = trees[i];
-      const k = shake.t / SHAKE_S;
+      // (still view, turned on mid-shake: the tree settles at once)
+      const k = world.get().still ? 1 : shake.t / SHAKE_S;
       if (k >= 1) {
         tree.group.quaternion.copy(bases[i]);
         shakes.current.delete(i);
@@ -55,13 +56,12 @@ export default function ShakeableTrees({ trees, active }: { trees: ShakeTree[]; 
   function shake(i: number, e: ThreeEvent<MouseEvent>) {
     if (e.delta > 8) return;
     e.stopPropagation();
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // In still view a tree stays as it is: no shake, no leaves let go
+    if (world.get().still) return;
     const tree = trees[i];
-    if (!reduce) {
-      const a = chance() * Math.PI * 2;
-      shakes.current.set(i, { t: 0, axis: new THREE.Vector3(Math.cos(a), 0, Math.sin(a)) });
-    }
-    bursts.burst(tree.crown, tree.radius, reduce ? 6 : 16 + Math.floor(chance() * 8), tree.tint);
+    const a = chance() * Math.PI * 2;
+    shakes.current.set(i, { t: 0, axis: new THREE.Vector3(Math.cos(a), 0, Math.sin(a)) });
+    bursts.burst(tree.crown, tree.radius, 16 + Math.floor(chance() * 8), tree.tint);
   }
 
   return (

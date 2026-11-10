@@ -564,22 +564,33 @@ body {
   transform: scale(0.96);
 }
 
-/* Respect users who have asked their OS for less motion: the world holds
-   still, and the camera cuts instead of moving (World3D.tsx) */
+/*
+  Still view (components/world3d/still.ts): nothing on the page moves on
+  its own, and the world holds still and cuts between places
+  (World3D.tsx). <html data-still="on"> is set before the first paint from
+  the visitor's choice (the button in the corner) or, until they choose,
+  the system's reduced-motion setting. Colour and opacity changes stay;
+  movement goes. The media query covers a page whose script didn't run.
+*/
+:root[data-still="on"] :is(.world-label, .park-name, .bench-tab, .cabinet-button, .phone-handset svg),
+:root[data-still="on"] .park-name::after {
+  transition: none !important;
+}
+:root[data-still="on"] :is(.arrive, .motion-safe-anim, .flap, .cabinet-card, .map-sheet, .places-menu:popover-open) {
+  animation: none !important;
+}
+:root[data-still="on"] :is(.hover-grow:hover, .hover-grow:active) {
+  transform: none;
+}
 @media (prefers-reduced-motion: reduce) {
-  .world-label {
+  :root:not([data-still]) :is(.world-label, .park-name, .bench-tab, .cabinet-button, .phone-handset svg),
+  :root:not([data-still]) .park-name::after {
     transition: none !important;
   }
-  .arrive,
-  .motion-safe-anim {
+  :root:not([data-still]) :is(.arrive, .motion-safe-anim, .flap, .cabinet-card, .map-sheet, .places-menu:popover-open) {
     animation: none !important;
   }
-  .park-name,
-  .park-name::after {
-    transition: none !important;
-  }
-  .hover-grow:hover,
-  .hover-grow:active {
+  :root:not([data-still]) :is(.hover-grow:hover, .hover-grow:active) {
     transform: none;
   }
 }
@@ -1887,18 +1898,8 @@ html {
   white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .flap,
-  .cabinet-card,
-  .map-sheet {
-    animation: none;
-  }
-  .bench-tab,
-  .cabinet-button,
-  .phone-handset svg {
-    transition: none;
-  }
-}
+/* The flaps, cards, tabs and map sheet above hold still in still view
+   (the "Still view" block, near the top) */
 
 /*
   Paper in the world. Every sheet, tag and card is the same warm paper,

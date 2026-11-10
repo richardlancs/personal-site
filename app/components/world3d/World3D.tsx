@@ -23,7 +23,9 @@ import { FOUNTAIN_MS, useWorld, world, type Quality } from "./store";
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
 
-const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+// Still view (still.ts, store.ts): the camera cuts instead of travelling,
+// and nothing sways, breathes or drifts
+const holdingStill = () => world.get().still;
 
 // On narrow screens the page's sheet covers the lower part of the view
 // (globals.css: --hero), so the camera's subject is lifted into the upper
@@ -78,11 +80,13 @@ function Director({
   active,
   onSwap,
   iris,
+  still,
 }: {
   target: { id: SceneId; focus: string | null };
   active: SceneId;
   onSwap: (scene: SceneId) => void;
   iris: React.RefObject<HTMLDivElement | null>;
+  still: boolean;
 }) {
   const { camera, gl, scene: three, invalidate } = useThree();
   const st = useRef({
@@ -127,7 +131,7 @@ function Director({
     s.running = null;
     const final = restPose(to, focusId);
 
-    if (reducedMotion()) {
+    if (holdingStill()) {
       s.queue = [{ kind: "swap", scene: to, pose: final }];
       s.iris = 0;
       s.started = true;
@@ -182,8 +186,20 @@ function Director({
     }
   }, [target.id, target.focus, iris]);
 
+  // Still view turned on in the middle of a journey: cut to where it was
+  // going, at once
+  useEffect(() => {
+    const s = st.current;
+    if (!still || !s.started || (!s.running && !s.queue.length)) return;
+    s.running = null;
+    s.queue = [{ kind: "swap", scene: target.id, pose: restPose(target.id, world.get().focus) }];
+    s.iris = 0;
+    invalidate();
+  }, [still, target.id, invalidate]);
+
   // Look around by dragging; parallax follows the mouse. Not on touch
   // screens: there a drag is a scroll, and the camera must never catch it.
+  // Not in still view either.
   useEffect(() => {
     if (matchMedia("(pointer: coarse)").matches) return;
     const el = gl.domElement;
@@ -194,7 +210,7 @@ function Director({
     const move = (e: PointerEvent) => {
       const s = st.current;
       s.pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
-      if (!last || !(e.buttons & 1)) return;
+      if (!last || !(e.buttons & 1) || holdingStill()) return;
       const dx = e.clientX - last[0];
       const dy = e.clientY - last[1];
       last = [e.clientX, e.clientY];
@@ -229,7 +245,7 @@ function Director({
   useFrame(({ size, clock }, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
     const s = st.current;
-    const reduce = reducedMotion();
+    const reduce = holdingStill();
     // The first frame of the world, on the performance timeline
     if (!s.framed) {
       s.framed = true;
@@ -303,6 +319,8 @@ function Director({
         s.yaw *= Math.exp(-dt * 1.2);
         s.pitch *= Math.exp(-dt * 1.2);
       }
+    } else if (reduce) {
+      s.yaw = s.pitch = 0;
     } else if (!s.dragging) {
       s.yaw *= Math.exp(-dt * 4);
       s.pitch *= Math.exp(-dt * 4);
@@ -321,8 +339,10 @@ function Director({
     const frame = scenes[s.active].frame;
     const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : 0;
     const wantY = narrow ? narrowLift(size.height) : 0;
-    s.shift += (want - s.shift) * (1 - Math.exp(-dt * 2.5));
-    s.shiftY += (wantY - s.shiftY) * (1 - Math.exp(-dt * 2.5));
+    // (in still view the framing doesn't glide: it's simply there)
+    const glide = reduce ? 1 : 1 - Math.exp(-dt * 2.5);
+    s.shift += (want - s.shift) * glide;
+    s.shiftY += (wantY - s.shiftY) * glide;
     const fov = size.width / size.height < 1 ? 62 : 48;
     if (cam.fov !== fov) cam.fov = fov;
     if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
@@ -345,7 +365,13 @@ function Director({
 function Wind() {
   const gust = useRef({ phase: "idle" as "idle" | "rise" | "hold" | "fall", t: 0, next: 3, strength: 0.7, hold: 1.5 });
   useFrame((_, rawDt) => {
-    if (reducedMotion()) return;
+    // In still view the wind drops and its clock stops: uTime is also the
+    // clock of everything that loops (water, dust, clouds, the scenes'
+    // swings, signs and screens), so they all hold where they are
+    if (holdingStill()) {
+      windUniforms.uGust.value = 0;
+      return;
+    }
     const dt = Math.min(rawDt, 0.05);
     windUniforms.uTime.value += dt;
     const g = gust.current;
@@ -441,7 +467,7 @@ function Labels({ active, pathname }: { active: SceneId; pathname: string }) {
   );
 }
 
-// Under reduced motion the frame loop runs on demand: this asks for a few
+// In still view the frame loop runs on demand: this asks for a few
 // frames whenever something changes (the address, what's chosen or
 // pointed at, the fountain), enough for the camera to cut and settle,
 // the tags to move and a light to come up, and none in between.
@@ -449,6 +475,7 @@ function Still({ pathname }: { pathname: string }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     let lastFountain = world.get().fountain;
+    let stops = 0;
     const kick = () => invalidate(20);
     kick();
     const unsubscribe = world.subscribe(() => {
@@ -457,11 +484,13 @@ function Still({ pathname }: { pathname: string }) {
       if (started && started !== lastFountain) {
         lastFountain = started;
         // And once more when the fountain stops
-        window.setTimeout(kick, FOUNTAIN_MS + 100);
+        window.clearTimeout(stops);
+        stops = window.setTimeout(kick, FOUNTAIN_MS + 100);
       }
     });
     return () => {
       unsubscribe();
+      window.clearTimeout(stops);
     };
   }, [invalidate]);
   useEffect(() => {
@@ -493,16 +522,9 @@ export default function World3D() {
   const [mounted, setMounted] = useState<SceneId[]>([target.id]);
   const [quality] = useState(detectQuality);
   const [visible, setVisible] = useState(true);
-  // With reduced motion the world holds still, so it's drawn only when
+  // In still view the world holds still, so it's drawn only when
   // something changes (Still, below) instead of sixty times a second
-  const [still, setStill] = useState(false);
-  useEffect(() => {
-    const query = matchMedia("(prefers-reduced-motion: reduce)");
-    const update = () => setStill(query.matches);
-    update();
-    query.addEventListener("change", update);
-    return () => query.removeEventListener("change", update);
-  }, []);
+  const still = useWorld((s) => s.still);
   const iris = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => world.set({ quality }), [quality]);
@@ -580,10 +602,12 @@ export default function World3D() {
   const navigate = (href: string) => router.push(href);
 
   return (
-    <div ref={box} className="world3d" data-scene={active}>
+    <div ref={box} className="world3d" data-scene={active} data-arrived={arrived || undefined}>
       <Canvas
         className="world3d-canvas"
-        shadows
+        // PCF shadows: R3F's default (PCFSoft) is gone from three 0.18x,
+        // which used PCF anyway and warned about it on every load
+        shadows="percentage"
         // Pixel ratio: capped hardest on phones, where every pixel is paid
         // for twice (the scene, then the grade pass)
         dpr={quality === "mobile" ? [1, 1.25] : quality === "low" ? [1, 1.5] : [1, 1.75]}
@@ -596,7 +620,7 @@ export default function World3D() {
         }}
         aria-hidden="true"
       >
-        <Director target={target} active={active} onSwap={setActive} iris={iris} />
+        <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} />
         {still && <Still pathname={pathname} />}
         <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
         {/* the scenes themselves know two tiers */}

@@ -277,7 +277,8 @@ export default function Library({ active, quality }: SceneProps) {
       st.shown = spread;
     }
     if (st.turn > 0) {
-      st.turn = Math.min(1, st.turn + dt * 1.6);
+      // (in still view the page is simply turned)
+      st.turn = world.get().still ? 1 : Math.min(1, st.turn + dt * 1.6);
       const e = st.turn < 0.5 ? 2 * st.turn * st.turn : 1 - Math.pow(-2 * st.turn + 2, 2) / 2;
       nb.turning.set(st.dir > 0 ? e : 1 - e);
       if (st.turn >= 1) {

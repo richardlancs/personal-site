@@ -303,6 +303,9 @@ export default function Workshop({ active, quality }: SceneProps) {
     if (!active) return;
     built.sky.position.copy(camera.position);
     const t = clock.elapsedTime;
+    // Still view: a monitor is simply on or off, without the bright line
+    // opening or the flicker
+    const still = world.get().still;
     built.monitors.forEach((m, i) => {
       const on = i === sel.project && arrived;
       const entry = shots[i]?.[on ? sel.shot : 0] ?? null;
@@ -314,8 +317,8 @@ export default function Workshop({ active, quality }: SceneProps) {
         (m.picture.material as THREE.MeshBasicMaterial).needsUpdate = true;
         flicker.current[i] = 0.35;
       }
-      power.current[i] = THREE.MathUtils.damp(power.current[i], on ? 1 : 0, on ? 3.2 : 6, dt);
-      flicker.current[i] = Math.max(0, flicker.current[i] - dt);
+      power.current[i] = still ? (on ? 1 : 0) : THREE.MathUtils.damp(power.current[i], on ? 1 : 0, on ? 3.2 : 6, dt);
+      flicker.current[i] = still ? 0 : Math.max(0, flicker.current[i] - dt);
       const p = power.current[i];
       // Fit the picture inside the glass
       const aspect = entry?.aspect ?? 1.6;

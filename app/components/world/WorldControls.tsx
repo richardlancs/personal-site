@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { listed } from "../../sections/registry";
 import MusicToggle from "../MusicToggle";
+import StillViewToggle from "./StillViewToggle";
 
 // The few controls that sit over the world, in its corners. There is no
 // row of tabs: you get around by going to places in the park. The
@@ -70,6 +71,9 @@ export default function WorldControls() {
           </svg>
           Sections
         </button>
+        <span className="control-round">
+          <StillViewToggle />
+        </span>
         <span className="control-round">
           <MusicToggle />
         </span>

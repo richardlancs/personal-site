@@ -338,37 +338,41 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   // The far scenery, once the browser has a moment
   useEffect(() => onIdle(built.late, 1500), [built]);
 
-  useFrame(({ camera, clock }, dt) => {
+  useFrame(({ camera }, dt) => {
     if (!active) return;
-    const t = clock.elapsedTime;
+    // The world's clock (World3D.tsx: Wind), which stops in still view, so
+    // the swing, the signs and the falling leaves hold where they are
+    const t = windUniforms.uTime.value;
+    const still = world.get().still;
     built.sky.position.copy(camera.position);
     const wind = windUniforms.uGust.value;
     // The swing: a pendulum the wind pushes now and then
-    kick.current.swing = Math.max(kick.current.swing * Math.exp(-dt * 0.35), wind * 0.22);
+    // (in still view the pushes hold too, or the swing would creep)
+    if (!still) kick.current.swing = Math.max(kick.current.swing * Math.exp(-dt * 0.35), wind * 0.22);
     built.swing.seats.forEach((seat, i) => {
       seat.rotation.x = Math.sin(t * 2.05 + i * 1.3) * (0.03 + kick.current.swing) * (i ? 0.8 : 1);
     });
     // Sign arms knock in gusts
-    kick.current.sign = Math.max(kick.current.sign * Math.exp(-dt * 0.8), wind * 0.06);
+    if (!still) kick.current.sign = Math.max(kick.current.sign * Math.exp(-dt * 0.8), wind * 0.06);
     built.sign.swing.forEach((arm, i) => {
       arm.rotation.z = Math.sin(t * 3.1 + i * 2) * (0.006 + kick.current.sign);
     });
     // The booth light catches now and then
-    const flick = Math.sin(t * 0.37) > 0.985 ? 0.35 + 0.65 * Math.abs(Math.sin(t * 41)) : 1;
+    const flick = !still && Math.sin(t * 0.37) > 0.985 ? 0.35 + 0.65 * Math.abs(Math.sin(t * 41)) : 1;
     built.booth.light.intensity = 2.2 * flick;
     built.booth.tubeMat.emissiveIntensity = 1.6 * flick;
     // The map lifts off the board when you look closely
     const lift = focus === "board" ? 1 : 0;
-    built.board.map.rotation.x = THREE.MathUtils.damp(built.board.map.rotation.x, -0.22 * lift, 3, dt);
-    built.board.map.position.z = THREE.MathUtils.damp(built.board.map.position.z, 0.008 + 0.08 * lift, 3, dt);
+    const lifting = still ? 1 : 1 - Math.exp(-3 * dt); // (THREE.MathUtils.damp's factor; still view: at once)
+    built.board.map.rotation.x += (-0.22 * lift - built.board.map.rotation.x) * lifting;
+    built.board.map.position.z += (0.008 + 0.08 * lift - built.board.map.position.z) * lifting;
     // The arcade's sign hums
-    (built.arcade.signMat as THREE.MeshLambertMaterial).emissiveIntensity = 0.18 + (Math.sin(t * 13) > 0.92 ? 0.12 : 0);
-    built.falling.update(Math.min(dt, 0.05), t);
+    (built.arcade.signMat as THREE.MeshLambertMaterial).emissiveIntensity = 0.18 + (!still && Math.sin(t * 13) > 0.92 ? 0.12 : 0);
+    if (!still) built.falling.update(Math.min(dt, 0.05), t);
     // The fountain: rises quickly, runs a while, dies down more slowly
     const started = world.get().fountain;
     const running = started > 0 && performance.now() - started < FOUNTAIN_MS;
-    const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    water.current = reduce ? (running ? 1 : 0) : THREE.MathUtils.damp(water.current, running ? 1 : 0, running ? 2.6 : 1.1, dt);
+    water.current = still ? (running ? 1 : 0) : THREE.MathUtils.damp(water.current, running ? 1 : 0, running ? 2.6 : 1.1, dt);
     built.fountain.update(water.current, t);
     // Pointing at the fountain warms its stone, like the places' lights
     const lit = hover === "park:fountain" ? 0.22 : 0;
@@ -382,6 +386,7 @@ export default function Park({ active, quality, navigate }: SceneProps) {
   });
 
   const kickSwing = () => {
+    if (world.get().still) return; // in still view the swing stays put
     kick.current.swing = 0.35;
   };
 

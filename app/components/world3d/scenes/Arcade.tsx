@@ -17,6 +17,9 @@ const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const cabinetX = [-3.6, -1.2, 1.2, 3.6];
 const CAB_Z = -3.3;
 const hues = [18, 200, 140, 330];
+// The moment each screen's game is held at in still view: the ball on its
+// way up, the shuttle near the top, the knight mid-hop, five cards dealt
+const STILL_FRAME = 4.4;
 
 // The cabinet's screen: a little game that plays the interest, drawn
 // live on a canvas while the cabinet is on
@@ -294,21 +297,29 @@ export default function Arcade({ active, quality }: SceneProps) {
     if (!active) return;
     built.sky.position.copy(camera.position);
     const t = clock.elapsedTime;
-    const redraw = t - lastDraw.current > 1 / 12;
+    // The screens loop for as long as a cabinet is on, so still view (WCAG
+    // 2.2.2: pause, stop, hide) holds each one on a single frame of its
+    // game, and the cabinets switch on and off without fading
+    const still = world.get().still;
+    // (the clock restarts from 0 whenever the frame loop is paused, e.g.
+    // a hidden tab: then draw again rather than wait for the old time)
+    const redraw = still || t - lastDraw.current > 1 / 12 || t < lastDraw.current;
     if (redraw) lastDraw.current = t;
     built.cabinets.forEach((c, i) => {
       const on = i === interest && arrived;
-      power.current[i] = THREE.MathUtils.damp(power.current[i], on ? 1 : 0, 4, dt);
+      power.current[i] = still ? (on ? 1 : 0) : THREE.MathUtils.damp(power.current[i], on ? 1 : 0, 4, dt);
       const p = power.current[i];
-      if (redraw && (p > 0.02 || c.screen.tex.userData.wasOn)) {
-        c.screen.draw(t, p > 0.3);
+      const shown = p > 0.3;
+      if (still ? c.screen.tex.userData.still !== shown : redraw && (p > 0.02 || c.screen.tex.userData.wasOn)) {
+        c.screen.draw(still ? STILL_FRAME : t, shown);
         c.screen.tex.userData.wasOn = p > 0.02;
       }
+      c.screen.tex.userData.still = still ? shown : undefined;
       (c.glass.material as THREE.MeshBasicMaterial).color.setScalar(0.45 + p * 0.75);
       c.marquee.emissiveIntensity = 0.15 + p * 0.55;
     });
-    // The neon buzzes and drops out
-    built.neonMat.emissiveIntensity = Math.sin(t * 0.7) > 0.93 ? 0.1 : 0.6 + Math.sin(t * 50) * 0.04;
+    // The neon buzzes and drops out (steady in still view)
+    built.neonMat.emissiveIntensity = still ? 0.6 : Math.sin(t * 0.7) > 0.93 ? 0.1 : 0.6 + Math.sin(t * 50) * 0.04;
   });
 
   return (
