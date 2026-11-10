@@ -3,9 +3,11 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { anchors } from "./anchors";
+import Atmosphere from "./atmosphere/Atmosphere";
+import Precipitation from "./atmosphere/Precipitation";
 import { onIdle } from "./idle";
 import { windUniforms } from "./paint";
 import { places, sectionForPath } from "../../sections/registry";
@@ -19,6 +21,11 @@ import Station from "./scenes/Station";
 import Workshop from "./scenes/Workshop";
 import { isFlat } from "../world/flat";
 import { FOUNTAIN_MS, useWorld, world, type Quality } from "./store";
+
+// The development preview of the weather and the hour (every preset at
+// every time of day, and ?sky=… for screenshots). Only in development:
+// the condition is fixed at build time, so production has none of it.
+const DevSkyPanel = process.env.NODE_ENV === "development" ? lazy(() => import("./atmosphere/DevSkyPanel")) : null;
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
 const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
@@ -88,7 +95,7 @@ function Director({
   iris: React.RefObject<HTMLDivElement | null>;
   still: boolean;
 }) {
-  const { camera, gl, scene: three, invalidate } = useThree();
+  const { camera, gl, invalidate } = useThree();
   const st = useRef({
     pos: new THREE.Vector3(),
     look: new THREE.Vector3(),
@@ -109,13 +116,11 @@ function Director({
     framed: false,
   });
 
-  // Fog and background belong to the place
+  // (The place's fog and background: atmosphere/Atmosphere.tsx, which
+  // moves them with the weather and the hour)
   useEffect(() => {
-    const def = scenes[active];
-    three.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
-    three.background = new THREE.Color(def.background);
     st.current.active = active;
-  }, [active, three]);
+  }, [active]);
 
   // Plan the journey whenever the address changes
   useEffect(() => {
@@ -470,15 +475,22 @@ function Labels({ active, pathname }: { active: SceneId; pathname: string }) {
 // In still view the frame loop runs on demand: this asks for a few
 // frames whenever something changes (the address, what's chosen or
 // pointed at, the fountain), enough for the camera to cut and settle,
-// the tags to move and a light to come up, and none in between.
+// the tags to move and a light to come up, and none in between. A change
+// of sky alone asks for its own frame (Atmosphere.tsx), and only when it
+// changes what's seen, so a clock moving on doesn't draw the world.
 function Still({ pathname }: { pathname: string }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     let lastFountain = world.get().fountain;
+    let last = world.get();
     let stops = 0;
     const kick = () => invalidate(20);
     kick();
     const unsubscribe = world.subscribe(() => {
+      const now = world.get();
+      const skyOnly = now.sky !== last.sky && (Object.keys(now) as (keyof typeof now)[]).every((k) => k === "sky" || now[k] === last[k]);
+      last = now;
+      if (skyOnly) return;
       kick();
       const started = world.get().fountain;
       if (started && started !== lastFountain) {
@@ -710,6 +722,7 @@ export default function World3D() {
         <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} />
         {still && <Still pathname={pathname} />}
         <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
+        <Atmosphere active={active} />
         {/* the scenes themselves know two tiers */}
         <Wind />
         <LabelProjector active={active} />
@@ -723,10 +736,16 @@ export default function World3D() {
               </group>
             );
           })}
+        <Precipitation quality={quality} />
         <Warm mounted={mounted} active={active} onReady={() => setWarm(true)} />
       </Canvas>
       <div ref={iris} className="world-iris" aria-hidden="true" />
       <Labels active={active} pathname={pathname} />
+      {DevSkyPanel && (
+        <Suspense fallback={null}>
+          <DevSkyPanel />
+        </Suspense>
+      )}
     </div>
   );
 }
