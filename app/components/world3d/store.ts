@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { SkyState } from "../../lib/sky";
 import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "./still";
 
 // What the world and the pages share: which object the camera is looking
@@ -30,6 +31,10 @@ export type WorldState = {
   arrived: boolean; // the camera has settled in the current place
   quality: Quality; // the renderer's tier (World3D.tsx decides it)
   still: boolean; // still view (still.ts): no decorative motion, the camera cuts
+  // Richmond Hill's weather and time of day, as the world should show
+  // them (lib/sky.ts). Set by the weather driver from the live reading
+  // and the clock, or by the development preview controls.
+  sky: SkyState;
   sel: Selection;
 };
 
@@ -42,6 +47,7 @@ let state: WorldState = {
   arrived: false,
   quality: "high",
   still: false,
+  sky: { preset: "neutral", daylight: "day", progress: 0, source: "fallback" },
   sel: { project: 0, shot: 0, line: 0, interest: 0, page: 0 },
 };
 
