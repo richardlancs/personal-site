@@ -184,11 +184,13 @@ The site should feel spacious rather than dense.
 There is no row of tabs. Visitors get around by going to places in the
 park; the camera moves there. The plain alternatives, always one step away:
 
-- the **Places** menu in the top-right corner (every section, including
-  Skills)
+- the **Sections** menu in the top-right corner, labelled the same on both
+  layouts (every section, including Skills, with its place in the park
+  beside it on wide screens)
+- on the home page, the introduction with "View projects" and "Contact"
 - the notice board's map (`/map`)
 - "Back to the park" and Escape on every place's page
-- on the flat layout: the bar along the top (the way back, Places), tags on
+- on the flat layout: the bar along the top (the way back, Sections), tags on
   the painting, and "Elsewhere in the park" at the foot of each page
 
 Every place is a real URL, so browser history, deep links and the keyboard

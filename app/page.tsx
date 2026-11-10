@@ -5,11 +5,15 @@ import { places, sectionMetadata } from "./sections/registry";
 
 export const metadata = sectionMetadata("home");
 
+const newTab = <span className="sr-only"> (opens in a new tab)</span>;
+
 // The site opens in the park: the 3D world (components/world3d, in the
-// layout) with my name and links quiet in the open sky. On narrow screens
-// the park fills the top of the screen, its name tags showing, and a sheet
-// comes up under it with who I am and every section as a plain list (from
-// the section registry).
+// layout) with who I am in the open sky: my name, a line about me, the
+// two things a visitor most likely came for (the projects, and how to
+// reach me), and my links. On narrow screens the park fills the top of
+// the screen, its name tags showing, and a sheet comes up under it with
+// the same introduction and every section as a plain list (from the
+// section registry).
 export default function Home() {
   return (
     <main className="over-world">
@@ -19,25 +23,33 @@ export default function Home() {
           {profile.name}
         </h1>
         <p className="park-headline">{profile.headline}</p>
-        <p className="park-about only-flat">{profile.intro}</p>
+        <p className="park-about">{profile.intro}</p>
+        <div className="park-actions">
+          <Link href="/projects" className="park-action" data-primary>
+            View projects
+          </Link>
+          <Link href="/contact" className="park-action">
+            Contact
+          </Link>
+        </div>
         <ul aria-label="Links" className="park-links">
           <li>
             <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer">
               GitHub
+              {newTab}
             </a>
           </li>
           <li>
             <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer">
               LinkedIn
+              {newTab}
             </a>
           </li>
           <li>
             <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer">
               Résumé
+              {newTab}
             </a>
-          </li>
-          <li className="only-flat">
-            <Link href="/contact">Contact</Link>
           </li>
         </ul>
       </section>

@@ -97,3 +97,23 @@ test("the résumé is served as a PDF", { skip }, async () => {
   assert.equal(res.status, 200);
   assert.match(res.headers.get("content-type") ?? "", /^application\/pdf/);
 });
+
+test("the home page introduces me and leads to the projects and contact on both layouts (audit I1)", { skip }, async () => {
+  const { body } = await get("/");
+  assert.ok(body.includes(html(profile.intro)), "home: introduction");
+  // Not kept to one layout: the introduction and both actions are on every screen
+  assert.match(body, /<p class="park-about">/, "home: introduction is on both layouts");
+  assert.match(body, /<div class="park-actions">/, "home: actions are on both layouts");
+  assert.match(body, /href="\/projects"[^>]*>View projects</, "home: View projects");
+  assert.match(body, /href="\/contact"[^>]*>Contact</, "home: Contact");
+});
+
+test("the corner menu is called Sections on every layout (audit I1)", { skip }, async () => {
+  for (const s of listed) {
+    const { body } = await get(s.href);
+    const button = body.match(/<button[^>]*popoverTarget="places-menu"[^>]*>([\s\S]*?)<\/button>/i);
+    assert.ok(button, `${s.href}: the menu button`);
+    assert.equal(button[1].replace(/<[^>]+>/g, "").trim(), "Sections", `${s.href}: menu button label`);
+    assert.match(body, /<nav id="places-menu"[^>]*aria-label="Sections"/, `${s.href}: menu name`);
+  }
+});

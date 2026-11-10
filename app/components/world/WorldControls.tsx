@@ -7,15 +7,16 @@ import { listed } from "../../sections/registry";
 import MusicToggle from "../MusicToggle";
 
 // The few controls that sit over the world, in its corners. There is no
-// row of tabs: you get around by going to places in the park. The Places
-// menu is the plain alternative, one step from anywhere; its entries come
-// from the section registry.
+// row of tabs: you get around by going to places in the park. The
+// Sections menu is the plain alternative, one step from anywhere, on both
+// layouts; its entries come from the section registry, each with its
+// place in the park beside it on wide screens.
 export default function WorldControls() {
   const pathname = usePathname();
   const router = useRouter();
   const inPark = pathname === "/" || pathname === "/map";
 
-  // Escape goes back to the park from anywhere else. An open Places menu
+  // Escape goes back to the park from anywhere else. An open Sections menu
   // takes the key first (the browser closes it).
   useEffect(() => {
     if (pathname === "/") return;
@@ -58,21 +59,23 @@ export default function WorldControls() {
       )}
 
       <div className="flex items-center gap-2">
-        <button type="button" popoverTarget="places-menu" className="control-tag hover-grow" aria-haspopup="true">
+        {/* A popover button: the browser exposes it as expanded or
+            collapsed and returns focus to it when Escape closes the menu.
+            No aria-haspopup: the menu is a list of links, not a menu widget */}
+        <button type="button" popoverTarget="places-menu" className="control-tag hover-grow">
           <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
             {/* A folded paper map */}
             <path d="M3 5.5 7.5 4l5 1.5L17 4v10.5L12.5 16l-5-1.5L3 16Z" />
             <path d="M7.5 4v10.5M12.5 5.5V16" />
           </svg>
-          <span className="only-flat">Sections</span>
-          <span className="only-world">Places</span>
+          Sections
         </button>
         <span className="control-round">
           <MusicToggle />
         </span>
       </div>
 
-      <nav id="places-menu" popover="auto" aria-label="Places" className="places-menu paper">
+      <nav id="places-menu" popover="auto" aria-label="Sections" className="places-menu paper">
         <ul>
           {menu.map((s) => (
             <li key={s.id}>

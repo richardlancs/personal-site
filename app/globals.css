@@ -415,6 +415,93 @@ body {
   text-decoration-color: currentColor;
 }
 
+/*
+  Home: the introduction and the two ways in (audit I1, app/page.tsx).
+  The same short introduction on both layouts, then "View projects"
+  (filled indigo) and "Contact" (outlined): the two things a visitor most
+  likely came for, without finding a building first. The narrow layout's
+  sizes for the introduction are in its own block, further down.
+*/
+.park-about {
+  margin-top: 0.85rem;
+  max-width: 30rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.park-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+
+.park-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 1.15rem;
+  border: 1px solid rgb(30 16 122 / 0.35);
+  border-radius: 999px;
+  background: rgb(255 249 242 / 0.7);
+  color: var(--accent);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.park-action:hover {
+  border-color: var(--accent);
+  background: rgb(255 249 242 / 0.95);
+}
+
+.park-action[data-primary] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--cream);
+}
+
+.park-action[data-primary]:hover {
+  border-color: var(--surface-deep-2);
+  background: var(--surface-deep-2);
+}
+
+.park-action:active {
+  background: var(--highlight);
+  color: var(--accent);
+}
+
+/* The links under them are quieter: the actions lead */
+.park-actions + .park-links {
+  margin-top: 0.9rem;
+}
+
+/* The introduction makes the block taller, down toward the trees on the
+   left of wide screens: the haze behind it reaches a little further left
+   and holds its strength further out, so every line keeps 4.5:1 */
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  .park-intro::before {
+    inset: -4.5rem -6rem -5rem -9rem;
+    background: radial-gradient(
+      closest-side,
+      rgb(255 249 242 / 0.93) 60%,
+      rgb(255 249 242 / 0.78) 82%,
+      rgb(255 249 242 / 0)
+    );
+  }
+}
+
+@media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
+  .park-action {
+    min-height: 2.75rem;
+    padding: 0 1.25rem;
+  }
+}
+
 /* Page content sits over the world. Only its objects take clicks, so the
    world around them stays clickable. */
 :root {

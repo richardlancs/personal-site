@@ -95,7 +95,7 @@ projects and the notebook, so the content stays apart from the components.
 
 ## 4. List it
 
-Set `listed: true`. It now appears in the Places menu, the home page's
+Set `listed: true`. It now appears in the Sections menu, the home page's
 tags and section list, the map (if it has `map`), the name tags in the
 park (if it has an `anchor`) and the links at the foot of every page.
 
