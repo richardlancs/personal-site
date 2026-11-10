@@ -48,9 +48,9 @@ async function open(url: string, retry: boolean): Promise<Resume> {
   // The file and the reader download side by side
   const bytes = fetchBytes(url, retry);
   bytes.catch(() => {}); // reported below, once the reader is in
-  const lib = await (pdfjs ??= import("pdfjs-dist/legacy/build/pdf.mjs")).catch((error) => {
+  const lib = await (pdfjs ??= import("pdfjs-dist/legacy/build/pdf.mjs")).catch(() => {
     pdfjs = null;
-    throw new ResumeError("reader", `The reader didn't download (${String(error?.message ?? error)}).`);
+    throw new ResumeError("reader", "The reader didn't download. Check the connection and try again.");
   });
   const data = await bytes;
 
@@ -90,7 +90,7 @@ async function open(url: string, retry: boolean): Promise<Resume> {
     task.destroy();
     stop();
     if (error instanceof ResumeError) throw error;
-    throw new ResumeError("file", `The file couldn't be read (${String((error as Error)?.message ?? error)}).`);
+    throw new ResumeError("file", "The file arrived but couldn't be read.");
   } finally {
     window.clearTimeout(timer);
   }
@@ -104,7 +104,7 @@ async function fetchBytes(url: string, retry: boolean) {
   } catch {
     throw new ResumeError("network", "The connection dropped before the file arrived.");
   }
-  if (!res.ok) throw new ResumeError("network", `The server answered ${res.status}.`);
+  if (!res.ok) throw new ResumeError("network", res.status === 404 ? "The file couldn't be found." : "The site couldn't send the file just now.");
   try {
     return new Uint8Array(await res.arrayBuffer());
   } catch {

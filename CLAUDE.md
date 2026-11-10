@@ -130,8 +130,9 @@ derived from them (`--background`, `--paper`, `--surface-2`,
 surfaces, chosen states, washes and strokes, never text: text and links
 use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. Cream
 stays for paper, which suits the scenery. The enamel objects (timetable,
-phone line, cabinets, the notebook's cover) are a deep slate blue
-(`--surface-deep`). Indigo is gone from the interface (`npm test` checks).
+cabinets, the notebook's cover) are a deep slate blue
+(`--surface-deep`); the contact page's phone line is a pale-blue slip
+(interface, not part of the green booth). Indigo is gone from the interface (`npm test` checks).
 There is no dark theme and no toggle; `npm test` checks that none comes
 back. The 3D scenes' skies, fog and thresholds are tuned to the same
 family; the landscape stays natural.
@@ -233,11 +234,12 @@ the stronger blue for the main action; `.glass-icon` a square icon key.
 Tertiary actions stay text links (`.text-link`). Chosen states
 (`aria-pressed`, `aria-current`, `data-copied`, an open popover) are baby
 blue with a focus-blue edge. Where something dark can sit behind it
-(the corner controls over the world, the receiver on the enamel) the
+(the corner controls over the world) the
 glass is thicker (`--tint`), near-opaque under a dark sky, so words keep
 4.5:1 (`docs/ui/scripts/glass-contrast.mjs` measures it over every sky).
-Scene objects keep their own look (cabinets, the handset's enamel line,
-timetable lines, notebook turns, map pins, name tags).
+Focus rings over the scene (name tags, bench tabs, the notebook's
+controls, the corner controls) sit on a cream halo (`--focus-halo`).
+Scene objects keep their own look (cabinets, timetable lines, notebook turns, map pins, name tags).
 
 The press is `components/ui/GlassPress.tsx`, mounted once in the layout:
 one listener sets `data-pressed` and the press point on whichever `.glass`

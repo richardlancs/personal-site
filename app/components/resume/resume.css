@@ -238,6 +238,30 @@
   }
 }
 
+/* A phone on its side: little height to spare, so the bar is one row
+   whenever it fits */
+@media (max-height: 480px) and (min-width: 600px) {
+  .resume-bar {
+    padding-block: max(0.35rem, env(safe-area-inset-top)) 0.35rem;
+  }
+
+  .resume-title {
+    margin-right: 0;
+    font-size: 1.15rem;
+  }
+
+  .resume-tools {
+    order: 1;
+    width: auto;
+    margin-right: auto;
+    justify-content: flex-start;
+  }
+
+  .resume-end {
+    order: 2;
+  }
+}
+
 /* ---------- The document ---------- */
 
 .resume-doc {

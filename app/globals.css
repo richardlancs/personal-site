@@ -36,6 +36,8 @@
   --glass-shadow: 0 6px 18px -10px rgb(32 50 69 / 0.35);
   --glass-fallback: rgb(234 245 255 / 0.9); /* no backdrop-filter */
   --glass-radius: 10px;
+  /* Behind a focus ring over the world, so it shows on any scene */
+  --focus-halo: 0 0 0 6px rgb(255 249 242 / 0.92);
 
   /* Backgrounds and surfaces */
   --background: var(--cream);
@@ -303,6 +305,8 @@ body {
 .world-label:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
+  /* Tags hang over the scene: the ring sits on a halo of cream */
+  box-shadow: var(--focus-halo);
 }
 
 .world-label-place {
@@ -1087,6 +1091,17 @@ html {
   box-shadow: 0 0 6px var(--sky);
 }
 
+/* Over the bench and the night: the ring on a halo of cream */
+.bench-tab:focus-visible {
+  box-shadow: var(--focus-halo);
+}
+
+.bench-tab[aria-selected="true"]:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--focus-blue),
+    var(--focus-halo);
+}
+
 /* The chosen tab: pulled forward, with an ink rule drawn round it, so it
    reads as chosen without its lamp */
 .bench-tab[aria-selected="true"] {
@@ -1576,17 +1591,16 @@ html {
   align-items: center;
   gap: 0.75rem 1rem;
   padding: 0.85rem 1rem;
+  border: 1px solid var(--baby-line);
   border-radius: var(--radius);
-  /* Enamel, like the timetable */
-  background: linear-gradient(170deg, var(--surface-deep-lit), var(--surface-deep));
-  color: var(--on-deep);
-  box-shadow: 0 20px 40px -28px rgb(var(--shadow) / 0.6);
+  /* A pale-blue slip: interface, not part of the booth (which is green) */
+  background: linear-gradient(170deg, var(--baby-light), var(--baby-pale));
+  color: var(--slate);
+  box-shadow: 0 20px 40px -28px rgb(var(--shadow) / 0.45);
 }
 
-/* The receiver: a primary glass button, lit baby blue on the enamel
-   (more tint than glass elsewhere, so its words keep 9:1 on the dark) */
+/* The receiver: the page's primary glass button */
 .phone-handset {
-  --tint: rgb(184 220 250 / 0.9);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -1989,7 +2003,7 @@ html {
 
 .phone-line {
   border-radius: var(--radius-lg);
-  background: linear-gradient(170deg, rgb(42 77 114 / 0.9), rgb(31 58 90 / 0.9));
+  background: linear-gradient(170deg, rgb(247 251 255 / 0.9), rgb(234 245 255 / 0.86));
   backdrop-filter: var(--veil);
   box-shadow: 0 18px 44px -20px rgb(var(--shadow) / 0.4);
 }
@@ -2058,6 +2072,13 @@ html {
 .notebook-controls + .text-link:hover,
 .notebook-sheet + .text-link:hover {
   background-color: rgb(255 249 242 / 0.92);
+}
+
+/* Over the dark desk: the ring on a halo of cream */
+.notebook-controls + .text-link:focus-visible,
+.notebook-sheet + .text-link:focus-visible,
+.notebook-turn:focus-visible {
+  box-shadow: var(--focus-halo);
 }
 
 /* The notebook's controls carry a line of text (which pages are open):
@@ -2369,15 +2390,15 @@ html {
   }
 
   .onward ul {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 0.75rem;
   }
 
   /* Glass keys, each with the place's drawing */
   .onward li a {
-    display: flex;
+    display: inline-flex;
     justify-content: flex-start;
     gap: 0.55rem;
     min-height: 3rem;
@@ -3123,17 +3144,7 @@ html {
 }
 
 .world-controls .glass:focus-visible {
-  box-shadow: 0 0 0 6px rgb(255 249 242 / 0.92);
-}
-
-/* The receiver, lit on the booth's dark enamel; its focus ring is cream
-   there (the focus blue would be 2.1:1 on the enamel) */
-.phone-line .phone-handset {
-  --tint: rgb(184 220 250 / 0.9);
-}
-
-.phone-line .phone-handset:focus-visible {
-  outline-color: var(--cream);
+  box-shadow: var(--focus-halo);
 }
 
 /* The press: a ripple (::before) and a sweep of light (::after) */
@@ -3242,4 +3253,11 @@ html {
   .glass-primary {
     background-color: var(--baby);
   }
+}
+
+/* A résumé link while the viewer is on its way (ResumeHost.tsx) */
+a[data-resume][data-opening] {
+  cursor: progress;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
 }
