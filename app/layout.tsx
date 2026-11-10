@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import SkyDriver from "./components/weather/SkyDriver";
 import { STILL_SCRIPT } from "./components/world3d/still";
 import WorldShell from "./components/world3d/WorldShell";
 import WorldControls from "./components/world/WorldControls";
@@ -90,6 +91,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* The world stays on screen across pages; each page moves its
             camera to a place (components/world3d/World3D.tsx) */}
         <WorldShell />
+        {/* Richmond Hill's weather and daylight, into the world's sky */}
+        <SkyDriver />
         <div id="content" tabIndex={-1} className="outline-none">
           {children}
         </div>
