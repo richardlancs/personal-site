@@ -25,7 +25,9 @@ export const ramps: Record<Foliage, Ramp> = {
   pine: { light: "#93ad68", mid: "#4a7552", shadow: "#1b414b" },
   belt: { light: "#8aa86e", mid: "#527d5e", shadow: "#264f5a" },
   ginkgo: { light: "#f0d474", mid: "#cf9f3e", shadow: "#5f6651" },
-  maple: { light: "#d4936a", mid: "#a54f35", shadow: "#4f3a42" },
+  // (the maple's shade is a muted, cooler wine, so the crown never reads as
+  // a dark hole, whatever the weather)
+  maple: { light: "#d4936a", mid: "#a54f35", shadow: "#5b4954" },
 };
 
 export type Cluster = { center: THREE.Vector3; radius: number; squash?: number };

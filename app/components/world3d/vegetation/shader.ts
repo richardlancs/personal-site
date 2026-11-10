@@ -144,8 +144,29 @@ const SHADE = /* glsl */ `
   // Roots go into the ground: the base of a blade takes the ground's colour
   col = mix(uVegGround * vegIrr, col, smoothstep(0.0, 0.45, vVegUp));
 #endif
+  // Dull weather mutes the colour: when the sun's share of the light falls
+  // (overcast, rain, snow: the atmosphere dims the sun and lifts the sky),
+  // or things are wet, greens and autumn colours lose their saturation and
+  // a little brightness, as they do on a grey day. In the park's clear or
+  // neutral light the sun is about two thirds of it, and nothing changes.
+  float vegMute = uWet;
+#if NUM_DIR_LIGHTS > 0 && NUM_HEMI_LIGHTS > 0
+  {
+    float sunL = dot(directionalLights[0].color, vec3(0.299, 0.587, 0.114));
+    float skyL = dot(hemisphereLights[0].skyColor, vec3(0.299, 0.587, 0.114));
+    vegMute = max(vegMute, 1.0 - smoothstep(0.36, 0.6, sunL / max(sunL + skyL, 1e-4)));
+  }
+#endif
+#ifdef VEG_GRASS
+  // (grass most: it's the largest, most saturated area of colour)
+  vec2 vegMuting = vec2(0.42, 0.2);
+#else
+  vec2 vegMuting = vec2(0.3, 0.08);
+#endif
+  float vegGrey = dot(col, vec3(0.299, 0.587, 0.114));
+  col = mix(col, vegGrey * vec3(0.94, 1.0, 1.05), vegMute * vegMuting.x) * (1.0 - vegMute * vegMuting.y);
   vec3 wN = normalize((vec4(normal, 0.0) * viewMatrix).xyz);
-  // Rain: darker, a little more saturated, and a sheen at grazing angles
+  // Rain: darker, and a sheen at grazing angles
   float wet = uWet;
   col *= 1.0 - 0.22 * wet;
   float graze = pow(1.0 - abs(dot(normal, normalize(vViewPosition))), 4.0);
