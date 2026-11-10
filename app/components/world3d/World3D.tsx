@@ -643,6 +643,8 @@ export default function World3D() {
   // In still view the world holds still, so it's drawn only when
   // something changes (Still, below) instead of sixty times a second
   const still = useWorld((s) => s.still);
+  // Under a dialog (the résumé) the world holds its last frame
+  const covered = useWorld((s) => s.covered);
   // The first frame waits for the first place's shaders (Warm, above)
   const [warm, setWarm] = useState(false);
   const iris = useRef<HTMLDivElement>(null);
@@ -731,7 +733,7 @@ export default function World3D() {
         // Pixel ratio: capped hardest on phones, where every pixel is paid
         // for twice (the scene, then the grade pass)
         dpr={quality === "mobile" ? [1, 1.25] : quality === "low" ? [1, 1.5] : [1, 1.75]}
-        frameloop={!visible || !warm ? "never" : still ? "demand" : "always"}
+        frameloop={!visible || !warm || covered ? "never" : still ? "demand" : "always"}
         gl={{ antialias: quality !== "mobile", powerPreference: quality === "mobile" ? "default" : "high-performance" }}
         camera={{ fov: 48, near: 0.1, far: 900, position: [0, 2, 20] }}
         onCreated={({ gl }) => {
