@@ -60,11 +60,17 @@ Keep content/data separate from visual components where practical.
 ## Design Direction
 
 The site is a small real-time 3D world: an abandoned, overgrown Japanese
-park and the places around it, in late-afternoon autumn light. It is built
-with three.js and React Three Fiber in `app/components/world3d/`, and every
-model and texture there is generated in code from fixed seeds (no downloaded
-models, no Blender). The painting `app/assets/park/park-v04.png` is the art
-reference, and the fallback when WebGL isn't available.
+park and the places around it, in autumn. Its light and weather follow
+Richmond Hill's: the time of day from the local clock and that day's
+sunrise and sunset, and clear, cloudy, rain or snow from the current
+reading (`world3d/atmosphere/`, driven by `components/weather/`; the
+neutral look, close to late-afternoon light, when there's no reading).
+It is built with three.js and React Three Fiber in
+`app/components/world3d/`, and every model and texture there is generated
+in code from fixed seeds (no downloaded models, no Blender). The painting
+`app/assets/park/park-v04.png` is the art reference, and the fallback when
+WebGL isn't available. What was built and how it was checked:
+`docs/weather/report.md`.
 
 Six places, each its own 3D scene: the park (home; its notice board opens
 the map at `/map`), the workshop (Projects, Skills), the station
