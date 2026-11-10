@@ -236,3 +236,9 @@ export function vegMesh(geometry: THREE.BufferGeometry, material: THREE.MeshLamb
   if (cast) m.customDepthMaterial = (material.userData.depth ??= vegDepth(material));
   return m;
 }
+
+// For trying the weather's effect on the vegetation from the browser
+// console in development (S's atmosphere code drives them for real)
+if (typeof window !== "undefined" && process.env.NODE_ENV !== "production") {
+  (window as unknown as { __env: typeof envUniforms }).__env = envUniforms;
+}
