@@ -1,0 +1,122 @@
+[
+ {
+  "view": "desktop",
+  "route": "/",
+  "title": "Richard Lan | Software Engineering Portfolio",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/about",
+  "title": "About | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/projects",
+  "title": "Projects | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/experience",
+  "title": "Experience | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/interests",
+  "title": "Interests | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/contact",
+  "title": "Contact | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "route": "/map",
+  "title": "Map of the park | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "desktop",
+  "errors": []
+ },
+ {
+  "view": "mobile",
+  "route": "/",
+  "title": "Richard Lan | Software Engineering Portfolio",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/about",
+  "title": "About | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/projects",
+  "title": "Projects | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/experience",
+  "title": "Experience | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/interests",
+  "title": "Interests | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/contact",
+  "title": "Contact | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "route": "/map",
+  "title": "Map of the park | Richard Lan",
+  "hOverflow": false,
+  "canvas": true,
+  "webgl": true
+ },
+ {
+  "view": "mobile",
+  "errors": []
+ }
+]
