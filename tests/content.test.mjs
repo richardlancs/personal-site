@@ -2,11 +2,12 @@
 // step by hand. Run with `npm test` (Node's own test runner; Node reads the
 // TypeScript data files directly).
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { FLAT_QUERY, WORLD_QUERY } from "../app/components/world/flat.ts";
 import { about, experience, interests, profile, projects, skillGroups } from "../app/data/portfolio.ts";
-import { places, sectionForAnchor, sectionForPath, sections } from "../app/sections/registry.ts";
+import { places, sectionForAnchor, sectionForPath, sections, siteUrl } from "../app/sections/registry.ts";
 import { glyphs } from "../app/components/world/glyphs.ts";
 import { scenes } from "../app/components/world3d/scenes.ts";
 
@@ -175,4 +176,12 @@ test("the hints say what the controls do (audit F3, F4)", () => {
   for (const s of sections) assert.doesNotMatch(s.hint ?? "", /\bplay\b|\bscroll\b/i, `${s.id}: hint promises something the page doesn't do`);
   const arcade = readFileSync(`${root}app/components/world3d/scenes/Arcade.tsx`, "utf8");
   assert.doesNotMatch(arcade, /INSERT COIN/i, "the cabinets don't invite play");
+});
+
+test("the site has its own icons and share card, not the framework's (audit F1)", () => {
+  const favicon = readFileSync(`${root}app/favicon.ico`);
+  // The icon create-next-app ships: a black square with a white N
+  assert.notEqual(createHash("sha1").update(favicon).digest("hex"), "9bd95591db1b6ee579ed9485a4d4a957e7a90354", "app/favicon.ico is still the Next.js default");
+  for (const file of ["app/icon.svg", "app/apple-icon.png", "public/share-card.jpg"]) assert.ok(existsSync(`${root}${file}`), `${file} is missing`);
+  assert.match(siteUrl, /^https:\/\/[^/]+$/, "siteUrl is an https origin with no trailing slash");
 });

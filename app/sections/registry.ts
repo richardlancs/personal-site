@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { GlyphId } from "../components/world/glyphs";
 import type { SceneId } from "../components/world3d/scenes";
 
@@ -173,8 +174,34 @@ export const sectionForPath = (pathname: string): Section => sections.find((s) =
 // The section a building in the park leads to
 export const sectionForAnchor = (anchor: NonNullable<Section["anchor"]>): Section | undefined => sections.find((s) => s.anchor === anchor);
 
-// Page metadata, from the registry
-export const sectionMetadata = (id: SectionId) => {
+// Where the site is published. Canonical addresses, the sitemap, robots.txt
+// and the share cards are all made absolute from this (layout.tsx sets it
+// as metadataBase). Change it here if the site moves to its own domain.
+export const siteUrl = "https://personal-site-flame-eight-52.vercel.app";
+export const siteName = "Richard Lan";
+
+// The picture on share cards: the painting with my name on it
+// (public/share-card.jpg, drawn by scripts/identity/make-identity.mjs).
+// Named on every page, because a page's openGraph replaces its parent's
+// whole, pictures included.
+const shareCard = {
+  url: "/share-card.jpg",
+  width: 1200,
+  height: 630,
+  alt: "Richard Lan, CS student at the University of Waterloo: software engineering portfolio, over a painting of an overgrown park in autumn light.",
+};
+
+// Page metadata, from the registry: its title and description, its
+// canonical address, and the same for share cards.
+export const sectionMetadata = (id: SectionId): Metadata => {
   const s = section(id);
-  return s.listed ? s.metadata : { ...s.metadata, robots: { index: false, follow: false } };
+  const title = s.id === "home" ? s.metadata.title : `${s.metadata.title} | ${siteName}`;
+  return {
+    title: s.metadata.title,
+    description: s.metadata.description,
+    alternates: { canonical: s.href },
+    openGraph: { type: "website", siteName, url: s.href, title, description: s.metadata.description, images: [shareCard] },
+    twitter: { card: "summary_large_image", title, description: s.metadata.description, images: [shareCard] },
+    ...(s.listed ? {} : { robots: { index: false, follow: false } }),
+  };
 };

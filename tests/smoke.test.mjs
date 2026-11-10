@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { profile, projects, experience, interests } from "../app/data/portfolio.ts";
-import { listed, places } from "../app/sections/registry.ts";
+import { listed, places, siteUrl } from "../app/sections/registry.ts";
 
 const base = process.env.SMOKE_URL?.replace(/\/$/, "");
 const skip = base ? false : "set SMOKE_URL to a running build to run the smoke checks";
@@ -135,5 +135,36 @@ test("copy and music feedback are live regions drawn on screen, not screen-reade
   for (const s of listed) {
     const { body } = await get(s.href);
     assert.match(body, /<span role="status" class="music-status">/, `${s.href}: the music status`);
+  }
+});
+
+test("every page names its canonical address and a share card (audit: metadata)", { skip }, async () => {
+  for (const s of listed) {
+    const { body } = await get(s.href);
+    const canonical = s.href === "/" ? siteUrl : `${siteUrl}${s.href}`;
+    assert.ok(body.includes(`<link rel="canonical" href="${canonical}"/>`), `${s.href}: canonical`);
+    assert.ok(body.includes(`<meta property="og:url" content="${canonical}"/>`), `${s.href}: og:url`);
+    assert.ok(body.includes(`<meta property="og:image" content="${siteUrl}/share-card.jpg"/>`), `${s.href}: og:image`);
+    assert.ok(body.includes('<meta name="twitter:card" content="summary_large_image"/>'), `${s.href}: twitter:card`);
+    assert.ok(body.includes(`<meta name="twitter:image" content="${siteUrl}/share-card.jpg"/>`), `${s.href}: twitter:image`);
+  }
+});
+
+test("robots.txt allows crawling and points at the sitemap, which lists every listed section", { skip }, async () => {
+  const robots = await get("/robots.txt");
+  assert.equal(robots.status, 200);
+  assert.match(robots.body, /User-Agent: \*\nAllow: \//);
+  assert.ok(robots.body.includes(`Sitemap: ${siteUrl}/sitemap.xml`));
+  const sitemap = await get("/sitemap.xml");
+  assert.equal(sitemap.status, 200);
+  const locs = [...sitemap.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  assert.deepEqual(locs.sort(), listed.map((s) => (s.href === "/" ? siteUrl : `${siteUrl}${s.href}`)).sort());
+});
+
+test("the icons and the share card are served with the right types", { skip }, async () => {
+  for (const [path, type] of [["/favicon.ico", /^image\/(x-icon|vnd\.microsoft\.icon)/], ["/icon.svg", /^image\/svg\+xml/], ["/apple-icon.png", /^image\/png/], ["/share-card.jpg", /^image\/jpeg/]]) {
+    const res = await fetch(base + path, { method: "HEAD" });
+    assert.equal(res.status, 200, path);
+    assert.match(res.headers.get("content-type") ?? "", type, path);
   }
 });

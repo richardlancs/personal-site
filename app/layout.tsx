@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { STILL_SCRIPT } from "./components/world3d/still";
 import WorldShell from "./components/world3d/WorldShell";
 import WorldControls from "./components/world/WorldControls";
+import { siteUrl } from "./sections/registry";
 import "./globals.css";
 
 // Headings: Shippori Mincho B1, a mincho with a slight ink spread, like
@@ -47,6 +48,8 @@ const chinese = localFont({
 });
 
 export const metadata: Metadata = {
+  // Makes canonical addresses and share images absolute (sections/registry.ts)
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Richard Lan | Software Engineering Portfolio",
     template: "%s | Richard Lan",
