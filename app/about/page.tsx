@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Notebook from "../components/locations/Notebook";
+import ResumeLink from "../components/resume/ResumeLink";
 import Points from "../components/ui/Points";
 import Location from "../components/world/Location";
 import { about, githubNote, profile } from "../data/portfolio";
@@ -40,9 +41,7 @@ export default function AboutPage() {
               </a>
             </li>
             <li>
-              <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-link">
-                Résumé (PDF)
-              </a>
+              <ResumeLink className="text-link">Résumé (PDF)</ResumeLink>
             </li>
             <li>
               <Link href="/contact" className="text-link">

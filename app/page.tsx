@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ResumeLink from "./components/resume/ResumeLink";
 import PlaceGlyph from "./components/world/PlaceGlyph";
 import { profile } from "./data/portfolio";
 import { places, sectionMetadata } from "./sections/registry";
@@ -46,10 +47,8 @@ export default function Home() {
             </a>
           </li>
           <li>
-            <a href={profile.resumeUrl} target="_blank" rel="noopener noreferrer">
-              Résumé
-              {newTab}
-            </a>
+            {/* Opens the résumé over the page (components/resume) */}
+            <ResumeLink>Résumé</ResumeLink>
           </li>
         </ul>
       </section>

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useWorld, world } from "../world3d/store";
 
-export type Line = { label: string; value: string; href: string; copy?: boolean };
+// `viewer`: the résumé, which opens in the page (resume/ResumeHost.tsx)
+export type Line = { label: string; value: string; href: string; copy?: boolean; viewer?: boolean };
 
 // The phone booth: the directory card pinned inside, with every way to get
 // in touch as a plain link, and the phone itself. Picking up the receiver
@@ -89,9 +90,11 @@ export default function Payphone({ lines }: { lines: Line[] }) {
                   target={line.href.startsWith("mailto:") ? undefined : "_blank"}
                   rel="noopener noreferrer"
                   className="text-link"
+                  data-resume={line.viewer ? "" : undefined}
+                  aria-haspopup={line.viewer ? "dialog" : undefined}
                 >
                   {line.value}
-                  {!line.href.startsWith("mailto:") && newTab}
+                  {!line.href.startsWith("mailto:") && !line.viewer && newTab}
                 </a>
                 {line.copy && (
                   <button type="button" className="directory-copy" data-copied={copied === line.value || undefined} onClick={() => copy(line.value)}>
