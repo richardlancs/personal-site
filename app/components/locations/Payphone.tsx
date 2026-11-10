@@ -36,7 +36,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
       {email && (
         <div className="phone-line only-flat">
           <a href={email.href} className="phone-handset">
-            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3.5 6.5h17v11h-17Z M3.5 7l8.5 6.5L20.5 7" />
             </svg>
             Write me an email
@@ -46,7 +46,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
       )}
       <div className="phone-line only-world" data-up={up || undefined}>
         <button type="button" className="phone-handset hover-grow" aria-pressed={up} onClick={() => setReceiver(!up)}>
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
           </svg>
           {up ? "Hang up" : "Pick up the phone"}

@@ -48,8 +48,8 @@ export default function WorldControls() {
     <div className="world-controls">
       {!inPark || pathname === "/map" ? (
         <Link href="/" className="control-tag hover-grow" title="Back to the park (Esc)">
-          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12.5 4.5 7 10l5.5 5.5" />
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14.5 5.5 8 12l6.5 6.5" />
           </svg>
           <span className="only-flat">Home</span>
           <span className="only-world">Back to the park</span>
@@ -63,10 +63,10 @@ export default function WorldControls() {
             collapsed and returns focus to it when Escape closes the menu.
             No aria-haspopup: the menu is a list of links, not a menu widget */}
         <button type="button" popoverTarget="places-menu" className="control-tag hover-grow">
-          <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             {/* A folded paper map */}
-            <path d="M3 5.5 7.5 4l5 1.5L17 4v10.5L12.5 16l-5-1.5L3 16Z" />
-            <path d="M7.5 4v10.5M12.5 5.5V16" />
+            <path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z" />
+            <path d="M9 4.5v13M15 6.5v13" />
           </svg>
           Sections
         </button>

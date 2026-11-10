@@ -27,7 +27,11 @@
   --surface-2: var(--sand); /* secondary surface: boards, shells, tabs */
   --surface-deep: var(--indigo); /* enamel, cabinets, the phone's line */
   --surface-deep-2: #15105a; /* its darker edge */
-  --sheet: #fffdf8; /* an opaque sheet (the map) */
+  --sheet: #fffdf8; /* an opaque sheet (the map, the notebook's pages) */
+  /* Cards that are read (project notes, the directory, the notices): the
+     sheet, nearly opaque, so small and coloured text keeps 4.5:1 over the
+     darkest scene behind it */
+  --reading: rgb(255 253 248 / 0.93);
   --nav: rgb(255 249 242 / 0.8);
   --label: rgb(255 249 242 / 0.8); /* name tags in the world */
 
@@ -46,7 +50,7 @@
   --accent-hover: #0f6f93; /* the sky, dark enough to read (5.4:1 on cream) */
   --mark: #0f6f93; /* dates, dashes and small marks */
   --highlight: rgb(85 198 240 / 0.28); /* a wash of sky behind something chosen */
-  --error-ink: #c93a2b; /* the error colour, dark enough for text */
+  --error-ink: #b0301f; /* the error colour, dark enough for small text (6.3:1 on the sheet) */
   --focus: var(--indigo);
 
   /* Light and shadow */
@@ -61,6 +65,10 @@
 
   /* Height of the fixed navbar (Navbar.tsx sets the same rows) */
   --nav-h: 5.5rem;
+
+  /* Reading: body text is 16px on a 1.6 line, in lines of at most about
+     65 characters; space comes in steps of 8px (0.5, 1, 1.5, 2rem) */
+  --measure: 65ch;
 }
 
 @media (min-width: 768px) {
@@ -137,8 +145,9 @@ body {
 .points {
   display: grid;
   gap: 0.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.55;
+  max-width: var(--measure);
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--muted);
 }
 
@@ -702,6 +711,11 @@ body {
   --radius-lg: 18px;
   --radius: 14px;
   --radius-sm: 9px;
+  /* The shadow under an object that stands off the world (the notebook,
+     the tool wall): soft and short, never a dark pool */
+  --lift: 0 18px 40px -26px rgb(var(--shadow) / 0.45);
+  /* The notebook's cover, showing round its pages */
+  --cover: 6px;
 }
 
 .location {
@@ -748,8 +762,8 @@ body {
 .location-header {
   display: inline-block;
   max-width: 100%;
-  margin-bottom: 1.25rem;
-  padding: 0.8rem 1.2rem 0.95rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
@@ -771,18 +785,18 @@ body {
 }
 
 .location-intro {
-  max-width: 34rem;
-  margin-top: 0.35rem;
-  font-size: 0.95rem;
-  line-height: 1.55;
+  max-width: var(--measure);
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--muted);
 }
 
 /* The notice for an address with no page (not-found.tsx) */
 .lost-notice {
   max-width: 28rem;
-  padding: 1.5rem 1.6rem 1.7rem;
-  border-radius: 12px;
+  padding: 1.5rem;
+  border-radius: var(--radius);
 }
 
 .lost-notice-links {
@@ -807,11 +821,11 @@ body {
 .notebook {
   position: relative;
   display: grid;
-  padding: 10px;
+  padding: var(--cover);
   border-radius: var(--radius-lg);
   /* The cover, under the pages: indigo cloth */
   background: linear-gradient(135deg, #2b1f92, var(--surface-deep-2));
-  box-shadow: 0 26px 50px -30px rgb(var(--shadow) / 0.6);
+  box-shadow: var(--lift);
   perspective: 1800px;
 }
 
@@ -911,10 +925,10 @@ body {
 /* The leaf that sweeps across on a page turn */
 .notebook-leaf {
   position: absolute;
-  top: 10px;
-  bottom: 10px;
+  top: var(--cover);
+  bottom: var(--cover);
   left: 50%;
-  width: calc(50% - 10px);
+  width: calc(50% - var(--cover));
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   opacity: 0;
   transform-origin: left center;
@@ -923,13 +937,13 @@ body {
 }
 
 .notebook-leaf[data-dir="back"] {
-  left: 10px;
+  left: var(--cover);
   transform-origin: right center;
 }
 
 .notebook:not([data-wide]) .notebook-leaf {
-  left: 10px;
-  width: calc(100% - 20px);
+  left: var(--cover);
+  width: calc(100% - 2 * var(--cover));
   transform-origin: left center;
 }
 
@@ -939,7 +953,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem 1rem;
-  margin-top: 0.9rem;
+  margin-top: 1rem;
   padding: 0.5rem 0.75rem;
   border-radius: var(--radius-sm);
   background: var(--paper);
@@ -975,9 +989,11 @@ body {
 }
 
 .notebook-sheet {
-  padding: 2.75rem 1.6rem 2.5rem 3.2rem;
+  padding: 2.75rem 1.5rem 2.5rem 3.2rem;
+  /* The cover shows as a thin edge round the sheet */
+  border: 3px solid var(--surface-deep);
   border-radius: var(--radius);
-  box-shadow: 0 26px 50px -30px rgb(var(--shadow) / 0.6);
+  box-shadow: var(--lift);
 }
 
 .notebook-sheet > * + * {
@@ -1095,7 +1111,7 @@ body {
 /* The project's notes, clipped to a board */
 .project-notes {
   position: relative;
-  padding: 1.75rem 1.5rem 1.5rem;
+  padding: 2rem 1.5rem 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
@@ -1119,15 +1135,17 @@ body {
 
 /* What it is, in one sentence, a size up from the points below */
 .project-summary {
-  margin-top: 0.6rem;
+  max-width: var(--measure);
+  margin-top: 0.5rem;
   font-size: 1.0625rem;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .project-role {
+  max-width: var(--measure);
   margin-top: 0.5rem;
-  font-size: 0.9375rem;
-  line-height: 1.5;
+  font-size: 1rem;
+  line-height: 1.6;
   color: var(--muted);
 }
 
@@ -1141,14 +1159,14 @@ body {
 .project-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
-  margin-top: 0.7rem;
-  font-size: 0.9375rem;
+  gap: 0.25rem 1.5rem;
+  margin-top: 0.75rem;
+  font-size: 1rem;
   font-weight: 500;
 }
 
 .project-notes-label {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 600;
@@ -1188,20 +1206,20 @@ body {
 /* The tool wall: a pegboard with the skills hung on it */
 .tool-wall {
   display: block;
-  margin-top: 2.75rem;
-  padding: 1.5rem 1.5rem 1.75rem;
+  margin-top: 3rem;
+  padding: 1.5rem;
   border-radius: var(--radius);
   background-color: var(--surface-2);
   background-image: radial-gradient(circle, rgb(var(--shadow) / 0.22) 1.6px, transparent 2.2px);
   background-size: 22px 22px;
   color: var(--foreground);
   scroll-margin-top: 5rem;
-  box-shadow: 0 26px 50px -32px rgb(var(--shadow) / 0.6);
+  box-shadow: var(--lift);
 }
 
 .tool-boards {
   display: grid;
-  gap: 0.9rem;
+  gap: 1rem;
   margin-top: 1rem;
 }
 
@@ -1253,8 +1271,9 @@ body {
 
 /* ---------- The station: an enamel timetable ---------- */
 .timetable {
-  padding: 1rem 1.25rem 1.25rem;
-  border: 6px solid var(--surface-deep-2);
+  padding: 1rem 1.5rem 1.5rem;
+  /* The enamel sign's rim: a thin dark edge, not a frame */
+  border: 3px solid var(--surface-deep-2);
   border-radius: var(--radius);
   background: linear-gradient(170deg, #2a1d8e, var(--surface-deep));
   color: var(--on-deep);
@@ -1356,7 +1375,7 @@ body {
 /* The notice for the chosen line, turning over like flaps */
 .timetable-notice {
   margin-top: 1rem;
-  padding: 1.25rem 1.4rem 1.4rem;
+  padding: 1.5rem;
   border-top: 4px solid var(--sky);
   border-radius: 0 0 var(--radius) var(--radius);
   background: var(--paper) var(--grain);
@@ -1435,10 +1454,10 @@ body {
 
 .cabinet-card {
   display: flex;
-  gap: 1.1rem;
+  gap: 1rem;
   align-items: flex-start;
-  margin-top: 1.25rem;
-  padding: 1.4rem 1.4rem 1.5rem;
+  margin-top: 1.5rem;
+  padding: 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
@@ -1455,6 +1474,12 @@ body {
   border: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
   border-radius: 50%;
   color: var(--accent);
+}
+
+/* The interests' drawings (Cabinets.tsx): the same 1.5px line at every
+   size they're shown */
+.sketch * {
+  vector-effect: non-scaling-stroke;
 }
 
 @keyframes card-out {
@@ -1506,8 +1531,8 @@ body {
 
 .directory {
   position: relative;
-  margin-top: 1.1rem;
-  padding: 1.5rem 1.5rem 1.25rem;
+  margin-top: 1rem;
+  padding: 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper) var(--grain);
@@ -1672,11 +1697,19 @@ body {
   fill: none;
   stroke: var(--foreground);
   stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* The ink is the same weight on a phone's sheet as on a wide one: line
+   widths are in screen pixels, not the drawing's units (the drawing
+   shrinks to half its size on a phone) */
+.map-ink * {
+  vector-effect: non-scaling-stroke;
 }
 
 .map-path path {
-  stroke-width: 2;
-  stroke-dasharray: 7 6;
+  stroke-width: 1.75;
+  stroke-dasharray: 8 6;
   opacity: 0.55;
 }
 
@@ -1686,8 +1719,8 @@ body {
 }
 
 .map-fence {
-  stroke-width: 1.2;
-  stroke-dasharray: 2 4;
+  stroke-width: 1.25;
+  stroke-dasharray: 2 5;
   opacity: 0.5;
 }
 
@@ -1718,8 +1751,7 @@ body {
 }
 
 .map-building {
-  stroke-width: 1.6;
-  stroke-linejoin: round;
+  stroke-width: 1.75;
   opacity: 0.85;
 }
 
@@ -1876,6 +1908,16 @@ body {
   background-color: color-mix(in srgb, var(--sheet) 94%, transparent);
 }
 
+/* The cards that are read through, line by line, are nearly opaque too:
+   the scene still warms them, but a dark wall or a branch behind can't
+   pull small or coloured text (the dates, the dial numbers) under 4.5:1 */
+.project-notes,
+.directory,
+.cabinet-card,
+.timetable-notice {
+  background-color: var(--reading);
+}
+
 /*
   Controls over the world: light, so the park shows through them. A small
   blur keeps the words legible whether the sky or the foliage is behind;
@@ -1901,6 +1943,12 @@ body {
 .control-round:hover,
 .notebook-controls + .text-link:hover,
 .notebook-sheet + .text-link:hover {
+  background-color: rgb(255 249 242 / 0.8);
+}
+
+/* The notebook's controls carry a line of text (which pages are open):
+   a little more paper behind it, so it reads over the dark shelves */
+.notebook-controls {
   background-color: rgb(255 249 242 / 0.8);
 }
 
@@ -1938,6 +1986,14 @@ body {
   The world keeps drawing until the sheet has been scrolled up over all of
   it, then stops.
 */
+/* Registered as a length, so script reads the hero's height in pixels
+   (getComputedStyle), whatever clamp() or svh it is written with */
+@property --hero {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
   .only-flat {
     display: none !important;
@@ -1955,7 +2011,10 @@ body {
   }
 
   :root {
-    --hero: 46svh; /* how much of the screen the world keeps, above the sheet */
+    /* How much of the screen the world keeps, above the sheet: on a place's
+       page, a band that still shows the place but leaves the first screen
+       to the page; the park, the home page, keeps a little more */
+    --hero: clamp(180px, 30svh, 260px);
     --arrive-delay: 0.05s;
     /* The sheet is nearly opaque cream; the paper on it needs no blur */
     --paper: rgb(255 252 247 / 0.94);
@@ -1965,21 +2024,26 @@ body {
     --float: 0 14px 30px -22px rgb(var(--shadow) / 0.3), 0 1px 0 rgb(255 255 255 / 0.6) inset;
   }
 
+  /* The home page (its sheet). Next.js keeps a page it has left in the
+     document, hidden with an inline display: none, for back and forward:
+     only a sheet that isn't inside one counts, or every place visited
+     after home would keep home's taller hero. World3D.tsx (heroHeight)
+     looks for the same thing. */
+  :root:has(.park-sheet:not([style*="display: none"] *)) {
+    --hero: 36svh;
+  }
+
   /* Short screens (a phone on its side): a shorter hero, and no name tags,
      which would crowd it; the Sections list is right below */
   @media (max-height: 480px) {
-    :root {
+    :root,
+    :root:has(.park-sheet:not([style*="display: none"] *)) {
       --hero: 38svh;
     }
 
     .world-labels {
       display: none;
     }
-  }
-
-  .points {
-    font-size: 1rem;
-    line-height: 1.6;
   }
 
   /* ---------- The bar along the top: the way back, and Sections ---------- */
@@ -2032,7 +2096,7 @@ body {
     width: auto;
     margin: var(--hero) 0 0;
     min-height: calc(100svh - var(--hero));
-    padding: 1.1rem 1rem max(2.5rem, env(safe-area-inset-bottom));
+    padding: 1rem 1rem max(2.5rem, env(safe-area-inset-bottom));
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--background) var(--grain);
     box-shadow: 0 -14px 34px -20px rgb(var(--shadow) / 0.4);
@@ -2067,10 +2131,6 @@ body {
     border: 0;
     background: none;
     box-shadow: none;
-  }
-
-  .location-intro {
-    font-size: 1rem;
   }
 
   /* The map's sheet and the notices sit below the hero on their own */
@@ -2241,7 +2301,7 @@ body {
     min-height: 3rem;
     padding: 0.35rem 0.7rem 0.4rem 0.5rem;
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: var(--radius-sm);
     background: var(--paper);
     font-family: var(--font-display);
     font-size: 1.05rem;
@@ -2269,11 +2329,11 @@ body {
     padding-block: 0.3rem;
   }
 
+  /* Narrow sheets: the margin line moves in and the writing gets the
+     width; 20-24px of paper round it */
   .notebook-sheet {
-    --margin: 1.9rem;
-    padding: 2.75rem 1.1rem 2rem 2.6rem;
-    border: 7px solid var(--surface-deep); /* the cover */
-    border-radius: var(--radius);
+    --margin: 1.1rem;
+    padding: 2.75rem 1.25rem 2rem 1.5rem;
     box-shadow: var(--float);
   }
 
@@ -2286,6 +2346,26 @@ body {
   .bench-tab {
     min-height: 2.75rem;
     font-size: 1rem;
+  }
+
+  /* Phone widths: the tabs are a two-by-two block of even keys, not a
+     ragged stack four deep. Names that don't fit wrap inside their key. */
+  @media (max-width: 479px) {
+    .bench-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .bench-tab {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.9375rem;
+      line-height: 1.2;
+      text-align: left;
+    }
+
+    .bench-tab-lamp {
+      flex: none;
+    }
   }
 
   .project-notes {
@@ -2345,16 +2425,16 @@ body {
 
   .tool-wall {
     margin-top: 2rem;
-    padding: 1.25rem 1rem 1.4rem;
-    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    border-radius: var(--radius);
     scroll-margin-top: 4.5rem;
   }
 
   /* ---------- The station: every line written out ---------- */
   .timetable-stack {
     padding: 0.9rem 0.8rem 0.8rem;
-    border: 5px solid var(--surface-deep-2);
-    border-radius: 12px;
+    border: 3px solid var(--surface-deep-2);
+    border-radius: var(--radius);
     background: linear-gradient(170deg, #2a1d8e, var(--surface-deep));
     color: var(--on-deep);
     box-shadow:
@@ -2419,7 +2499,7 @@ body {
     grid-template-columns: 5.25rem minmax(0, 1fr);
     overflow: hidden;
     border: 1px solid var(--paper-edge);
-    border-radius: 12px;
+    border-radius: var(--radius);
     background: var(--paper) var(--grain);
     box-shadow: var(--float);
   }

@@ -27,13 +27,26 @@ const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").match
 
 // On narrow screens the page's sheet covers the lower part of the view
 // (globals.css: --hero), so the camera's subject is lifted into the upper
-// part: the view is offset down by this fraction of its height
-const NARROW_LIFT = 0.2;
+// part: the view is offset down by a fraction of its height (narrowLift)
 
 // How much of a narrow screen the world keeps above the sheet (the same
 // as --hero in globals.css): name tags below that line are under the
 // sheet and are hidden rather than left peeping out
-const heroHeight = (height: number) => height * (height <= 480 ? 0.38 : 0.46);
+// --hero is registered as a <length> (globals.css), so this is pixels.
+// Read once per resize or page change (it changes with both), not per
+// frame. The home page's hero differs (globals.css keys it on the home
+// page's .park-sheet being shown: Next.js keeps a page it has left in the
+// document, hidden with an inline display: none), and the address can
+// change a frame before the new page is in, so the key includes the sheet.
+let hero = { key: "", px: 0 };
+const heroHeight = (height: number) => {
+  const key = `${height}|${location.pathname}|${document.querySelector('.park-sheet:not([style*="display: none"] *)') ? "home" : "place"}`;
+  if (hero.key !== key) hero = { key, px: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0 };
+  return hero.px || height * (height <= 480 ? 0.38 : 0.46);
+};
+// The place sits a little below the middle of the hero, as it did when
+// the hero was 46% of the screen and the lift 0.2
+const narrowLift = (height: number) => 0.5 - 0.65 * (heroHeight(height) / height);
 
 const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
@@ -307,7 +320,7 @@ function Director({
     const wide = !narrow && size.width >= 900;
     const frame = scenes[s.active].frame;
     const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : 0;
-    const wantY = narrow ? NARROW_LIFT : 0;
+    const wantY = narrow ? narrowLift(size.height) : 0;
     s.shift += (want - s.shift) * (1 - Math.exp(-dt * 2.5));
     s.shiftY += (wantY - s.shiftY) * (1 - Math.exp(-dt * 2.5));
     const fov = size.width / size.height < 1 ? 62 : 48;

@@ -6,47 +6,52 @@ import { onChoiceKey } from "./selector";
 
 const slug = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
-// A small drawing for each interest, like the ones on its cabinet screen
+// A small drawing for each interest, like the ones on its cabinet screen.
+// Drawn on the icons' 24-unit grid; shown larger than an icon, so the
+// stroke doesn't scale with it (.sketch in globals.css): 1.5px wherever
+// it's shown, like the places' drawings.
 function Sketch({ scene }: { scene: Interest["scene"] }) {
   const common = {
-    viewBox: "0 0 48 48",
+    viewBox: "0 0 24 24",
     width: 44,
     height: 44,
+    className: "sketch",
     fill: "none",
     stroke: "currentColor",
-    strokeWidth: 1.6,
+    strokeWidth: 1.5,
     strokeLinecap: "round" as const,
     strokeLinejoin: "round" as const,
     "aria-hidden": true,
+    focusable: false,
   };
   switch (scene) {
     case "basketball":
       return (
         <svg {...common}>
-          <circle cx="24" cy="24" r="15" />
-          <path d="M9 24h30M24 9v30M13.5 13.5c5 4 5 17 0 21M34.5 13.5c-5 4-5 17 0 21" />
+          <circle cx="12" cy="12" r="7.5" />
+          <path d="M4.5 12h15M12 4.5v15M6.75 6.75c2.5 2 2.5 8.5 0 10.5M17.25 6.75c-2.5 2-2.5 8.5 0 10.5" />
         </svg>
       );
     case "badminton":
       return (
         <svg {...common}>
-          <path d="M20 34c-2.5 0-4-1.5-4-4s1.5-4 4-4 4 1.5 4 4" />
-          <path d="M18 27 10 9M21 26l3-18M23 27l12-14M10 9c5-2 9-2 14-1M24 8c4 1 8 2 11 5" />
+          <path d="M10 17c-1.25 0-2-.75-2-2s.75-2 2-2 2 .75 2 2" />
+          <path d="M9 13.5 5 4.5M10.5 13l1.5-9M11.5 13.5l6-7M5 4.5c2.5-1 4.5-1 7-.5M12 4c2 .5 4 1 5.5 2.5" />
         </svg>
       );
     case "chess":
       return (
         <svg {...common}>
-          <path d="M16 39h18M18 35h14l-2-6c3-2 5-6 4-11-1-4-5-8-11-8l-1 3-4 3-5 7 2 2 5-3 2 2-4 5Z" />
-          <circle cx="21" cy="17" r="0.8" fill="currentColor" />
+          <path d="M8 19.5h9M9 17.5h7l-1-3c1.5-1 2.5-3 2-5.5-.5-2-2.5-4-5.5-4l-.5 1.5-2 1.5-2.5 3.5 1 1 2.5-1.5 1 1-2 2.5Z" />
+          <circle cx="10.5" cy="8.5" r="0.4" fill="currentColor" />
         </svg>
       );
     case "poker":
       return (
         <svg {...common}>
-          <rect x="11" y="10" width="20" height="28" rx="2.5" transform="rotate(-8 21 24)" />
-          <rect x="18" y="9" width="20" height="28" rx="2.5" transform="rotate(7 28 23)" />
-          <path d="M28 18c-3 3-5 5-5 7a2.4 2.4 0 0 0 4.4 1.3L27 29h2l-.4-2.7A2.4 2.4 0 0 0 33 25c0-2-2-4-5-7Z" />
+          <rect x="5.5" y="5" width="10" height="14" rx="1.25" transform="rotate(-8 10.5 12)" />
+          <rect x="9" y="4.5" width="10" height="14" rx="1.25" transform="rotate(7 14 11.5)" />
+          <path d="M14 9c-1.5 1.5-2.5 2.5-2.5 3.5a1.2 1.2 0 0 0 2.2.65L13.5 14.5h1l-.2-1.35A1.2 1.2 0 0 0 16.5 12.5c0-1-1-2-2.5-3.5Z" />
         </svg>
       );
   }
