@@ -15,10 +15,10 @@ test("the name is the home page's h1, as text", () => {
   assert.equal((page.match(/<h1/g) ?? []).length, 1);
 });
 
-test("the name is indigo on its own cream backing, with a sky-blue stroke", () => {
-  assert.match(block(".park-name"), /color: var\(--indigo\)/);
+test("the name is slate blue on its own cream backing, with a baby-blue stroke", () => {
+  assert.match(block(".park-name"), /color: var\(--slate\)/);
   assert.match(block(".park-name::before"), /background: rgb\(255 249 242 \/ 0\.9\)/);
-  assert.match(block(".park-name::after"), /background: var\(--sky\)/);
+  assert.match(block(".park-name::after"), /background: linear-gradient\(90deg, [^;]*var\(--baby-hover\)\);/);
 });
 
 test("nothing about the name moves on its own, or in still view", () => {

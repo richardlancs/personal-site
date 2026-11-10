@@ -101,7 +101,9 @@ test("the theme is fixed: no dark theme, no toggle, no saved preference", () => 
   const css = readFileSync(`${root}app/globals.css`, "utf8");
   assert.doesNotMatch(css, /data-theme|prefers-color-scheme|theme-transition/, "globals.css has no second theme");
   assert.match(css, /--background: var\(--cream\)/, "the background is the palette's cream");
-  for (const hex of ["#fff9f2", "#55c6f0", "#1e107a", "#e5ddd4", "#1d1e1e", "#fb5745"]) assert.ok(css.includes(hex), `palette colour ${hex} is defined`);
+  for (const hex of ["#fff9f2", "#55c6f0", "#e5ddd4", "#1d1e1e", "#fb5745", "#b8dcfa", "#9bcbf1", "#eaf5ff", "#f7fbff", "#c6dff0", "#203245", "#326e9f"]) assert.ok(css.includes(hex), `palette colour ${hex} is defined`);
+  // The interface moved from indigo to baby blue: none of it is left
+  assert.doesNotMatch(css, /#1e107a|--indigo|rgb\(30 16 122/, "no indigo in the interface");
   assert.ok(!existsSync(`${root}app/components/ThemeToggle.tsx`), "the toggle is gone");
   const layout = readFileSync(`${root}app/layout.tsx`, "utf8");
   assert.doesNotMatch(layout, /data-theme|localStorage\.getItem\("theme"\)/, "nothing reads a saved theme");
