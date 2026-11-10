@@ -2,10 +2,11 @@ import Points from "../components/ui/Points";
 import Location from "../components/world/Location";
 import { section, sectionMetadata } from "../sections/registry";
 
-// The starter section (docs/adding-a-section.md). It's registered in
-// app/sections/registry.ts as unlisted, so it has an address but no link
-// to it. To make a real section, copy this file to app/<id>/page.tsx,
-// add the section to the registry, and replace what's on the paper.
+// The starter for a new section (docs/adding-a-section.md). It lives in
+// docs/, not app/, so it is never built or served. To make a real section,
+// copy this file to app/<id>/page.tsx (the imports are written for that
+// place), add a "greenhouse" entry (or your own id) to
+// app/sections/registry.ts, and replace what's on the paper.
 export const metadata = sectionMetadata("greenhouse");
 
 export default function GreenhousePage() {

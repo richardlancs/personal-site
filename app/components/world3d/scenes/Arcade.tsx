@@ -108,10 +108,7 @@ function attractScreen(interest: Interest, hue: number) {
     g.font = `700 20px ${f.text}`;
     g.textAlign = "center";
     g.fillText(interest.name.toUpperCase(), 128, 34);
-    if (Math.floor(t * 2) % 2) {
-      g.font = `500 12px ${f.text}`;
-      g.fillText("INSERT COIN", 128, 182);
-    }
+    // The cabinets show an interest; they aren't games, so nothing asks for a coin
     g.textAlign = "left";
     // Scanlines
     g.fillStyle = "rgba(0,0,0,0.18)";

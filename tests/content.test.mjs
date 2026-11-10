@@ -146,3 +146,33 @@ test("every Chinese character on the signs is in the sign font's subset", () => 
   walk(`${root}app`);
   assert.deepEqual([...missing], [], "characters missing from app/fonts/signs.txt");
 });
+
+test("the section starter is a template in docs, not a public page", () => {
+  assert.ok(existsSync(`${root}docs/development/section-template/page.tsx`), "the starter template is kept in docs/development");
+  // docs/ isn't type-checked, so check the template still fits the code it
+  // is copied next to: every import resolves from app/<id>/, and every
+  // name it imports is exported there
+  const template = readFileSync(`${root}docs/development/section-template/page.tsx`, "utf8");
+  const imports = [...template.matchAll(/import\s+(.+?)\s+from\s+"(\.\.\/[^"]+)"/g)];
+  assert.ok(imports.length >= 3, "the template's imports were found");
+  for (const [, names, from] of imports) {
+    const base = `${root}app/${from.slice(3)}`;
+    const file = [".tsx", ".ts"].map((ext) => base + ext).find(existsSync);
+    assert.ok(file, `the template imports ${from}, which isn't in app/`);
+    const source = readFileSync(file, "utf8");
+    const wanted = names.startsWith("{") ? names.slice(1, -1).split(",").map((n) => n.trim()) : [];
+    if (!names.startsWith("{")) assert.match(source, /export default/, `${from} has no default export`);
+    for (const name of wanted) assert.match(source, new RegExp(`export (const|function|type) ${name}\\b`), `${from} doesn't export ${name}`);
+  }
+  assert.ok(!existsSync(`${root}app/greenhouse`), "app/greenhouse would be served at /greenhouse");
+  assert.ok(!sections.some((s) => s.id === "greenhouse"), "no greenhouse entry in the registry");
+});
+
+test("the hints say what the controls do (audit F3, F4)", () => {
+  const hint = (id) => sections.find((s) => s.id === id)?.hint;
+  assert.equal(hint("interests"), "Choose an interest to explore.");
+  assert.equal(hint("experience"), "Select a role to read details.");
+  for (const s of sections) assert.doesNotMatch(s.hint ?? "", /\bplay\b|\bscroll\b/i, `${s.id}: hint promises something the page doesn't do`);
+  const arcade = readFileSync(`${root}app/components/world3d/scenes/Arcade.tsx`, "utf8");
+  assert.doesNotMatch(arcade, /INSERT COIN/i, "the cabinets don't invite play");
+});

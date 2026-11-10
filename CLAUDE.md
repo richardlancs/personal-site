@@ -79,7 +79,8 @@ glyph, scene, where it is in the painting and on the map, metadata) plus
 one page file. The menu, the home page's tags and list, the map, the park's
 name tags and the links at the foot of each page are generated from the
 registry: never keep a second list of sections anywhere. To add one, follow
-`docs/adding-a-section.md`; `/greenhouse` is the unlisted starter.
+`docs/adding-a-section.md`; the starter page is
+`docs/development/section-template/page.tsx` (not served).
 
 Phones, portrait tablets and short windows get the same world, at the
 mobile renderer tier (`World3D.tsx`: pixel ratio capped at 1.25, 2x

@@ -5,8 +5,12 @@ one page file. The menu, the home page's tags and list, the map, the name
 tags in the 3D park and the "Other sections" links at the foot of each
 page are all generated from the registry, so none of them need editing.
 
-The greenhouse (`/greenhouse`, `app/greenhouse/page.tsx`) is the starter:
-registered but unlisted, so it has an address and no link to it. Copy it.
+The starter is `docs/development/section-template/page.tsx`, a page for
+a "greenhouse" section. It lives in `docs/` so it is never built or served
+(it used to be a public, unlisted page at `/greenhouse`). Copy it to
+`app/<id>/page.tsx` and register the section as below. While a section is
+`listed: false` it still has a public address, marked `noindex`; keep
+drafts on a branch rather than shipping them unlisted.
 
 ## 1. Register it
 

@@ -12,7 +12,7 @@ import type { SceneId } from "../components/world3d/scenes";
 // The words themselves (projects, experience, the notebook) stay in
 // app/data/portfolio.ts; this is only the sections' metadata.
 
-export type SectionId = "home" | "about" | "projects" | "experience" | "interests" | "contact" | "map" | "greenhouse";
+export type SectionId = "home" | "about" | "projects" | "experience" | "interests" | "contact" | "map";
 
 export type Section = {
   id: SectionId;
@@ -102,7 +102,7 @@ export const sections: Section[] = [
     glyph: "station",
     listed: true,
     intro: "Work and education, on the old timetable.",
-    hint: "Choose a line, or scroll, to read it.",
+    hint: "Select a role to read details.",
     side: "right",
     scene: { id: "station", focus: "timetable" },
     anchor: "station",
@@ -118,7 +118,7 @@ export const sections: Section[] = [
     glyph: "arcade",
     listed: true,
     intro: "The power came back on in a few of the cabinets.",
-    hint: "Choose one to play.",
+    hint: "Choose an interest to explore.",
     side: "left",
     scene: { id: "arcade", focus: "cabinet" },
     anchor: "arcade",
@@ -154,21 +154,6 @@ export const sections: Section[] = [
     scene: { id: "park", focus: "board" },
     anchor: "board",
     metadata: { title: "Map of the park", description: "A map of the park and every place in it: about, projects, experience, interests and contact." },
-  },
-  {
-    // The starter for a new section (docs/adding-a-section.md). It isn't
-    // listed anywhere, so it's only reached by its address.
-    id: "greenhouse",
-    href: "/greenhouse",
-    title: "Greenhouse",
-    place: "The greenhouse",
-    summary: "A starter section: copy it to add a new one.",
-    glyph: "greenhouse",
-    listed: false,
-    intro: "Glass panes and seed trays: somewhere for new things to start.",
-    side: "left",
-    scene: { id: "park", focus: null },
-    metadata: { title: "Greenhouse", description: "A starter section for the site, not linked from anywhere." },
   },
 ];
 

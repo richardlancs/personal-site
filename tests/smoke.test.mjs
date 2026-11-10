@@ -43,6 +43,10 @@ test("an unknown address is a 404 with the way back", { skip }, async () => {
   assert.match(body, /href="\/"/);
 });
 
+test("the section starter isn't served (audit F2)", { skip }, async () => {
+  assert.equal((await get("/greenhouse")).status, 404);
+});
+
 test("every page has the skip link and its main content in the HTML", { skip }, async () => {
   for (const s of listed) {
     const { body } = await get(s.href);
