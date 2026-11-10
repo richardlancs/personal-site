@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { richmondHill } from "../app/data/weather.ts";
-import { addDays, daylightAt, localDate, localTime, richmondHillClock, solarSun, sunOn, TWILIGHT_SECONDS } from "../app/lib/time.ts";
+import { addDays, daylightAt, isDaytime, localDate, localTime, richmondHillClock, solarSun, sunOn, TWILIGHT_SECONDS } from "../app/lib/time.ts";
 import { parseForecast } from "../app/lib/weather.ts";
 
 const TZ = richmondHill.timeZone;
@@ -170,4 +170,15 @@ test("the clock takes the day's sun from the reading, or from astronomy without 
   assert.equal(after.daylight.sunrise, openMeteoSun["2026-11-11"].sunrise);
   // ... and a date the reading doesn't cover falls back to astronomy
   assert.deepEqual(sunOn("2026-11-20", reading, latitude, longitude), solarSun("2026-11-20", latitude, longitude));
+});
+
+test("Sunny or Clear follows Richmond Hill's sun, not the reading's is_day", () => {
+  // 10 November 2026: sunrise 7:06 AM, sunset 4:56 PM EST
+  const sun = { sunrise: 1794312361, sunset: 1794347814 };
+  const at = (h, m) => Date.UTC(2026, 10, 10, h + 5, m) / 1000; // EST is UTC-5
+  assert.equal(isDaytime(at(17, 20), sun, true), false, "5:20 PM is after sunset, whatever is_day said");
+  assert.equal(isDaytime(at(7, 25), sun, false), true, "7:25 AM is after sunrise");
+  assert.equal(isDaytime(at(12, 0), sun, false), true);
+  assert.equal(isDaytime(at(3, 0), sun, true), false);
+  assert.equal(isDaytime(at(12, 0), { sunrise: 0, sunset: 0 }, false), false, "unknown sun: the reading decides");
 });

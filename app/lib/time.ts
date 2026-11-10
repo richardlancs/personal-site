@@ -149,3 +149,12 @@ export function richmondHillClock(
     daylight: { phase, progress, sunrise: today.sunrise, sunset: today.sunset },
   };
 }
+
+// Whether to word the weather for day or night ("Sunny" or "Clear"): by
+// Richmond Hill's own sun, the same clock the world's daylight follows,
+// so the label and the scene agree at sunrise and sunset. The reading's
+// is_day is only used when the day's sun isn't known.
+export function isDaytime(nowSeconds: number, sun: Sun, fallback: boolean): boolean {
+  if (!(sun.sunrise > 0 && sun.sunset > sun.sunrise)) return fallback;
+  return nowSeconds >= sun.sunrise && nowSeconds < sun.sunset;
+}

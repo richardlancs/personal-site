@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { richmondHill, WEATHER_CACHE_SECONDS } from "../../data/weather";
 import type { RichmondHillNow, WeatherReading } from "../../lib/sky";
-import { richmondHillClock } from "../../lib/time";
+import { isDaytime, richmondHillClock } from "../../lib/time";
 import { describeWeather, isWeatherReading, readingAge } from "../../lib/weather";
 
 // Richmond Hill's time and weather for the page: one store for the whole
@@ -21,6 +21,8 @@ import { describeWeather, isWeatherReading, readingAge } from "../../lib/weather
 // client render agree; the display reserves the space.
 
 const REFRESH_MS = WEATHER_CACHE_SECONDS * 1000;
+// How long to wait for /api/weather (the server gives Open-Meteo 4.5 s)
+const FETCH_TIMEOUT_MS = 8000;
 // When the server answers from a cache it's refreshing in the background
 // (its reading fetched more than 16 minutes ago), ask once more shortly
 const FOLLOW_UP_MS = 20_000;
@@ -64,7 +66,9 @@ function compute(): RichmondHillNow {
     date: clock.date,
     status: usable ? (age as "fresh" | "stale") : settled ? "unavailable" : "loading",
     reading: usable,
-    condition: usable ? describeWeather(usable.weatherCode, usable.isDay) : null,
+    // "Sunny" or "Clear" by the same sun the scene uses, not the reading's
+    // is_day, which can be half an hour behind at sunrise and sunset
+    condition: usable ? describeWeather(usable.weatherCode, isDaytime(ms / 1000, clock.daylight, usable.isDay)) : null,
     daylight: clock.daylight,
   };
 }
@@ -106,7 +110,9 @@ async function load() {
   clearTimeout(fetchTimer);
   let next = REFRESH_MS;
   try {
-    const res = await fetch("/api/weather", { cache: "no-store", headers: { accept: "application/json" } });
+    // A stalled answer counts as a failure (and is retried), rather than
+    // leaving the request open and the display loading forever
+    const res = await fetch("/api/weather", { cache: "no-store", headers: { accept: "application/json" }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
     // An error page (e.g. a 500 while the server's refresh failed) isn't
     // JSON; { ok: false } is the server saying it has no reading
     const body: unknown = await res.json().catch(() => null);
