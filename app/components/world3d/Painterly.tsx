@@ -7,6 +7,7 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { overlay } from "./atmosphere/state";
 
 // The last step that turns a render into a painting.
 //
@@ -107,7 +108,7 @@ const Grade = {
 export default function Painterly({ brushwork, samples }: { brushwork: boolean; samples: number }) {
   const { gl, scene, camera, size } = useThree();
 
-  const { composer, brush, grade } = useMemo(() => {
+  const { composer, brush, grade, over } = useMemo(() => {
     // The composer's own target has no antialiasing; the canvas's is
     // never seen because every frame goes through here. A multisampled
     // target keeps the edges of leaves, branches and wires smooth.
@@ -116,10 +117,16 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
     composer.addPass(new RenderPass(scene, camera));
     const brush = new ShaderPass(Brushwork);
     composer.addPass(brush);
+    // Rain and snow, over the brushwork (atmosphere/state.ts: overlay),
+    // only while there's any
+    const over = new RenderPass(overlay, camera);
+    over.clear = false;
+    over.enabled = false;
+    composer.addPass(over);
     composer.addPass(new OutputPass());
     const grade = new ShaderPass(Grade);
     composer.addPass(grade);
-    return { composer, brush, grade };
+    return { composer, brush, grade, over };
   }, [gl, scene, camera, samples]);
 
   useEffect(() => {
@@ -140,7 +147,10 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
   useEffect(() => () => composer.dispose(), [composer]);
 
   // Rendering through the composer replaces the normal render
-  useFrame(() => composer.render(), 1);
+  useFrame(() => {
+    over.enabled = overlay.children.length > 0;
+    composer.render();
+  }, 1);
 
   return null;
 }
