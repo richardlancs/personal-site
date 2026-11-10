@@ -292,8 +292,14 @@ const INDOOR_FOG = 0.3;
 export function fogColor(out: RGB, base: RGB, d: DaylightLook, w: WeatherLook, indoor: boolean) {
   const k = indoor ? INDOOR_FOG : 1;
   mixInto(out, base, d.fog, d.fogMix * k);
-  return greyInto(out, out, w.fogGrey * k, w.fogLift, w.skyTint);
+  return greyInto(out, out, w.fogGrey * k * nightHold(d.night), nightLift(w.fogLift, d.night), w.skyTint);
 }
+
+// At night the weather greys the sky and the air less, and never darker
+// than the night itself: a rainy night stays blue-indigo, not near-black
+// (the corner controls and the words sit on it)
+const nightHold = (night: number) => 1 - 0.5 * night;
+const nightLift = (lift: number, night: number) => lift + (Math.max(lift, 1) - lift) * night;
 
 export function fogRange(out: { near: number; far: number }, base: { near: number; far: number }, d: DaylightLook, w: WeatherLook, indoor: boolean) {
   const k = indoor ? INDOOR_FOG * 0.8 : 1;
@@ -305,14 +311,14 @@ export function fogRange(out: { near: number; far: number }, base: { near: numbe
 export const hexToRGB = hex;
 export { mixInto, clamp01 };
 
-export function skyColor(out: RGB, c: RGB, w: WeatherLook) {
-  return greyInto(out, c, w.skyGrey, w.skyLift, w.skyTint);
+export function skyColor(out: RGB, c: RGB, w: WeatherLook, night = 0) {
+  return greyInto(out, c, w.skyGrey * nightHold(night), nightLift(w.skyLift, night), w.skyTint);
 }
 
 // Clouds: the daylight's, greyed like the sky, darker in heavy weather
-export function cloudColor(out: RGB, c: RGB, w: WeatherLook) {
-  greyInto(out, c, w.skyGrey * 0.8, w.skyLift, w.skyTint);
-  const k = 1 - w.cloudDark * 0.5;
+export function cloudColor(out: RGB, c: RGB, w: WeatherLook, night = 0) {
+  greyInto(out, c, w.skyGrey * 0.8 * nightHold(night), nightLift(w.skyLift, night), w.skyTint);
+  const k = 1 - w.cloudDark * 0.5 * nightHold(night);
   out[0] *= k;
   out[1] *= k;
   out[2] *= k;

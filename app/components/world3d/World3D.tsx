@@ -411,10 +411,31 @@ function Wind() {
 }
 
 // Moves the HTML labels to their places in the world
+// On the flat layout the corner controls run across the top (two rows on
+// a phone, with Richmond Hill's time and weather): tags that would reach
+// up under them are hidden. Where their lower edge is, in the canvas's
+// own pixels, read on a resize (and now and then, as the row fills in),
+// not every frame.
+let controls = { key: "", ticks: 0, bottom: 0 };
+const controlsBottom = (width: number, height: number, canvas: HTMLCanvasElement) => {
+  const key = `${width}x${height}`;
+  if (controls.key !== key || ++controls.ticks > 120) {
+    // The lowest of the controls themselves (the bar's own box has padding
+    // below them, and a tag may tuck under that)
+    let bottom = 0;
+    for (const el of document.querySelectorAll(".world-controls > *")) bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+    controls = { key, ticks: 0, bottom: bottom ? bottom - canvas.getBoundingClientRect().top : 0 };
+  }
+  return controls.bottom;
+};
+const TAG_RISE = 26; // the tag's top above its anchor (globals.css: .world-label's margin, 1.6rem)
+
 function LabelProjector({ active }: { active: SceneId }) {
   const v = useMemo(() => new THREE.Vector3(), []);
-  useFrame(({ camera, size }) => {
+  useFrame(({ camera, size, gl }) => {
     const arrived = world.get().arrived;
+    const flat = isFlat();
+    const ceiling = flat ? controlsBottom(size.width, size.height, gl.domElement) : 0;
     for (const el of document.querySelectorAll<HTMLElement>("[data-anchor]")) {
       const id = el.dataset.anchor!;
       const p = anchors.get(id);
@@ -424,7 +445,7 @@ function LabelProjector({ active }: { active: SceneId }) {
       }
       v.copy(p).project(camera);
       const y = ((1 - v.y) / 2) * size.height;
-      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1 || (isFlat() && y > heroHeight(size.height) - 6)) {
+      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1 || (flat && (y > heroHeight(size.height) - 6 || y - TAG_RISE < ceiling))) {
         el.dataset.hidden = "";
         continue;
       }

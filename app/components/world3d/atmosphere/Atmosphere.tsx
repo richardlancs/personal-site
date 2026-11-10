@@ -262,16 +262,16 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         l.intensity = base.intensity * d.hemiScale * w.hemiScale;
       } else if (kind === "sky") {
         const u = ((obj as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
-        skyColor(c, d.top, w);
+        skyColor(c, d.top, w, night);
         u.uTop.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
-        skyColor(c, d.horizon, w);
+        skyColor(c, d.horizon, w, night);
         u.uHorizon.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
         // The fountain holds this sky, against the one it was painted with
         waterUniforms.uSkyTint.value.copy(u.uHorizon.value).multiply(PAINTED_HORIZON_INV);
         u.uSun.value.setRGB(d.glow[0], d.glow[1], d.glow[2], THREE.SRGBColorSpace);
-        cloudColor(c, d.cloudLit, w);
+        cloudColor(c, d.cloudLit, w, night);
         u.uCloudLit.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
-        cloudColor(c, d.cloudShade, w);
+        cloudColor(c, d.cloudShade, w, night);
         u.uCloudShade.value.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
         u.uHaze.value.copy(fog.color);
         u.uHazeAmt.value = indoor ? 0 : Math.max(0, w.fogGrey) * 0.9;
