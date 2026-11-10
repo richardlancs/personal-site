@@ -530,6 +530,58 @@ body {
       rgb(255 249 242 / 0.78) 82%,
       rgb(255 249 242 / 0)
     );
+    transition: opacity 0.5s ease;
+  }
+
+  /*
+    Under a dark sky (night in any weather; dusk under cloud, rain or
+    snow) a haze of cream would glow like a lamp. There the introduction
+    is a sheet of paper instead, the same paper as the rest of the site:
+    contained, soft corners, a lit edge, a short shadow. The two cross-fade
+    when the sky turns (Atmosphere.tsx sets data-sky-* on .world3d). On it,
+    the muted text is 8:1 and the name 13:1 or better, whatever is behind.
+  */
+  .park-intro::after {
+    content: "";
+    position: absolute;
+    inset: -1.9rem -2.1rem -1.7rem;
+    z-index: -1;
+    border: 1px solid var(--paper-edge);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--sheet) 97%, transparent) var(--grain);
+    box-shadow:
+      0 22px 48px -28px rgb(10 8 40 / 0.55),
+      0 1px 0 rgb(255 255 255 / 0.6) inset;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    pointer-events: none;
+  }
+
+  .park-name::before {
+    transition: opacity 0.5s ease;
+  }
+
+  :root:has(.world3d[data-sky-daylight="night"]),
+  :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
+    & .park-intro::before,
+    & .park-name::before {
+      opacity: 0;
+    }
+
+    & .park-intro::after {
+      opacity: 1;
+    }
+  }
+}
+
+:root[data-still="on"] :is(.park-intro, .park-name)::before,
+:root[data-still="on"] .park-intro::after {
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) :is(.park-intro, .park-name)::before,
+  :root:not([data-still]) .park-intro::after {
+    transition: none !important;
   }
 }
 

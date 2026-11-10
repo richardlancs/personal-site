@@ -227,6 +227,10 @@ Keep the hero simple.
 The name is its one bold element (`.park-name`): indigo Shippori Mincho on
 its own soft cream backing, which keeps it readable over any sky, day or
 night, with a sky-blue brushstroke under it, brushed in once on arrival.
+By day the introduction sits in a haze of cream; under a dark sky (night,
+or dusk under cloud, rain or snow) it is a sheet of paper instead, so no
+glow lights up the night (`.park-intro::after`, keyed on `.world3d`'s
+`data-sky-*`).
 
 Do not add unnecessary decorative graphics just to fill space.
 

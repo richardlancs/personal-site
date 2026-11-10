@@ -27,3 +27,16 @@ test("nothing about the name moves on its own, or in still view", () => {
   assert.match(css, /:root\[data-still="on"\] \.park-name::after \{\s*animation: none !important/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\) \.park-name::after \{\s*animation: none !important/);
 });
+
+test("under a dark sky the introduction sits on paper, not in a glow", () => {
+  // Keyed on the attributes the world sets (Atmosphere.tsx)
+  const atmosphere = readFileSync(`${root}app/components/world3d/atmosphere/Atmosphere.tsx`, "utf8");
+  assert.match(atmosphere, /dataset\.skyDaylight = /);
+  assert.match(atmosphere, /dataset\.skyPreset = /);
+  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\]:is\([^)]*cloudy[^)]*rain[^)]*snow[^)]*\)\) \{([\s\S]*?)\n  \}/);
+  assert.ok(dark, "no dark-sky rule");
+  assert.match(dark[1], /& \.park-intro::before,\s*& \.park-name::before \{\s*opacity: 0/);
+  assert.match(dark[1], /& \.park-intro::after \{\s*opacity: 1/);
+  // The cross-fade holds still in still view
+  assert.match(css, /:root\[data-still="on"\] :is\(\.park-intro, \.park-name\)::before,\s*:root\[data-still="on"\] \.park-intro::after \{\s*transition: none !important/);
+});
