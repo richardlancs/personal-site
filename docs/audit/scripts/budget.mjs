@@ -8,7 +8,10 @@
 // - initial JS of each page: the scripts its HTML loads before anything
 //   else (the 3D world is not among them: it loads after the page)
 // - the largest chunk (the 3D world: three.js, React Three Fiber, scenes)
-// - all JS and all CSS in the build
+// - all JS and all CSS in the build, except the résumé viewer's
+// - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS, loaded only
+//   when the résumé is opened: on its own budget, so it can't hide growth
+//   in what every visit downloads (and the world stays the largest chunk)
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
@@ -26,6 +29,10 @@ const budgets = {
   largestChunkRaw: 1_150_000, // 1,056,413 / 1,058,023 / 1,090,438
   totalJs: 536_000, // 492,642 / 492,141 / 510,283
   totalCss: 18_000, // 11,654 / 15,552 / 16,788
+  // feature/baby-blue-glass-resume: pdfjs-dist 5.4.624's legacy build
+  // (141,641), its worker (301,558) and the viewer (4,726)
+  resumeJs: 470_000, // 447,925
+  resumeCss: 2_500, // 1,915
 };
 
 const gz = (file) => gzipSync(readFileSync(file), { level: 9 }).length;
@@ -39,14 +46,20 @@ const walk = (d, out = []) => {
 };
 
 const files = walk(`${dir}/static`);
-const js = files.filter((f) => f.endsWith(".js")).map((f) => ({ f, raw: statSync(f).size, gz: gz(f) }));
-const css = files.filter((f) => f.endsWith(".css")).map((f) => ({ f, gz: gz(f) }));
+// pdf.js and its worker name these; so does the viewer that drives them
+const isResume = (f) => /WorkerMessageHandler|PDFWorker/.test(readFileSync(f, "utf8"));
+const allJs = files.filter((f) => f.endsWith(".js")).map((f) => ({ f, raw: statSync(f).size, gz: gz(f), resume: isResume(f) }));
+const js = allJs.filter((c) => !c.resume);
+const allCss = files.filter((f) => f.endsWith(".css")).map((f) => ({ f, gz: gz(f), resume: readFileSync(f, "utf8").includes(".resume-lock") }));
+const css = allCss.filter((c) => !c.resume);
 const largest = js.reduce((a, b) => (b.raw > a.raw ? b : a));
 const measured = {
   largestChunkGzip: largest.gz,
   largestChunkRaw: largest.raw,
   totalJs: js.reduce((a, b) => a + b.gz, 0),
   totalCss: css.reduce((a, b) => a + b.gz, 0),
+  resumeJs: allJs.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
+  resumeCss: allCss.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
 };
 
 // Each prerendered page's own scripts
