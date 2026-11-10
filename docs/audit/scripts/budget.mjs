@@ -14,14 +14,18 @@ import { gzipSync } from "node:zlib";
 
 const dir = process.argv[2] || ".next";
 const budgets = {
-  // baselines: 436854f (before the audit's motion and scene work) / commit 7
-  // (CSS: after commits 3-6 brought the home actions, the design pass and
-  // still view, 15,552; the limit keeps the same ~10% headroom)
-  pageInitialJs: 205_000, // 193,785 / 194,150 (projects, the largest)
-  largestChunkGzip: 300_000, // 287,831 / 288,428
-  largestChunkRaw: 1_100_000, // 1,056,413 / 1,058,023
-  totalJs: 520_000, // 492,642 / 492,141
-  totalCss: 17_000, // 11,654 / 15,552
+  // Baselines: 436854f (before the audit's motion and scene work) / the
+  // audit's commit 7 / feature/richmond-hill-weather (Richmond Hill weather
+  // and daylight, rain and snow, the remodelled vegetation's shaders, the
+  // corner display: about 12 KB gzip of the world chunk, 6 KB of page JS).
+  // Limits keep about 5% headroom over the last. Loading rain and snow on
+  // demand was tried: their own code is 2.5 KB and the split cost every
+  // visit 1.8 KB, so they stay in the world chunk.
+  pageInitialJs: 210_000, // 193,785 / 194,150 / 199,980 (projects, the largest)
+  largestChunkGzip: 316_000, // 287,831 / 288,428 / 300,650
+  largestChunkRaw: 1_150_000, // 1,056,413 / 1,058,023 / 1,090,438
+  totalJs: 536_000, // 492,642 / 492,141 / 510,283
+  totalCss: 18_000, // 11,654 / 15,552 / 16,788
 };
 
 const gz = (file) => gzipSync(readFileSync(file), { level: 9 }).length;
