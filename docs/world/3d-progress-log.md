@@ -36,7 +36,8 @@ layers) is commit `4acaddd`.
 | `world3d/rng.ts` | seeded random numbers |
 | `world3d/paint.ts` | the painted material, its shadow twin, the wind uniforms |
 | `world3d/textures.ts` | canvas textures: flagstones, planks, plaster, building facades, roof tiles, enamel, ground, leaf clusters (5 palettes), fallen leaves, window panes, text panels, clock face, notices |
-| `world3d/geometry.ts` | tubes with tapering radius, sagging wires, lumpy blobs, recursive trees (zelkova, ginkgo, maple, pine), leaf cards, bushes, ivy, instanced grass, path ribbons |
+| `world3d/geometry.ts` | tubes with tapering radius, sagging wires, lumpy blobs, recursive trees (zelkova, ginkgo, maple, pine), leaf cards (ivy), bushes, ivy, grass, path ribbons |
+| `world3d/vegetation/` | `shader.ts`: the lit three-band foliage and grass material (weather uniforms, wind per cluster/tuft); `foliage.ts`: crowns as lobed cluster masses, colour ramps; `grass.ts`: instanced tufts in coherent patches |
 | `world3d/props.ts` | bench (one with a school bag), lamp, utility pole and wires, vending machine, phone booth (door, receiver, cord, light), bicycle with basket, swing, fountain with water shader, notice board with notices, signpost, dust, sunbeams, sky dome with clouds, falling and fallen leaves |
 | `world3d/buildings.ts` | pavilion, sawtooth-roof workshop, station with clock tower, arcade, the empty city, hills, railings |
 | `world3d/scenes/*.tsx` | the six places, each with its own lights, animation and hit areas |
@@ -185,3 +186,37 @@ through the image optimizer. Numbers and the full list:
 - Registry: `plate` and `tag` are gone (no painting to crop or tag); the
   home page's "Sections" list and the world's name tags (always up on
   touch screens) are the ways in.
+
+## Vegetation remodel (10 November 2026)
+
+Against a painterly reference (layered crowns of rounded clusters in
+three value groups; grass in tufts and coherent patches). No modelling
+tool was available (no Blender, no Figma), so everything is procedural
+source in `world3d/vegetation/` and `geometry.ts`.
+
+- Causes of the choppy look, measured before changing anything: crowns
+  were hundreds of leaf cards each painted with ~64 small leaves of
+  random colour, so they read as speckle, and the brushwork pass turned
+  that speckle into unstable blotches (a 4 cm dolly changed 7.5% of a
+  canopy crop's pixels by a lot); the dark inner blobs showed as smooth
+  balls through the gaps; branches ended in cut stubs; the far tree belt
+  was single lumpy blobs, faceted under the stepped shading; grass was
+  single flat blades, each a random colour, normals forced up. Frame
+  rate was not the cause (60 fps at rest on both tiers).
+- Trees, bushes, the belt: lobed cluster masses with eye-facing rim
+  cards, normals bent between cluster and crown, per-vertex openness to
+  the sky, three colour bands chosen by the light that reaches them
+  (`vegetation/shader.ts`), glow through leaves against the sun. The
+  bands follow the scene's lights, and `envUniforms` (wet, snow, night).
+- Grass: tufts of curved, tapered blades; noise fields for height,
+  density, direction and tone; bases blend into the ground colour.
+- Wind: whole clusters and tufts move on the shared clock (still view
+  stops it).
+- Cost (production build, same machine, back to back): park build
+  380 → 151 ms (desktop 1x), trees 172 → 56 ms; Lighthouse TBT median
+  1,917 → 1,459 ms mobile, 643 → 265 ms desktop; triangles per frame
+  733k → 849k desktop, 347k → 442k phone, draw calls 387 → 359 and 296
+  → 279; uncapped frame time unchanged within noise.
+- Open: mid-distance grass still shows ground between tufts on the phone
+  tier; real phones not tried; alpha-to-coverage is on only at the high
+  tier (with 2x MSAA it dithered).
