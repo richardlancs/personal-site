@@ -19,6 +19,27 @@
   --ink: #1d1e1e; /* text */
   --error: #fb5745;
 
+  /* The interface's blues: baby blue for surfaces and accents, a deep
+     slate blue for text, a stronger blue for focus */
+  --baby: #b8dcfa; /* primary surface tint, selected things */
+  --baby-hover: #9bcbf1;
+  --baby-pale: #eaf5ff; /* pale-blue surface */
+  --baby-light: #f7fbff; /* light background */
+  --baby-line: #c6dff0; /* subtle border */
+  --slate: #203245; /* primary text on blue */
+  --focus-blue: #326e9f; /* focus rings */
+
+  /* Glass controls (.glass): translucent, blurred, the scene showing
+     through; labels stay opaque */
+  --glass-tint: rgb(184 220 250 / 0.24); /* secondary */
+  --glass-tint-strong: rgb(184 220 250 / 0.42); /* primary (.glass-primary) */
+  --glass-border: rgb(255 255 255 / 0.55);
+  --glass-hi: rgb(255 255 255 / 0.65); /* the inner highlight along the top */
+  --glass-blur: blur(14px) saturate(1.25);
+  --glass-shadow: 0 6px 18px -8px rgb(32 50 69 / 0.3);
+  --glass-fallback: rgb(234 245 255 / 0.88); /* no backdrop-filter */
+  --glass-radius: 10px;
+
   /* Backgrounds and surfaces */
   --background: var(--cream);
   /* Sheets and notes: cream paper the world shows through, softly */
@@ -3193,5 +3214,43 @@ html {
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-still]) .rh-details:popover-open {
     animation: none !important;
+  }
+}
+
+/*
+  Glass buttons (contract; the full treatment and the press animation are
+  built on this). `.glass` is a secondary action, `.glass-primary` a
+  primary one; tertiary actions stay text links. The press is driven by
+  components/ui/GlassPress.tsx: one delegated listener sets
+  `data-pressed` and `--press-x` / `--press-y` (px, from the pointer, or
+  the centre for the keyboard) on the `.glass` element.
+*/
+.glass {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  background: var(--glass-tint);
+  color: var(--slate);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.glass-primary {
+  background: var(--glass-tint-strong);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-primary {
+    background: var(--glass-fallback);
   }
 }
