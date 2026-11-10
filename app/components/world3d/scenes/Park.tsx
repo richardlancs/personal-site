@@ -292,7 +292,7 @@ function buildPark(quality: "high" | "low") {
   const late = () => {
     for (const build of lateTrees) build();
     lateTrees.length = 0;
-    root.add(grass(Math.round(bladeCount * 0.28), (rr) => placeBlade(rr, false), 8));
+    root.add(grass(Math.round(bladeCount * 0.28), (rr) => placeBlade(rr, false), 8, true));
     const cityR = rng(404);
     const spots = [];
     for (let i = 0; i < 46; i++) {

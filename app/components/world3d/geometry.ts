@@ -4,6 +4,7 @@ import { mesh, paint } from "./paint";
 import { rng, type Rng } from "./rng";
 import { leafCluster } from "./textures";
 import { crownClusters, foliageGeometry, foliageMaterial, type Foliage } from "./vegetation/foliage";
+import { grassField } from "./vegetation/grass";
 import { vegMesh } from "./vegetation/shader";
 
 // The modeling toolkit: everything in the world is built from these, from
@@ -357,62 +358,11 @@ export function buildVine(seed: number, points: THREE.Vector3[], leafSize = 0.35
 }
 
 // ---------------------------------------------------------------------
-// Grass: one blade, instanced thousands of times
+// Grass: tufts of blades, instanced (vegetation/grass.ts). `count` is in
+// blades; `far` grass is built with simpler tufts.
 
-export function bladeGeometry() {
-  const g = new THREE.PlaneGeometry(0.045, 1, 1, 4);
-  g.translate(0, 0.5, 0);
-  const p = g.attributes.position as THREE.BufferAttribute;
-  const colors: number[] = [];
-  for (let i = 0; i < p.count; i++) {
-    const y = p.getY(i);
-    // Taper to a point and lean forward
-    p.setX(i, p.getX(i) * (1 - y * 0.85));
-    p.setZ(i, y * y * 0.18);
-    const c = new THREE.Color().setHSL(0.2 - y * 0.03, 0.42, 0.24 + y * 0.36);
-    colors.push(c.r, c.g, c.b);
-  }
-  g.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  g.computeVertexNormals();
-  // Grass is lit from above, whatever way the blade faces
-  const n = g.attributes.normal as THREE.BufferAttribute;
-  for (let i = 0; i < n.count; i++) n.setXYZ(i, 0, 1, 0.2);
-  return g;
-}
-
-export function grass(
-  count: number,
-  place: (r: Rng) => { x: number; z: number; h: number } | null,
-  seed = 7,
-  hues: [number, number] = [0.15, 0.26],
-) {
-  const r = rng(seed);
-  const material = paint({ vertexColors: true, side: THREE.DoubleSide, brush: 0.25, brushScale: 0.4, wind: { amp: 0.32, base: 0, height: 1, flutter: 1 } });
-  const blades = new THREE.InstancedMesh(bladeGeometry(), material, count);
-  const m = new THREE.Matrix4();
-  const q = new THREE.Quaternion();
-  const e = new THREE.Euler();
-  const at = new THREE.Vector3();
-  const size = new THREE.Vector3();
-  const color = new THREE.Color();
-  let n = 0;
-  let tries = 0;
-  while (n < count && tries < count * 6) {
-    tries++;
-    const spot = place(r);
-    if (!spot) continue;
-    q.setFromEuler(e.set(r.range(-0.15, 0.15), r() * Math.PI * 2, r.range(-0.15, 0.15)));
-    m.compose(at.set(spot.x, 0, spot.z), q, size.set(r.range(0.7, 1.3), spot.h * r.range(0.55, 1.0), 1));
-    blades.setMatrixAt(n, m);
-    color.setHSL(r.range(hues[0], hues[1]), r.range(0.35, 0.6), r.range(0.75, 1.1));
-    blades.setColorAt(n, color);
-    n++;
-  }
-  blades.count = n;
-  blades.receiveShadow = true;
-  blades.castShadow = false;
-  blades.frustumCulled = false;
-  return blades;
+export function grass(count: number, place: (r: Rng) => { x: number; z: number; h: number } | null, seed = 7, far = false) {
+  return grassField(count, place, seed, far);
 }
 
 // Distance from a point to a polyline (for keeping grass off paths)
