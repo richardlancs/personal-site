@@ -196,6 +196,15 @@ park; the camera moves there. The plain alternatives, always one step away:
 Every place is a real URL, so browser history, deep links and the keyboard
 work. Keep the corner controls small and on paper.
 
+Beside Sections is Richmond Hill's time and weather
+(`components/weather/WeatherClock.tsx`): one button, a little more paper
+than the other controls because it carries small text, opening a slip
+with sunrise, sunset, when the reading was taken and Open-Meteo's credit.
+On narrow screens it takes a row of its own under the bar. It never shows
+a value it doesn't have: blanks while loading, an "as of" tag on an old
+reading, "Weather unavailable" (with the time kept) when there is none.
+No live region: the minute tick isn't announced.
+
 On wide screens a page's column takes one half of the screen and its place
 the other, and sits in the middle of its half (`.location` in
 `globals.css`), so wide monitors stay balanced. Corners come from the

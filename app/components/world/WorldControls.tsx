@@ -5,13 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { listed } from "../../sections/registry";
 import MusicToggle from "../MusicToggle";
+import WeatherClock from "../weather/WeatherClock";
 import StillViewToggle from "./StillViewToggle";
 
 // The few controls that sit over the world, in its corners. There is no
 // row of tabs: you get around by going to places in the park. The
 // Sections menu is the plain alternative, one step from anywhere, on both
 // layouts; its entries come from the section registry, each with its
-// place in the park beside it on wide screens.
+// place in the park beside it on wide screens. Beside them, Richmond
+// Hill's time and weather (weather/WeatherClock.tsx).
 export default function WorldControls() {
   const pathname = usePathname();
   const router = useRouter();
@@ -58,6 +60,10 @@ export default function WorldControls() {
       ) : (
         <span />
       )}
+
+      {/* Richmond Hill's time and weather: beside the menu on wide
+          screens, a row of its own under the bar on narrow ones */}
+      <WeatherClock />
 
       <div className="flex items-center gap-2">
         {/* A popover button: the browser exposes it as expanded or
