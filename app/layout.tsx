@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import ResumeHost from "./components/resume/ResumeHost";
 import SkyDriver from "./components/weather/SkyDriver";
 import { STILL_SCRIPT } from "./components/world3d/still";
 import WorldShell from "./components/world3d/WorldShell";
@@ -96,6 +97,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <div id="content" tabIndex={-1} className="outline-none">
           {children}
         </div>
+        {/* The résumé, read in the page: opened by any résumé link */}
+        <ResumeHost />
       </body>
     </html>
   );

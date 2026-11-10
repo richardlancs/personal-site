@@ -1,0 +1,430 @@
+/*
+  The résumé viewer (ResumeViewer.tsx). Loaded with the viewer, on the
+  first opening, so none of it is in the page's CSS. Colours are the
+  interface's blues (globals.css :root); buttons are the shared .glass.
+*/
+
+/* The page behind holds still while it's open (lockScroll) */
+:root.resume-lock {
+  overflow: hidden;
+}
+
+:root.resume-gutter {
+  scrollbar-gutter: stable;
+}
+
+/* ---------- The dialog ---------- */
+
+.resume {
+  /* A spacious sheet in the middle of wide screens */
+  width: min(64rem, calc(100vw - 4rem));
+  height: min(calc(100dvh - 3rem), 76rem);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--baby-line);
+  border-radius: var(--radius-lg);
+  background: var(--baby-light);
+  color: var(--slate);
+  box-shadow: 0 30px 70px -30px rgb(32 50 69 / 0.55);
+  overscroll-behavior: contain;
+}
+
+.resume[open] {
+  display: flex;
+  flex-direction: column;
+  animation: resume-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.resume::backdrop {
+  /* No blur: a plain wash over the world's last frame */
+  background: color-mix(in srgb, var(--slate) 48%, transparent);
+  animation: resume-fade 200ms ease-out;
+}
+
+.resume[data-closing] {
+  animation: resume-out 140ms ease-in forwards;
+}
+
+.resume[data-closing]::backdrop {
+  animation: resume-fade-out 140ms ease-in forwards;
+}
+
+@keyframes resume-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.99);
+  }
+}
+
+@keyframes resume-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.995);
+  }
+}
+
+@keyframes resume-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes resume-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Still view and reduced motion: a brief fade, nothing moves */
+:root[data-still="on"] .resume[open],
+:root[data-still="on"] .resume::backdrop {
+  animation-name: resume-fade;
+  animation-duration: 100ms;
+}
+:root[data-still="on"] .resume[data-closing],
+:root[data-still="on"] .resume[data-closing]::backdrop {
+  animation: resume-fade-out 80ms ease-in forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .resume[open],
+  :root:not([data-still]) .resume::backdrop {
+    animation-name: resume-fade;
+    animation-duration: 100ms;
+  }
+  :root:not([data-still]) .resume[data-closing],
+  :root:not([data-still]) .resume[data-closing]::backdrop {
+    animation: resume-fade-out 80ms ease-in forwards;
+  }
+}
+
+/* Phones and short windows: the whole screen, under the notch and above
+   the home bar */
+@media (max-width: 767px), (max-height: 480px) {
+  .resume {
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
+
+.resume :focus-visible {
+  outline: 2px solid var(--focus-blue);
+  outline-offset: 2px;
+}
+
+/* ---------- The bar: title, zoom, pages, Download, Close ---------- */
+
+.resume-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.75rem 1rem 0.75rem 1.4rem;
+  border-bottom: 1px solid var(--baby-line);
+  background: var(--baby-pale);
+}
+
+.resume-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--slate);
+}
+
+.resume-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-right: auto;
+}
+
+.resume-zoom,
+.resume-pager {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.resume-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.resume svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.resume .glass {
+  font-size: 0.95rem;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.resume .resume-icon {
+  width: 44px;
+  padding: 0;
+}
+
+.resume .glass[aria-disabled="true"] {
+  cursor: default;
+  opacity: 0.45;
+}
+
+/* "Fit width" when it's on: a deeper blue, a firmer edge and a tick */
+.resume .resume-fit[aria-pressed="true"] {
+  background: var(--baby);
+  border-color: var(--focus-blue);
+}
+
+.resume-tick {
+  margin-left: -0.15rem;
+}
+
+.resume-percent,
+.resume-pageno {
+  min-width: 3.4rem;
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--slate);
+}
+
+.resume-pageno {
+  min-width: 6.5rem;
+}
+
+@media (max-width: 767px), (max-height: 480px) {
+  .resume-bar {
+    gap: 0.5rem 0.5rem;
+    padding: max(0.6rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0.6rem
+      max(1rem, env(safe-area-inset-left));
+  }
+
+  /* The title, Download and Close on the first line; zoom and pages on
+     the second */
+  .resume-title {
+    margin-right: auto;
+  }
+
+  .resume-end {
+    order: 2;
+  }
+
+  .resume-tools {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    margin-right: 0;
+    gap: 0.5rem;
+  }
+
+  .resume .glass {
+    padding-inline: 0.8rem;
+  }
+}
+
+/* ---------- The document ---------- */
+
+.resume-doc {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--baby-line) 45%, var(--baby-pale));
+  -webkit-overflow-scrolling: touch;
+}
+
+.resume-doc:focus-visible {
+  outline-offset: -3px;
+}
+
+/* Wider than the view once zoomed in: then it scrolls sideways too */
+.resume-pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  width: max-content;
+  min-width: 100%;
+}
+
+.resume-page {
+  position: relative;
+  flex: none;
+  background: var(--baby-light); /* under the drawing, which brings its own white paper */
+  border-radius: 3px;
+  box-shadow:
+    0 1px 2px rgb(32 50 69 / 0.12),
+    0 10px 28px -14px rgb(32 50 69 / 0.4);
+}
+
+.resume-drawn,
+.resume-drawn canvas,
+.resume-words {
+  position: absolute;
+  inset: 0;
+}
+
+.resume-drawn canvas {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+}
+
+/* The shape of the page while it loads: the same width the page will
+   have, so nothing moves when it arrives */
+.resume-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 612 / 792;
+  background: var(--baby-light);
+}
+
+.resume-placeholder p {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--slate);
+}
+
+.resume-error {
+  max-width: 30rem;
+  margin: 2rem auto;
+  padding: 1.5rem 1.6rem;
+  border: 1px solid var(--baby-line);
+  border-radius: var(--radius);
+  background: var(--baby-light);
+  color: var(--slate);
+  line-height: 1.6;
+  white-space: normal;
+}
+
+.resume-error h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.resume-error p {
+  margin: 0 0 0.5rem;
+}
+
+.resume-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 767px), (max-height: 480px) {
+  .resume-doc {
+    padding: 0.75rem max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom))
+      max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .resume-error {
+    width: calc(100vw - 1.5rem);
+    margin: 1rem 0;
+  }
+}
+
+/* The PDF's own links, over the words they're on */
+.resume-link {
+  position: absolute;
+  z-index: 2;
+  border-radius: 2px;
+}
+
+@media (hover: hover) {
+  .resume-link:hover {
+    background: color-mix(in srgb, var(--baby) 35%, transparent);
+  }
+}
+
+/*
+  pdf.js's text layer: the page's words as real text, transparent, laid
+  exactly over the drawing so they can be selected. The rules it needs,
+  from pdfjs-dist/web/pdf_viewer.css (Apache-2.0), without the rest of
+  pdf.js's viewer.
+*/
+.resume .textLayer {
+  position: absolute;
+  inset: 0;
+  overflow: clip;
+  text-align: initial;
+  line-height: 1;
+  text-size-adjust: none;
+  -webkit-text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.resume .textLayer :is(span, br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.resume .textLayer > :not(.markedContent),
+.resume .textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.resume .textLayer .markedContent {
+  display: contents;
+}
+
+.resume .textLayer span[role="img"] {
+  user-select: none;
+  cursor: default;
+}
+
+.resume .textLayer ::selection {
+  background: color-mix(in srgb, var(--focus-blue) 30%, transparent);
+}
+
+.resume .textLayer br::selection {
+  background: transparent;
+}
+
+.resume .textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.resume .textLayer.selecting .endOfContent {
+  top: 0;
+}
