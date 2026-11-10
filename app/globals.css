@@ -344,50 +344,79 @@ body {
   }
 }
 
-/* The name is quiet at rest, set like a sign painted on the sky, and
-   comes forward when the pointer finds it: ink darkens, the letters
-   open up a little, and a leaf-green brushstroke draws in underneath.
-   At rest it's still the muted ink, which keeps 4.5:1 on the haze. */
+/*
+  The name: the introduction's one bold thing. Large indigo letters in
+  the mincho, on a soft cream backing of their own (::before, blurred at
+  the edges), with a stroke of sky-blue ink brushed under them (::after,
+  a hand-drawn brush shape used as a mask). The backing keeps the letters
+  at 12:1 or better whatever the sky does behind them: day, dusk, night,
+  rain or snow (over black: indigo on the backing is 11.9:1). The stroke
+  is brushed in once as the page arrives; afterwards it only deepens a
+  little when the pointer or the keyboard is in the introduction. Still
+  view and reduced motion show it already brushed. It's plain selectable
+  text, the page's h1.
+*/
 .park-name {
   position: relative;
+  isolation: isolate;
   width: fit-content;
-  font-size: clamp(1.75rem, 2.6vw, 2.5rem);
+  margin-bottom: 0.3em;
+  font-size: clamp(2.5rem, 4vw, 4.25rem);
   font-weight: 500;
-  line-height: 1.1;
-  letter-spacing: 0.01em;
-  color: var(--muted);
-  transition:
-    color 0.35s ease,
-    letter-spacing 0.35s ease;
+  line-height: 1.05;
+  letter-spacing: 0.005em;
+  color: var(--indigo);
+}
+
+.park-name::before {
+  content: "";
+  position: absolute;
+  inset: -0.2em -0.45em -0.32em -0.4em;
+  z-index: -2;
+  border-radius: 999px;
+  background: rgb(255 249 242 / 0.9);
+  filter: blur(10px);
+  pointer-events: none;
 }
 
 .park-name::after {
   content: "";
   position: absolute;
-  left: 0;
-  bottom: -0.2em;
-  width: 100%;
-  height: 2px;
-  border-radius: 2px;
-  background: linear-gradient(90deg, var(--sky), color-mix(in srgb, var(--sky) 0%, transparent));
-  transform: scaleX(0.18);
-  transform-origin: left;
-  opacity: 0.6;
-  transition:
-    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.35s ease;
+  left: -0.06em;
+  right: -0.14em;
+  bottom: -0.1em;
+  height: 0.32em;
+  z-index: -1;
+  background: var(--sky);
+  opacity: 0.72;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 32' preserveAspectRatio='none'%3E%3Cpath d='M6 21C6 14.5 16 12 40 12C120 11 220 9 300 10C340 10.5 372 11 396 13C372 16 340 18 300 19.5C220 22 120 25 40 26C18 26.5 6 27 6 21Z'/%3E%3Cpath d='M252 23.5C300 22.5 345 21 386 18.5C350 23 300 25.5 254 26.5Z'/%3E%3Cpath d='M118 7.5C170 6 228 5 290 6C232 7.5 172 8.5 120 9.5Z'/%3E%3C/svg%3E")
+    no-repeat center / 100% 100%;
+  animation: brush-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
-.park-intro:hover .park-name,
-.park-intro:focus-within .park-name {
-  color: var(--foreground);
-  letter-spacing: 0.035em;
+@keyframes brush-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 .park-intro:hover .park-name::after,
 .park-intro:focus-within .park-name::after {
-  transform: scaleX(1);
-  opacity: 1;
+  opacity: 0.95;
+}
+
+:root[data-still="on"] .park-name::after {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .park-name::after {
+    animation: none !important;
+  }
 }
 
 .park-headline {
@@ -2321,8 +2350,7 @@ html {
   }
 
   .park-name {
-    font-size: clamp(2.25rem, 10vw, 3rem);
-    color: var(--foreground);
+    font-size: clamp(2.5rem, 12vw, 3.5rem);
   }
 
   .park-headline {

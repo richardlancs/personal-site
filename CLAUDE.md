@@ -224,6 +224,10 @@ The hero should prioritize:
 
 Keep the hero simple.
 
+The name is its one bold element (`.park-name`): indigo Shippori Mincho on
+its own soft cream backing, which keeps it readable over any sky, day or
+night, with a sky-blue brushstroke under it, brushed in once on arrival.
+
 Do not add unnecessary decorative graphics just to fill space.
 
 ---
