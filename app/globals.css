@@ -2102,7 +2102,9 @@ html {
 .notebook-controls + .text-link,
 .notebook-sheet + .text-link {
   border-color: rgb(255 255 255 / 0.55);
-  background-color: rgb(255 249 242 / 0.58);
+  /* Enough paper that the muted icons keep 4.5:1 over the darkest night
+     sky (at 0.58 they fell to 2.95:1 once the park could be dark) */
+  background-color: rgb(255 249 242 / 0.76);
   backdrop-filter: blur(10px) saturate(1.2);
   box-shadow: 0 6px 16px -10px rgb(var(--shadow) / 0.35);
   transition:
@@ -2114,7 +2116,7 @@ html {
 .control-round:hover,
 .notebook-controls + .text-link:hover,
 .notebook-sheet + .text-link:hover {
-  background-color: rgb(255 249 242 / 0.8);
+  background-color: rgb(255 249 242 / 0.92);
 }
 
 /* The notebook's controls carry a line of text (which pages are open):
@@ -2789,7 +2791,9 @@ html {
 
 /* The focus ring is drawn on a halo of cream, so it stays visible over
    the darkest night behind the bar (indigo on bare night is ~1.4:1) */
-.world-controls .rh-chip:focus-visible {
+.world-controls .rh-chip:focus-visible,
+.world-controls .control-tag:focus-visible,
+.world-controls .control-round :focus-visible {
   box-shadow: 0 0 0 7px rgb(255 249 242 / 0.92);
 }
 
