@@ -21,7 +21,8 @@ export default function MapPage() {
             <h1 className="font-display text-3xl font-semibold tracking-tight">Map of the park</h1>
             <p className="mt-1 text-sm text-muted">Pinned to the notice board. Choose where to go.</p>
           </div>
-          <Link href="/" className="text-link only-world text-sm font-medium">
+          {/* On its own, not in a sentence: a 24px target (WCAG 2.5.8) */}
+          <Link href="/" className="text-link only-world min-h-6 items-center text-sm font-medium inline-flex">
             Back to the park
           </Link>
         </div>

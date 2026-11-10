@@ -111,8 +111,11 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
         </div>
 
         {/* The live region stays put; only the card inside it is replaced,
-            so the new card is announced */}
-        <div id="cabinet-card" role="tabpanel" aria-labelledby={`cabinet-${slug(interest.name)}`} aria-live="polite">
+            so the new card is announced. The card has nothing to focus in
+            it, so the panel itself is the next tab stop after the chosen
+            cabinet (the APG tabs pattern): Tab reads it, Shift+Tab goes
+            back to the cabinet. */}
+        <div id="cabinet-card" role="tabpanel" tabIndex={0} aria-labelledby={`cabinet-${slug(interest.name)}`} aria-live="polite" className="cabinet-panel">
           <section key={interest.name} className="cabinet-card">
             <span className="cabinet-card-sketch">
               <Sketch scene={interest.scene} />

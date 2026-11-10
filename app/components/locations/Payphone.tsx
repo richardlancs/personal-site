@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWorld, world } from "../world3d/store";
 
 export type Line = { label: string; value: string; href: string; copy?: boolean };
@@ -13,18 +13,29 @@ export type Line = { label: string; value: string; href: string; copy?: boolean 
 export default function Payphone({ lines }: { lines: Line[] }) {
   const up = useWorld((s) => s.phoneUp);
   const [copied, setCopied] = useState<string | null>(null);
-  const [status, setStatus] = useState(""); // read out by screen readers
+  // What the last Copy did, shown under the card and read out
+  const [status, setStatus] = useState<{ text: string; failed?: boolean } | null>(null);
+  const reset = useRef<number | undefined>(undefined);
   const setReceiver = (lift: boolean) => world.set({ phoneUp: lift, focus: "phone" });
 
+  // Leaving the page within the two seconds cancels the reset
+  useEffect(() => () => window.clearTimeout(reset.current), []);
+
   async function copy(value: string) {
+    window.clearTimeout(reset.current);
     try {
+      // Missing outside a secure context: that throws here too
       await navigator.clipboard.writeText(value);
       setCopied(value);
-      setStatus(`Copied ${value}`);
-      window.setTimeout(() => setCopied((current) => (current === value ? null : current)), 2000);
+      setStatus({ text: `Copied ${value}.` });
+      reset.current = window.setTimeout(() => {
+        setCopied(null);
+        setStatus(null);
+      }, 2000);
     } catch {
-      // Clipboard blocked: the address is still there to select
-      setStatus(`Couldn't copy. Select ${value} to copy it.`);
+      // Clipboard blocked: say so, and the address is still there to select
+      setCopied(null);
+      setStatus({ text: `Couldn't copy ${value}. Select the address to copy it.`, failed: true });
     }
   }
 
@@ -92,8 +103,8 @@ export default function Payphone({ lines }: { lines: Line[] }) {
             </li>
           ))}
         </ol>
-        <p role="status" className="sr-only">
-          {status}
+        <p role="status" className="directory-status" data-failed={status?.failed || undefined}>
+          {status?.text}
         </p>
       </div>
     </div>

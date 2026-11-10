@@ -117,3 +117,23 @@ test("the corner menu is called Sections on every layout (audit I1)", { skip }, 
     assert.match(body, /<nav id="places-menu"[^>]*aria-label="Sections"/, `${s.href}: menu name`);
   }
 });
+
+test("the arcade's card panel is a tab stop after the chosen cabinet (audit F5)", { skip }, async () => {
+  const { body } = await get("/interests");
+  const panel = body.match(/<div[^>]*id="cabinet-card"[^>]*>/)?.[0];
+  assert.ok(panel, "interests: the card panel");
+  assert.match(panel, /role="tabpanel"/);
+  assert.match(panel, /tabindex="0"/i, "interests: the panel takes focus");
+  assert.match(panel, /aria-live="polite"/, "interests: the new card is still announced");
+});
+
+test("copy and music feedback are live regions drawn on screen, not screen-reader-only", { skip }, async () => {
+  const contact = (await get("/contact")).body;
+  const copyStatus = contact.match(/<p[^>]*role="status"[^>]*>/)?.[0];
+  assert.ok(copyStatus, "contact: the copy status");
+  assert.doesNotMatch(copyStatus, /sr-only/, "contact: the copy status is visible");
+  for (const s of listed) {
+    const { body } = await get(s.href);
+    assert.match(body, /<span role="status" class="music-status">/, `${s.href}: the music status`);
+  }
+});

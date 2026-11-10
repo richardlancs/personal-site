@@ -616,6 +616,13 @@ body {
   pointer-events: none;
 }
 
+/* The controls stay at the top while the page scrolls under them: when
+   the keyboard moves to something, or a link jumps to a part of the page
+   (#skills), it stops below them, not hidden under them (WCAG 2.4.11) */
+html {
+  scroll-padding-top: 5rem;
+}
+
 .world-controls > * {
   pointer-events: auto;
 }
@@ -1635,6 +1642,86 @@ body {
   color: var(--accent);
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+/*
+  Keyboard and status feedback (audit F5 and the a11y pass).
+  - The arcade's card panel is a tab stop (Cabinets.tsx): its ring sits
+    outside the card with a cream halo, so it shows over the dark arcade
+    as well as over paper.
+  - What Copy did is written under the directory (Payphone.tsx), in ink,
+    and read out; a failure gets a rust dash as well as its words.
+  - If the song can't be loaded, a small note hangs under the music
+    button (MusicToggle.tsx).
+  - The timetable's lines are at least 24px tall to hit.
+*/
+.cabinet-panel {
+  border-radius: var(--radius-lg);
+}
+
+.cabinet-panel:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgb(255 249 242 / 0.9);
+}
+
+.directory-status {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.directory-status:empty {
+  margin: 0;
+}
+
+.directory-status[data-failed] {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.directory-status[data-failed]::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: calc(0.5lh - 1px);
+  width: 0.6rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--error-ink);
+}
+
+.control-round {
+  position: relative;
+}
+
+.music-status {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  width: max-content;
+  max-width: min(16rem, calc(100vw - 2rem));
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius-sm);
+  background: var(--sheet);
+  color: var(--foreground);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  box-shadow: 0 8px 18px -12px rgb(var(--shadow) / 0.4);
+}
+
+/* Empty, it stays in the page (a live region has to be there before it
+   speaks) but draws nothing */
+.music-status:empty {
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+}
+
+.timetable-line {
+  min-height: 1.5rem;
 }
 
 /* ---------- The notice board: the map ---------- */

@@ -412,9 +412,12 @@ function LabelProjector({ active }: { active: SceneId }) {
 // listed section with a building (an anchor) gets one.
 const parkLinks = places.filter((s) => s.anchor).map((s) => ({ id: s.anchor!, href: s.href, name: s.place, section: s.title }));
 
-function Labels({ active }: { active: SceneId }) {
+// Only on the home page: the map (/map) is in the park too, but its sheet
+// covers the tags, and focus would go to links nobody can see. The map
+// has its own link to every place.
+function Labels({ active, pathname }: { active: SceneId; pathname: string }) {
   const hover = useWorld((s) => s.hover);
-  if (active !== "park") return null;
+  if (active !== "park" || pathname !== "/") return null;
   return (
     <nav aria-label="Places in the park" className="world-labels">
       {parkLinks.map((place) => (
@@ -611,7 +614,7 @@ export default function World3D() {
           })}
       </Canvas>
       <div ref={iris} className="world-iris" aria-hidden="true" />
-      <Labels active={active} />
+      <Labels active={active} pathname={pathname} />
     </div>
   );
 }
