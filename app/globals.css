@@ -1086,7 +1086,7 @@ html {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.5rem;
+  margin-top: 1rem;
 }
 
 .shot-thumb {
@@ -1118,12 +1118,66 @@ html {
   border-color: var(--accent);
 }
 
+/* The chosen screenshot, on an old monitor: beige shell, a power light.
+   It's here on every layout, so it can be read when the scene is still,
+   small or missing; the monitor in the workshop shows it too. */
+.project-shot {
+  margin-top: 0.5rem;
+}
+
+.project-screen {
+  position: relative;
+  display: block;
+  border: 7px solid var(--surface-2);
+  border-bottom-width: 16px;
+  border-radius: var(--radius);
+  background: var(--ink);
+  box-shadow: 0 12px 22px -16px rgb(var(--shadow) / 0.6);
+  cursor: zoom-in;
+}
+
+.project-screen::after {
+  content: "";
+  position: absolute;
+  right: 6px;
+  bottom: -11px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--sky);
+  box-shadow: 0 0 5px var(--sky);
+}
+
+.project-screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 21rem;
+  object-fit: contain;
+}
+
+/* A phone-shaped screenshot would be a narrow strip at that height: it
+   stands taller, so its words are near their real size */
+.project-screen[data-tall] img {
+  max-height: min(36rem, 80svh);
+}
+
 /* What the chosen screenshot shows */
 .shot-caption {
-  margin-top: 0.6rem;
+  max-width: var(--measure);
+  margin-top: 0.5rem;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--muted);
+}
+
+/* Open it full size: the way to read the small print */
+.shot-open {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 /* The project's notes, clipped to a board */
@@ -2295,7 +2349,7 @@ html {
   .onward li a,
   .directory-copy,
   .phone-handset,
-  .shot-strip ~ .text-link {
+  .shot-open {
     border: 1px solid rgb(30 16 122 / 0.25);
     background: rgb(255 249 242 / 0.5);
     box-shadow: none;
@@ -2460,47 +2514,13 @@ html {
     padding: 1.6rem 1.15rem 1.4rem;
   }
 
-  /* The chosen screenshot, on an old monitor: beige shell, a power light */
-  .project-screen {
-    position: relative;
-    display: block;
-    margin-top: 0.6rem;
-    border: 7px solid var(--surface-2);
-    border-bottom-width: 16px;
-    border-radius: var(--radius);
-    background: var(--ink);
-    box-shadow: 0 12px 22px -16px rgb(var(--shadow) / 0.6);
-  }
-
-  .project-screen::after {
-    content: "";
-    position: absolute;
-    right: 6px;
-    bottom: -11px;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--sky);
-    box-shadow: 0 0 5px var(--sky);
-  }
-
-  .project-screen img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 21rem;
-    object-fit: contain;
-  }
-
-  .shot-strip {
-    margin-top: 0.6rem;
-  }
-
-  .shot-strip ~ .text-link {
-    display: inline-flex;
-    align-items: center;
+  /* Open it full size: a key on the sheet, like the project's links */
+  .shot-open {
     min-height: 2.75rem;
-    margin-top: 0;
+    margin-top: 0.5rem;
+    padding: 0 1rem;
+    border-radius: 999px;
+    text-decoration: none;
   }
 
   .shot-thumb {

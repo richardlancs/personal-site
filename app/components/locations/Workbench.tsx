@@ -9,11 +9,18 @@ import { onChoiceKey } from "./selector";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
+// How wide the chosen screenshot is drawn (globals.css, .project-screen):
+// the page's column less the notes' padding and the monitor's bezel. On
+// wide screens the column is min(36rem, 42vw); on the narrow layout the
+// sheet's column is at most 40rem, with 1rem of sheet either side.
+const SHOT_SIZES = `${WORLD_QUERY} calc(min(36rem, 42vw) - 4rem), calc(min(40rem, 100vw - 2rem) - 3.25rem)`;
+
 // The workshop's notes. The projects' screenshots are on the monitors on
 // the benches (world3d/scenes/Workshop.tsx); choosing a project here, or
 // its monitor there, switches that monitor on and walks over to it. The
-// address keeps the project (#marketlab) so it can be linked to. The flat
-// layout has no monitors, so the chosen screenshot is shown on one here.
+// address keeps the project (#marketlab) so it can be linked to. The
+// chosen screenshot is shown here as well, on every layout, so it can be
+// read without the scene.
 export default function Workbench({ projects }: { projects: Project[] }) {
   const selected = useWorld((s) => s.sel.project);
   const shot = useWorld((s) => s.sel.shot);
@@ -50,6 +57,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
 
   const project = projects[selected];
   const screenshots = project.screenshots ?? [];
+  const current = screenshots[shot] ?? screenshots[0];
   const titleId = `project-${slug(project.title)}`;
   const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
@@ -115,41 +123,42 @@ export default function Workbench({ projects }: { projects: Project[] }) {
           </>
         )}
 
-        {screenshots.length > 0 && (
+        {current && (
           <>
             <h3 className="project-notes-label">On the screen</h3>
-            {screenshots[shot] && (
-              // The flat layout's monitor, with the caption under it; the
-              // caption names the picture, so the link carries the action
-              <figure className="only-flat">
-                <a href={screenshots[shot].src} target="_blank" rel="noopener noreferrer" className="project-screen" aria-label="Open this screenshot full size (opens in a new tab)">
-                  <Image key={screenshots[shot].src} src={screenshots[shot].src} alt="" width={screenshots[shot].width} height={screenshots[shot].height} sizes={`${WORLD_QUERY} 1px, (min-width: 640px) 36rem, 92vw`} />
-                </a>
-                <figcaption className="shot-caption">{screenshots[shot].alt}</figcaption>
-              </figure>
+            {/* The chosen screenshot, on an old monitor, readable here on
+                every layout: the monitor in the workshop shows it too, but
+                the scene can be still, small or missing. The caption is the
+                picture's description, and the link under it opens it full
+                size. The picture is a link as well, for a click or a tap;
+                keyboards and screen readers get the one text link. */}
+            <figure className="project-shot">
+              <a href={current.src} target="_blank" rel="noopener noreferrer" className="project-screen" data-tall={current.height > current.width || undefined} tabIndex={-1} aria-hidden="true">
+                <Image key={current.src} src={current.src} alt={current.alt} width={current.width} height={current.height} sizes={SHOT_SIZES} />
+              </a>
+              <figcaption className="shot-caption">{current.alt}</figcaption>
+              <a href={current.src} target="_blank" rel="noopener noreferrer" className="text-link shot-open">
+                Open this screenshot full size{newTab}
+              </a>
+            </figure>
+            {screenshots.length > 1 && (
+              <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
+                {screenshots.map((item, index) => (
+                  <button
+                    key={item.src}
+                    type="button"
+                    aria-pressed={index === shot}
+                    className="shot-thumb"
+                    onClick={() => {
+                      world.select("shot", index);
+                      world.set({ focus: `monitor-${selected}` });
+                    }}
+                  >
+                    <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="7rem" />
+                  </button>
+                ))}
+              </div>
             )}
-            <div role="group" aria-label={`${project.title} screenshots`} className="shot-strip">
-              {screenshots.map((item, index) => (
-                <button
-                  key={item.src}
-                  type="button"
-                  aria-pressed={index === shot}
-                  className="shot-thumb"
-                  onClick={() => {
-                    world.select("shot", index);
-                    world.set({ focus: `monitor-${selected}` });
-                  }}
-                >
-                  <Image src={item.src} alt={item.alt} width={item.width} height={item.height} sizes="7rem" />
-                </button>
-              ))}
-            </div>
-            {/* On wide screens the picture is on the monitor in the workshop:
-                this line says what it shows */}
-            {screenshots[shot] && <p className="shot-caption only-world">{screenshots[shot].alt}</p>}
-            <a href={screenshots[shot]?.src} target="_blank" rel="noopener noreferrer" className="text-link mt-2 inline-block text-sm">
-              Open this screenshot full size{newTab}
-            </a>
           </>
         )}
 
