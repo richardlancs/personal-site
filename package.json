@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/"
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/",
+    "perf:budget": "node docs/audit/scripts/budget.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.8.2",

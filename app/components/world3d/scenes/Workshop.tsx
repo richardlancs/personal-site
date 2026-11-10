@@ -33,8 +33,31 @@ const SCREEN = { w: 0.86, h: 0.54 };
 // optimizer at 1200px across, all a monitor in the scene can show
 type Shot = { url: string; aspect: number; texture: THREE.Texture | null; loading: boolean; load: () => void; dispose: () => void };
 
+// Decoded off the main thread where the browser can (createImageBitmap):
+// handed over as an <img>, the picture was decoded during the frame that
+// first showed it, about 60 ms of a stalled frame per screenshot
+// (docs/audit/performance.md). A bitmap isn't flipped on upload the way
+// an image is, so its texture flips it instead.
+function loadPicture(url: string, done: (texture: THREE.Texture) => void) {
+  const fallback = () => new THREE.TextureLoader().load(url, done);
+  if (typeof createImageBitmap !== "function") return fallback();
+  new THREE.ImageBitmapLoader().load(
+    url,
+    (bitmap) => {
+      const texture = new THREE.Texture(bitmap);
+      texture.flipY = false;
+      texture.repeat.y = -1;
+      texture.offset.y = 1;
+      texture.userData.bitmap = bitmap;
+      texture.needsUpdate = true;
+      done(texture);
+    },
+    undefined,
+    fallback,
+  );
+}
+
 function screenshotTextures(): Shot[][] {
-  const loader = new THREE.TextureLoader();
   return projects.map((project) =>
     (project.screenshots ?? []).map((shot) => {
       const width = Math.min(1200, shot.width);
@@ -49,7 +72,7 @@ function screenshotTextures(): Shot[][] {
         load() {
           if (entry.texture || entry.loading) return;
           entry.loading = true;
-          loader.load(url, (t) => {
+          loadPicture(url, (t) => {
             t.colorSpace = THREE.SRGBColorSpace;
             t.anisotropy = 8;
             t.userData.aspect = entry.aspect;
@@ -59,6 +82,7 @@ function screenshotTextures(): Shot[][] {
         },
         dispose() {
           entry.texture?.dispose();
+          (entry.texture?.userData.bitmap as ImageBitmap | undefined)?.close();
           entry.texture = null;
           entry.loading = false;
         },

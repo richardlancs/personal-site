@@ -493,9 +493,94 @@ function Still({ pathname }: { pathname: string }) {
       window.clearTimeout(stops);
     };
   }, [invalidate]);
+  // A new address, or the frame loop starting again (after the shaders
+  // are ready, or the tab comes back): a few frames to show it
+  const frameloop = useThree((s) => s.frameloop);
   useEffect(() => {
     invalidate(30);
-  }, [pathname, invalidate]);
+  }, [pathname, frameloop, invalidate]);
+  return null;
+}
+
+// The shaders, compiled before they're needed. Compiling and linking a
+// program makes the main thread wait for the GPU when it's done in the
+// middle of a frame: about a quarter of a second for the first frame here
+// (docs/audit/performance.md), and again at the threshold of every
+// journey, when the next place is drawn for the first time with its own
+// lights. Asked for ahead of time (compileAsync), the driver compiles them
+// in parallel while the page stays responsive.
+//
+// The programs must be the ones the frame will ask for: drawn into the
+// painterly pass's render target (so no tone mapping in the scene's own
+// shaders), with the place's own lights, its sun casting shadows, and fog.
+function Warm({ mounted, active, onReady }: { mounted: SceneId[]; active: SceneId; onReady: () => void }) {
+  const { gl, scene, camera } = useThree();
+  const warmed = useRef(new Set<SceneId>());
+  const target = useMemo(() => new THREE.WebGLRenderTarget(1, 1), []);
+  useEffect(() => () => target.dispose(), [target]);
+
+  useEffect(() => {
+    const compile = (id: SceneId, ready?: () => void) => {
+      warmed.current.add(id);
+      const group = scene.getObjectByName(`scene:${id}`);
+      if (!group) return ready?.();
+      const def = scenes[id];
+      const alone = new THREE.Scene();
+      alone.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
+      // As it will be when it's the place showing
+      const wasVisible = group.visible;
+      const suns: THREE.DirectionalLight[] = [];
+      group.visible = true;
+      group.traverse((o) => {
+        if ((o as THREE.DirectionalLight).isDirectionalLight && !o.castShadow) {
+          o.castShadow = true;
+          suns.push(o as THREE.DirectionalLight);
+        }
+      });
+      const previous = gl.getRenderTarget();
+      gl.setRenderTarget(target);
+      let pending: Promise<unknown>;
+      try {
+        pending = gl.compileAsync(group, camera, alone);
+        // Its painted textures go up to the GPU now too, not on arrival
+        group.traverse((o) => {
+          const map = ((o as THREE.Mesh).material as THREE.MeshLambertMaterial | undefined)?.map;
+          if (map && !Array.isArray((o as THREE.Mesh).material)) gl.initTexture(map);
+        });
+      } catch {
+        pending = Promise.resolve();
+      } finally {
+        gl.setRenderTarget(previous);
+        group.visible = wasVisible;
+        for (const sun of suns) sun.castShadow = false;
+      }
+      if (ready) {
+        // Never hold the world back for long, whatever the driver does
+        const fallback = window.setTimeout(ready, 2500);
+        pending.then(() => {
+          window.clearTimeout(fallback);
+          ready();
+        }, ready);
+      }
+    };
+
+    // The place showing first: the frame loop waits for its shaders
+    if (!warmed.current.size) {
+      let done = false;
+      const ready = () => {
+        if (done) return;
+        done = true;
+        performance.mark("world:shaders-ready");
+        onReady();
+      };
+      compile(active, ready);
+      return;
+    }
+    // The places built ahead (World3D, below), in idle time
+    const cancels = mounted.filter((id) => !warmed.current.has(id)).map((id) => onIdle(() => compile(id), 3000));
+    return () => cancels.forEach((cancel) => cancel());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the first place is the one active at mount
+  }, [mounted, gl, scene, camera, target]);
   return null;
 }
 
@@ -525,6 +610,8 @@ export default function World3D() {
   // In still view the world holds still, so it's drawn only when
   // something changes (Still, below) instead of sixty times a second
   const still = useWorld((s) => s.still);
+  // The first frame waits for the first place's shaders (Warm, above)
+  const [warm, setWarm] = useState(false);
   const iris = useRef<HTMLDivElement>(null);
   const box = useRef<HTMLDivElement>(null);
   useEffect(() => world.set({ quality }), [quality]);
@@ -611,7 +698,7 @@ export default function World3D() {
         // Pixel ratio: capped hardest on phones, where every pixel is paid
         // for twice (the scene, then the grade pass)
         dpr={quality === "mobile" ? [1, 1.25] : quality === "low" ? [1, 1.5] : [1, 1.75]}
-        frameloop={!visible ? "never" : still ? "demand" : "always"}
+        frameloop={!visible || !warm ? "never" : still ? "demand" : "always"}
         gl={{ antialias: quality !== "mobile", powerPreference: quality === "mobile" ? "default" : "high-performance" }}
         camera={{ fov: 48, near: 0.1, far: 900, position: [0, 2, 20] }}
         onCreated={({ gl }) => {
@@ -631,11 +718,12 @@ export default function World3D() {
           .map((id) => {
             const Scene = components[id];
             return (
-              <group key={id} position={scenes[id].offset}>
+              <group key={id} name={`scene:${id}`} position={scenes[id].offset}>
                 <Scene active={active === id} quality={sceneTier(quality)} navigate={navigate} />
               </group>
             );
           })}
+        <Warm mounted={mounted} active={active} onReady={() => setWarm(true)} />
       </Canvas>
       <div ref={iris} className="world-iris" aria-hidden="true" />
       <Labels active={active} pathname={pathname} />
