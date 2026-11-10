@@ -50,7 +50,7 @@ export default function WorldControls() {
   return (
     <div className="world-controls">
       {!inPark || pathname === "/map" ? (
-        <Link href="/" className="control-tag hover-grow" title="Back to the park (Esc)">
+        <Link href="/" className="glass" title="Back to the park (Esc)">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M14.5 5.5 8 12l6.5 6.5" />
           </svg>
@@ -69,7 +69,7 @@ export default function WorldControls() {
         {/* A popover button: the browser exposes it as expanded or
             collapsed and returns focus to it when Escape closes the menu.
             No aria-haspopup: the menu is a list of links, not a menu widget */}
-        <button type="button" popoverTarget="places-menu" className="control-tag hover-grow">
+        <button type="button" popoverTarget="places-menu" className="glass">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             {/* A folded paper map */}
             <path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z" />

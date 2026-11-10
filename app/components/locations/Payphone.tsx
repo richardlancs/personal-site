@@ -47,7 +47,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
     <div className="take-clicks">
       {email && (
         <div className="phone-line only-flat">
-          <a href={email.href} className="phone-handset">
+          <a href={email.href} className="glass glass-primary phone-handset">
             <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M3.5 6.5h17v11h-17Z M3.5 7l8.5 6.5L20.5 7" />
             </svg>
@@ -57,7 +57,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
         </div>
       )}
       <div className="phone-line only-world" data-up={up || undefined}>
-        <button type="button" className="phone-handset hover-grow" aria-pressed={up} onClick={() => setReceiver(!up)}>
+        <button type="button" className="glass glass-primary phone-handset" aria-pressed={up} onClick={() => setReceiver(!up)}>
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 4h3l2 5-2.5 1.5a11 11 0 0 0 6 6L15 14l5 2v3a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
           </svg>
@@ -97,7 +97,7 @@ export default function Payphone({ lines }: { lines: Line[] }) {
                   {!line.href.startsWith("mailto:") && !line.viewer && newTab}
                 </a>
                 {line.copy && (
-                  <button type="button" className="directory-copy" data-copied={copied === line.value || undefined} onClick={() => copy(line.value)}>
+                  <button type="button" className="glass directory-copy" data-copied={copied === line.value || undefined} onClick={() => copy(line.value)}>
                     {copied === line.value ? "Copied" : "Copy"}
                     <span className="sr-only"> {line.value}</span>
                   </button>

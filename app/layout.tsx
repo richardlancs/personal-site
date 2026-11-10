@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import ResumeHost from "./components/resume/ResumeHost";
+import GlassPress from "./components/ui/GlassPress";
 import SkyDriver from "./components/weather/SkyDriver";
 import { STILL_SCRIPT } from "./components/world3d/still";
 import WorldShell from "./components/world3d/WorldShell";
@@ -99,6 +100,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         {/* The résumé, read in the page: opened by any résumé link */}
         <ResumeHost />
+        {/* The press on every glass button (globals.css, .glass) */}
+        <GlassPress />
       </body>
     </html>
   );

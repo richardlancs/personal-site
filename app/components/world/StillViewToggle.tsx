@@ -9,7 +9,7 @@ const isStill = () => world.get().still;
 // already still: the attribute on <html> was set before it was painted)
 const unknown = () => false;
 
-// A small round button in the corner, beside the music: Still view holds
+// A small glass button in the corner, beside the music: Still view holds
 // the world still (world3d/still.ts). Pressed, nothing moves on its own
 // and the camera cuts between places instead of travelling.
 export default function StillViewToggle() {
@@ -24,7 +24,7 @@ export default function StillViewToggle() {
       aria-label="Still view"
       aria-pressed={still}
       title={label}
-      className="hover-grow flex size-8 items-center justify-center rounded-full bg-foreground/5 text-muted hover:bg-foreground/10 hover:text-foreground aria-pressed:bg-[var(--highlight)] aria-pressed:text-accent"
+      className="glass glass-icon"
     >
       {/* A framed picture of a hill and the sun: a still view. The sun
           fills in while it's on. */}

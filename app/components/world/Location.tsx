@@ -35,7 +35,7 @@ export default function Location({ section, children }: { section: Section; chil
               .filter((other) => other.id !== section.id)
               .map((other) => (
                 <li key={other.id}>
-                  <Link href={other.href}>
+                  <Link href={other.href} className="glass">
                     <PlaceGlyph id={other.glyph} className="onward-glyph" />
                     {other.title}
                   </Link>

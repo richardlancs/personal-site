@@ -26,10 +26,10 @@ export default function Home() {
         <p className="park-headline">{profile.headline}</p>
         <p className="park-about">{profile.intro}</p>
         <div className="park-actions">
-          <Link href="/projects" className="park-action" data-primary>
+          <Link href="/projects" className="glass glass-primary">
             View projects
           </Link>
-          <Link href="/contact" className="park-action">
+          <Link href="/contact" className="glass">
             Contact
           </Link>
         </div>

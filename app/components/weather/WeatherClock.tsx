@@ -27,7 +27,7 @@ export default function WeatherClock() {
       {/* A popover button, like Sections: the browser says whether the
           details are open and gives focus back to it when Escape closes
           them. The details come straight after it in the reading order. */}
-      <button type="button" popoverTarget="rh-details" className="control-tag rh-chip" aria-label={text.label}>
+      <button type="button" popoverTarget="rh-details" className="glass rh-chip" aria-label={text.label}>
         <span className="rh-place">
           {richmondHill.name}
           <span className="rh-region">, {richmondHill.region}</span>

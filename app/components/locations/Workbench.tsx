@@ -95,11 +95,11 @@ export default function Workbench({ projects }: { projects: Project[] }) {
           </p>
         )}
         <p className="project-links">
-          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+          <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className={project.liveUrl ? "glass" : "glass glass-primary"}>
             Code on GitHub{newTab}
           </a>
           {project.liveUrl && (
-            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="text-link">
+            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="glass glass-primary">
               Live demo{newTab}
             </a>
           )}
@@ -137,7 +137,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
                 <Image key={current.src} src={current.src} alt={current.alt} width={current.width} height={current.height} sizes={SHOT_SIZES} />
               </a>
               <figcaption className="shot-caption">{current.alt}</figcaption>
-              <a href={current.src} target="_blank" rel="noopener noreferrer" className="text-link shot-open">
+              <a href={current.src} target="_blank" rel="noopener noreferrer" className="glass shot-open">
                 Open this screenshot full size{newTab}
               </a>
             </figure>

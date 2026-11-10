@@ -22,11 +22,11 @@ export default function Notice({
         <p className="location-intro">{children}</p>
         <p className="lost-notice-links">
           {action && (
-            <button type="button" className="text-link" onClick={action.onClick}>
+            <button type="button" className="glass glass-primary" onClick={action.onClick}>
               {action.label}
             </button>
           )}
-          <Link href="/" className="text-link">
+          <Link href="/" className="glass">
             Back to the park
           </Link>
           <Link href="/map" className="text-link">

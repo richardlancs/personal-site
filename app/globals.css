@@ -26,18 +26,18 @@
   --baby-pale: #eaf5ff; /* pale-blue surface */
   --baby-light: #f7fbff; /* light background */
   --baby-line: #c6dff0; /* subtle border */
-  --slate: #203245; /* primary text on blue */
-  --focus-blue: #326e9f; /* focus rings */
+  --slate: #203245; /* text on blue (12.5:1 on cream) */
+  --focus-blue: #326e9f; /* focus rings (5.2:1 on cream) */
 
-  /* Glass controls (.glass): translucent, blurred, the scene showing
-     through; labels stay opaque */
-  --glass-tint: rgb(184 220 250 / 0.24); /* secondary */
-  --glass-tint-strong: rgb(184 220 250 / 0.42); /* primary (.glass-primary) */
-  --glass-border: rgb(255 255 255 / 0.55);
-  --glass-hi: rgb(255 255 255 / 0.65); /* the inner highlight along the top */
-  --glass-blur: blur(14px) saturate(1.25);
-  --glass-shadow: 0 6px 18px -8px rgb(32 50 69 / 0.3);
-  --glass-fallback: rgb(234 245 255 / 0.88); /* no backdrop-filter */
+  /* Glass buttons (.glass, at the end of this file): baby blue, the scene
+     showing through, blurred; labels stay opaque */
+  --glass-tint: rgb(184 220 250 / 0.26); /* secondary */
+  --glass-tint-strong: rgb(155 203 241 / 0.68); /* primary (.glass-primary) */
+  --glass-border: rgb(155 203 241 / 0.75); /* a thin baby-blue edge: shows on paper and over the scene */
+  --glass-hi: rgb(255 255 255 / 0.7); /* the inner highlight along the top */
+  --glass-blur: blur(14px) saturate(1.2);
+  --glass-shadow: 0 6px 18px -10px rgb(32 50 69 / 0.35);
+  --glass-fallback: rgb(234 245 255 / 0.9); /* no backdrop-filter */
   --glass-radius: 10px;
 
   /* Backgrounds and surfaces */
@@ -457,7 +457,7 @@ body {
   font-weight: 500;
 }
 
-.park-links a {
+.park-links a:not(.glass) {
   display: inline-block;
   padding: 0.2rem 0;
   color: var(--accent);
@@ -469,7 +469,7 @@ body {
     text-decoration-color 0.2s ease;
 }
 
-.park-links a:hover {
+.park-links a:not(.glass):hover {
   color: var(--accent-hover);
   text-decoration-color: currentColor;
 }
@@ -477,7 +477,7 @@ body {
 /*
   Home: the introduction and the two ways in (audit I1, app/page.tsx).
   The same short introduction on both layouts, then "View projects"
-  (filled indigo) and "Contact" (outlined): the two things a visitor most
+  (primary glass) and "Contact" (secondary glass): the two things a visitor most
   likely came for, without finding a building first. The narrow layout's
   sizes for the introduction are in its own block, further down.
 */
@@ -494,44 +494,6 @@ body {
   flex-wrap: wrap;
   gap: 0.6rem;
   margin-top: 1.1rem;
-}
-
-.park-action {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2.5rem;
-  padding: 0 1.15rem;
-  border: 1px solid rgb(30 16 122 / 0.35);
-  border-radius: 999px;
-  background: rgb(255 249 242 / 0.7);
-  color: var(--accent);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-}
-
-.park-action:hover {
-  border-color: var(--accent);
-  background: rgb(255 249 242 / 0.95);
-}
-
-.park-action[data-primary] {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--cream);
-}
-
-.park-action[data-primary]:hover {
-  border-color: var(--surface-deep-2);
-  background: var(--surface-deep-2);
-}
-
-.park-action:active {
-  background: var(--highlight);
-  color: var(--accent);
 }
 
 /* The links under them are quieter: the actions lead */
@@ -606,13 +568,6 @@ body {
   }
 }
 
-@media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
-  .park-action {
-    min-height: 2.75rem;
-    padding: 0 1.25rem;
-  }
-}
-
 /* Page content sits over the world. Only its objects take clicks, so the
    world around them stays clickable. */
 :root {
@@ -644,29 +599,6 @@ body {
 }
 
 /*
-  Hover grow: a small, smooth grow on hover and a slight press on click.
-  Add the `hover-grow` class to any icon or button.
-*/
-.hover-grow {
-  transition:
-    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    background-color 0.2s ease,
-    color 0.2s ease;
-}
-
-/* Only on devices with a real hover, so a tap on a phone doesn't leave
-   the button stuck in its enlarged state */
-@media (hover: hover) {
-  .hover-grow:hover {
-    transform: scale(1.1);
-  }
-}
-
-.hover-grow:active {
-  transform: scale(0.96);
-}
-
-/*
   Still view (components/world3d/still.ts): nothing on the page moves on
   its own, and the world holds still and cuts between places
   (World3D.tsx). <html data-still="on"> is set before the first paint from
@@ -681,9 +613,6 @@ body {
 :root[data-still="on"] :is(.arrive, .motion-safe-anim, .flap, .cabinet-card, .map-sheet, .places-menu:popover-open) {
   animation: none !important;
 }
-:root[data-still="on"] :is(.hover-grow:hover, .hover-grow:active) {
-  transform: none;
-}
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-still]) :is(.world-label, .park-name, .bench-tab, .cabinet-button, .phone-handset svg),
   :root:not([data-still]) .park-name::after {
@@ -691,9 +620,6 @@ body {
   }
   :root:not([data-still]) :is(.arrive, .motion-safe-anim, .flap, .cabinet-card, .map-sheet, .places-menu:popover-open) {
     animation: none !important;
-  }
-  :root:not([data-still]) :is(.hover-grow:hover, .hover-grow:active) {
-    transform: none;
   }
 }
 
@@ -705,9 +631,9 @@ body {
   left: 50%;
   z-index: 60;
   padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: var(--foreground);
-  color: var(--background);
+  border-radius: var(--glass-radius);
+  background: var(--slate);
+  color: var(--cream);
   font-size: 0.875rem;
   font-weight: 500;
   transform: translate(-50%, -200%);
@@ -740,34 +666,17 @@ html {
   pointer-events: auto;
 }
 
-.control-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  height: 2.25rem;
-  padding: 0 0.9rem 0 0.75rem;
-  border: 1px solid var(--paper-edge);
-  border-radius: 999px;
-  background: var(--label);
-  color: var(--foreground);
-  font-size: 0.875rem;
-  font-weight: 500;
-  box-shadow: 0 8px 18px -14px rgb(var(--shadow) / 0.45);
-}
-
+/* The corner controls are glass buttons (.glass, at the end of this
+   file); the round ones' wrappers only hold the music's note */
 .control-round {
+  position: relative;
   display: inline-flex;
-  padding: 2px;
-  border: 1px solid var(--paper-edge);
-  border-radius: 999px;
-  background: var(--label);
-  box-shadow: 0 8px 18px -14px rgb(var(--shadow) / 0.45);
 }
 
 /* The Places menu: a slip of paper under its button */
 .places-menu {
   position: fixed;
-  inset: 3.9rem 1.25rem auto auto;
+  inset: 4.25rem 1.25rem auto auto;
   margin: 0;
   width: min(21rem, calc(100vw - 2rem));
   padding: 0.5rem 0.5rem 0.9rem;
@@ -922,7 +831,8 @@ html {
 .lost-notice-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
+  align-items: center;
+  gap: 0.6rem 1.25rem;
   margin-top: 1.1rem;
   font-weight: 500;
 }
@@ -1273,13 +1183,10 @@ html {
   color: var(--muted);
 }
 
-/* Open it full size: the way to read the small print */
+/* Open it full size: the way to read the small print (a glass button) */
 .shot-open {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
+  margin-top: 0.6rem;
   font-size: 0.875rem;
-  font-weight: 500;
 }
 
 /* The project's notes, clipped to a board */
@@ -1333,10 +1240,9 @@ html {
 .project-links {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1.5rem;
-  margin-top: 0.75rem;
-  font-size: 1rem;
-  font-weight: 500;
+  gap: 0.6rem;
+  margin-top: 1rem;
+  font-size: 0.9375rem;
 }
 
 .project-notes-label {
@@ -1541,11 +1447,6 @@ html {
   outline-offset: -3px;
 }
 
-/* The handset is light on the booth's dark enamel: the ring sits inside it */
-.phone-handset:focus-visible {
-  outline-offset: -4px;
-}
-
 /* The notice for the chosen line, turning over like flaps */
 .timetable-notice {
   margin-top: 1rem;
@@ -1677,14 +1578,10 @@ html {
   box-shadow: 0 20px 40px -28px rgb(var(--shadow) / 0.6);
 }
 
+/* The receiver: a primary glass button, lit baby blue on the enamel
+   (more tint than glass elsewhere, so its words keep 9:1 on the dark) */
 .phone-handset {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 999px;
-  background: var(--cream);
-  color: var(--indigo);
+  --tint: rgb(184 220 250 / 0.9);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -1783,32 +1680,11 @@ html {
   overflow-wrap: anywhere;
 }
 
-/* Copy: a small button, big enough to hit */
+/* Copy: a small glass button, big enough to hit; "Copied" is its chosen
+   state (.glass) */
 .directory-copy {
-  display: inline-flex;
-  align-items: center;
-  min-height: 2rem;
-  padding: 0 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--muted);
-  transition:
-    color 0.2s ease,
-    border-color 0.2s ease,
-    background-color 0.2s ease;
-}
-
-.directory-copy:hover {
-  color: var(--foreground);
-  border-color: var(--foreground);
-}
-
-.directory-copy[data-copied] {
-  color: var(--accent);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  padding: 0 0.85rem;
+  font-size: 0.8125rem;
 }
 
 /*
@@ -1857,10 +1733,6 @@ html {
   height: 2px;
   border-radius: 1px;
   background: var(--error-ink);
-}
-
-.control-round {
-  position: relative;
 }
 
 .music-status {
@@ -2074,8 +1946,6 @@ html {
 .notebook-controls + .text-link,
 .notebook-sheet + .text-link,
 .world-label,
-.control-tag,
-.control-round,
 .places-menu,
 .map-sheet {
   border-color: var(--paper-edge);
@@ -2163,20 +2033,15 @@ html {
 }
 
 /*
-  Controls over the world: light, so the park shows through them. A small
-  blur keeps the words legible whether the sky or the foliage is behind;
-  it's only ever on these small shapes, never on a whole panel. Chosen,
-  pressed, disabled and focused states are drawn with lines and ink, not
-  colour alone.
+  The notebook's small paper controls over the world: light, so the park
+  shows through them. A small blur keeps the words legible whether the sky
+  or the shelves are behind. (The corner controls and the other buttons
+  are glass: .glass, at the end of this file.)
 */
-.control-tag,
-.control-round,
 .notebook-controls,
 .notebook-controls + .text-link,
 .notebook-sheet + .text-link {
   border-color: rgb(255 255 255 / 0.55);
-  /* Enough paper that the muted icons keep 4.5:1 over the darkest night
-     sky (at 0.58 they fell to 2.95:1 once the park could be dark) */
   background-color: rgb(255 249 242 / 0.76);
   backdrop-filter: blur(10px) saturate(1.2);
   box-shadow: 0 6px 16px -10px rgb(var(--shadow) / 0.35);
@@ -2185,8 +2050,6 @@ html {
     border-color 0.2s ease;
 }
 
-.control-tag:hover,
-.control-round:hover,
 .notebook-controls + .text-link:hover,
 .notebook-sheet + .text-link:hover {
   background-color: rgb(255 249 242 / 0.92);
@@ -2198,15 +2061,10 @@ html {
   background-color: rgb(255 249 242 / 0.8);
 }
 
-.control-tag:active,
 .notebook-turn:active,
 .notebook-controls + .text-link:active,
 .notebook-sheet + .text-link:active,
-.park-links a:active,
-.project-links a:active,
-.onward li a:active,
-.directory-copy:active,
-.phone-handset:active {
+.park-links a:not(.glass):active {
   background-color: var(--highlight);
 }
 
@@ -2216,10 +2074,6 @@ html {
 
 .cabinet-button {
   background: linear-gradient(rgb(42 31 142 / 0.74), rgb(21 16 90 / 0.74));
-}
-
-.phone-handset {
-  background: rgb(255 249 242 / 0.85);
 }
 
 /*
@@ -2295,15 +2149,6 @@ html {
   /* ---------- The bar along the top: the way back, and Sections ---------- */
   .world-controls {
     padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem;
-  }
-
-  .control-tag {
-    height: 2.75rem;
-  }
-
-  .control-round button {
-    width: 2.5rem;
-    height: 2.5rem;
   }
 
   .places-menu {
@@ -2442,31 +2287,17 @@ html {
   }
 
   .park-links {
-    gap: 0.5rem;
-    margin-top: 1.1rem;
+    gap: 0.25rem 1.5rem;
+    margin-top: 0.9rem;
   }
 
-  /* Buttons on the sheet: light, drawn by their outline */
-  .park-links a,
-  .project-links a,
-  .onward li a,
-  .directory-copy,
-  .phone-handset,
-  .shot-open {
-    border: 1px solid rgb(30 16 122 / 0.25);
-    background: rgb(255 249 242 / 0.5);
-    box-shadow: none;
-  }
-
-  .park-links a,
-  .project-links a {
+  /* The links under the actions stay text links, each a full 44px tall
+     to tap (the actions and the sheet's other buttons are glass) */
+  .park-links a:not(.glass) {
     display: inline-flex;
     align-items: center;
     min-height: 2.75rem;
-    padding: 0 1rem;
-    border-radius: 999px;
     font-size: 0.9375rem;
-    text-decoration: none;
   }
 
   .park-places {
@@ -2539,15 +2370,13 @@ html {
     margin-top: 0.75rem;
   }
 
+  /* Glass keys, each with the place's drawing */
   .onward li a {
     display: flex;
-    align-items: center;
+    justify-content: flex-start;
     gap: 0.55rem;
     min-height: 3rem;
     padding: 0.35rem 0.7rem 0.4rem 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--paper);
     font-family: var(--font-display);
     font-size: 1.05rem;
     font-weight: 600;
@@ -2615,15 +2444,6 @@ html {
 
   .project-notes {
     padding: 1.6rem 1.15rem 1.4rem;
-  }
-
-  /* Open it full size: a key on the sheet, like the project's links */
-  .shot-open {
-    min-height: 2.75rem;
-    margin-top: 0.5rem;
-    padding: 0 1rem;
-    border-radius: 999px;
-    text-decoration: none;
   }
 
   .shot-thumb {
@@ -2743,10 +2563,6 @@ html {
   }
 
   /* ---------- The phone booth ---------- */
-  .phone-handset {
-    min-height: 2.75rem;
-  }
-
   .directory {
     padding: 1.5rem 1.15rem 1rem;
   }
@@ -2767,12 +2583,6 @@ html {
     display: inline-block;
     padding: 0.5rem 0;
     font-size: 1rem;
-  }
-
-  .directory-copy {
-    min-height: 2.5rem;
-    padding: 0 0.85rem;
-    font-size: 0.8125rem;
   }
 
   /* ---------- The notice board: the map ---------- */
@@ -2828,10 +2638,11 @@ html {
   ---------- The Richmond Hill display (components/weather/WeatherClock.tsx) ----------
   Richmond Hill's time and weather, in one button in the bar: on wide
   screens just left of Sections, on narrow ones a row of its own under the
-  bar. It's a control like the others (light, slightly blurred), with a
-  little more paper behind it: it carries small and muted words, which
-  keep 4.5:1 over the darkest night the park has (and over black: 5.5:1
-  for the muted text, 10:1 for the ink). Every field keeps its room, so
+  bar. It's a glass control like the others, thicker (.rh-chip's --tint,
+  with the glass block at the end of this file): it carries small and
+  muted words, measured over every sky at 5.2:1 or better for the place
+  in --accent and 5.9:1 for the muted text (docs/ui/scripts/
+  glass-contrast.mjs). Every field keeps its room, so
   nothing moves when the clock or a reading arrives; until they do, the
   room is a faint blank. The details are a slip of opaque paper under it.
 */
@@ -2847,27 +2658,9 @@ html {
   min-width: 0;
   max-width: 100%;
   padding: 0 0.95rem;
-  background-color: var(--label);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
   cursor: pointer;
-}
-
-.world-controls .rh-chip:hover,
-.rh:has(.rh-details:popover-open) .rh-chip {
-  background-color: rgb(255 249 242 / 0.94);
-}
-
-.rh:has(.rh-details:popover-open) .rh-chip {
-  border-color: rgb(30 16 122 / 0.3);
-}
-
-/* The focus ring is drawn on a halo of cream, so it stays visible over
-   the darkest night behind the bar (indigo on bare night is ~1.4:1) */
-.world-controls .rh-chip:focus-visible,
-.world-controls .control-tag:focus-visible,
-.world-controls .control-round :focus-visible {
-  box-shadow: 0 0 0 7px rgb(255 249 242 / 0.92);
 }
 
 /* The place, set like the other place names (Shippori Mincho) */
@@ -3003,7 +2796,7 @@ html {
 /* The details: a slip of paper under the button, like the Sections menu */
 .rh-details {
   position: fixed;
-  inset: 3.9rem 1.25rem auto auto;
+  inset: 4.25rem 1.25rem auto auto;
   margin: 0;
   width: min(20.5rem, calc(100vw - 1.5rem));
   /* On a short screen (a phone on its side, a zoomed window) it scrolls */
@@ -3218,12 +3011,22 @@ html {
 }
 
 /*
-  Glass buttons (contract; the full treatment and the press animation are
-  built on this). `.glass` is a secondary action, `.glass-primary` a
-  primary one; tertiary actions stay text links. The press is driven by
-  components/ui/GlassPress.tsx: one delegated listener sets
-  `data-pressed` and `--press-x` / `--press-y` (px, from the pointer, or
-  the centre for the keyboard) on the `.glass` element.
+  Glass buttons. `.glass` is a secondary action, `.glass-primary` a
+  primary one (a stronger blue); tertiary actions stay text links. A
+  rounded rectangle as wide as its words, 44px tall, a little baby blue
+  over whatever is behind (blurred), a thin edge, light along its top.
+  The label is always opaque slate. Where something behind could be dark
+  (the corner controls over the world, the receiver on the enamel), the
+  glass is thicker (--tint), so the words keep 4.5:1 or better.
+
+  The press (components/ui/GlassPress.tsx: one listener for the page sets
+  data-pressed and --press-x/-y/-r, from the pointer, or the middle for
+  the keyboard): the button gives a little (scale 0.98), a ripple of
+  light spreads from where it was pressed, with a bright, lens-like rim,
+  and a curved band of light sweeps across, as if the glass bent it; all
+  settled in 0.42s. Only scale, translate and opacity move, under the
+  label, clipped to the button. The action itself never waits for it.
+  Still view and reduced motion: a brief blue tint and edge instead.
 */
 .glass {
   position: relative;
@@ -3234,23 +3037,204 @@ html {
   justify-content: center;
   gap: 0.5rem;
   min-height: 44px;
-  padding: 0.5rem 1rem;
+  padding: 0 1rem;
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-radius);
-  background: var(--glass-tint);
+  background: var(--tint, var(--glass-tint));
   color: var(--slate);
-  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-hi);
+  font-weight: 500;
+  text-decoration: none;
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .glass-primary {
-  background: var(--glass-tint-strong);
+  --tint: var(--glass-tint-strong);
+  border-color: var(--baby-hover);
 }
 
+/* A square key for an icon */
+.glass-icon {
+  width: 44px;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  .glass:hover {
+    background-color: color-mix(in srgb, var(--tint, var(--glass-tint)), var(--baby-hover) 35%);
+  }
+}
+
+/* Chosen (pressed toggles, the page you're on, "Copied", an open menu):
+   baby blue, edged in the focus blue, so it reads without colour too */
+.glass:is([aria-pressed="true"], [aria-current="page"], [data-copied]),
+.rh:has(.rh-details:popover-open) .rh-chip,
+.world-controls:has(#places-menu:popover-open) [popovertarget="places-menu"] {
+  border-color: var(--focus-blue);
+  background-color: rgb(184 220 250 / 0.92);
+  box-shadow: inset 0 0 0 1px var(--focus-blue), var(--glass-shadow);
+}
+
+.glass:is(:disabled, [aria-disabled="true"]) {
+  opacity: 0.5;
+  box-shadow: none;
+  cursor: default;
+}
+
+.glass:focus-visible {
+  outline: 2px solid var(--focus-blue);
+  outline-offset: 3px;
+  border-radius: var(--glass-radius);
+}
+
+/* The corner controls (WorldControls.tsx, WeatherClock.tsx) sit over the
+   world: thicker glass, near-opaque under a dark sky (the same skies as
+   the introduction's paper), and the focus ring on a halo of cream, so
+   it shows over the darkest night */
+.world-controls .glass {
+  --tint: rgb(234 245 255 / 0.62);
+  font-size: 0.875rem;
+}
+
+:root:has(.world3d[data-sky-daylight="night"]),
+:root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
+  & .world-controls .glass {
+    --tint: rgb(247 251 255 / 0.86);
+  }
+
+  & .world-controls .rh-chip {
+    --tint: rgb(247 251 255 / 0.92);
+  }
+}
+
+/* The time and weather carry small and muted words: thicker still */
+.world-controls .rh-chip {
+  --tint: rgb(247 251 255 / 0.8);
+}
+
+.world-controls .glass:focus-visible {
+  box-shadow: 0 0 0 6px rgb(255 249 242 / 0.92);
+}
+
+/* The receiver, lit on the booth's dark enamel; its focus ring is cream
+   there (the focus blue would be 2.1:1 on the enamel) */
+.phone-line .phone-handset {
+  --tint: rgb(184 220 250 / 0.9);
+}
+
+.phone-line .phone-handset:focus-visible {
+  outline-color: var(--cream);
+}
+
+/* The press: a ripple (::before) and a sweep of light (::after) */
+.glass::before,
+.glass::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.glass::before {
+  left: calc(var(--press-x, 50%) - var(--press-r, 4rem));
+  top: calc(var(--press-y, 50%) - var(--press-r, 4rem));
+  width: calc(2 * var(--press-r, 4rem));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 255 255 / 0.45), rgb(234 245 255 / 0.3) 62%, rgb(255 255 255 / 0.8) 71%, rgb(255 255 255 / 0) 77%);
+}
+
+.glass::after {
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 60%;
+  background: radial-gradient(70% 100% at 0 50%, transparent 55%, rgb(255 255 255 / 0.65) 68%, transparent 80%);
+}
+
+.glass[data-pressed] {
+  animation: glass-press 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.glass[data-pressed]::before {
+  animation: glass-ripple 0.42s linear;
+}
+
+.glass[data-pressed]::after {
+  animation: glass-sheen 0.36s cubic-bezier(0.4, 0, 0.3, 1) 0.04s;
+}
+
+@keyframes glass-press {
+  25% {
+    scale: 0.98;
+  }
+}
+
+/* It spreads fast and fades slowly, as light does through water */
+@keyframes glass-ripple {
+  from {
+    opacity: 1;
+    scale: 0.12;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  45% {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+@keyframes glass-sheen {
+  from {
+    opacity: 1;
+    translate: -100% 0;
+  }
+  to {
+    opacity: 0;
+    translate: 240% 0;
+  }
+}
+
+/* Still view and reduced motion: no ripple, no give; a moment of blue */
+@keyframes glass-tint {
+  from {
+    border-color: var(--focus-blue);
+    background-color: var(--baby);
+  }
+}
+
+:root[data-still="on"] .glass[data-pressed] {
+  animation: glass-tint 0.3s step-end;
+}
+:root[data-still="on"] .glass::before,
+:root[data-still="on"] .glass::after {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .glass[data-pressed] {
+    animation: glass-tint 0.3s step-end;
+  }
+  :root:not([data-still]) .glass::before,
+  :root:not([data-still]) .glass::after {
+    display: none;
+  }
+}
+
+/* No backdrop blur: the glass is frosted instead, so the words still read */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass,
+  .glass {
+    background-color: var(--glass-fallback);
+  }
+
   .glass-primary {
-    background: var(--glass-fallback);
+    background-color: var(--baby);
   }
 }

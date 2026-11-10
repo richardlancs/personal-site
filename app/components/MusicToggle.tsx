@@ -64,7 +64,7 @@ export default function MusicToggle() {
         aria-label={label}
         aria-pressed={on}
         title={label}
-        className="hover-grow flex size-8 items-center justify-center rounded-full bg-foreground/5 text-muted hover:bg-foreground/10 hover:text-foreground aria-pressed:text-accent"
+        className="glass glass-icon"
       >
         <svg
           viewBox="0 0 24 24"
