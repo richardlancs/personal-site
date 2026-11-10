@@ -261,7 +261,8 @@ float phWet = 0.0;
   float snow = uSnow * uSnowAmt;
   if (snow > 0.0) {
     float up = smoothstep(0.5, 0.92, vPhNormal.y);
-    float drift = ph_fbm(vPhWorld * 0.55 + 13.0) + (n2 - 0.5) * 0.12;
+    // (two octaves of noise, not four: it covers most of the screen)
+    float drift = ph_noise(vPhWorld * 0.55 + 13.0) * 0.62 + ph_noise(vPhWorld * 1.4 + 2.0) * 0.3 + (n2 - 0.5) * 0.12;
     float cover = up * smoothstep(0.62 - snow * 0.3, 0.7 - snow * 0.26, drift);
     diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.89, 0.94), cover * 0.88);
   }

@@ -173,7 +173,7 @@ export const WEATHER: Record<WeatherPreset, WeatherLook> = {
     skyGrey: 0.8, skyLift: 0.96, skyTint: [0.97, 0.99, 1.04],
     fogGrey: 0.7, fogLift: 0.96, fogNear: 0.72, fogFar: 0.82,
     cover: 0.95, cloudDark: 0.08, sunDisc: 0.12,
-    wet: 0.15, snow: 1, rain: 0, flakes: 1,
+    wet: 0, snow: 1, rain: 0, flakes: 1,
   },
 };
 
