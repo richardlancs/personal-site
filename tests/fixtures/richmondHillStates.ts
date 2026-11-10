@@ -1,11 +1,8 @@
-// DEVELOPMENT ONLY (agent U): stand-in states for the Richmond Hill
-// display, so every state and condition can be looked at and tested before
-// the real hook (useRichmondHill.ts, agent W) is in. The values are made
-// up for that purpose and must never reach a visitor: the placeholder hook
-// only uses them when asked to with ?rh-mock=<kind>, and the real hook
-// doesn't read this file at all. Safe to delete once the display has
-// been checked against live data.
-import type { RichmondHillNow, WeatherIconId, WeatherPreset } from "../../lib/sky";
+// Test data for the Richmond Hill display (tests/weather-ui.test.mjs):
+// one RichmondHillNow for each state and kind of condition the display
+// has to handle. The values are made up for testing and never reach the
+// site; the app doesn't import this file.
+import type { RichmondHillNow, WeatherIconId, WeatherPreset } from "../../app/lib/sky";
 
 // 10 November 2026 in Richmond Hill (EST, UTC−5)
 const at = (h: number, m: number) => Date.UTC(2026, 10, 10, h + 5, m) / 1000;

@@ -65,7 +65,7 @@ export default function WorldControls() {
           screens, a row of its own under the bar on narrow ones */}
       <WeatherClock />
 
-      <div className="flex items-center gap-2">
+      <div className="world-controls-end flex items-center gap-2">
         {/* A popover button: the browser exposes it as expanded or
             collapsed and returns focus to it when Escape closes the menu.
             No aria-haspopup: the menu is a list of links, not a menu widget */}

@@ -2912,18 +2912,37 @@ html {
   margin-right: -0.2em;
 }
 
+/* The weather keeps one width whatever arrives (the blanks, a short or
+   long condition, an old reading's tag, "Weather unavailable"), so the
+   place and time beside it never move when a reading comes in */
+.rh-weather {
+  flex: none;
+  width: 12.5em;
+}
+
 /* A long condition gives way before anything else does (its full words
    are in the button's name and in the details) */
-.rh-condition {
+.rh-condition,
+.rh-asof {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rh-condition {
   color: var(--muted);
+}
+
+/* An old reading: the tag that says so takes the condition's place (the
+   condition stays in the icon, the details and the button's name) */
+.rh[data-status="stale"] .rh-condition {
+  display: none;
 }
 
 /* An old reading says so, on a small tag of its own */
 .rh-asof {
-  flex: none;
   padding: 0.1rem 0.45rem;
   border-radius: 999px;
   background: rgb(29 30 30 / 0.07);
@@ -3094,12 +3113,25 @@ html {
    never wrap apart) */
 @media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
   @media (max-width: 719px) {
+    /* The way back on the left, the menu and toggles in the right-hand
+       corner (the second track takes the rest of the row, whatever the
+       chip below is), and the chip on a row of its own */
     .world-controls {
       display: grid;
-      grid-template-columns: auto auto;
-      justify-content: space-between;
+      grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
       row-gap: 0.4rem;
+    }
+
+    .world-controls > .world-controls-end {
+      justify-self: end;
+    }
+
+    /* Alone on its row, the chip can be as wide as its words: nothing
+       sits beside it to be pushed */
+    .rh-weather {
+      flex: 0 1 auto;
+      width: auto;
     }
 
     .world-controls > .rh {
@@ -3110,16 +3142,10 @@ html {
       margin: 0;
     }
 
+    /* As tall as the controls above it (2.75rem on narrow screens) */
     .world-controls .rh-chip {
-      height: 2.25rem;
+      height: 2.75rem;
       padding: 0 0.85rem;
-    }
-
-    /* An old reading: the tag that says so matters more here than the
-       condition's word, which stays in the icon, the details and the
-       button's name */
-    .rh[data-status="stale"] .rh-condition {
-      display: none;
     }
 
     /* The smallest phones: closer together, so the condition still fits */
@@ -3147,8 +3173,8 @@ html {
     }
 
     .rh-details {
-      inset: calc(6.6rem + env(safe-area-inset-top)) auto auto 0.75rem;
-      max-height: calc(100svh - 7.6rem - env(safe-area-inset-top));
+      inset: calc(7.1rem + env(safe-area-inset-top)) auto auto 0.75rem;
+      max-height: calc(100svh - 8.1rem - env(safe-area-inset-top));
     }
 
     @supports (anchor-name: --rh-chip) {

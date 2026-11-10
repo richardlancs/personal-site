@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { clockTime, describeNow, longDate, splitMeridiem, temperature } from "../app/components/weather/clockText.ts";
-import { MOCKS } from "../app/components/weather/mockRichmondHill.ts";
+import { MOCKS } from "./fixtures/richmondHillStates.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
@@ -105,6 +105,6 @@ test("the display announces nothing on its own and opens its details as a popove
   // The narrow layout's row is inside the flat layout's query, and the
   // slip holds still in still view
   const css = read("app/globals.css");
-  assert.match(css, /@media \(orientation: portrait\), \(max-width: 767px\), \(max-height: 480px\) \{\s*@media \(max-width: 719px\) \{\s*\.world-controls \{\s*display: grid/);
+  assert.match(css, /@media \(orientation: portrait\), \(max-width: 767px\), \(max-height: 480px\) \{\s*@media \(max-width: 719px\) \{\s*(\/\*[\s\S]*?\*\/\s*)?\.world-controls \{\s*display: grid/);
   assert.match(css, /:root\[data-still="on"\] \.rh-details:popover-open \{\s*animation: none/);
 });
