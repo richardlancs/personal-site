@@ -100,7 +100,7 @@ layouts render the same content from `app/data/`. The two media queries
 that decide which layout a screen gets are in `components/world/flat.ts`
 and, identically, in `globals.css` (`npm test` checks they match). Use
 `.only-flat` / `.only-world` for anything that belongs to one layout.
-Controls over the world are light and slightly blurred; panels are not.
+Buttons are glass (see "Buttons" below); panels are cream paper.
 
 The overall feeling should be:
 
@@ -118,16 +118,23 @@ busy scenery. Real content stays in HTML.
 
 ## Color Palette
 
-One fixed theme, Monkeytype's "Soaring Skies": cream `#fff9f2`, sky
-`#55c6f0`, indigo `#1e107a`, sand `#e5ddd4`, ink `#1d1e1e`, error
-`#fb5745`. The six are named once at the top of `app/globals.css`; every
-component uses the semantic tokens derived from them (`--background`,
-`--paper`, `--surface-2`, `--surface-deep`, `--foreground`, `--muted`,
-`--accent`, `--mark`, `--highlight`, `--focus`, `--shadow`, …). Sky blue
-is decorative (marks, washes, lamps): it is 1.9:1 on cream, so text and
-controls use indigo or `--accent-hover`. There is no dark theme and no
-toggle; `npm test` checks that none comes back. The 3D scenes' skies, fog
-and thresholds are tuned to the same family; the landscape stays natural.
+One fixed theme: warm cream paper under a baby-blue interface. Cream
+`#fff9f2`, sky `#55c6f0`, sand `#e5ddd4`, ink `#1d1e1e`, error `#fb5745`
+(from Monkeytype's "Soaring Skies"), and the interface's blues: baby blue
+`#b8dcfa`, hover `#9bcbf1`, pale `#eaf5ff`, light `#f7fbff`, line
+`#c6dff0`, slate text `#203245`, focus `#326e9f`. They are named once at
+the top of `app/globals.css`; every component uses the semantic tokens
+derived from them (`--background`, `--paper`, `--surface-2`,
+`--surface-deep`, `--foreground`, `--muted`, `--accent`, `--mark`,
+`--highlight`, `--focus`, `--shadow`, `--glass-*`, …). Baby blue is for
+surfaces, chosen states, washes and strokes, never text: text and links
+use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. Cream
+stays for paper, which suits the scenery. The enamel objects (timetable,
+phone line, cabinets, the notebook's cover) are a deep slate blue
+(`--surface-deep`). Indigo is gone from the interface (`npm test` checks).
+There is no dark theme and no toggle; `npm test` checks that none comes
+back. The 3D scenes' skies, fog and thresholds are tuned to the same
+family; the landscape stays natural.
 
 Avoid:
 - large areas of pure black or pure white
@@ -200,11 +207,11 @@ park; the camera moves there. The plain alternatives, always one step away:
   the painting, and "Elsewhere in the park" at the foot of each page
 
 Every place is a real URL, so browser history, deep links and the keyboard
-work. Keep the corner controls small and on paper.
+work. Keep the corner controls few and small (44px glass keys).
 
 Beside Sections is Richmond Hill's time and weather
-(`components/weather/WeatherClock.tsx`): one button, a little more paper
-than the other controls because it carries small text, opening a slip
+(`components/weather/WeatherClock.tsx`): one button, thicker glass than
+the other controls because it carries small text, opening a slip
 with sunrise, sunset, when the reading was taken and Open-Meteo's credit.
 On narrow screens it takes a row of its own under the bar. It never shows
 a value it doesn't have: blanks while loading, an "as of" tag on an old
@@ -215,6 +222,30 @@ On wide screens a page's column takes one half of the screen and its place
 the other, and sits in the middle of its half (`.location` in
 `globals.css`), so wide monitors stay balanced. Corners come from the
 `--radius*` tokens: one family of soft edges everywhere.
+
+### Buttons
+
+Every button and button-like link is glass (`.glass` at the end of
+`globals.css`): a 10px-cornered rectangle as wide as its words, 44px
+tall, a little baby blue over a backdrop blur, a thin baby-blue edge, a
+light line along its top; the label is opaque slate. `.glass-primary` is
+the stronger blue for the main action; `.glass-icon` a square icon key.
+Tertiary actions stay text links (`.text-link`). Chosen states
+(`aria-pressed`, `aria-current`, `data-copied`, an open popover) are baby
+blue with a focus-blue edge. Where something dark can sit behind it
+(the corner controls over the world, the receiver on the enamel) the
+glass is thicker (`--tint`), near-opaque under a dark sky, so words keep
+4.5:1 (`docs/ui/scripts/glass-contrast.mjs` measures it over every sky).
+Scene objects keep their own look (cabinets, the handset's enamel line,
+timetable lines, notebook turns, map pins, name tags).
+
+The press is `components/ui/GlassPress.tsx`, mounted once in the layout:
+one listener sets `data-pressed` and the press point on whichever `.glass`
+is pressed (the middle for the keyboard), and CSS does the rest: a 98%
+give, a ripple of light from the press point, a curved sheen, settled in
+0.42 s; only scale, translate and opacity, under the label. It never
+delays the action and never stacks. Still view and reduced motion get a
+brief tint instead. New buttons only need the class.
 
 ---
 
@@ -230,9 +261,10 @@ The hero should prioritize:
 
 Keep the hero simple.
 
-The name is its one bold element (`.park-name`): indigo Shippori Mincho on
-its own soft cream backing, which keeps it readable over any sky, day or
-night, with a sky-blue brushstroke under it, brushed in once on arrival.
+The name is its one bold element (`.park-name`): slate-blue Shippori
+Mincho on its own soft cream backing, which keeps it readable over any
+sky, day or night, with a baby-blue brushstroke under it, brushed in once
+on arrival.
 By day the introduction sits in a haze of cream; under a dark sky (night,
 or dusk under cloud, rain or snow) it is a sheet of paper instead, so no
 glow lights up the night (`.park-intro::after`, keyed on `.world3d`'s
@@ -278,7 +310,8 @@ Avoid:
 Animations should be subtle. Words never wait for the world: a page's
 content comes in within about 0.1 s of arriving (`--arrive-delay`) while
 the camera's journey, a second or so, plays behind it. Interface
-transitions are 150–300 ms. The world stops drawing when the tab is hidden.
+transitions are 150–300 ms; a glass button's press settles in 0.42 s. The
+world stops drawing when the tab is hidden.
 
 Preferred:
 - opacity transitions
