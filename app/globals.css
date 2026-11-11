@@ -2098,10 +2098,16 @@ html {
     min-width: 0;
   }
 
-  /* The smallest phones: the way back is its arrow alone (a 44px key; its
-     name, "Home", is still read out, and its tooltip says where it goes),
-     so the bar keeps to one line */
-  @media (max-width: 379px) {
+  /* When the bar is narrow for its words (the smallest phones, or larger
+     text on any phone: em here is the bar's own text size), the way back
+     is its arrow alone, a 44px key; its name, "Home", is still read out
+     and its tooltip says where it goes. 22.2em is a 379px screen at the
+     usual text size. */
+  .world-controls {
+    container-type: inline-size;
+  }
+
+  @container (max-width: 22.2em) {
     .world-controls > a.glass {
       width: 44px;
       padding: 0;
