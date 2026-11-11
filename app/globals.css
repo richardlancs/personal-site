@@ -2551,11 +2551,12 @@ html {
     height: 2.75rem;
   }
 
-  /* Phone widths: the places on the drawing are too close for 44px keys
-     that don't overlap, so the drawing is a picture to read and the list
-     under it (.map-key, a full row for each place) is what takes the tap.
-     They stay links for the keyboard. */
-  @media (max-width: 479px) {
+  /* Phone widths, by touch: the places on the drawing are too close for
+     44px keys that don't overlap, so the drawing is a picture to read and
+     the list under it (.map-key, a full row for each place) is what takes
+     the tap. They stay links for the keyboard, and for a mouse (a narrow
+     or zoomed window), which can point between them. */
+  @media (max-width: 479px) and (pointer: coarse) {
     .map-drawing .map-pin {
       pointer-events: none;
     }
