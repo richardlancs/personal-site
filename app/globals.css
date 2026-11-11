@@ -2993,10 +2993,27 @@ html {
   }
 
   /* With very large text the time and weather take two lines rather than
-     lose words at the button's edge */
-  .world-controls .rh-chip {
-    flex-wrap: wrap;
-    white-space: normal;
+     lose words at the button's edge. Only then (em is the bar's own text
+     size): at the usual size the chip keeps one line and one height
+     whatever reading arrives, and a long condition gives way instead.
+     On its own row it needs about 18em; beside the way back and Sections
+     about 34em. */
+  @media (max-width: 719px) {
+    @container (max-width: 18em) {
+      .world-controls .rh-chip {
+        flex-wrap: wrap;
+        white-space: normal;
+      }
+    }
+  }
+
+  @media (min-width: 720px) {
+    @container (max-width: 34em) {
+      .world-controls .rh-chip {
+        flex-wrap: wrap;
+        white-space: normal;
+      }
+    }
   }
 
   /* The bar's gap spaces it from Sections; Sections and the round keys
