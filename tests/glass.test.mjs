@@ -62,7 +62,7 @@ test("glass is 44px tall, with labels in opaque slate, and a fallback without bl
 });
 
 test("over the world, the corner controls' glass thickens under a dark sky", () => {
-  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& :is\(\.world-controls > \.glass, \.world-controls-end \.glass, \.bench-tab, \.cabinet-button\) \{\s*--tint: rgb\(247 251 255 \/ (0\.\d+)\)/);
+  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& :is\(\.world-controls > \.glass, \.world-controls-end \.glass, \.bench-tab, \.cabinet-button, \.park-actions \.glass:not\(\.glass-primary\)\) \{\s*--tint: rgb\(247 251 255 \/ (0\.\d+)\)/);
   assert.ok(dark, "no dark-sky rule for the corner controls");
   assert.ok(Number(dark[1]) >= 0.85, `dark-sky glass is only ${dark[1]}`);
 });

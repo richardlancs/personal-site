@@ -25,11 +25,9 @@ const targets = [
   { name: "back", sel: '.world-controls > a.glass', ink: { slate: "#203245" } },
   { name: "sections", sel: '.world-controls [popovertarget="places-menu"]', ink: { slate: "#203245" } },
   { name: "still", sel: ".world-controls .glass-icon >> nth=0", ink: { slate: "#203245" } },
-  { name: "chip", sel: ".world-controls .rh-chip", ink: { slate: "#203245", accent: "#23527c", muted: "#45474a" } },
-  { name: "name", sel: ".park-name", ink: { slate: "#203245" }, inset: 0 },
-  // Glass on the page: the home page's actions, a project's links
-  { name: "primary", sel: ".park-actions .glass-primary", ink: { slate: "#203245" } },
-  { name: "secondary", sel: ".park-actions .glass:not(.glass-primary)", ink: { slate: "#203245" } },
+  // Glass on the page: a project's links (the home page's introduction
+  // and the time and weather: intro-contrast.mjs, which measures cream
+  // words too)
   { name: "project", sel: ".project-links .glass >> nth=0", ink: { slate: "#203245" } },
   // The tabs and choices over the scene, and the page turns on their paper
   { name: "bench", sel: '.bench-tab[aria-selected="false"]', ink: { slate: "#203245" } },

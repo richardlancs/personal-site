@@ -100,9 +100,9 @@ test("the résumé is served as a PDF", { skip }, async () => {
 
 test("the home page introduces me and leads to the projects and contact on both layouts (audit I1)", { skip }, async () => {
   const { body } = await get("/");
-  assert.ok(body.includes(html(profile.intro)), "home: introduction");
+  assert.match(body, /<p class="park-headline">cs@uwaterloo<\/p>/, "home: the subtitle");
+  assert.doesNotMatch(body, /park-about|I build practical software/, "home: no paragraph under the subtitle");
   // Not kept to one layout: the introduction and both actions are on every screen
-  assert.match(body, /<p class="park-about">/, "home: introduction is on both layouts");
   assert.match(body, /<div class="park-actions">/, "home: actions are on both layouts");
   assert.match(body, /href="\/projects"[^>]*>View projects</, "home: View projects");
   assert.match(body, /href="\/contact"[^>]*>Contact</, "home: Contact");

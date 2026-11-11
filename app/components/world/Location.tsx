@@ -1,5 +1,5 @@
+import Colophon from "../ui/Colophon";
 import Link from "next/link";
-import { profile } from "../../data/portfolio";
 import { places, type Section } from "../../sections/registry";
 import PlaceGlyph from "./PlaceGlyph";
 
@@ -47,8 +47,7 @@ export default function Location({ section, children }: { section: Section; chil
           </Link>
         </nav>
 
-        {/* Year is written out because the pages are pre-built as static HTML */}
-        <p className="location-footer">© 2026 {profile.name}</p>
+        <Colophon />
       </div>
     </main>
   );

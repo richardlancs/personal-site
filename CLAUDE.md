@@ -211,13 +211,17 @@ Every place is a real URL, so browser history, deep links and the keyboard
 work. Keep the corner controls few and small (44px glass keys).
 
 Beside Sections is Richmond Hill's time and weather
-(`components/weather/WeatherClock.tsx`): one button, thicker glass than
-the other controls because it carries small text, opening a slip
-with sunrise, sunset, when the reading was taken and Open-Meteo's credit.
-On narrow screens it takes a row of its own under the bar. It never shows
-a value it doesn't have: blanks while loading, an "as of" tag on an old
-reading, "Weather unavailable" (with the time kept) when there is none.
-No live region: the minute tick isn't announced.
+(`components/weather/WeatherClock.tsx`): not a control but something to
+read, a small capsule of clear glass (a few percent of tint, a 6px blur,
+a thin bright edge) as wide as its words, plain selectable text with a
+`<time>`. No button, focus, hover, press or details. Its words carry
+their own contrast: slate with a cream halo by day, cream with a dark
+halo at night. On narrow screens it takes a row of its own under the bar
+and wraps if it must. It never shows a value it doesn't have: blanks
+while loading, an "as of" tag on an old reading, "Weather unavailable"
+(with the time kept) when there is none. No live region: the minute tick
+isn't announced. Open-Meteo's credit (its licence asks for one) is in
+every page's footer (`components/ui/Colophon.tsx`).
 
 On wide screens a page's column takes one half of the screen and its place
 the other, and sits in the middle of its half (`.location` in
@@ -276,14 +280,16 @@ The hero should prioritize:
 
 Keep the hero simple.
 
-The name is its one bold element (`.park-name`): slate-blue Shippori
-Mincho on its own soft cream backing, which keeps it readable over any
-sky, day or night, with a baby-blue brushstroke under it, brushed in once
-on arrival.
-By day the introduction sits in a haze of cream; under a dark sky (night,
-or dusk under cloud, rain or snow) it is a sheet of paper instead, so no
-glow lights up the night (`.park-intro::after`, keyed on `.world3d`'s
-`data-sky-*`).
+The introduction is the name, the subtitle `cs@uwaterloo`, View
+projects and Contact, and the GitHub / LinkedIn / Résumé links: no
+paragraph. The name is its one bold element (`.park-name`): slate-blue
+Shippori Mincho with a baby-blue brushstroke under it, brushed in once on
+arrival. Over the park there is no card behind the introduction: by day
+the name, the subtitle and the links each sit on their own soft, blurred
+cream backing; at night (`.world3d`'s `data-sky-daylight`) the backings
+fade and the words turn cream with a faint dark halo, so nothing glows
+like a lamp. `docs/ui/scripts/intro-contrast.mjs` measures every line
+over all 16 skies.
 
 Do not add unnecessary decorative graphics just to fill space.
 
@@ -357,7 +363,7 @@ Every change must work on:
 Do not optimize only for my current browser size.
 
 What's guaranteed, and checked by `docs/ui/scripts/mobile-audit.mjs`
-(every route, the open Sections menu, weather slip and résumé dialog, at
+(every route, the open Sections menu, the weather display and the résumé dialog, at
 320, 390, 430, 768, 1024 portrait and landscape, 1440, 844×390 and
 667×375, plus 200% text at 320, 390 and 844×390; headless Chrome with
 touch and emulated notch insets, not a real device):
@@ -369,20 +375,17 @@ touch and emulated notch insets, not a real device):
   "Open the map", the directory's lines) stay text links but take 44px
   (`.text-link` sizing near the top of `globals.css`)
 - no text under 12px; body copy on phones at 16px
-- the corner controls, menus, the slip and the résumé's bar clear every
+- the corner controls, menus, the weather display and the résumé's bar clear every
   `env(safe-area-inset-*)` (top, sides in landscape, the home bar)
 - menus and dialogs fit the screen, scroll inside, and don't scroll the
   page behind (`overscroll-behavior: contain`)
 - labels wrap or the bar wraps; nothing clips. The bar is a size
   container: when it's narrow for its words (under 22.2em of its own
   text, a 379px phone or larger text on any phone) the way back is its
-  arrow alone, and the time and weather may take two lines; at the usual
-  size the chip keeps one line, so nothing moves when a reading arrives.
-  With very large text on a phone (under 18em) Sections is its map
-  alone too and the chip keeps to time, icon and temperature (the place
-  and condition stay in its slip and its name), so the fixed bar doesn't
-  cover the page; the slip falls back to the middle of the screen when
-  it fits from neither edge of the chip
+  arrow alone, and the time and weather may take two lines. With very
+  large text on a phone (under 18em) Sections is its map alone too and
+  the display drops the place visually (it's still read out), so the
+  fixed bar doesn't cover the page
 - words longer than a line break rather than push the page sideways
   (`overflow-wrap: anywhere` on the sheet), since a phone otherwise
   widens its layout viewport and the fixed bar and dialogs spill with it.

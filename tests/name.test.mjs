@@ -28,15 +28,17 @@ test("nothing about the name moves on its own, or in still view", () => {
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\) \.park-name::after \{\s*animation: none !important/);
 });
 
-test("under a dark sky the introduction sits on paper, not in a glow", () => {
+test("the introduction has no card: lines on their own backings by day, cream words at night", () => {
   // Keyed on the attributes the world sets (Atmosphere.tsx)
   const atmosphere = readFileSync(`${root}app/components/world3d/atmosphere/Atmosphere.tsx`, "utf8");
   assert.match(atmosphere, /dataset\.skyDaylight = /);
-  assert.match(atmosphere, /dataset\.skyPreset = /);
-  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\]:is\([^)]*cloudy[^)]*rain[^)]*snow[^)]*\)\) \{([\s\S]*?)\n  \}/);
-  assert.ok(dark, "no dark-sky rule");
-  assert.match(dark[1], /& \.park-intro::before,\s*& \.park-name::before \{\s*opacity: 0/);
-  assert.match(dark[1], /& \.park-intro::after \{\s*opacity: 1/);
+  // No sheet or haze behind the whole block
+  assert.doesNotMatch(css, /\.park-intro::(before|after)/);
+  assert.match(css, /\.park-headline::before,\s*\.park-links::before \{[^}]*filter: blur\(/);
+  const night = css.match(/  :root:has\(\.world3d\[data-sky-daylight="night"\]\) \{([\s\S]*?)\n  \}\n\}/);
+  assert.ok(night, "no night rule");
+  assert.match(night[1], /& :is\(\.park-headline, \.park-links, \.park-name\)::before \{\s*opacity: 0/);
+  assert.match(night[1], /& :is\(\.park-name, \.park-headline\) \{\s*color: var\(--cream\)/);
   // The cross-fade holds still in still view
-  assert.match(css, /:root\[data-still="on"\] :is\(\.park-intro, \.park-name\)::before,\s*:root\[data-still="on"\] \.park-intro::after \{\s*transition: none !important/);
+  assert.match(css, /:root\[data-still="on"\] :is\(\.park-name, \.park-headline, \.park-links, \.park-links a\)::before/);
 });

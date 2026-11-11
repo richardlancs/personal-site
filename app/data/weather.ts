@@ -15,7 +15,7 @@ export const richmondHill = {
 } as const;
 
 // The data comes from Open-Meteo (free, no key; CC BY 4.0). Attribution
-// is shown in the display's details.
+// is in each page's footer (components/ui/Colophon.tsx).
 export const weatherProvider = {
   name: "Open-Meteo",
   url: "https://open-meteo.com/",

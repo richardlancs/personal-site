@@ -1,4 +1,4 @@
-// The mobile audit: every route, the Sections menu, the weather slip and
+// The mobile audit: every route, the Sections menu, the weather display and
 // the résumé dialog, at phone, tablet, desktop and phone-landscape sizes,
 // against a production build. Headless Chrome with touch emulation and
 // emulated safe-area insets (CDP Emulation.setSafeAreaInsetsOverride, so
@@ -438,63 +438,20 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       await page.waitForTimeout(200);
     }
 
-    // The weather slip
+    // The time and weather: something to read, not a control. Not in the
+    // tab order, no popover, and a tap on it opens nothing and goes nowhere
     step = "weather";
-    const chip = page.locator(".rh-chip");
-    if (await chip.isVisible()) {
+    const display = page.locator(".rh");
+    if (await display.isVisible()) {
       await page.evaluate(() => scrollTo(0, 0));
-      await press(profile, chip);
-      await page.waitForTimeout(350);
-      const slip = await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"));
-      if (!slip) report("tap", where, "the time and weather didn't open their slip");
-      else {
-        file(profile, route, "weather", await page.evaluate(measure, { scope: "#rh-details", insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
-        if (profile.touch) {
-          const scrollable = await page.evaluate(() => {
-            const m = document.querySelector("#rh-details");
-            return m.scrollHeight > m.clientHeight + 1;
-          });
-          if (scrollable) {
-            const moved = await chains(page, cdp, "#rh-details");
-            if (moved) report("chain", where, `a touch scroll in the weather slip moved the page ${moved}px`);
-          }
-        }
-        // A tap elsewhere closes it (light dismiss)
-        if (profile.touch) {
-          step = "weather: tap outside";
-          // A point with nothing to press within 24px of it, outside the
-          // slip (Chrome moves a tap onto a target close by, as a finger
-          // is wide: a tap in the gap between two links follows one)
-          const spot = await page.evaluate(() => {
-            const slip = document.querySelector("#rh-details").getBoundingClientRect();
-            const clear = (x, y) => {
-              const hit = document.elementFromPoint(x, y);
-              return hit && !hit.closest('a, button, [tabindex]:not([tabindex="-1"]), canvas, label, input');
-            };
-            for (let y = innerHeight - 40; y > 0; y -= 17) {
-              for (const x of [30, innerWidth / 2, innerWidth - 30]) {
-                if (x >= slip.left - 24 && x <= slip.right + 24 && y >= slip.top - 24 && y <= slip.bottom + 24) continue;
-                if ([[0, 0], [-24, 0], [24, 0], [0, -24], [0, 24]].every(([dx, dy]) => clear(x + dx, y + dy))) return { x: Math.round(x), y: Math.round(y) };
-              }
-            }
-            return null;
-          });
-          // (Over the world on wide screens every point is the scene or a
-          // control: then Escape closes it instead)
-          if (spot) {
-            await page.touchscreen.tap(spot.x, spot.y);
-            await page.waitForTimeout(300);
-            if (await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"))) report("tap", where, "a tap outside left the weather slip open");
-          }
-          // (Escape with nothing open would go back to the park)
-          if (await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"))) await page.keyboard.press("Escape");
-          // That tap may still have found something; come back
-          if (await page.evaluate(() => !!document.querySelector("dialog.resume")?.open)) {
-            await page.keyboard.press("Escape");
-            await page.waitForTimeout(400);
-          }
-          if (new URL(page.url()).pathname !== route) await visit(page, route);
-        } else await page.keyboard.press("Escape");
+      const passive = await display.evaluate((e) => !e.matches("button, a, [tabindex], [popovertarget]") && !e.querySelector("button, a, [tabindex], [popovertarget]"));
+      if (!passive) report("tap", where, "the time and weather display holds a control");
+      if (profile.touch) {
+        const before = page.url();
+        await display.tap();
+        await page.waitForTimeout(250);
+        const opened = await page.evaluate(() => !!document.querySelector(":popover-open, dialog[open]"));
+        if (opened || page.url() !== before) report("tap", where, "a tap on the time and weather did something");
       }
     }
 

@@ -46,10 +46,7 @@ export type Interest = {
 
 export const profile = {
   name: "Richard Lan",
-  headline: "CS student @uwaterloo",
-  // Two short sentences, shown under the name on the home page
-  intro:
-    "I build practical software, lately a stock market simulator and a Chrome extension for searching saved TikToks. I'm looking for a software engineering internship or co‑op.",
+  headline: "cs@uwaterloo",
   emails: [
     { label: "School email", address: "r6lan@uwaterloo.ca" },
     { label: "Personal email", address: "lanrichard159@gmail.com" },

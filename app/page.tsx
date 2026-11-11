@@ -1,3 +1,4 @@
+import Colophon from "./components/ui/Colophon";
 import Link from "next/link";
 import ResumeLink from "./components/resume/ResumeLink";
 import PlaceGlyph from "./components/world/PlaceGlyph";
@@ -24,7 +25,6 @@ export default function Home() {
           {profile.name}
         </h1>
         <p className="park-headline">{profile.headline}</p>
-        <p className="park-about">{profile.intro}</p>
         <div className="park-actions">
           <Link href="/projects" className="glass glass-primary">
             View projects
@@ -71,7 +71,7 @@ export default function Home() {
             </li>
           ))}
         </ul>
-        <p className="location-footer">© 2026 {profile.name}</p>
+        <Colophon />
       </nav>
       </div>
     </main>

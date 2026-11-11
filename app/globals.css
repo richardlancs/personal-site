@@ -383,28 +383,6 @@ button.text-link,
   pointer-events: auto;
 }
 
-/* Behind the words, a band of haze softens the far skyline, so the text
-   stays readable without a card */
-@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
-  .park-intro {
-    isolation: isolate;
-  }
-
-  .park-intro::before {
-    content: "";
-    position: absolute;
-    inset: -4.5rem -6rem -5.5rem -7rem;
-    z-index: -1;
-    background: radial-gradient(
-      closest-side,
-      rgb(255 249 242 / 0.92) 50%,
-      rgb(255 249 242 / 0.65) 75%,
-      rgb(255 249 242 / 0)
-    );
-    pointer-events: none;
-  }
-}
-
 /*
   The name: the introduction's one bold thing. Large slate-blue letters
   in the mincho, on a soft cream backing of their own (::before, blurred
@@ -515,14 +493,6 @@ button.text-link,
   likely came for, without finding a building first. The narrow layout's
   sizes for the introduction are in its own block, further down.
 */
-.park-about {
-  margin-top: 0.85rem;
-  max-width: 30rem;
-  font-size: 1rem;
-  line-height: 1.6;
-  color: var(--muted);
-}
-
 .park-actions {
   display: flex;
   flex-wrap: wrap;
@@ -535,69 +505,89 @@ button.text-link,
   margin-top: 0.9rem;
 }
 
-/* The introduction makes the block taller, down toward the trees on the
-   left of wide screens: the haze behind it reaches a little further left
-   and holds its strength further out, so every line keeps 4.5:1 */
+/*
+  Over the park (the wide layout), the introduction has no card: the park
+  shows behind it. By day each line carries its own soft cream backing,
+  blurred at the edges like the name's, so the words keep 4.5:1 over sky
+  and trees. At night (in any weather) a cream backing would glow like a
+  lamp: the backings fade and the words turn cream, with a faint dark
+  halo. (Dusk, even overcast, is light enough for slate.) The two cross-fade
+  when the sky turns (Atmosphere.tsx sets data-sky-* on .world3d).
+  Measured over every sky: docs/ui/scripts/intro-contrast.mjs.
+*/
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
-  .park-intro::before {
-    inset: -4.5rem -6rem -5rem -9rem;
-    background: radial-gradient(
-      closest-side,
-      rgb(255 249 242 / 0.93) 60%,
-      rgb(255 249 242 / 0.78) 82%,
-      rgb(255 249 242 / 0)
-    );
-    transition: opacity 0.5s ease;
+  .park-headline,
+  .park-links {
+    position: relative;
+    isolation: isolate;
+    width: fit-content;
   }
 
-  /*
-    Under a dark sky (night in any weather; dusk under cloud, rain or
-    snow) a haze of cream would glow like a lamp. There the introduction
-    is a sheet of paper instead, the same paper as the rest of the site:
-    contained, soft corners, a lit edge, a short shadow. The two cross-fade
-    when the sky turns (Atmosphere.tsx sets data-sky-* on .world3d). On it,
-    the muted text is 8:1 and the name 13:1 or better, whatever is behind.
-  */
-  .park-intro::after {
+  .park-headline::before,
+  .park-links::before {
     content: "";
     position: absolute;
-    inset: -1.9rem -2.1rem -1.7rem;
+    inset: -0.3em -0.75em;
     z-index: -1;
-    border: 1px solid var(--paper-edge);
-    border-radius: var(--radius-lg);
-    background: color-mix(in srgb, var(--sheet) 97%, transparent) var(--grain);
-    box-shadow:
-      0 22px 48px -28px rgb(12 24 38 / 0.55),
-      0 1px 0 rgb(255 255 255 / 0.6) inset;
-    opacity: 0;
+    border-radius: 999px;
+    background: rgb(255 249 242 / 0.88);
+    filter: blur(8px);
     transition: opacity 0.5s ease;
     pointer-events: none;
+  }
+
+  .park-headline {
+    color: var(--slate);
+  }
+
+  .park-name,
+  .park-headline,
+  .park-links a:not(.glass) {
+    transition:
+      color 0.5s ease,
+      text-shadow 0.5s ease;
   }
 
   .park-name::before {
     transition: opacity 0.5s ease;
   }
 
-  :root:has(.world3d[data-sky-daylight="night"]),
-  :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
-    & .park-intro::before,
-    & .park-name::before {
+  :root:has(.world3d[data-sky-daylight="night"]) {
+    & :is(.park-headline, .park-links, .park-name)::before {
       opacity: 0;
     }
 
-    & .park-intro::after {
-      opacity: 1;
+    & :is(.park-name, .park-headline) {
+      color: var(--cream);
+      text-shadow:
+        0 0 12px rgb(12 24 38 / 0.75),
+        0 1px 3px rgb(12 24 38 / 0.7);
+    }
+
+    & .park-links a:not(.glass) {
+      color: var(--baby-pale);
+      text-decoration-color: rgb(234 245 255 / 0.5);
+      text-shadow:
+        0 0 8px rgb(12 24 38 / 0.85),
+        0 1px 2px rgb(12 24 38 / 0.8);
+    }
+
+    @media (hover: hover) {
+      & .park-links a:not(.glass):hover {
+        color: var(--cream);
+        text-decoration-color: currentColor;
+      }
     }
   }
 }
 
-:root[data-still="on"] :is(.park-intro, .park-name)::before,
-:root[data-still="on"] .park-intro::after {
+:root[data-still="on"] :is(.park-name, .park-headline, .park-links, .park-links a)::before,
+:root[data-still="on"] :is(.park-name, .park-headline, .park-links a) {
   transition: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) :is(.park-intro, .park-name)::before,
-  :root:not([data-still]) .park-intro::after {
+  :root:not([data-still]) :is(.park-name, .park-headline, .park-links)::before,
+  :root:not([data-still]) :is(.park-name, .park-headline, .park-links a) {
     transition: none !important;
   }
 }
@@ -2262,14 +2252,6 @@ html {
     font-size: 0.9375rem;
   }
 
-  .park-about {
-    margin-top: 0.9rem;
-    max-width: 34rem;
-    font-size: 1rem;
-    line-height: 1.6;
-    color: var(--muted);
-  }
-
   .park-links {
     gap: 0.25rem 1.5rem;
     margin-top: 0.9rem;
@@ -2640,30 +2622,59 @@ html {
 
 /*
   ---------- The Richmond Hill display (components/weather/WeatherClock.tsx) ----------
-  Richmond Hill's time and weather, in one button in the bar: on wide
-  screens just left of Sections, on narrow ones a row of its own under the
-  bar. It's a glass control like the others, thicker (.rh-chip's --tint,
-  with the glass block at the end of this file): it carries small and
-  muted words, measured over every sky at 5.2:1 or better for the place
-  in --accent and 5.9:1 for the muted text (docs/ui/scripts/
-  glass-contrast.mjs). Every field keeps its room, so
-  nothing moves when the clock or a reading arrives; until they do, the
-  room is a faint blank. The details are a slip of opaque paper under it.
+  Richmond Hill's time and weather, beside Sections on wide screens and
+  on a row of its own under the bar on narrow ones. Not a control: a
+  small bubble of clear glass with words in it. Almost no tint, a light
+  blur so the scene stays recognisable, a thin bright edge and a soft
+  reflection along its top; as wide as its words. The words carry their
+  own contrast: slate with a faint cream halo by day, cream with a faint
+  dark halo under a dark sky (the same skies as the corner controls'
+  thicker glass, at the end of this file). Measured over every sky by
+  docs/ui/scripts/intro-contrast.mjs. Until the clock and the reading
+  arrive, each field is a faint blank of its size.
 */
 .world-controls > .rh {
-  display: flex;
-  min-width: 0;
   margin-left: auto;
   margin-right: 0.5rem;
 }
 
-.world-controls .rh-chip {
-  gap: 0.6rem;
+.rh {
+  --rh-ink: var(--slate);
+  --rh-soft: var(--slate);
+  --rh-halo: 0 0 6px rgb(255 249 242 / 0.95), 0 0 2px rgb(255 249 242 / 0.9);
+  position: relative;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.1rem;
   min-width: 0;
   max-width: 100%;
-  padding: 0 0.95rem;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.95rem;
+  border: 1px solid rgb(255 255 255 / 0.5);
+  border-radius: 999px;
+  background: rgb(234 245 255 / 0.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.55),
+    inset 0 -1px 0 rgb(255 255 255 / 0.12),
+    0 2px 10px -6px rgb(32 50 69 / 0.25);
+  -webkit-backdrop-filter: blur(6px) saturate(1.1);
+  backdrop-filter: blur(6px) saturate(1.1);
+  color: var(--rh-ink);
+  font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
+  line-height: 1.3;
+  text-shadow: var(--rh-halo);
+  cursor: auto;
+  user-select: text;
+}
+
+/* Without a blur, a little more tint so the words still have a ground */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .rh {
+    background: rgb(234 245 255 / 0.55);
+  }
 }
 
 /* The place, set like the other place names (Shippori Mincho) */
@@ -2671,7 +2682,7 @@ html {
   font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 600;
-  color: var(--accent);
+  white-space: nowrap;
 }
 
 /* ", Ontario" only where there's room; the button's name always has it */
@@ -2697,7 +2708,7 @@ html {
 .rh-meridiem {
   font-size: max(0.78em, 12px);
   letter-spacing: 0.02em;
-  color: var(--muted);
+  color: var(--rh-soft);
 }
 
 .rh-weather {
@@ -2709,7 +2720,7 @@ html {
 
 .rh-icon {
   flex: none;
-  color: var(--accent);
+  filter: drop-shadow(0 0 2px rgb(255 249 242 / 0.9));
 }
 
 /* Room for "−12 °C" */
@@ -2729,30 +2740,11 @@ html {
   margin-right: -0.2em;
 }
 
-/* The weather keeps one width whatever arrives (the blanks, a short or
-   long condition, an old reading's tag, "Weather unavailable"), so the
-   place and time beside it never move when a reading comes in */
-.rh-weather {
-  flex: none;
-  width: 12.5em;
-  /* The room left over is after the words, not round them (a button
-     centres its text) */
-  text-align: start;
-}
-
-/* A long condition gives way before anything else does (its full words
-   are in the button's name and in the details) */
-.rh-condition,
-.rh-asof {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
+/* The condition in full: the display wraps rather than cut a word off */
 .rh-condition {
-  color: var(--muted);
+  color: var(--rh-soft);
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* An old reading: the tag that says so takes the condition's place (the
@@ -2763,11 +2755,9 @@ html {
 
 /* An old reading says so, on a small tag of its own */
 .rh-asof {
-  padding: 0.1rem 0.45rem;
-  border-radius: 999px;
-  background: rgb(29 30 30 / 0.07);
-  color: var(--muted);
+  color: var(--rh-soft);
   font-size: 0.8125rem;
+  white-space: nowrap;
 }
 
 /* Not known yet: blanks the size of what will come, and no numbers */
@@ -2799,148 +2789,6 @@ html {
   width: 3.8em;
 }
 
-/* The details: a slip of paper under the button, like the Sections menu */
-.rh-details {
-  position: fixed;
-  inset: 4.25rem 1.25rem auto auto;
-  margin: 0;
-  width: min(20.5rem, calc(100vw - 1.5rem));
-  /* On a short screen (a phone on its side, a zoomed window) it scrolls,
-     clear of the home bar, without scrolling the page behind */
-  max-height: calc(100svh - 5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 0.9rem 1.05rem 0.9rem;
-  border: 1px solid var(--paper-edge);
-  border-radius: var(--radius-lg);
-  background: var(--sheet) var(--grain);
-  color: var(--foreground);
-  box-shadow: var(--float);
-}
-
-.rh-details:popover-open {
-  animation: note-in-plain 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-/* Where the browser can, the slip hangs from the button itself */
-@supports (anchor-name: --rh-chip) {
-  .rh-chip {
-    anchor-name: --rh-chip;
-  }
-
-  /* Below the button, its right edges in line; it's never taller than
-     the room under the button (100% is that room), and with no room to
-     its left (large text, a phone on its side) it hangs from the
-     button's other edge instead of off the screen */
-  .rh-details {
-    position-anchor: --rh-chip;
-    inset: auto;
-    position-area: block-end span-inline-start;
-    position-try-fallbacks: flip-inline, --rh-under-all;
-    margin: 0.5rem 0 0;
-    max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
-  }
-}
-
-/* When it fits from neither edge (very large text, a phone on its side):
-   under the bar, in the middle of the screen, clear of a notch */
-@position-try --rh-under-all {
-  position-area: block-end span-all;
-  justify-self: center;
-}
-
-.rh-details-place {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--accent);
-}
-
-.rh-details-date {
-  margin-top: 0.1rem;
-  font-size: 0.8125rem;
-  color: var(--muted);
-}
-
-.rh-details-now {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.9rem;
-  margin-top: 0.7rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid var(--rule);
-}
-
-.rh-details-time {
-  display: inline-block;
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  font-weight: 500;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.rh-details-time.rh-blank {
-  width: 5.5rem;
-  height: 0.75rem;
-}
-
-.rh-details-weather {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.9375rem;
-}
-
-.rh-details-weather svg {
-  color: var(--accent);
-}
-
-.rh-details-temp {
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.rh-details-note {
-  margin-top: 0.75rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: var(--radius-sm);
-  background: var(--highlight);
-  font-size: 0.875rem;
-  line-height: 1.45;
-}
-
-.rh-details-facts {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.55rem 1rem;
-  margin-top: 0.8rem;
-}
-
-.rh-details-facts dt {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-.rh-details-facts dd {
-  font-size: 0.9375rem;
-  font-weight: 500;
-  font-variant-numeric: tabular-nums;
-}
-
-.rh-details-credit {
-  margin-top: 0.9rem;
-  font-size: 0.8125rem;
-  line-height: 1.7;
-  color: var(--muted);
-}
-
-.rh-details-credit a {
-  padding-block: 0.2rem;
-  white-space: nowrap;
-}
-
 /* Narrow layout: when the bar has no room left beside Sections, the
    display takes a row of its own under it, at the left, a little lower
    than the controls; the page's scroll padding grows to match. A grid,
@@ -2962,13 +2810,6 @@ html {
       justify-self: end;
     }
 
-    /* Alone on its row, the chip can be as wide as its words: nothing
-       sits beside it to be pushed */
-    .rh-weather {
-      flex: 0 1 auto;
-      width: auto;
-    }
-
     .world-controls > .rh {
       grid-row: 2;
       grid-column: 1 / -1;
@@ -2977,17 +2818,11 @@ html {
       margin: 0;
     }
 
-    /* As tall as the controls above it (2.75rem on narrow screens) */
-    .world-controls .rh-chip {
-      min-height: 2.75rem;
-      padding: 0 0.85rem;
-    }
-
     /* The smallest phones: closer together, so the condition still fits */
     @media (max-width: 379px) {
-      .world-controls .rh-chip {
-        gap: 0.45rem;
-        padding: 0 0.7rem;
+      .rh {
+        column-gap: 0.45rem;
+        padding-inline: 0.75rem;
       }
 
       .rh-place {
@@ -3006,41 +2841,21 @@ html {
     html {
       scroll-padding-top: calc(7.35rem + env(safe-area-inset-top));
     }
-
-    .rh-details {
-      inset: calc(7.2rem + env(safe-area-inset-top)) auto auto max(0.75rem, env(safe-area-inset-left));
-      max-height: calc(100svh - 7.2rem - env(safe-area-inset-top) - max(0.75rem, env(safe-area-inset-bottom)));
-    }
-
-    @supports (anchor-name: --rh-chip) {
-      .rh-details {
-        inset: auto;
-        position-area: block-end span-inline-end;
-        max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
-      }
-    }
   }
 
-  /* With very large text the time and weather take two lines rather than
-     lose words at the button's edge. Only then (em is the bar's own text
-     size): at the usual size the chip keeps one line and one height
-     whatever reading arrives, and a long condition gives way instead.
-     On its own row it needs about 18em; beside the way back and Sections
-     about 34em. */
+  /* Very large text (em is the bar's own text size; on its own row the
+     display needs about 18em, beside the way back and Sections about
+     34em): the bar stays over the page as you scroll, so the display
+     keeps to the time and the weather; the place is still read out */
   @media (max-width: 719px) {
     @container (max-width: 18em) {
-      .world-controls .rh-chip {
-        flex-wrap: wrap;
-        white-space: normal;
-      }
-
-      /* Very large text on a phone: the bar stays over the page as you
-         scroll, so it keeps to the time, the icon and the temperature;
-         the place and the condition are in its slip and its name. (A
-         missing reading still says so.) */
-      .world-controls .rh-place,
-      .world-controls .rh:not([data-status="unavailable"]) .rh-condition {
-        display: none;
+      .world-controls .rh-place {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
 
       /* and Sections is its map alone, a 44px key like the way back
@@ -3063,14 +2878,13 @@ html {
 
   @media (min-width: 720px) {
     @container (max-width: 34em) {
-      .world-controls .rh-chip {
-        flex-wrap: wrap;
-        white-space: normal;
-      }
-
-      .world-controls .rh-place,
-      .world-controls .rh:not([data-status="unavailable"]) .rh-condition {
-        display: none;
+      .world-controls .rh-place {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
       }
     }
   }
@@ -3094,14 +2908,7 @@ html {
   }
 }
 
-:root[data-still="on"] .rh-details:popover-open {
-  animation: none !important;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) .rh-details:popover-open {
-    animation: none !important;
-  }
-}
+
 
 /*
   Glass: every button and button-like control (tertiary actions stay text
@@ -3191,7 +2998,6 @@ html {
 }
 
 .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]),
-.rh:has(.rh-details:popover-open) .rh-chip,
 .world-controls:has(#places-menu:popover-open) [popovertarget="places-menu"] {
   --glass-in: inset 0 0 0 1px var(--focus-blue), inset 0 3px 6px -2px rgb(32 50 69 / 0.35);
   --glass-lift: 0 0 #0000;
@@ -3227,7 +3033,8 @@ html {
 .world-controls > .glass,
 .world-controls-end .glass,
 .bench-tab,
-.cabinet-button {
+.cabinet-button,
+.park-actions .glass:not(.glass-primary) {
   --tint: rgb(234 245 255 / 0.62);
 }
 
@@ -3237,18 +3044,34 @@ html {
 
 :root:has(.world3d[data-sky-daylight="night"]),
 :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
-  & :is(.world-controls > .glass, .world-controls-end .glass, .bench-tab, .cabinet-button) {
+  & :is(.world-controls > .glass, .world-controls-end .glass, .bench-tab, .cabinet-button, .park-actions .glass:not(.glass-primary)) {
     --tint: rgb(247 251 255 / 0.86);
-  }
-
-  & .world-controls .rh-chip {
-    --tint: rgb(247 251 255 / 0.92);
   }
 }
 
-/* The time and weather carry small and muted words: thicker still */
-.world-controls .rh-chip {
-  --tint: rgb(247 251 255 / 0.8);
+/* At night the time and weather are cream words with a dark halo, in
+   glass that stays clear (dusk, even overcast, is light enough for slate);
+   the main action's glass is thicker */
+:root:has(.world3d[data-sky-daylight="night"]) {
+  & .rh {
+    --rh-ink: var(--cream);
+    --rh-soft: #e3ecf5;
+    --rh-halo: 0 0 6px rgb(12 24 38 / 0.9), 0 0 2px rgb(12 24 38 / 0.85);
+    border-color: rgb(255 255 255 / 0.32);
+    background: rgb(234 245 255 / 0.06);
+  }
+
+  & .rh-icon {
+    filter: drop-shadow(0 0 2px rgb(12 24 38 / 0.85));
+  }
+
+  & .rh-blank {
+    background: rgb(255 249 242 / 0.22);
+  }
+
+  & .park-actions .glass-primary {
+    --tint: rgb(184 220 250 / 0.92);
+  }
 }
 
 /* The press: a ripple (::before) and a sweep of light (::after) */

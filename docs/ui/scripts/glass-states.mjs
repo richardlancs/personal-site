@@ -216,8 +216,16 @@ for (const [view, opts] of Object.entries(views)) {
 
     // The press reaches it
     await other.focus();
+    // Watched as it happens: a menu row's press is let go as soon as the
+    // menu closes behind the navigation (GlassPress.tsx)
+    await page.evaluate(() => {
+      window.__pressed = false;
+      new MutationObserver(() => {
+        if (document.querySelector(".glass[data-pressed]")) window.__pressed = true;
+      }).observe(document, { subtree: true, attributes: true, attributeFilter: ["data-pressed"] });
+    });
     await page.keyboard.press(c.name === "notebook" || c.resume || c.name === "corner" ? "Space" : "Enter").catch(() => {});
-    r.pressedByKeyboard = await page.evaluate(() => !!document.querySelector(".glass[data-pressed]"));
+    r.pressedByKeyboard = await page.evaluate(() => window.__pressed || !!document.querySelector(".glass[data-pressed]"));
     check(r.pressedByKeyboard, `${key}: no press from the keyboard`);
     await page.keyboard.press("Escape").catch(() => {});
 
