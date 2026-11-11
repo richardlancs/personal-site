@@ -608,7 +608,7 @@ body {
   the system's reduced-motion setting. Colour and opacity changes stay;
   movement goes. The media query covers a page whose script didn't run.
 */
-:root[data-still="on"] :is(.world-label, .park-name, .bench-tab, .cabinet-button, .phone-handset svg),
+:root[data-still="on"] :is(.world-label, .park-name, .phone-handset svg),
 :root[data-still="on"] .park-name::after {
   transition: none !important;
 }
@@ -616,7 +616,7 @@ body {
   animation: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) :is(.world-label, .park-name, .bench-tab, .cabinet-button, .phone-handset svg),
+  :root:not([data-still]) :is(.world-label, .park-name, .phone-handset svg),
   :root:not([data-still]) .park-name::after {
     transition: none !important;
   }
@@ -696,23 +696,19 @@ html {
   }
 }
 
+/* Each section is a glass key, the width of the slip; where you are is
+   its chosen state (.glass) */
+.places-menu :is(ul, li) {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .places-menu a[href]:not(.text-link) {
   display: grid;
   grid-template-columns: 6.5rem 1fr;
   align-items: baseline;
   gap: 0.75rem;
   padding: 0.55rem 0.75rem;
-  border-radius: var(--radius-sm);
-}
-
-.places-menu a[href]:not(.text-link):hover {
-  background: var(--baby-pale);
-}
-
-/* Where you are: baby blue, with a line down its edge */
-.places-menu a[aria-current="page"] {
-  background: var(--highlight);
-  box-shadow: inset 3px 0 0 var(--focus-blue);
 }
 
 .places-menu-section {
@@ -996,27 +992,12 @@ html {
   background: var(--paper);
 }
 
+/* The page turns: glass keys; at the first or last page, the disabled
+   glass (.glass) */
 .notebook-turn {
-  display: inline-flex;
-  align-items: center;
   gap: 0.35rem;
-  min-height: 2.25rem;
-  padding: 0.25rem 0.6rem;
-  border-radius: var(--radius-sm);
+  padding: 0 0.85rem;
   font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--accent);
-  transition: background-color 0.2s ease;
-}
-
-.notebook-turn:not([aria-disabled="true"]):hover {
-  background: var(--baby-pale);
-}
-
-.notebook-turn[aria-disabled="true"] {
-  color: var(--muted);
-  opacity: 0.55;
-  cursor: default;
 }
 
 .notebook-controls + .text-link {
@@ -1051,36 +1032,22 @@ html {
   margin-bottom: 1.4rem;
 }
 
+/* The projects: glass keys (thick, over the scene: .glass), each with its
+   monitor's power light; the chosen one is lit as well as chosen */
 .bench-tab {
-  display: inline-flex;
-  align-items: center;
+  justify-content: flex-start;
   gap: 0.55rem;
-  padding: 0.5rem 1rem 0.55rem 0.8rem;
-  border: 1px solid var(--paper-edge);
-  border-radius: 10px 10px 4px 4px;
-  background: linear-gradient(var(--sheet), var(--surface-2));
-  color: var(--foreground);
+  padding: 0 1rem 0 0.8rem;
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.5),
-    0 10px 20px -14px rgb(var(--shadow) / 0.6);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-@media (hover: hover) {
-  .bench-tab:hover {
-    transform: translateY(-2px);
-  }
-}
-
-/* The power light: green when its monitor is on */
 .bench-tab-lamp {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #b9b1a7;
+  background: #8f969d;
   transition:
     background-color 0.3s ease,
     box-shadow 0.3s ease;
@@ -1091,28 +1058,6 @@ html {
   box-shadow: 0 0 6px var(--sky);
 }
 
-/* Over the bench and the night: the ring on a halo of cream */
-.bench-tab:focus-visible {
-  box-shadow: var(--focus-halo);
-}
-
-.bench-tab[aria-selected="true"]:focus-visible {
-  box-shadow:
-    inset 0 0 0 2px var(--focus-blue),
-    var(--focus-halo);
-}
-
-/* The chosen tab: pulled forward, with an ink rule drawn round it, so it
-   reads as chosen without its lamp */
-.bench-tab[aria-selected="true"] {
-  color: var(--foreground);
-  background: linear-gradient(var(--baby-light), var(--baby));
-  box-shadow:
-    inset 0 0 0 2px var(--focus-blue),
-    0 10px 20px -14px rgb(var(--shadow) / 0.8);
-  transform: translateY(-2px);
-}
-
 .shot-strip {
   display: flex;
   flex-wrap: wrap;
@@ -1120,34 +1065,25 @@ html {
   margin-top: 1rem;
 }
 
+/* The screenshots: glass frames round each picture; the ones not on the
+   screen are dimmed */
 .shot-thumb {
   width: 6.5rem;
-  overflow: hidden;
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
-  background: var(--ink);
-  opacity: 0.7;
-  transition:
-    opacity 0.2s ease,
-    border-color 0.2s ease;
+  padding: 4px;
 }
 
 .shot-thumb img {
   display: block;
   width: 100%;
   height: 4rem;
+  border-radius: 6px;
   object-fit: cover;
   object-position: top;
+  transition: opacity 0.2s ease;
 }
 
-.shot-thumb[aria-pressed="true"],
-.shot-thumb:hover {
-  opacity: 1;
-}
-
-.shot-thumb[aria-pressed="true"] {
-  border-color: var(--baby-hover);
-  box-shadow: 0 0 0 1px var(--focus-blue);
+.shot-thumb:not([aria-pressed="true"]) img {
+  opacity: 0.7;
 }
 
 /* The chosen screenshot, on an old monitor: beige shell, a power light.
@@ -1437,34 +1373,15 @@ html {
   box-shadow: inset 3px 0 0 var(--baby);
 }
 
+/* Each line's service is a glass key on the enamel, near-opaque so its
+   words read on the deep blue (.glass); the chosen one is the chosen
+   glass, and its row is washed in blue with a bar down its edge */
 .timetable-line {
+  --tint: rgb(247 251 255 / 0.9);
+  justify-content: flex-start;
+  padding: 0.35rem 0.75rem;
   text-align: left;
   font-weight: 600;
-  color: var(--on-deep);
-  text-decoration: underline;
-  text-decoration-color: rgb(184 220 250 / 0.6);
-  text-underline-offset: 4px;
-}
-
-.timetable-line:hover {
-  text-decoration-color: currentColor;
-}
-
-/* The chosen line is the one without an underline: the others are the
-   ones left to choose */
-.timetable-line[aria-pressed="true"] {
-  text-decoration: none;
-}
-
-/* The focus ring on dark objects takes the object's own text colour, so
-   it shows whatever the palette */
-.timetable-line:focus-visible,
-.cabinet-button:focus-visible {
-  outline-color: currentColor;
-}
-
-.cabinet-button:focus-visible {
-  outline-offset: -3px;
 }
 
 /* The notice for the chosen line, turning over like flaps */
@@ -1498,53 +1415,38 @@ html {
   gap: 0.6rem;
 }
 
+/* A glass key for each cabinet (thick, over the scene: .glass), with the
+   cabinet's screen on it: dark, and lit when its cabinet is the one on */
 .cabinet-button {
-  display: grid;
-  justify-items: center;
-  gap: 0.45rem;
-  padding: 0.6rem 0.4rem 0.65rem;
-  border-radius: 12px 12px 6px 6px;
-  background: linear-gradient(var(--surface-deep-lit), var(--surface-deep-2));
-  color: var(--on-deep);
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.55rem 0.4rem 0.6rem;
   font-family: var(--font-display);
   font-size: 0.95rem;
   font-weight: 600;
-  box-shadow: 0 12px 22px -14px rgb(var(--shadow) / 0.7);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@media (hover: hover) {
-  .cabinet-button:hover {
-    transform: translateY(-3px);
-  }
 }
 
 .cabinet-button-screen {
   display: grid;
   place-items: center;
-  width: 100%;
+  width: 3.5rem;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
   background: #10223a;
   color: #7f9fbf;
   transition:
-    background-color 0.35s ease,
     color 0.35s ease,
     box-shadow 0.35s ease;
 }
 
-.cabinet-button[aria-selected="true"] .cabinet-button-screen {
-  background: var(--surface-deep);
-  color: var(--sky);
-  box-shadow: inset 0 0 14px rgb(85 198 240 / 0.4);
+.cabinet-button-screen svg {
+  width: 1.75rem;
+  height: 1.75rem;
 }
 
-/* The cabinet that's on stands forward of the row, with a lit edge */
-.cabinet-button[aria-selected="true"] {
-  box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, currentColor 65%, transparent),
-    0 16px 36px -18px rgb(var(--shadow) / 0.55);
-  transform: translateY(-3px);
+.cabinet-button[aria-selected="true"] .cabinet-button-screen {
+  color: var(--sky);
+  box-shadow: inset 0 0 10px rgb(85 198 240 / 0.45);
 }
 
 .cabinet-card {
@@ -1602,7 +1504,6 @@ html {
 /* The receiver: the page's primary glass button */
 .phone-handset {
   font-size: 0.9rem;
-  font-weight: 700;
 }
 
 .phone-line[data-up] .phone-handset svg {
@@ -1715,7 +1616,6 @@ html {
     and read out; a failure gets a rust dash as well as its words.
   - If the song can't be loaded, a small note hangs under the music
     button (MusicToggle.tsx).
-  - The timetable's lines are at least 24px tall to hit.
 */
 .cabinet-panel {
   border-radius: var(--radius-lg);
@@ -1776,10 +1676,6 @@ html {
   padding: 0;
   border: 0;
   box-shadow: none;
-}
-
-.timetable-line {
-  min-height: 1.5rem;
 }
 
 /* ---------- The notice board: the map ---------- */
@@ -2008,25 +1904,6 @@ html {
   box-shadow: 0 18px 44px -20px rgb(var(--shadow) / 0.4);
 }
 
-.bench-tab {
-  border-color: var(--paper-edge);
-  border-radius: var(--radius);
-  background: linear-gradient(rgb(255 253 248 / 0.85), rgb(229 221 212 / 0.85));
-  backdrop-filter: var(--veil);
-  box-shadow: var(--float);
-}
-
-.cabinet-button-screen {
-  background: rgb(16 34 58 / 0.75);
-}
-
-.cabinet-button {
-  border-radius: 14px 14px 6px 6px;
-  background: linear-gradient(rgb(42 77 114 / 0.85), rgb(23 45 71 / 0.85));
-  backdrop-filter: var(--veil);
-  box-shadow: 0 16px 36px -18px rgb(var(--shadow) / 0.45);
-}
-
 /* The clip on the project notes and the pin on the directory sit on top
    of the paper, so they keep their own shadows */
 .project-notes::before,
@@ -2076,8 +1953,7 @@ html {
 
 /* Over the dark desk: the ring on a halo of cream */
 .notebook-controls + .text-link:focus-visible,
-.notebook-sheet + .text-link:focus-visible,
-.notebook-turn:focus-visible {
+.notebook-sheet + .text-link:focus-visible {
   box-shadow: var(--focus-halo);
 }
 
@@ -2087,19 +1963,10 @@ html {
   background-color: rgb(255 249 242 / 0.8);
 }
 
-.notebook-turn:active,
 .notebook-controls + .text-link:active,
 .notebook-sheet + .text-link:active,
 .park-links a:not(.glass):active {
   background-color: var(--highlight);
-}
-
-.bench-tab {
-  background: linear-gradient(rgb(255 253 248 / 0.62), rgb(229 221 212 / 0.62));
-}
-
-.cabinet-button {
-  background: linear-gradient(rgb(42 77 114 / 0.74), rgb(23 45 71 / 0.74));
 }
 
 /*
@@ -2686,7 +2553,6 @@ html {
   padding: 0 0.95rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  cursor: pointer;
 }
 
 /* The place, set like the other place names (Shippori Mincho) */
@@ -3037,13 +2903,28 @@ html {
 }
 
 /*
-  Glass buttons. `.glass` is a secondary action, `.glass-primary` a
-  primary one (a stronger blue); tertiary actions stay text links. A
-  rounded rectangle as wide as its words, 44px tall, a little baby blue
-  over whatever is behind (blurred), a thin edge, light along its top.
-  The label is always opaque slate. Where something behind could be dark
-  (the corner controls over the world, the receiver on the enamel), the
-  glass is thicker (--tint), so the words keep 4.5:1 or better.
+  Glass: every button and button-like control (tertiary actions stay text
+  links; the scene's name tags and map pins are scenery). A rounded
+  rectangle as wide as its words, 44px tall, a little baby blue over
+  whatever is behind (blurred), a thin edge, light along its top, and an
+  opaque slate label. Where something dark can sit behind (the corner
+  controls, the bench tabs and cabinets over the world, the timetable's
+  enamel) the glass is thicker (--tint), so the words keep 4.5:1.
+
+  The states, the same on every control:
+  - secondary (.glass); primary (.glass-primary): a stronger blue and a
+    heavier label
+  - hover: a little more blue
+  - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
+    open popover): baby blue, a double focus-blue edge, pressed in (a
+    shade inside its top, no lift), so it reads without colour too; some
+    controls add their own sign (a lamp, a lit screen, a tick)
+  - disabled (:disabled, aria-disabled="true"): no glass, a dashed edge,
+    a muted label (still 4.5:1 on paper); no hover, no press, no pointer
+  - focus: the focus-blue ring on a halo of cream, over any scene
+
+  The base rule is in :where(), so a control's own class sets its size,
+  type and layout without a fight; the states outweigh both.
 
   The press (components/ui/GlassPress.tsx: one listener for the page sets
   data-pressed and --press-x/-y/-r, from the pointer, or the middle for
@@ -3054,7 +2935,7 @@ html {
   label, clipped to the button. The action itself never waits for it.
   Still view and reduced motion: a brief blue tint and edge instead.
 */
-.glass {
+:where(.glass) {
   position: relative;
   isolation: isolate;
   overflow: hidden;
@@ -3070,7 +2951,8 @@ html {
   color: var(--slate);
   font-weight: 500;
   text-decoration: none;
-  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+  cursor: pointer;
+  box-shadow: var(--glass-in, inset 0 1px 0 var(--glass-hi)), var(--glass-out, var(--glass-lift, var(--glass-shadow)));
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   -webkit-tap-highlight-color: transparent;
@@ -3082,6 +2964,7 @@ html {
 .glass-primary {
   --tint: var(--glass-tint-strong);
   border-color: var(--baby-hover);
+  font-weight: 600;
 }
 
 /* A square key for an icon */
@@ -3091,45 +2974,59 @@ html {
 }
 
 @media (hover: hover) {
-  .glass:hover {
+  :where(.glass:not(:disabled, [aria-disabled="true"])):hover {
     background-color: color-mix(in srgb, var(--tint, var(--glass-tint)), var(--baby-hover) 35%);
   }
 }
 
-/* Chosen (pressed toggles, the page you're on, "Copied", an open menu):
-   baby blue, edged in the focus blue, so it reads without colour too */
-.glass:is([aria-pressed="true"], [aria-current="page"], [data-copied]),
+.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]),
 .rh:has(.rh-details:popover-open) .rh-chip,
 .world-controls:has(#places-menu:popover-open) [popovertarget="places-menu"] {
+  --glass-in: inset 0 0 0 1px var(--focus-blue), inset 0 3px 6px -2px rgb(32 50 69 / 0.35);
+  --glass-lift: 0 0 #0000;
   border-color: var(--focus-blue);
   background-color: rgb(184 220 250 / 0.92);
-  box-shadow: inset 0 0 0 1px var(--focus-blue), var(--glass-shadow);
 }
 
 .glass:is(:disabled, [aria-disabled="true"]) {
-  opacity: 0.5;
-  box-shadow: none;
+  --glass-in: 0 0 #0000;
+  --glass-lift: 0 0 #0000;
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
   cursor: default;
 }
 
-.glass:focus-visible {
-  outline: 2px solid var(--focus-blue);
-  outline-offset: 3px;
-  border-radius: var(--glass-radius);
+/* Forced colours drop the fill and the shade: a heavier edge says chosen */
+@media (forced-colors: active) {
+  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+    border-width: 3px;
+  }
 }
 
-/* The corner controls (WorldControls.tsx, WeatherClock.tsx) sit over the
-   world: thicker glass, near-opaque under a dark sky (the same skies as
-   the introduction's paper), and the focus ring on a halo of cream, so
-   it shows over the darkest night */
-.world-controls .glass {
+.glass:focus-visible {
+  --glass-out: var(--focus-halo);
+  outline: 2px solid var(--focus-blue);
+  outline-offset: 3px;
+}
+
+/* Over the world (the corner controls, not the Sections slip's keys):
+   thicker glass, near-opaque under a dark sky (the same skies as the
+   introduction's paper) */
+.world-controls > .glass,
+.world-controls-end .glass,
+.bench-tab,
+.cabinet-button {
   --tint: rgb(234 245 255 / 0.62);
+}
+
+.world-controls .glass {
   font-size: 0.875rem;
 }
 
 :root:has(.world3d[data-sky-daylight="night"]),
 :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
-  & .world-controls .glass {
+  & :is(.world-controls > .glass, .world-controls-end .glass, .bench-tab, .cabinet-button) {
     --tint: rgb(247 251 255 / 0.86);
   }
 
@@ -3141,10 +3038,6 @@ html {
 /* The time and weather carry small and muted words: thicker still */
 .world-controls .rh-chip {
   --tint: rgb(247 251 255 / 0.8);
-}
-
-.world-controls .glass:focus-visible {
-  box-shadow: var(--focus-halo);
 }
 
 /* The press: a ripple (::before) and a sweep of light (::after) */

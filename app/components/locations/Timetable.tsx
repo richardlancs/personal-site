@@ -105,7 +105,7 @@ export default function Timetable({ stops }: { stops: Experience[] }) {
                 <tr key={`${item.role}-${item.organization}`} data-selected={index === selected || undefined}>
                   <td className="tabular-nums">{when(item)}</td>
                   <td>
-                    <button type="button" className="timetable-line" aria-pressed={index === selected} aria-controls="timetable-notice" data-choice onClick={() => choose(index)}>
+                    <button type="button" className="glass timetable-line" aria-pressed={index === selected} aria-controls="timetable-notice" data-choice onClick={() => choose(index)}>
                       {item.role}
                     </button>
                   </td>

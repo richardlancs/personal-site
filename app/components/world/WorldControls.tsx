@@ -89,12 +89,12 @@ export default function WorldControls() {
         <ul>
           {menu.map((s) => (
             <li key={s.id}>
-              <Link href={s.href} onClick={close} aria-current={pathname === s.href ? "page" : undefined}>
+              <Link href={s.href} onClick={close} aria-current={pathname === s.href ? "page" : undefined} className="glass">
                 <span className="places-menu-section">{s.title}</span>
                 <span className="places-menu-place only-world">{s.place}</span>
               </Link>
               {s.subsections?.map((sub) => (
-                <Link key={sub.href} href={sub.href} onClick={close}>
+                <Link key={sub.href} href={sub.href} onClick={close} className="glass">
                   <span className="places-menu-section">{sub.title}</span>
                   <span className="places-menu-place only-world">{sub.place}</span>
                 </Link>

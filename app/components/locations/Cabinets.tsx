@@ -99,7 +99,7 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
               aria-controls="cabinet-card"
               tabIndex={index === selected ? 0 : -1}
               data-choice
-              className="cabinet-button"
+              className="glass cabinet-button"
               onClick={() => choose(index)}
             >
               <span className="cabinet-button-screen" aria-hidden="true">

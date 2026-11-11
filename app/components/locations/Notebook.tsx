@@ -139,13 +139,13 @@ export default function Notebook({ pages }: { pages: NotebookPage[] }) {
         <div className="notebook-controls">
           {/* aria-disabled, not disabled: a disabled button drops the keyboard's
               focus, and with it the arrow keys, on reaching the last page */}
-          <button type="button" onClick={() => turn(-1)} aria-disabled={!canBack} className="notebook-turn">
+          <button type="button" onClick={() => turn(-1)} aria-disabled={!canBack} className="glass notebook-turn">
             <span aria-hidden="true">←</span> Previous page
           </button>
           <span className="text-sm text-muted" aria-live="polite">
             {showing.length > 1 ? `Pages ${first + 1}–${first + showing.length}` : `Page ${first + 1}`} of {pages.length}
           </span>
-          <button type="button" onClick={() => turn(1)} aria-disabled={!canOn} className="notebook-turn">
+          <button type="button" onClick={() => turn(1)} aria-disabled={!canOn} className="glass notebook-turn">
             Next page <span aria-hidden="true">→</span>
           </button>
         </div>

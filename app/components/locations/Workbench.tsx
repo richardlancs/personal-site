@@ -75,7 +75,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
             aria-controls="project-notes"
             tabIndex={index === selected ? 0 : -1}
             data-choice
-            className="bench-tab"
+            className="glass bench-tab"
             onClick={() => choose(index)}
           >
             <span className="bench-tab-lamp" aria-hidden="true" />
@@ -148,7 +148,7 @@ export default function Workbench({ projects }: { projects: Project[] }) {
                     key={item.src}
                     type="button"
                     aria-pressed={index === shot}
-                    className="shot-thumb"
+                    className="glass shot-thumb"
                     onClick={() => {
                       world.select("shot", index);
                       world.set({ focus: `monitor-${selected}` });

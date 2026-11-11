@@ -167,28 +167,17 @@
   flex: none;
 }
 
+/* The buttons are the shared glass, with its states (globals.css):
+   zoom and pages at their limits are disabled glass, "Fit width" when
+   it's on is chosen glass, with a tick */
 .resume .glass {
   font-size: 0.95rem;
-  font-weight: 500;
   white-space: nowrap;
-  text-decoration: none;
-  cursor: pointer;
 }
 
 .resume .resume-icon {
   width: 44px;
   padding: 0;
-}
-
-.resume .glass[aria-disabled="true"] {
-  cursor: default;
-  opacity: 0.45;
-}
-
-/* "Fit width" when it's on: a deeper blue, a firmer edge and a tick */
-.resume .resume-fit[aria-pressed="true"] {
-  background: var(--baby);
-  border-color: var(--focus-blue);
 }
 
 .resume-tick {
