@@ -128,6 +128,19 @@ so the 3 s blends build no shaders; shadowed lamps only on the desktop
 tiers. What was built and measured: `docs/world/3d-progress-log.md`,
 "Lamps and signs".
 
+From the park's steps every place and its sign stays readable, in every
+weather and at every hour, on every screen. The sky's clouds are on the
+sky dome, behind everything; what can hide a place is the fog, something
+standing in front, or a tag. So the park's fog starts past its places and
+has a floor the weather can't draw it past (`scenes.ts: fog.keep`), while
+the far city and its trees take more of it (`fogScale`); nothing stands on the
+line to a sign; near places' tags sit low, on themselves; and portrait
+phones get their own framing (`scenes.ts: portrait`, `short`). After
+moving anything in the park, run `docs/world/scripts/visibility.mjs`
+against `next dev` (it says what covers each sign, and how much fog is
+on it). The record: `docs/world/3d-progress-log.md`, "The places, clear
+from the steps".
+
 ---
 
 ## Color Palette

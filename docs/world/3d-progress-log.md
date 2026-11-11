@@ -344,3 +344,96 @@ ms with nothing changed in it, which is the drift). World chunk 304,203
 Shots: `screenshots/neon-{before,after}-{desktop,phone}-{workshop,station,arcade,booth,platform}-clear-{day,night}.jpg`
 (fixed poses from `scripts/lighting-shots.mjs`); every sign was also
 checked at dusk and in rain on both layouts.
+
+## The places, clear from the steps (11 November 2026)
+
+From the park's home view the station and the workshop were hard to make
+out, and on phones several places were cropped or covered. Measured with
+`scripts/visibility.mjs` (below), the causes were:
+
+- **Fog, not cloud.** The sky's clouds are painted on the sky dome, which
+  is drawn first and writes no depth, so they only ever pass behind the
+  buildings (checked across the clouds' drift, `DRIFT=1`). What hid the
+  places was the park's fog, the colour of the clouds, starting 20 m out:
+  28% of it on the station's sign by day, 44% in cloud, 50% at worst, and
+  more at a rainy dawn, where the weather drew it in to 6–76 m.
+- **Things in front.** The lamp by the fountain stood on the line from
+  the steps to the station's sign; the ginkgo at (6.5, −31) hid the lower
+  half of the clock tower.
+- **Small signs.** The station's and the workshop's lit boxes were 75 and
+  92 px wide on a 1440 px screen, 63 and 45 m off.
+- **Tags over signs.** Where every tag is up at once (touch screens), the
+  notice board's tag lay over the station's sign (it's right in front of
+  it from the steps), the arcade's over its own sign on phones, and the
+  booth's, pushed in from the screen's edge, over the workshop's at
+  1024×768.
+- **Cropping.** On portrait phones the view was 31° across, so the
+  workshop (Projects) was off the screen; on a phone on its side the
+  signs sat on the sheet's edge.
+
+What changed:
+
+- **Fog** (`scenes.ts`, `looks.ts: fogRange`): the park's starts at 40 m
+  and ends at 160 m, and `keep` stops the weather and the hour drawing it
+  nearer than 30–112 m. The city, its roofs and the belt of trees take
+  the fog as if 1.3× farther (`paint.ts: FOG_FRAGMENT`, `fogScale`;
+  `Park.tsx: FAR_FOG`), so they stay as far off and pale as before. The
+  other places' fog is unchanged. `tests/atmosphere.test.mjs` checks every
+  weather × hour × progress keeps the three far signs at 40% fog or less.
+- **Moved:** the lamp by the fountain, (2.6, −7) → (4.0, −7); the ginkgo,
+  (6.5, −31, ×1) → (−2.5, −31, ×0.9), between the arcade and the station,
+  clear of both signs and the tower.
+- **Signs:** the workshop's 3.6 × 0.9 m → 4.5 × 1.12 m and the station's
+  4.6 × 1.1 m → 5.8 × 1.4 m (about 25%), within their walls; same faces,
+  words, neon, frames and washes.
+- **Tags** (`Park.tsx: parkPlaces`, `World3D.tsx: LabelProjector`): the
+  near places' tags (pavilion, booth, board) sit low, on themselves, under
+  the far places' signs; the arcade's sits higher. Where every tag is up
+  at once they make room for each other (a tag that would overlap one
+  already placed is left out; one held under the controls gives way
+  first). On the flat layout a tag that would reach under the corner
+  controls is held just below them instead of hidden, and one the sheet
+  would cut is hidden rather than peeping out. With hover, one tag shows
+  at a time and every one stays reachable from the keyboard.
+- **Phones** (`scenes.ts: portrait, short`; `World3D.tsx`): at the park's
+  home view on a portrait screen the lens widens only as far as needed to
+  show 19.5° either side, with the view's middle 5.5° right (an
+  off-centre view, so verticals stay upright): the arcade, the station
+  and the workshop, with their tags, on every phone. On a phone on its
+  side the view is aimed so the fronts sit midway between the corner
+  controls and the sheet. Wide screens and the other places are as they
+  were.
+
+Measured (`scripts/visibility.mjs`, dev server; 10 sizes from 320 px to
+1920 px, portrait and landscape, × 6 skies: neutral, cloudy, rain and snow
+by day, clear dusk, night). Worst over the six skies, before → after:
+
+| Size | Arcade sign clear | Station sign clear / fog | Workshop sign clear / fog |
+|---|---|---|---|
+| 320×640 | 50% → 89% | 0% / 50% → 100% / 23% | 0% / 21% → 100% / 3% |
+| 390×844, 430×932 | 71–75% → 89% | 0% / 50% → 100% / 23% | 0% / 21% → 100% / 3% |
+| 667×375, 844×390 | 89% → 89% | 86% / 50% → 100% / 23% | 100% / 21% → 100% / 3% |
+| 768×1024 | 89% → 89% | 71% / 50% → 100% / 23% | 100% / 21% → 100% / 3% |
+| 1024×768 | 89% → 89% | 71% / 50% → 100% / 23% | 57% / 21% → 100% / 3% |
+| 1366–1920 | 89% → 89% | 86% / 50% → 100% / 23% | 100% / 21% → 100% / 3% |
+
+(The arcade's last 11% is the tip of the pavilion's roof and a branch at
+its sign's far left end, as before.) Primary-sign failures (under 85%
+clear or over 35% fog): 92 of 180 → 0. Signs on a 1440 px screen:
+station 75 → 95 px, workshop 92 → 116 px; on a 390 px phone the wider
+lens makes them 52 and 63 px, and the arcade's 107 → 84 px, with every
+tag up beside them.
+
+Also checked: a click on each building's front opens its page, by day and
+in rain, and a click on open sky does nothing; every tag is reached by Tab
+and shown on focus; taps on every tag that's up open its page at 320, 390
+and 1024 px; reduced motion frames the same. `npm run lint`, `npm test`
+(95, with `SMOKE_URL`), `docs/ui/scripts/mobile-audit.mjs` (0 failures;
+the one warning, `.park-intro:hover`, was there before) and `npm run
+perf:budget` pass. Frame cost (production builds, `lighting-perf.mjs`,
+before and after alternated): desktop park 401 draws both, p50 13.7–14.3
+ms both; phone park 297 → 308 draws (the wider view), p50 3.4–3.7 ms both.
+The development-only scene handle (`World3D.tsx: DevHandle`) isn't in the
+production build.
+
+Shots: `screenshots/visibility-{before,after}-{w1440-neutral-day,w1440-cloudy-day,w1440-rain-day,w1024-cloudy-day,w390-neutral-day,w320-neutral-day,land667-neutral-day}.jpg`.
