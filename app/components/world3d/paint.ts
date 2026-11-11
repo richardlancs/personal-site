@@ -274,8 +274,11 @@ float phWet = 0.0;
   float lum = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
   float base = max(dot(diffuseColor.rgb, vec3(0.299, 0.587, 0.114)), 1e-3);
   float shade = lum / base;
-  // Light and shade blocked in, the way a background painter lays them
-  float stepped = mix(shade, floor(shade * 3.0 + 0.5) / 3.0, 0.3);
+  // Light and shade blocked in, the way a background painter lays them:
+  // flatter within a band, a soft turn between bands (not a hard step,
+  // which drew rings round every lamp's pool and sign's glow)
+  float bands = shade * 3.0;
+  float stepped = mix(shade, (floor(bands) + smoothstep(0.3, 0.7, fract(bands))) / 3.0, 0.3);
   outgoingLight *= stepped / max(shade, 1e-3);
   // Shade is never grey: it leans blue-green, and holds its colour.
   // Sunlit sides warm up and lift a little.
