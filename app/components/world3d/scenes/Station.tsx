@@ -11,8 +11,8 @@ import { M, buildBeam, buildBench, buildDust, buildFallenLeaves, buildPole, buil
 import { buildCity } from "../buildings";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
-import { clockFace, enamel, groundTexture, plaster, textPanel } from "../textures";
-import { NEON, lightbox } from "../glow";
+import { clockFace, enamel, groundTexture, neonMask, plaster, textPanel, type PanelOptions } from "../textures";
+import { NEON, lightbox, neonLetters, neonOf } from "../glow";
 import { HEMI, Hitbox, PLATFORM_SIGN_LIGHT, SunLight, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -123,7 +123,7 @@ function buildStationScene(quality: "high" | "low") {
   root.add(hand);
 
   // The name sign, hanging by one chain now
-  const nameTex = textPanel("platform-name", 512, 128, {
+  const nameText: PanelOptions = {
     background: "#f0e8d6",
     padding: 8,
     valign: "middle",
@@ -131,7 +131,8 @@ function buildStationScene(quality: "high" | "low") {
       { text: "光明公园", size: 46, font: "display", color: "#22392b", weight: 600, align: "center", gap: 2 },
       { text: "GUĀNGMÍNG GŌNGYUÁN", size: 22, color: "#22392b", weight: 500, align: "center" },
     ],
-  });
+  };
+  const nameTex = textPanel("platform-name", 512, 128, nameText);
   const sign = new THREE.Group();
   sign.position.set(-7.4, TOP + 3.3, 0.6);
   // An iron box with its name on the front, the whole name (the box's own
@@ -141,6 +142,9 @@ function buildStationScene(quality: "high" | "low") {
   const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 0.44), mat("platformName", () => lightbox(nameTex, { strength: 0.55 })));
   signFace.position.z = 0.026;
   signBoard.add(signFace);
+  // Its words in neon, in their own green: gentler than the others, as the
+  // face is lit brightest here (by its own box and the light beside it)
+  signBoard.add(neonLetters(neonMask("platform-name", 512, 128, nameText, 6), [1.84, 0.44], neonOf("#22392b"), { body: 0.1, core: 0.12, halo: 0 }).translateZ(0.03));
   signBoard.position.set(0.85, -0.55, 0);
   signBoard.rotation.z = -0.28;
   signBoard.castShadow = true;

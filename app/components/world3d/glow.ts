@@ -295,6 +295,67 @@ export function wash(rect: [number, number], reach: [number, number, number, num
   return quad;
 }
 
+// A sign's lettering in neon: the colour of its own ink, brought up bright
+// (the same hue: a sign's green stays green, its brown turns amber)
+export function neonOf(ink: string) {
+  const hsl = { h: 0, s: 0, l: 0 };
+  new THREE.Color(ink).getHSL(hsl);
+  return `#${new THREE.Color().setHSL(hsl.h, Math.max(hsl.s, 0.9), 0.5).getHexString()}`;
+}
+
+// A sign's words lit as neon, on a quad laid just in front of its face
+// (the face itself unchanged): each stroke glows in its colour, hottest
+// along its middle (near white), with a soft halo of the same colour just
+// round it (textures.ts: neonMask). A trace by day, full at night, a
+// little wider in rain and mist; steady. `body` is the letters' own glow
+// (0 where the face already lights them, as on the arcade's board).
+export function neonLetters(mask: THREE.Texture, size: [number, number], color: string, { body = 0.55, core = 0.4, halo = 0.12, day = 0.06 } = {}) {
+  const m = new THREE.ShaderMaterial({
+    uniforms: {
+      ...fogUniforms(),
+      uSigns: glowUniforms.uSigns,
+      uHaze: glowUniforms.uHaze,
+      uMask: { value: mask },
+      uColor: { value: new THREE.Color(color) },
+      uWeights: { value: new THREE.Vector4(body, core, halo, day) },
+    },
+    vertexShader: /* glsl */ `
+      varying vec2 vUv;
+      varying float vDepth;
+      void main() {
+        vUv = uv;
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vDepth = -mv.z;
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */ `
+      ${FOG}
+      uniform float uSigns;
+      uniform float uHaze;
+      uniform sampler2D uMask;
+      uniform vec3 uColor;
+      uniform vec4 uWeights;
+      varying vec2 vUv;
+      varying float vDepth;
+      void main() {
+        vec3 m = texture2D(uMask, vUv).rgb;
+        float on = mix(uWeights.w, 1.0, uSigns);
+        if (on * (m.r + m.b) < 0.002) discard;
+        float core = smoothstep(0.75, 1.0, m.g) * m.r;
+        vec3 c = uColor * (m.r * uWeights.x + m.b * uWeights.z * (1.0 + 0.3 * uHaze))
+          + mix(uColor, vec3(1.0), 0.5) * core * uWeights.y;
+        gl_FragColor = vec4(c * on * glowFog(vDepth), 1.0);
+      }`,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    fog: true,
+  });
+  const quad = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), m);
+  quad.renderOrder = 1;
+  return quad;
+}
+
 // The halo round neon letters: their own shapes, blurred (textures.ts:
 // textMask, glowMask), laid just in front of them
 export function halo(mask: THREE.Texture, size: [number, number], color: string, strength: number) {

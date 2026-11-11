@@ -119,7 +119,10 @@ through `glowUniforms` and the paint's day/night `glow`): street lamps are
 spotlights at the bulb aimed straight down, with a per-pixel beam in the
 air (no halos, no cone meshes); every building sign is lit (lit-box faces,
 neon tube, or neon letters from a text mask) in baby-blue neon, warm
-white and the arcade's pink, with a soft wash on the wall. Nothing
+white and the arcade's pink, with a soft wash on the wall. Every sign's
+words glow as neon in their own ink's hue (`glow.ts: neonLetters`, a quad
+over the face from `textures.ts: neonMask`: a hot core along each stroke,
+a tight halo), gentlest where the face is brightest. Nothing
 flickers. Keep light counts the same by day and night (drive intensity),
 so the 3 s blends build no shaders; shadowed lamps only on the desktop
 tiers. What was built and measured: `docs/world/3d-progress-log.md`,

@@ -4,9 +4,9 @@ import { mesh, paint, windUniforms } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
-import { BEAM, NEON, lampBeam, lightbox } from "./glow";
+import { BEAM, NEON, lampBeam, lightbox, neonLetters, neonOf } from "./glow";
 import { world } from "./store";
-import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
+import { enamel, flagstones, neonMask, notice, planks, plaster, singleLeaves, softDot, textPanel, type PanelOptions } from "./textures";
 
 // Props: the things people left behind, modelled from parts. Each builder
 // returns a group, plus handles for anything that moves.
@@ -195,12 +195,14 @@ export function buildBooth() {
   // Roof cap and the sign on each side
   g.add(mesh(at(box(W + 0.18, 0.16, W + 0.18), 0, H + 0.2, 0), M.green()));
   g.add(mesh(at(box(W + 0.24, 0.05, W + 0.24), 0, H + 0.3, 0), mat("boothRoof", () => paint({ map: enamel(140, 22, 28), rust: 0.6, moss: 0.8, grime: 0.3 }))));
-  const signTex = textPanel("booth-sign", 256, 64, {
+  const signText: PanelOptions = {
     background: "#efe8d4",
     padding: 6,
     valign: "middle",
     lines: [{ text: "公用电话", size: 38, font: "display", color: "#2f5a3c", weight: 600, align: "center" }],
-  });
+  };
+  const signTex = textPanel("booth-sign", 256, 64, signText);
+  const signWords = neonLetters(neonMask("booth-sign", 256, 64, signText, 5), [0.8, 0.2], neonOf("#2f5a3c"));
   // A lit box, like the real ones: the face glows after dark
   const signMat = mat("boothSign", () => lightbox(signTex, { strength: 0.6, grime: 0 }));
   for (let i = 0; i < 4; i++) {
@@ -208,6 +210,11 @@ export function buildBooth() {
     const a = (i * Math.PI) / 2;
     s.position.set(Math.sin(a) * (W / 2 + 0.1), H + 0.2, Math.cos(a) * (W / 2 + 0.1));
     s.rotation.y = a;
+    // Its words in neon, in their own green
+    const words = new THREE.Mesh(signWords.geometry, signWords.material);
+    words.renderOrder = 1;
+    words.position.z = 0.004;
+    s.add(words);
     g.add(s);
   }
   // Base

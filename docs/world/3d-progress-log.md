@@ -306,3 +306,41 @@ in and close up. Not tried on real phones or in Safari (the canvas blur
 for halos falls back to shrink-and-grow where `ctx.filter` is missing).
 Shots: `screenshots/lighting-{before,after}-*.jpg`; scripts:
 `scripts/lighting-shots.mjs`, `lighting-perf.mjs`, `lighting-blend.mjs`.
+
+## Neon lettering (11 November 2026)
+
+Only the signs' words changed; faces, frames, washes, buildings, lamps and
+everything else are as they were. Each building sign's words now glow as
+neon (`glow.ts: neonLetters`): an additive quad the size of the face,
+just in front of it, reading one mask texture made from the sign's own
+text options (`textures.ts: neonMask`: red the letters, sharp; green the
+letters lightly blurred, so the middle of each stroke is the hot core;
+blue the letters well blurred, for a tight halo). The colour is the ink's
+own hue brought up bright (`neonOf`), so the text, font, size, place and
+colour identity stay. A trace by day (0.06), full at night through
+`uSigns`, a little wider halo in rain and mist; no time term, so no
+flicker or pulse.
+
+| Sign | Neon | Notes |
+|---|---|---|
+| 工坊  WORKSHOP | amber (its brown ink) | over the lit face |
+| 光明公园站 | green | over the lit face |
+| 游戏厅 | pink | the board already lit the letters; this adds the core and replaces the old halo (no extra quad) |
+| 公用电话 (×4) | green | one shared material and mask |
+| 光明公园 / GUĀNGMÍNG GŌNGYUÁN | green, gentle (body 0.1, core 0.12, no halo) | its face is lit almost white, and stronger neon washed the small second line out |
+
+On the lit-box faces the letters can't be much brighter than the face, so
+they read by colour more than by brightness; white-hot letters (tried
+first) washed into the face and were dropped.
+
+Measured (production builds, before and after, 3 runs each, clear night,
+uncapped p50; sequential, not alternated, so about ±0.8 ms of drift):
+draws 395 → 401 desktop park, 296 → 297 phone, 114 → 118 / 101 → 105 at
+the booth; p50 10.8 → 11.0 ms desktop park, 3.2 → 3.3 ms phone park, phone
+arcade and booth unchanged (the desktop arcade interior moved 6.9 → 7.6
+ms with nothing changed in it, which is the drift). World chunk 304,203
+→ 305,168 gzip. No shader compiles at rest.
+
+Shots: `screenshots/neon-{before,after}-{desktop,phone}-{workshop,station,arcade,booth,platform}-clear-{day,night}.jpg`
+(fixed poses from `scripts/lighting-shots.mjs`); every sign was also
+checked at dusk and in rain on both layouts.

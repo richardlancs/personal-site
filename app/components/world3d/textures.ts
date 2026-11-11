@@ -534,7 +534,7 @@ export const singleLeaves = () =>
 
 type TextLine = { text: string; size: number; font?: "display" | "text"; color?: string; weight?: number; gap?: number; align?: CanvasTextAlign };
 
-type PanelOptions = { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle" };
+export type PanelOptions = { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle" };
 
 // A panel of text: signs, timetable rows, notebook pages, screens. `key`
 // must change when the text does.
@@ -556,6 +556,43 @@ export function textMask(key: string, w: number, h: number, opts: PanelOptions, 
     },
     { text: true },
   );
+}
+
+// A sign's words as neon, for glow.ts: neonLetters. Three masks in one
+// texture, in exactly the panel's places: red, the letters, sharp; green,
+// the letters a little blurred, so it's highest along the middle of each
+// stroke (the tube's bright core); blue, the letters well blurred (the
+// halo just round them). Data, not colour. Same key and options as the
+// panel it goes with; `halo` is the halo's blur in pixels.
+export function neonMask(key: string, w: number, h: number, opts: PanelOptions, halo: number) {
+  const t = texture(
+    `neon-${key}-${halo}`,
+    w,
+    h,
+    (g, r) => {
+      const words = { ...opts, background: "#000000", grain: false, rule: undefined, lines: opts.lines.map((l) => ({ ...l, color: "#ffffff" })) };
+      const layer = (blur: number) => {
+        const [, lg] = canvas(w, h);
+        drawPanel(lg, r, w, h, words);
+        if (blur) blurCanvas(lg, w, h, blur);
+        return lg.getImageData(0, 0, w, h).data;
+      };
+      const sharp = layer(0);
+      const core = layer(Math.max(1, Math.min(...opts.lines.map((l) => l.size)) * 0.035));
+      const soft = layer(halo);
+      const out = g.createImageData(w, h);
+      for (let i = 0; i < out.data.length; i += 4) {
+        out.data[i] = sharp[i];
+        out.data[i + 1] = core[i];
+        out.data[i + 2] = soft[i];
+        out.data[i + 3] = 255;
+      }
+      g.putImageData(out, 0, 0);
+    },
+    { text: true },
+  );
+  t.colorSpace = THREE.NoColorSpace;
+  return t;
 }
 
 // White strokes on black, blurred: the glow around a shape drawn in code
