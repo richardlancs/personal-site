@@ -334,6 +334,16 @@ function Director({
     camera.lookAt(tmp.l);
     camera.rotateY(s.yaw);
     camera.rotateX(s.pitch);
+    // Development only: a fixed pose from the console or a script
+    // (window.__pose = { pos, target }, world coordinates), for comparing
+    // screenshots taken from exactly the same place
+    if (process.env.NODE_ENV !== "production") {
+      const pose = (window as unknown as { __pose?: { pos: V3; target: V3 } }).__pose;
+      if (pose) {
+        camera.position.set(...pose.pos);
+        camera.lookAt(...pose.target);
+      }
+    }
 
     // Frame the place to one side on wide screens, leaving room for the
     // page. On narrow screens the page is a sheet that comes up from
