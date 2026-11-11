@@ -1,7 +1,9 @@
 // The Richmond Hill display's layout as readings arrive, against a
-// production build: the chip and its neighbours must not move when the
-// weather comes in (any condition, stale, unavailable), and on narrow
-// screens the menu and toggles stay in the top-right corner.
+// production build: the display is as wide as its words, so what must not
+// move when the weather comes in (any condition, stale, unavailable) is
+// everything around it: the way back, Sections and the toggles, and (beside
+// them on wide screens) the display's right edge; on narrow screens the
+// menu and toggles stay in the top-right corner.
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/weather/scripts/chip-layout.mjs http://localhost:3100
 import { launch } from "../../audit/scripts/pw.mjs";
 
@@ -41,16 +43,18 @@ for (const [size, width, height, touch] of sizes) {
       const box = () =>
         page.evaluate(() => {
           const r = (el) => (el ? (({ left, right, top, bottom }) => ({ left: Math.round(left), right: Math.round(right), top: Math.round(top), bottom: Math.round(bottom) }))(el.getBoundingClientRect()) : null);
-          return { chip: r(document.querySelector(".rh-chip")), place: r(document.querySelector(".rh-place")), end: r(document.querySelector(".world-controls-end")), back: r(document.querySelector(".world-controls > a")), status: document.querySelector(".rh")?.getAttribute("data-status") };
+          return { chip: r(document.querySelector(".rh")), place: r(document.querySelector(".rh-place")), end: r(document.querySelector(".world-controls-end")), back: r(document.querySelector(".world-controls > a")), status: document.querySelector(".rh")?.getAttribute("data-status") };
         });
       const before = await box();
       await page.waitForTimeout(2500);
       const after = await box();
-      const moved = ["left", "right"].some((k) => before.chip[k] !== after.chip[k]) || before.place.left !== after.place.left;
-      // On narrow screens the chip sits alone on its row and may grow to
-      // the right; what mustn't move is everything else
+      // Wide: the display ends at Sections, so its right edge holds and it
+      // grows to the left. Narrow: alone on its row, it grows to the right
+      // from where it starts.
       const narrow = width < 720;
-      check(`${size} ${route} ${name}: ${narrow ? "nothing else moves" : "the chip doesn't move"}`, narrow ? before.end.left === after.end.left && before.place.left === after.place.left : !moved, { status: after.status, before: before.chip, after: after.chip });
+      const same = (a, b) => (a && b ? a.left === b.left && a.top === b.top : a === b);
+      const held = same(before.end, after.end) && same(before.back, after.back) && (narrow ? before.chip.left === after.chip.left : before.chip.right === after.chip.right);
+      check(`${size} ${route} ${name}: nothing around it moves`, held, { status: after.status, before: before.chip, after: after.chip });
       check(`${size} ${route} ${name}: the menu and toggles end at the right edge`, width - after.end.right <= 24, { gap: width - after.end.right });
       if (after.back) check(`${size} ${route} ${name}: the way back and the chip don't touch`, after.back.right + 8 <= after.chip.left || after.chip.top >= after.back.bottom, { back: after.back, chip: after.chip });
     }
