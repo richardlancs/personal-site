@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "./geometry";
 import { NEON, lightbox, neon, neonLetters, neonOf, neonTube, wash } from "./glow";
 import { mesh, paint } from "./paint";
-import { M, mat } from "./props";
+import { CONCRETE, M, mat } from "./props";
 import { rng } from "./rng";
 import { clockFace, facade, neonMask, plaster, roofTiles, textMask, textPanel, windowPanes, type PanelOptions } from "./textures";
 
@@ -129,17 +129,20 @@ export function buildWorkshop() {
     lines: [{ text: "工坊  WORKSHOP", size: 58, font: "display", color: "#3b2a1a", weight: 600, align: "center" }],
   };
   const sign = textPanel("workshop-sign", 512, 128, signText);
-  // A lit box: the painted face glows, framed in baby-blue neon
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), mat("workshopSign", () => lightbox(sign, { brush: 0.3, grime: 0.4 })));
-  board.position.set(0, 3.95, 4.08);
+  // A lit box: the painted face glows, framed in baby-blue neon. Sized to
+  // be read from the park's steps, 45 m off: between the window frames
+  // (top 3.4 m) and the eaves (4.6 m)
+  const [sw, sh, sy] = [4.5, 1.12, 4.0];
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), mat("workshopSign", () => lightbox(sign, { brush: 0.3, grime: 0.4 })));
+  board.position.set(0, sy, 4.08);
   g.add(board);
   // Its words in neon, in their own colour
-  g.add(neonLetters(neonMask("workshop-sign", 512, 128, signText, 8), [3.6, 0.9], neonOf("#3b2a1a")).translateY(3.95).translateZ(4.086));
-  g.add(signCase(3.6, 0.9, 0, 3.95, 4.0));
-  const frame = new THREE.Mesh(neonTube(3.78, 1.06, 0.032), mat("neonBlue", () => neon(NEON.blue)));
-  frame.position.set(0, 3.95, 4.1);
+  g.add(neonLetters(neonMask("workshop-sign", 512, 128, signText, 8), [sw, sh], neonOf("#3b2a1a")).translateY(sy).translateZ(4.086));
+  g.add(signCase(sw, sh, 0, sy, 4.0));
+  const frame = new THREE.Mesh(neonTube(sw + 0.18, sh + 0.16, 0.032), mat("neonBlue", () => neon(NEON.blue)));
+  frame.position.set(0, sy, 4.1);
   g.add(frame);
-  g.add(wash([3.8, 1.08], [1.1, 1.1, 0.5, 0.95], NEON.blue, 0.3).translateY(3.95).translateZ(4.012));
+  g.add(wash([sw + 0.2, sh + 0.18], [1.1, 1.1, 0.5, 0.95], NEON.blue, 0.3).translateY(sy).translateZ(4.012));
   g.add(buildVine(61, [v(-6.6, 0, 4.1), v(-6.55, 2, 4.15), v(-6.2, 4.4, 4.1), v(-4, 4.5, 4.12), v(-3.6, 3.6, 4.15)], 0.4));
   g.add(buildVine(62, [v(6.6, 0, 3.4), v(6.62, 2.6, 3.2), v(6.6, 4.4, 2)], 0.4));
   return g;
@@ -177,17 +180,20 @@ export function buildStation() {
   };
   const sign = textPanel("station-sign", 512, 128, signText);
   // A lit box, framed in baby-blue neon, across the tower's foot; its
-  // light falls on the tower and on the hall's wall behind its ends
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), mat("stationSignBoard", () => lightbox(sign, { brush: 0.2, grime: 0.3 })));
-  board.position.set(0, 4.6, 3.68);
+  // light falls on the tower and on the hall's wall behind its ends.
+  // Sized to be read from the park's steps, 63 m off: between the windows
+  // (top 3.5 m) and the eaves
+  const [sw, sh, sy] = [5.8, 1.4, 4.45];
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), mat("stationSignBoard", () => lightbox(sign, { brush: 0.2, grime: 0.3 })));
+  board.position.set(0, sy, 3.68);
   g.add(board);
-  g.add(neonLetters(neonMask("station-sign", 512, 128, signText, 8), [4.6, 1.1], neonOf("#22392b")).translateY(4.6).translateZ(3.686));
-  g.add(signCase(4.6, 1.1, 0, 4.6, 3.6));
-  const frame = new THREE.Mesh(neonTube(4.78, 1.26, 0.034), mat("neonBlue", () => neon(NEON.blue)));
-  frame.position.set(0, 4.6, 3.7);
+  g.add(neonLetters(neonMask("station-sign", 512, 128, signText, 8), [sw, sh], neonOf("#22392b")).translateY(sy).translateZ(3.686));
+  g.add(signCase(sw, sh, 0, sy, 3.6));
+  const frame = new THREE.Mesh(neonTube(sw + 0.18, sh + 0.16, 0.034), mat("neonBlue", () => neon(NEON.blue)));
+  frame.position.set(0, sy, 3.7);
   g.add(frame);
-  g.add(wash([3.2, 1.28], [0, 0, 1.2, 1.2], NEON.blue, 0.3).translateY(4.6).translateZ(3.606));
-  g.add(wash([4.8, 1.28], [0.9, 0.9, 0.3, 1.1], NEON.blue, 0.2).translateY(4.6).translateZ(3.012));
+  g.add(wash([3.2, sh + 0.18], [0, 0, 1.2, 1.2], NEON.blue, 0.3).translateY(sy).translateZ(3.606));
+  g.add(wash([sw + 0.2, sh + 0.18], [0.9, 0.9, 0.3, 1.1], NEON.blue, 0.2).translateY(sy).translateZ(3.012));
   g.add(buildVine(71, [v(-1.65, 0, 3.65), v(-1.7, 4, 3.66), v(-1.6, 9, 3.65), v(-0.8, 12.5, 3.66)], 0.5));
   return g;
 }
@@ -235,7 +241,10 @@ export function buildArcade() {
 
 // The empty city around the park: tall blocks, some broken at the top,
 // gardens gone wild on their roofs, all merged by facade so it draws fast
-export function buildCity(seed: number, spots: { x: number; z: number; w: number; d: number; h: number }[]) {
+// `fogScale` > 1: hazier than its distance alone makes it (paint.ts:
+// FOG_FRAGMENT), for the park, whose fog starts far out
+export function buildCity(seed: number, spots: { x: number; z: number; w: number; d: number; h: number }[], fogScale = 1) {
+  const far = fogScale === 1 ? "" : `-fog${fogScale}`;
   const r = rng(seed);
   const byFacade: THREE.BufferGeometry[][] = [[], [], [], []];
   const roofs: THREE.BufferGeometry[] = [];
@@ -260,10 +269,11 @@ export function buildCity(seed: number, spots: { x: number; z: number; w: number
     if (!parts.length) return;
     const tex = facade(k);
     tex.repeat.set(1, 0.5);
-    g.add(mesh(merge(parts), mat(`city-${k}`, () => paint({ map: tex, brush: 0.18, brushScale: 0.2, grime: 0.5, grimeHeight: 6 })), { cast: false }));
+    g.add(mesh(merge(parts), mat(`city-${k}${far}`, () => paint({ map: tex, brush: 0.18, brushScale: 0.2, grime: 0.5, grimeHeight: 6, fogScale })), { cast: false }));
   });
-  g.add(mesh(merge(roofs), M.concrete(), { cast: false }));
-  if (greens.length) g.add(mesh(merge(greens), mat("roofGreen", () => paint({ color: "#56703a", brush: 0.4, brushScale: 0.4 })), { cast: false }));
+  const roofMat = far ? mat(`concrete${far}`, () => paint({ ...CONCRETE, fogScale })) : M.concrete();
+  g.add(mesh(merge(roofs), roofMat, { cast: false }));
+  if (greens.length) g.add(mesh(merge(greens), mat(`roofGreen${far}`, () => paint({ color: "#56703a", brush: 0.4, brushScale: 0.4, fogScale })), { cast: false }));
   return g;
 }
 

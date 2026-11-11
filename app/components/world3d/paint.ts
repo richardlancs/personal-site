@@ -101,6 +101,22 @@ mvPosition = viewMatrix * ph_world;
 gl_Position = projectionMatrix * mvPosition;
 `;
 
+// three.js's fog (linear or exponential), with the depth scaled per
+// material: far scenery (the city past the park and the belt of trees
+// before it) takes `fogScale` > 1 and stays as hazy as it has always been
+// while the park's own fog starts farther out, so the places in the
+// middle distance read clearly. Shared with the vegetation's material.
+export const FOG_FRAGMENT = /* glsl */ `
+#ifdef USE_FOG
+  #ifdef FOG_EXP2
+    float fogFactor = 1.0 - exp(-fogDensity * fogDensity * vFogDepth * vFogDepth * uFogScale * uFogScale);
+  #else
+    float fogFactor = smoothstep(fogNear, fogFar, vFogDepth * uFogScale);
+  #endif
+  gl_FragColor.rgb = mix(gl_FragColor.rgb, fogColor, fogFactor);
+#endif
+`;
+
 export type PaintOptions = {
   color?: THREE.ColorRepresentation;
   map?: THREE.Texture | null;
@@ -123,6 +139,9 @@ export type PaintOptions = {
   rust?: number; // 0 to 1: rust blooms (for painted metal)
   wind?: { amp: number; base?: number; height?: number; flutter?: number };
   fog?: boolean;
+  // Fog as if this were this many times farther away (FOG_FRAGMENT): for
+  // far scenery
+  fogScale?: number;
   // How strongly the emissive glows by day and at night (a multiplier on
   // emissiveIntensity, following envUniforms.uNight): a lit window is
   // { day: 1, night: 2.4 }, a lamp that's only on at night { day: 0, night: 1 }
@@ -169,6 +188,7 @@ export function paint(options: PaintOptions = {}): THREE.MeshLambertMaterial {
     uGlowNight: { value: options.glow?.night ?? 1 },
     uWetAmt: { value: options.wet ?? 1 },
     uSnowAmt: { value: options.snow ?? 1 },
+    uFogScale: { value: options.fogScale ?? 1 },
   };
   const wind = !!options.wind;
   material.userData.paint = uniforms;
@@ -212,8 +232,10 @@ uniform float uSnowAmt;
 uniform float uWet;
 uniform float uSnow;
 uniform float uNight;
+uniform float uFogScale;
 ${NOISE}`,
       )
+      .replace("#include <fog_fragment>", FOG_FRAGMENT)
       .replace(
         "#include <emissivemap_fragment>",
         `#include <emissivemap_fragment>

@@ -22,6 +22,7 @@ import {
   weatherLook,
 } from "../app/components/world3d/atmosphere/looks.ts";
 import { PREVIEW_PHASES, PREVIEW_PRESETS, parseSkyParam } from "../app/components/world3d/atmosphere/param.ts";
+import { scenes } from "../app/components/world3d/scenes.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(root + path, "utf8");
@@ -37,6 +38,34 @@ const contrast = (a, b) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 const over = (fg, alpha, bg) => fg.map((x, i) => x * alpha + bg[i] * (1 - alpha));
+
+test("the park's places stay clear of the fog in every weather and at every hour", () => {
+  // From the steps (scenes.ts: park.home) to the station's sign, the
+  // farthest place, about 63 m, and the arcade's and workshop's, about 46
+  // and 44 m. three.js's linear fog: smoothstep(near, far, depth).
+  const smooth = (a, b, x) => {
+    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+    return t * t * (3 - 2 * t);
+  };
+  const signs = { station: 63, arcade: 46, workshop: 44 };
+  let worst = 0;
+  for (const p of WEATHER_PRESETS)
+    for (const ph of DAYLIGHTS)
+      for (const progress of [0, 0.5, 1]) {
+        const d = daylightLook(newDaylight(), ph, progress);
+        const w = weatherLook(newWeather(), p);
+        const r = fogRange({ near: 0, far: 0 }, scenes.park.fog, d, w, false);
+        for (const [name, depth] of Object.entries(signs)) {
+          const fog = smooth(r.near, r.far, depth);
+          worst = Math.max(worst, fog);
+          assert.ok(fog <= 0.4, `${p}/${ph}/${progress}: ${Math.round(fog * 100)}% fog on the ${name}'s sign`);
+        }
+      }
+  // ...and the fog's floor is what holds them there, not luck
+  const rainyDawn = fogRange({ near: 0, far: 0 }, { near: 40, far: 160 }, daylightLook(newDaylight(), "dawn", 0), weatherLook(newWeather(), "rain"), false);
+  assert.ok(smooth(rainyDawn.near, rainyDawn.far, signs.station) > 0.6, "without keep, a rainy dawn would swallow the station");
+  assert.ok(worst > 0.1, "the farthest place still sits in a little air");
+});
 
 test("every weather and every time of day has a look", () => {
   assert.deepEqual([...PREVIEW_PRESETS].sort(), [...WEATHER_PRESETS].sort());

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { at, blob, box, buildVine, merge, tube, wire } from "./geometry";
-import { mesh, paint, windUniforms } from "./paint";
+import { mesh, paint, windUniforms, type PaintOptions } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
@@ -18,10 +18,14 @@ export function mat(key: string, make: () => THREE.MeshLambertMaterial) {
   let m = mats.get(key);
   if (!m) {
     m = make();
+    m.name = key; // for the visibility check (docs/world/scripts/visibility.mjs)
     mats.set(key, m);
   }
   return m;
 }
+
+// (also the far city's roofs, with its own fog: buildings.ts, buildCity)
+export const CONCRETE: PaintOptions = { color: "#a8a293", brush: 0.35, brushScale: 1.2, moss: 0.35, grime: 0.7, grimeHeight: 2 };
 
 export const M = {
   wood: () => mat("wood", () => paint({ map: planks("light"), brush: 0.25, brushScale: 2, moss: 0.25, grime: 0.4 })),
@@ -31,7 +35,7 @@ export const M = {
   rust: () => mat("rust", () => paint({ color: "#8a4b2c", brush: 0.4, brushScale: 3, rust: 0.8 })),
   green: () => mat("green", () => paint({ map: enamel(140, 28, 34), brush: 0.2, brushScale: 2, rust: 0.1, grime: 0.5, moss: 0.2 })),
   stone: () => mat("stone", () => paint({ color: "#b4ab96", brush: 0.35, brushScale: 1.5, moss: 0.55, grime: 0.6, grimeHeight: 0.8 })),
-  concrete: () => mat("concrete", () => paint({ color: "#a8a293", brush: 0.35, brushScale: 1.2, moss: 0.35, grime: 0.7, grimeHeight: 2 })),
+  concrete: () => mat("concrete", () => paint(CONCRETE)),
   paving: () => mat("paving", () => paint({ map: flagstones(), brush: 0.18, brushScale: 0.6, side: THREE.DoubleSide })),
   plaster: () => mat("plaster", () => paint({ map: plaster("cream"), brush: 0.15, grime: 0.6, grimeHeight: 1.5, moss: 0.15 })),
   glass: () =>

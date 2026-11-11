@@ -303,10 +303,19 @@ export function fogColor(out: RGB, base: RGB, d: DaylightLook, w: WeatherLook, i
 const nightHold = (night: number) => 1 - 0.5 * night;
 const nightLift = (lift: number, night: number) => lift + (Math.max(lift, 1) - lift) * night;
 
-export function fogRange(out: { near: number; far: number }, base: { near: number; far: number }, d: DaylightLook, w: WeatherLook, indoor: boolean) {
+// A place may keep its fog from closing in past a point in any weather
+// (`keep`): the park's, so its places stay readable from the steps at a
+// rainy dawn; the rain still shows in the air, the light and the far city.
+export type FogBase = { near: number; far: number; keep?: { near: number; far: number } };
+
+export function fogRange(out: { near: number; far: number }, base: FogBase, d: DaylightLook, w: WeatherLook, indoor: boolean) {
   const k = indoor ? INDOOR_FOG * 0.8 : 1;
   out.near = base.near * (1 + (d.fogNear - 1) * k) * (1 + (w.fogNear - 1) * k);
   out.far = base.far * (1 + (d.fogFar - 1) * k) * (1 + (w.fogFar - 1) * k);
+  if (base.keep) {
+    out.near = Math.max(out.near, base.keep.near);
+    out.far = Math.max(out.far, base.keep.far);
+  }
   return out;
 }
 

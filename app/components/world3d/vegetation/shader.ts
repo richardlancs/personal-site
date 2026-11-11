@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { envUniforms } from "../environment";
-import { windUniforms } from "../paint";
+import { FOG_FRAGMENT, windUniforms } from "../paint";
 
 // The shading every leaf and blade shares: a lit Lambert material whose
 // colour is chosen by how much light reaches it, in three broad bands the
@@ -202,6 +202,7 @@ function vegUniforms(o: VegOptions) {
     uVegGround: { value: new THREE.Color(o.ground ?? "#6e7a3e") },
     uVegAmp: { value: o.wind.amp },
     uVegHeight: { value: Math.max(o.wind.height, 0.01) },
+    uFogScale: { value: 1 }, // paint.ts: FOG_FRAGMENT
   };
 }
 
@@ -227,7 +228,8 @@ export function vegMaterial(o: VegOptions): THREE.MeshLambertMaterial {
     Object.assign(shader.uniforms, uniforms, windUniforms, envUniforms);
     shader.vertexShader = vertexChunks(shader.vertexShader, grass);
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", `#include <common>\n${grass ? "#define VEG_GRASS" : ""}\n${FRAGMENT}`)
+      .replace("#include <common>", `#include <common>\n${grass ? "#define VEG_GRASS" : ""}\nuniform float uFogScale;\n${FRAGMENT}`)
+      .replace("#include <fog_fragment>", FOG_FRAGMENT)
       // Both faces of a card or blade are lit as the mass they belong to,
       // not flipped when seen from behind
       .replace("#include <normal_fragment_begin>", "#include <normal_fragment_begin>\nnormal = normalize(vNormal);\nnonPerturbedNormal = normal;")

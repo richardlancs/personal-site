@@ -351,14 +351,30 @@ function Director({
     const cam = camera as THREE.PerspectiveCamera;
     const narrow = isFlat();
     const wide = !narrow && size.width >= 900;
-    const frame = scenes[s.active].frame;
-    const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : 0;
-    const wantY = narrow ? narrowLift(size.height) : 0;
+    const def = scenes[s.active];
+    const frame = def.frame;
+    const aspect = size.width / size.height;
+    // A portrait screen at a place's home view (scenes.ts: portrait): a
+    // wider lens if needed, and the view's middle turned to one side (an
+    // off-centre view, so verticals stay upright)
+    const portrait = narrow && aspect < 1 && !world.get().focus ? def.portrait : undefined;
+    let fov = aspect < 1 ? 62 : 48;
+    if (portrait) fov = Math.max(fov, 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(portrait.half)) / aspect)));
+    const across = 2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect; // the view's width, in tangent units
+    const want = wide && !r && frame !== "center" ? (frame === "left" ? 0.17 : -0.17) : portrait && !r ? Math.tan(THREE.MathUtils.degToRad(portrait.yaw)) / across : 0;
+    let wantY = narrow ? narrowLift(size.height) : 0;
+    // A phone on its side keeps only a strip of the world, between the
+    // corner controls and the page's sheet: a place's fronts (scenes.ts:
+    // short, degrees under the aim) go to the strip's middle
+    if (narrow && aspect >= 1 && size.height <= 480 && def.short !== undefined && !world.get().focus) {
+      const fronts = (Math.tan(THREE.MathUtils.degToRad(def.short)) * size.height) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+      const aim = (controlsBottom(size.width, size.height, gl.domElement) + heroHeight(size.height)) / 2 - fronts;
+      wantY = 0.5 - aim / size.height;
+    }
     // (in still view the framing doesn't glide: it's simply there)
     const glide = reduce ? 1 : 1 - Math.exp(-dt * 2.5);
     s.shift += (want - s.shift) * glide;
     s.shiftY += (wantY - s.shiftY) * glide;
-    const fov = size.width / size.height < 1 ? 62 : 48;
     if (cam.fov !== fov) cam.fov = fov;
     if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
     else cam.clearViewOffset();
@@ -372,6 +388,18 @@ function Director({
     }
   });
 
+  return null;
+}
+
+// Development only: three.js and the canvas's state for measuring
+// scripts (docs/world/scripts/visibility.mjs: what stands in front of each
+// place's sign, and how much fog is on it). Mounted only where the dev sky
+// panel is, so production has none of it.
+function DevHandle() {
+  const get = useThree((s) => s.get);
+  useEffect(() => {
+    (window as unknown as { __world3d?: unknown }).__world3d = { THREE, get };
+  }, [get]);
   return null;
 }
 
@@ -440,12 +468,25 @@ const controlsBottom = (width: number, height: number, canvas: HTMLCanvasElement
 };
 const TAG_RISE = 26; // the tag's top above its anchor (globals.css: .world-label's margin, 1.6rem)
 
+const TAG_GAP = 4; // the least room between two tags that are up at once
+
+type Tag = { el: HTMLElement; x: number; y: number; w: number; h: number; held: boolean };
+let hoverNone: MediaQueryList | null = null;
+
 function LabelProjector({ active }: { active: SceneId }) {
   const v = useMemo(() => new THREE.Vector3(), []);
+  const tags = useMemo<Tag[]>(() => [], []);
+  const placed = useMemo<{ l: number; r: number; t: number; b: number }[]>(() => [], []);
   useFrame(({ camera, size, gl }) => {
     const arrived = world.get().arrived;
     const flat = isFlat();
     const ceiling = flat ? controlsBottom(size.width, size.height, gl.domElement) : 0;
+    const floor = flat ? heroHeight(size.height) : Infinity;
+    // Where there's no hover every tag is up at once (globals.css), so
+    // they make room for each other. Elsewhere one shows at a time, on
+    // hover or focus, and each must stay there to be reached.
+    const allUp = (hoverNone ??= matchMedia("(hover: none)")).matches;
+    tags.length = 0;
     for (const el of document.querySelectorAll<HTMLElement>("[data-anchor]")) {
       const id = el.dataset.anchor!;
       const p = anchors.get(id);
@@ -454,15 +495,35 @@ function LabelProjector({ active }: { active: SceneId }) {
         continue;
       }
       v.copy(p).project(camera);
-      const y = ((1 - v.y) / 2) * size.height;
-      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1 || (flat && (y > heroHeight(size.height) - 6 || y - TAG_RISE < ceiling))) {
+      let y = ((1 - v.y) / 2) * size.height;
+      // On the flat layout a tag that would reach up under the corner
+      // controls comes down to just below them, over its place's lower
+      // part (the station's tower), rather than going missing
+      const held = flat && y - TAG_RISE < ceiling;
+      if (held) y = ceiling + TAG_RISE;
+      // ...and one the sheet would cut is hidden, not left peeping out
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1 || y - TAG_RISE + h > floor - 2) {
         el.dataset.hidden = "";
         continue;
       }
-      delete el.dataset.hidden;
       // Keep the whole tag on screen, even for places at the edge of the view
-      const half = el.offsetWidth / 2 + 12;
-      const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, half, size.width - half);
+      const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, w / 2 + 12, size.width - w / 2 - 12);
+      tags.push({ el, x, y, w, h, held });
+    }
+    // Tags where their places are come first; one held under the controls
+    // gives way to them
+    tags.sort((a, b) => Number(a.held) - Number(b.held));
+    placed.length = 0;
+    for (const { el, x, y, w, h } of tags) {
+      const box = { l: x - w / 2, r: x + w / 2, t: y - TAG_RISE, b: y - TAG_RISE + h };
+      if (allUp && placed.some((o) => box.l < o.r + TAG_GAP && box.r > o.l - TAG_GAP && box.t < o.b + TAG_GAP && box.b > o.t - TAG_GAP)) {
+        el.dataset.hidden = "";
+        continue;
+      }
+      placed.push(box);
+      delete el.dataset.hidden;
       el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     }
   });
@@ -771,6 +832,7 @@ export default function World3D() {
           })}
         <Precipitation quality={quality} />
         <Warm mounted={mounted} active={active} onReady={() => setWarm(true)} />
+        {DevSkyPanel && <DevHandle />}
       </Canvas>
       <div ref={iris} className="world-iris" aria-hidden="true" />
       <Labels active={active} pathname={pathname} />

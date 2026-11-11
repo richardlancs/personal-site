@@ -3,6 +3,8 @@
 // there. Places are modelled in their own coordinates and sit far apart
 // in one world (`offset`), past the fog, so only one is ever visible.
 
+import type { FogBase } from "./atmosphere/looks";
+
 export type SceneId = "park" | "workshop" | "station" | "arcade" | "library" | "booth";
 export type V3 = [number, number, number];
 export type Pose = { pos: V3; target: V3 };
@@ -18,9 +20,19 @@ export type SceneDef = {
   // Which side of a wide screen the place is framed on, so the page's
   // content has the other side
   frame: "left" | "right" | "center";
+  // On a portrait screen (the flat layout), at the place's home view: the
+  // middle of the view is `yaw` degrees right of where the camera looks,
+  // and the lens widens if it must to show `half` degrees either side of
+  // that, so the places across the park all fit a phone's width
+  portrait?: { yaw: number; half: number };
+  // On a short landscape screen (a phone on its side), at the home view:
+  // how many degrees under where the camera looks the place's fronts are.
+  // The view is lifted to put them in the middle of the strip between the
+  // corner controls and the page's sheet (World3D.tsx).
+  short?: number;
   // The colour of the threshold: the dark doorway, the bright platform
   threshold: string;
-  fog: { color: string; near: number; far: number };
+  fog: { color: string } & FogBase;
   background: string;
 };
 
@@ -34,8 +46,16 @@ export const scenes: Record<SceneId, SceneDef> = {
       board: { pos: [3.55, 1.72, 1.45], target: [4.35, 1.62, -1.6] },
     },
     frame: "center",
+    // The arcade's sign, 13 degrees left of the view's middle, to the
+    // workshop's, 24 degrees right
+    portrait: { yaw: 5.5, half: 19.5 },
+    short: 4.4,
     threshold: "#e9e2d8",
-    fog: { color: "#d7e4ec", near: 20, far: 135 },
+    // The places stand 17 to 67 m from the steps. The fog starts past most
+    // of them and never closes in nearer than `keep`, so their fronts and
+    // signs read in every weather; the city and the trees before it take
+    // more of it (Park.tsx: FAR_FOG) and stay as far off as they look.
+    fog: { color: "#d7e4ec", near: 40, far: 160, keep: { near: 30, far: 112 } },
     background: "#d7e4ec",
   },
   workshop: {

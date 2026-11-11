@@ -49,6 +49,9 @@ const paths: { points: [number, number][]; width: number }[] = [
   { points: [[5, 6], [8.3, 2.9]], width: 1.6 },
 ];
 const PLAZA = { x: 0, z: 4, r: 6.6 };
+// The city, and the trees between it and the park, see the fog as if they
+// were this much farther off (paint.ts: FOG_FRAGMENT)
+const FAR_FOG = 1.3;
 
 // Where the places stand, and where their name tags go. Seen from the
 // steps, the park is composed across the whole view: the pavilion near on
@@ -58,18 +61,23 @@ const PLAZA = { x: 0, z: 4, r: 6.6 };
 // footprint (below), its route in scenes.ts and its pin in the registry's
 // map.
 export const parkPlaces = {
-  library: { pos: [-11, 0, -9] as const, ry: 0.75, label: [-8.4, 3.4, -5.9] as const, hit: [8, 6.5, 6] as const, light: [-8.5, 2.5, -6.5] as const },
+  // The pavilion is near too: its tag sits on its front, under the
+  // arcade's sign beyond it (see the booth's, below)
+  library: { pos: [-11, 0, -9] as const, ry: 0.75, label: [-8.4, 2.3, -5.9] as const, hit: [8, 6.5, 6] as const, light: [-8.5, 2.5, -6.5] as const },
   workshop: { pos: [17.5, 0, -29] as const, ry: -0.6, label: [17.5, 8.2, -29] as const, hit: [13, 7, 8.5] as const, light: [15.4, 3, -24] as const },
   // The station's box is just its hall; the tower has its own (below), so
   // the trees in front of the empty air beside the tower can be shaken
   station: { pos: [4, 0, -50] as const, ry: 0, label: [4, 21.5, -48] as const, hit: [16, 6.6, 7] as const, light: [4, 4, -44] as const },
   // Turned a little toward the fountain, so its front and sign read from
   // the steps and clear the pavilion's roof
-  arcade: { pos: [-10, 0, -33] as const, ry: 0.37, label: [-10, 8, -33] as const, hit: [10.5, 7, 8.5] as const, light: [-8.5, 3, -29] as const },
-  // The booth's tag sits just over its roof: on a 4:3 touch screen, where
-  // every tag is up at once, a higher one met the workshop's
-  booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 3.0, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
-  board: { pos: [4.25, 0, -1.6] as const, ry: -0.18, label: [4.25, 3.1, -1.6] as const, hit: [2.6, 2.8, 0.8] as const, light: [4.1, 2.4, 0] as const },
+  // Its tag sits well over its sign, so on a phone it doesn't cover it
+  arcade: { pos: [-10, 0, -33] as const, ry: 0.37, label: [-10, 10, -33] as const, hit: [10.5, 7, 8.5] as const, light: [-8.5, 3, -29] as const },
+  // The booth and the notice board are near the steps, in front of the
+  // far places: their tags sit on themselves, low, so on touch screens,
+  // where every tag is up at once, they stay under the workshop's and the
+  // station's signs behind them
+  booth: { pos: [9.5, 0, 1.5] as const, ry: -0.5, label: [9.5, 2.0, 1.5] as const, hit: [1.6, 2.8, 1.6] as const, light: [9.2, 2.4, 2.4] as const },
+  board: { pos: [4.25, 0, -1.6] as const, ry: -0.18, label: [4.25, 1.7, -1.6] as const, hit: [2.6, 2.8, 0.8] as const, light: [4.1, 2.4, 0] as const },
 };
 
 function onPath(x: number, z: number, margin = 0) {
@@ -168,7 +176,8 @@ function buildPark(quality: "high" | "low") {
   // desktop tiers): every shadow is a second drawing of what's under it.
   for (const [x, z, lit, light] of [
     [-2.4, 13, false, "plain"],
-    [2.6, -7, true, "shadow"],
+    // (right of the line from the steps to the station's sign)
+    [4.0, -7, true, "shadow"],
     [-7.6, -13, false, "plain"],
     [11.6, -5.5, false, "shadow"],
   ] as const) {
@@ -213,7 +222,9 @@ function buildPark(quality: "high" | "low") {
     ["zelkova", 25, -14, 1],
     ["zelkova", -20, -27, 1.1],
     ["ginkgo", -14, -16, 1],
-    ["ginkgo", 6.5, -31, 1],
+    // Left of the station's path, clear of its tower and sign and of the
+    // arcade's sign
+    ["ginkgo", -2.5, -31, 0.9],
     ["zelkova", 23, -40, 1.2],
     ["zelkova", -31, -18, 1.2],
     ["zelkova", 33, -8, 1.2],
@@ -307,7 +318,8 @@ function buildPark(quality: "high" | "low") {
       const side = i % 2 ? 1 : -1;
       spots.push({ x: side * cityR.range(62, 90), z: cityR.range(-5, 40), w: cityR.range(9, 14), d: cityR.range(9, 14), h: cityR.range(10, 30) });
     }
-    root.add(buildCity(7, spots));
+    // As hazy as when the park's fog started at 20 m (scenes.ts)
+    root.add(buildCity(7, spots, FAR_FOG));
     root.add(buildHills());
     // Stands of trees between the park and the city: each a crown of
     // leaf masses, lit like the near trees, all in one mesh
@@ -320,7 +332,9 @@ function buildPark(quality: "high" | "low") {
       const ends = [0, 1, 2].map((k) => ({ center: at.clone().add(v(Math.cos(a + k * 2.1) * size * 0.45, k * size * 0.18, Math.sin(a + k * 2.1) * size * 0.45)), radius: size * cityR.range(0.55, 0.7) }));
       belt.push(crownClusters(cityR, ends, { satellites: 2, squash: 0.85 }));
     }
-    root.add(vegMesh(foliageGeometry(cityR, belt, { detail: 1, cards: 0.35 }), foliageMaterial("belt", 10, 0.1), false));
+    const beltMat = foliageMaterial("belt", 10, 0.1);
+    beltMat.userData.veg.uFogScale.value = FAR_FOG;
+    root.add(vegMesh(foliageGeometry(cityR, belt, { detail: 1, cards: 0.35 }), beltMat, false));
   };
 
   root.add(buildDust(quality === "low" ? 50 : 140, [26, 6, 26], [-2, 3, 6]));
