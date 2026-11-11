@@ -534,72 +534,113 @@ export const singleLeaves = () =>
 
 type TextLine = { text: string; size: number; font?: "display" | "text"; color?: string; weight?: number; gap?: number; align?: CanvasTextAlign };
 
+type PanelOptions = { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle" };
+
 // A panel of text: signs, timetable rows, notebook pages, screens. `key`
 // must change when the text does.
-export function textPanel(
-  key: string,
-  w: number,
-  h: number,
-  opts: { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle" },
-) {
+export function textPanel(key: string, w: number, h: number, opts: PanelOptions) {
+  return texture(`text-${key}`, w, h, (g, r) => drawPanel(g, r, w, h, opts), { text: true });
+}
+
+// Just the words of a panel, white on black and in exactly the same
+// place: what glows on a sign (its emissive map), or, blurred, the glow
+// around it. Same key and options as the panel it goes with.
+export function textMask(key: string, w: number, h: number, opts: PanelOptions, blur = 0) {
   return texture(
-    `text-${key}`,
+    `mask-${key}-${blur}`,
     w,
     h,
     (g, r) => {
-      const f = fonts();
-      if (opts.background) {
-        g.fillStyle = opts.background;
-        g.fillRect(0, 0, w, h);
-      }
-      if (opts.grain) {
-        blotches(g, r, w, h, 24, ["rgba(120,95,60,0.12)", "rgba(255,250,235,0.15)"], [20, 80]);
-        speckle(g, r, w, h, (w * h) / 300, "rgba(90,70,40,0.15)");
-      }
-      if (opts.rule) {
-        g.strokeStyle = opts.rule;
-        g.lineWidth = 1.5;
-        for (let y = 70; y < h; y += 34) {
-          g.beginPath();
-          g.moveTo(0, y);
-          g.lineTo(w, y);
-          g.stroke();
-        }
-      }
-      const pad = opts.padding ?? 24;
-      // Lay the lines out first so they can be centred vertically
-      const laid: { text: string; y: number; line: TextLine }[] = [];
-      let y = pad;
-      for (const line of opts.lines) {
-        g.font = `${line.weight ?? 500} ${line.size}px ${line.font === "display" ? f.display : f.text}`;
-        const words = opts.wrap ? line.text.split(" ") : [line.text];
-        let current = "";
-        const rows: string[] = [];
-        for (const word of words) {
-          const attempt = current ? `${current} ${word}` : word;
-          if (opts.wrap && g.measureText(attempt).width > w - pad * 2 && current) {
-            rows.push(current);
-            current = word;
-          } else current = attempt;
-        }
-        rows.push(current);
-        for (const row of rows) {
-          y += line.size * 1.25;
-          laid.push({ text: row, y, line });
-        }
-        y += line.gap ?? line.size * 0.35;
-      }
-      const shift = opts.valign === "middle" ? Math.max(0, (h - y) / 2) : 0;
-      for (const { text, y: ly, line } of laid) {
-        g.font = `${line.weight ?? 500} ${line.size}px ${line.font === "display" ? f.display : f.text}`;
-        g.fillStyle = line.color ?? "#2b2f27";
-        g.textAlign = line.align ?? "left";
-        const x = line.align === "center" ? w / 2 : line.align === "right" ? w - pad : pad;
-        g.fillText(text, x, ly + shift - line.size * 0.2);
-      }
+      drawPanel(g, r, w, h, { ...opts, background: "#000000", grain: false, rule: undefined, lines: opts.lines.map((l) => ({ ...l, color: "#ffffff" })) });
+      if (blur) blurCanvas(g, w, h, blur);
     },
     { text: true },
   );
+}
+
+// White strokes on black, blurred: the glow around a shape drawn in code
+// (neon tubes)
+export function glowMask(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D) => void, blur: number) {
+  return texture(`glow-${key}-${blur}`, w, h, (g) => {
+    g.fillStyle = "#000000";
+    g.fillRect(0, 0, w, h);
+    draw(g);
+    blurCanvas(g, w, h, blur);
+  });
+}
+
+// Blurs what's on a canvas: with the canvas's own filter where there is
+// one, otherwise shrunk and grown back (smooth enough for a glow)
+function blurCanvas(g: CanvasRenderingContext2D, w: number, h: number, px: number) {
+  const [copy, cg] = canvas(w, h);
+  cg.drawImage(g.canvas, 0, 0);
+  g.fillStyle = "#000000";
+  g.fillRect(0, 0, w, h);
+  if (typeof g.filter === "string") {
+    g.filter = `blur(${px}px)`;
+    g.drawImage(copy, 0, 0);
+    g.filter = "none";
+    return;
+  }
+  const k = Math.max(2, px / 1.5);
+  const [small, sg] = canvas(Math.max(1, Math.round(w / k)), Math.max(1, Math.round(h / k)));
+  sg.imageSmoothingQuality = "high";
+  sg.drawImage(copy, 0, 0, small.width, small.height);
+  g.imageSmoothingQuality = "high";
+  g.drawImage(small, 0, 0, w, h);
+}
+
+function drawPanel(g: CanvasRenderingContext2D, r: Rng, w: number, h: number, opts: PanelOptions) {
+  const f = fonts();
+  if (opts.background) {
+    g.fillStyle = opts.background;
+    g.fillRect(0, 0, w, h);
+  }
+  if (opts.grain) {
+    blotches(g, r, w, h, 24, ["rgba(120,95,60,0.12)", "rgba(255,250,235,0.15)"], [20, 80]);
+    speckle(g, r, w, h, (w * h) / 300, "rgba(90,70,40,0.15)");
+  }
+  if (opts.rule) {
+    g.strokeStyle = opts.rule;
+    g.lineWidth = 1.5;
+    for (let y = 70; y < h; y += 34) {
+      g.beginPath();
+      g.moveTo(0, y);
+      g.lineTo(w, y);
+      g.stroke();
+    }
+  }
+  const pad = opts.padding ?? 24;
+  // Lay the lines out first so they can be centred vertically
+  const laid: { text: string; y: number; line: TextLine }[] = [];
+  let y = pad;
+  for (const line of opts.lines) {
+    g.font = `${line.weight ?? 500} ${line.size}px ${line.font === "display" ? f.display : f.text}`;
+    const words = opts.wrap ? line.text.split(" ") : [line.text];
+    let current = "";
+    const rows: string[] = [];
+    for (const word of words) {
+      const attempt = current ? `${current} ${word}` : word;
+      if (opts.wrap && g.measureText(attempt).width > w - pad * 2 && current) {
+        rows.push(current);
+        current = word;
+      } else current = attempt;
+    }
+    rows.push(current);
+    for (const row of rows) {
+      y += line.size * 1.25;
+      laid.push({ text: row, y, line });
+    }
+    y += line.gap ?? line.size * 0.35;
+  }
+  const shift = opts.valign === "middle" ? Math.max(0, (h - y) / 2) : 0;
+  for (const { text, y: ly, line } of laid) {
+    g.font = `${line.weight ?? 500} ${line.size}px ${line.font === "display" ? f.display : f.text}`;
+    g.fillStyle = line.color ?? "#2b2f27";
+    g.textAlign = line.align ?? "left";
+    const x = line.align === "center" ? w / 2 : line.align === "right" ? w - pad : pad;
+    g.fillText(text, x, ly + shift - line.size * 0.2);
+  }
 }
 
 // The station clock, stopped at 4:17

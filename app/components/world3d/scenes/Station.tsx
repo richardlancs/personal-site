@@ -12,7 +12,8 @@ import { buildCity } from "../buildings";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { clockFace, enamel, groundTexture, plaster, textPanel } from "../textures";
-import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
+import { NEON, lightbox } from "../glow";
+import { HEMI, Hitbox, PLATFORM_SIGN_LIGHT, SunLight, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 const TOP = 0.95; // the platform's surface
@@ -133,7 +134,13 @@ function buildStationScene(quality: "high" | "low") {
   });
   const sign = new THREE.Group();
   sign.position.set(-7.4, TOP + 3.3, 0.6);
-  const signBoard = new THREE.Mesh(box(1.9, 0.5, 0.05), [M.iron(), M.iron(), M.iron(), M.iron(), mat("platformName", () => paint({ map: nameTex, brush: 0.15, grime: 0.3 })), M.iron()]);
+  // An iron box with its name on the front, the whole name (the box's own
+  // face cropped the texture to a corner, mirrored), lit from inside
+  // after dark; a light by it (below) carries its light onto the platform
+  const signBoard = mesh(box(1.9, 0.5, 0.05), M.iron());
+  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 0.44), mat("platformName", () => lightbox(nameTex, { strength: 0.55 })));
+  signFace.position.z = 0.026;
+  signBoard.add(signFace);
   signBoard.position.set(0.85, -0.55, 0);
   signBoard.rotation.z = -0.28;
   signBoard.castShadow = true;
@@ -297,6 +304,9 @@ export default function Station({ active, quality }: SceneProps) {
       <primitive object={built.root} />
       <SunLight active={active} position={[30, 16, 22]} target={[0, 0, 0]} color="#ffd29a" intensity={2.8} size={22} quality={quality} />
       <hemisphereLight userData={HEMI} args={["#f2dcb4", "#5a6338", 1.15]} />
+      {/* The name sign's light on the canopy and the platform, after dark
+          (0 by day: always there, so the night needs no new shaders) */}
+      <pointLight userData={PLATFORM_SIGN_LIGHT} position={[-6.4, TOP + 2.3, 1.7]} color={NEON.warm} intensity={0} distance={6} decay={1.6} />
       {active && (
         <>
           <Hitbox id="station:timetable" position={[BOARD.x, BOARD.y + BOARD.h / 2 - 0.2, BOARD.z + 0.1]} size={[BOARD.w, 0.4, 0.2]} onSelect={() => world.set({ focus: "timetable" })} />

@@ -10,8 +10,9 @@ import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
-import { fonts, planks, plaster, textPanel } from "../textures";
-import { HEMI, Hitbox, SunLight, buildRoom, type SceneProps } from "./common";
+import { fonts, glowMask, planks, plaster, textPanel } from "../textures";
+import { NEON, halo, neon } from "../glow";
+import { HEMI, Hitbox, NEON_LIGHT, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 export const cabinetX = [-3.6, -1.2, 1.2, 3.6];
@@ -224,9 +225,10 @@ function buildArcadeScene(quality: "high" | "low") {
     if (i > 1) p.scale.setScalar(0.65);
     root.add(p);
   });
-  // A broken neon sign on the left wall
-  const neonMat = paint({ color: "#d98a96", emissive: "#e07a8a", emissiveIntensity: 0.6, brush: 0 });
-  const neon = new THREE.Group();
+  // A neon sign on the left wall, missing strokes but still lit: steady,
+  // its glow on the wall behind it
+  const neonMat = neon(NEON.pink, 2.0);
+  const sign = new THREE.Group();
   const letters = [
     [v(0, 0, 0), v(0, 0.5, 0), v(0.3, 0.5, 0)],
     [v(0, 0, 0), v(0.3, 0, 0), v(0.3, 0.25, 0), v(0.15, 0.25, 0)],
@@ -236,10 +238,29 @@ function buildArcadeScene(quality: "high" | "low") {
     [v(1.35, 0.25, 0), v(1.55, 0.25, 0)],
     [v(1.35, 0, 0), v(1.6, 0, 0)],
   ];
-  neon.add(new THREE.Mesh(merge(letters.map((pts) => tube(pts, () => 0.018, 10, 5))), neonMat));
-  neon.position.set(-5.95, 3.1, 1.6);
-  neon.rotation.y = Math.PI / 2;
-  root.add(neon);
+  sign.add(new THREE.Mesh(merge(letters.map((pts) => tube(pts, () => 0.018, 10, 5))), neonMat));
+  // The glow: the same strokes, blurred, on the wall (2.1 x 1 m round
+  // the letters, 122 px a metre)
+  const glow = glowMask(
+    "neon-game",
+    256,
+    122,
+    (g) => {
+      g.strokeStyle = "#ffffff";
+      g.lineWidth = 6;
+      g.lineJoin = g.lineCap = "round";
+      for (const pts of letters) {
+        g.beginPath();
+        pts.forEach((p, i) => g[i ? "lineTo" : "moveTo"]((p.x + 0.25) * 122, (0.75 - p.y) * 122));
+        g.stroke();
+      }
+    },
+    10,
+  );
+  sign.add(halo(glow, [2.1, 1.0], NEON.pink, 0.55).translateX(0.8).translateY(0.25).translateZ(-0.04));
+  sign.position.set(-5.95, 3.1, 1.6);
+  sign.rotation.y = Math.PI / 2;
+  root.add(sign);
   // The claw machine in the corner, a few prizes still inside
   const claw = new THREE.Group();
   claw.add(mesh(merge([at(box(1.1, 0.9, 1.1), 0, 0.45, 0), at(box(1.1, 0.25, 1.1), 0, 2.2, 0)]), mat("clawBody", () => paint({ color: "#d9a35c", brush: 0.3, grime: 0.6, rust: 0.2 }))));
@@ -318,8 +339,7 @@ export default function Arcade({ active, quality }: SceneProps) {
       (c.glass.material as THREE.MeshBasicMaterial).color.setScalar(0.45 + p * 0.75);
       c.marquee.emissiveIntensity = 0.15 + p * 0.55;
     });
-    // The neon buzzes and drops out (steady in still view)
-    built.neonMat.emissiveIntensity = still ? 0.6 : Math.sin(t * 0.7) > 0.93 ? 0.1 : 0.6 + Math.sin(t * 50) * 0.04;
+    // (The neon is steady: lights in the world don't flicker)
   });
 
   return (
@@ -328,7 +348,8 @@ export default function Arcade({ active, quality }: SceneProps) {
       <SunLight active={active} position={[18, 9, 4]} target={[0, 0, 0]} color="#ffcf92" intensity={2.6} size={10} quality={quality} />
       <hemisphereLight userData={HEMI} args={["#ecd8c0", "#5a4438", 1.4]} />
       <pointLight position={[0, 3.2, 0.5]} color="#ffbf86" intensity={6} distance={12} decay={1.3} />
-      <pointLight position={[-5.4, 3, 1.6]} color="#e07a8a" intensity={1.2} distance={4} />
+      {/* The neon's light on the wall and the floor below it, stronger after dark */}
+      <pointLight userData={NEON_LIGHT} position={[-5.4, 3.2, 0.8]} color="#e07a8a" intensity={1.2} distance={4} />
       {cabinetX.map((x, i) => (
         <pointLight key={i} position={[x, 1.5, -2.6]} color={`hsl(${hues[i]},60%,70%)`} intensity={i === interest && arrived ? 1.6 : 0} distance={2.5} />
       ))}

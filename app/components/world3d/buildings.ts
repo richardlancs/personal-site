@@ -1,13 +1,20 @@
 import * as THREE from "three";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "./geometry";
+import { NEON, halo, lightbox, neon, neonTube, wash } from "./glow";
 import { mesh, paint } from "./paint";
 import { M, mat } from "./props";
 import { rng } from "./rng";
-import { clockFace, facade, plaster, roofTiles, textPanel, windowPanes } from "./textures";
+import { clockFace, facade, plaster, roofTiles, textMask, textPanel, windowPanes } from "./textures";
 
 // Buildings: the places in the park and the empty city around it
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+
+// The shallow box a lit sign's face sits on, out from the wall at wallZ
+// (the face goes 8 cm out)
+function signCase(w: number, h: number, x: number, y: number, wallZ: number) {
+  return mesh(at(box(w + 0.06, h + 0.06, 0.07), x, y, wallZ + 0.035), M.iron());
+}
 
 // A hipped roof with eaves that flare out a little, like old temple and
 // park pavilion roofs
@@ -121,9 +128,15 @@ export function buildWorkshop() {
     valign: "middle",
     lines: [{ text: "工坊  WORKSHOP", size: 58, font: "display", color: "#3b2a1a", weight: 600, align: "center" }],
   });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), mat("workshopSign", () => paint({ map: sign, brush: 0.3, brushScale: 3, grime: 0.4 })));
-  board.position.set(0, 3.95, 4.05);
+  // A lit box: the painted face glows, framed in baby-blue neon
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), mat("workshopSign", () => lightbox(sign, { brush: 0.3, grime: 0.4 })));
+  board.position.set(0, 3.95, 4.08);
   g.add(board);
+  g.add(signCase(3.6, 0.9, 0, 3.95, 4.0));
+  const frame = new THREE.Mesh(neonTube(3.78, 1.06, 0.032), mat("neonBlue", () => neon(NEON.blue)));
+  frame.position.set(0, 3.95, 4.1);
+  g.add(frame);
+  g.add(wash([3.8, 1.08], [1.1, 1.1, 0.5, 0.95], NEON.blue, 0.3).translateY(3.95).translateZ(4.012));
   g.add(buildVine(61, [v(-6.6, 0, 4.1), v(-6.55, 2, 4.15), v(-6.2, 4.4, 4.1), v(-4, 4.5, 4.12), v(-3.6, 3.6, 4.15)], 0.4));
   g.add(buildVine(62, [v(6.6, 0, 3.4), v(6.62, 2.6, 3.2), v(6.6, 4.4, 2)], 0.4));
   return g;
@@ -159,9 +172,17 @@ export function buildStation() {
     valign: "middle",
     lines: [{ text: "光明公园站", size: 64, font: "display", color: "#22392b", weight: 600, align: "center" }],
   });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), mat("stationSignBoard", () => paint({ map: sign, brush: 0.2, grime: 0.3 })));
-  board.position.set(0, 4.6, 3.62);
+  // A lit box, framed in baby-blue neon, across the tower's foot; its
+  // light falls on the tower and on the hall's wall behind its ends
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 1.1), mat("stationSignBoard", () => lightbox(sign, { brush: 0.2, grime: 0.3 })));
+  board.position.set(0, 4.6, 3.68);
   g.add(board);
+  g.add(signCase(4.6, 1.1, 0, 4.6, 3.6));
+  const frame = new THREE.Mesh(neonTube(4.78, 1.26, 0.034), mat("neonBlue", () => neon(NEON.blue)));
+  frame.position.set(0, 4.6, 3.7);
+  g.add(frame);
+  g.add(wash([3.2, 1.28], [0, 0, 1.2, 1.2], NEON.blue, 0.3).translateY(4.6).translateZ(3.606));
+  g.add(wash([4.8, 1.28], [0.9, 0.9, 0.3, 1.1], NEON.blue, 0.2).translateY(4.6).translateZ(3.012));
   g.add(buildVine(71, [v(-1.65, 0, 3.65), v(-1.7, 4, 3.66), v(-1.6, 9, 3.65), v(-0.8, 12.5, 3.66)], 0.5));
   return g;
 }
@@ -171,16 +192,30 @@ export function buildArcade() {
   const g = new THREE.Group();
   g.add(mesh(box(10, 6.5, 8, 0.3).translate(0, 3.25, 0), mat("arcadeWall", () => paint({ map: plaster("green"), grime: 0.9, grimeHeight: 2.5, moss: 0.3 }))));
   g.add(mesh(box(10.4, 0.3, 8.4).translate(0, 6.6, 0), M.concrete()));
-  const sign = textPanel("arcade-sign", 512, 128, {
+  const signText = {
     background: "#2f3a3c",
     padding: 10,
-    valign: "middle",
-    lines: [{ text: "游戏厅", size: 64, font: "display", color: "#e6a2a0", weight: 600, align: "center" }],
-  });
-  const signMat = mat("arcadeSign", () => paint({ map: sign, emissive: "#c66f78", emissiveIntensity: 0.18, emissiveMap: sign, brush: 0.25, grime: 0.4, glow: { night: 2.5 } }));
+    valign: "middle" as const,
+    lines: [{ text: "游戏厅", size: 64, font: "display" as const, color: "#e6a2a0", weight: 600, align: "center" as const }],
+  };
+  const sign = textPanel("arcade-sign", 512, 128, signText);
+  // Neon letters on the dark board: only the letters glow (their own
+  // mask), with a soft pink halo round them, and the board framed in
+  // baby blue like the others. Steady: it no longer hums.
+  const signMat = mat("arcadeSign", () =>
+    paint({ map: sign, emissive: NEON.pink, emissiveMap: textMask("arcade-sign", 512, 128, signText), emissiveIntensity: 2.4, brush: 0.25, grime: 0.4, glow: { day: 0.16, night: 1 } }),
+  );
   const board = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.6), signMat);
-  board.position.set(0, 5.2, 4.06);
+  board.position.set(0, 5.2, 4.08);
   g.add(board);
+  g.add(signCase(7, 1.6, 0, 5.2, 4.0));
+  const letters = halo(textMask("arcade-sign", 512, 128, signText, 9), [7, 1.6], NEON.pink, 0.5);
+  letters.position.set(0, 5.2, 4.1);
+  g.add(letters);
+  const frame = new THREE.Mesh(neonTube(7.18, 1.78, 0.036, 0.16), mat("neonBlue", () => neon(NEON.blue)));
+  frame.position.set(0, 5.2, 4.11);
+  g.add(frame);
+  g.add(wash([7.2, 1.8], [1.0, 1.0, 0.42, 0.9], NEON.pink, 0.24).translateY(5.2).translateZ(4.012));
   // Shopfront: glass, and a shutter part way down
   const glow = windowGlow(0.45);
   const front = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.2), glow);
