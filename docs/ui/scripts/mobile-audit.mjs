@@ -203,8 +203,14 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
       const cs = getComputedStyle(e);
       if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
       const er = e.getBoundingClientRect();
-      if (cs.overflowX !== "visible") (left = Math.max(left, er.left)), (right = Math.min(right, er.right));
-      if (cs.overflowY !== "visible") (top = Math.max(top, er.top)), (bottom = Math.min(bottom, er.bottom));
+      if (cs.overflowX !== "visible") {
+        left = Math.max(left, er.left);
+        right = Math.min(right, er.right);
+      }
+      if (cs.overflowY !== "visible") {
+        top = Math.max(top, er.top);
+        bottom = Math.min(bottom, er.bottom);
+      }
     }
     return right - left > 1 && bottom - top > 1 ? { left, top, right, bottom } : null;
   };

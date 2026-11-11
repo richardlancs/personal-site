@@ -2912,23 +2912,6 @@ html {
    so the first row stays exactly as it was (the way back and Sections
    never wrap apart) */
 @media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
-  /* With very large text the time and weather take two lines rather than
-     lose words at the button's edge */
-  .world-controls .rh-chip {
-    flex-wrap: wrap;
-    white-space: normal;
-  }
-
-  /* The bar's gap spaces it from Sections; Sections and the round keys
-     keep their size, and the display gives way first */
-  .world-controls > .rh {
-    margin-right: 0;
-  }
-
-  .world-controls > .world-controls-end {
-    flex-shrink: 0;
-  }
-
   @media (max-width: 719px) {
     /* The way back on the left, the menu and toggles in the right-hand
        corner (the second track takes the rest of the row, whatever the
@@ -3001,6 +2984,23 @@ html {
         max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
       }
     }
+  }
+
+  /* With very large text the time and weather take two lines rather than
+     lose words at the button's edge */
+  .world-controls .rh-chip {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  /* The bar's gap spaces it from Sections; Sections and the round keys
+     keep their size, and the display gives way first */
+  .world-controls > .rh {
+    margin-right: 0;
+  }
+
+  .world-controls > .world-controls-end {
+    flex-shrink: 0;
   }
 }
 
