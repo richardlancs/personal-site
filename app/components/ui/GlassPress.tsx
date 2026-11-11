@@ -49,6 +49,18 @@ export default function GlassPress() {
       if (el) press(el, event.clientX, event.clientY);
     };
 
+    // A touch that turns into a scroll (or is otherwise taken over by the
+    // browser) wasn't a press: let the button go at once
+    const onPointerCancel = () => {
+      if (current) release(current);
+    };
+
+    // A menu that closes as its row is chosen hides the row mid-press,
+    // and a hidden element's animation may never report its end
+    const onToggle = (event: Event) => {
+      if (current && (event as ToggleEvent).newState === "closed" && event.target instanceof Node && event.target.contains(current)) release(current);
+    };
+
     // detail 0: a click from the keyboard or assistive tech, not a pointer
     const onClick = (event: MouseEvent) => {
       if (event.detail !== 0) return;
@@ -67,11 +79,15 @@ export default function GlassPress() {
     };
 
     document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
+    document.addEventListener("pointercancel", onPointerCancel, { capture: true, passive: true });
+    document.addEventListener("toggle", onToggle, { capture: true });
     document.addEventListener("click", onClick, { capture: true });
     document.addEventListener("animationend", onEnd);
     document.addEventListener("animationcancel", onEnd);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, { capture: true });
+      document.removeEventListener("pointercancel", onPointerCancel, { capture: true });
+      document.removeEventListener("toggle", onToggle, { capture: true });
       document.removeEventListener("click", onClick, { capture: true });
       document.removeEventListener("animationend", onEnd);
       document.removeEventListener("animationcancel", onEnd);

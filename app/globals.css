@@ -1,4 +1,8 @@
 @import "tailwindcss";
+/* Untracked folders that can sit in a working copy (agents' worktrees, a
+   separate project): never scanned, so a local build matches Vercel's */
+@source not "../.claude";
+@source not "../garage-poker";
 
 /*
   Colour tokens: one fixed theme. Warm cream paper (from Monkeytype's
@@ -1869,6 +1873,9 @@ html {
   border-radius: 6px;
   background: color-mix(in srgb, var(--sheet) 88%, transparent);
   text-align: center;
+  /* Its own width is its words': breaking anywhere (the phone's map
+     sheet) would stack it a letter to a line */
+  overflow-wrap: break-word;
   transform: translateX(-50%);
   transition: background-color 0.2s ease;
 }
@@ -2245,6 +2252,11 @@ html {
     font-size: clamp(min(2.5rem, 13vw), 12vw, 3.5rem);
   }
 
+  /* So is a place's name: "Experience" stays one word at 320 */
+  .location-title {
+    font-size: clamp(min(2.25rem, 13vw), 4vw, 3rem);
+  }
+
   .park-headline {
     margin-top: 0.75rem;
     font-size: 0.9375rem;
@@ -2339,9 +2351,14 @@ html {
     margin-top: 0.75rem;
   }
 
+  .onward li {
+    min-width: 0;
+  }
+
   /* Glass keys, each with the place's drawing */
   .onward li a {
     display: inline-flex;
+    max-width: 100%;
     justify-content: flex-start;
     gap: 0.55rem;
     min-height: 3rem;
@@ -2351,8 +2368,11 @@ html {
     font-weight: 600;
   }
 
+  /* With very large text on a small phone the drawing gives way to the
+     word, which doesn't break */
   .onward-glyph {
-    flex: none;
+    flex: 0 1 2.25rem;
+    min-width: 0;
     width: 2.25rem;
     opacity: 0.85;
   }
@@ -2385,11 +2405,12 @@ html {
   }
 
   /* Phone widths: the tabs are a two-by-two block of even keys, not a
-     ragged stack four deep. Names that don't fit wrap inside their key. */
+     ragged stack four deep (never three across: 34%). With very large
+     text, when two 8.5em keys don't fit, one column. */
   @media (max-width: 479px) {
     .bench-tabs {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, max(8.5em, 34%)), 1fr));
     }
 
     .bench-tab {
@@ -2815,10 +2836,17 @@ html {
     position-anchor: --rh-chip;
     inset: auto;
     position-area: block-end span-inline-start;
-    position-try-fallbacks: flip-inline;
+    position-try-fallbacks: flip-inline, --rh-under-all;
     margin: 0.5rem 0 0;
     max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
   }
+}
+
+/* When it fits from neither edge (very large text, a phone on its side):
+   under the bar, in the middle of the screen, clear of a notch */
+@position-try --rh-under-all {
+  position-area: block-end span-all;
+  justify-self: center;
 }
 
 .rh-details-place {
@@ -3005,6 +3033,31 @@ html {
         flex-wrap: wrap;
         white-space: normal;
       }
+
+      /* Very large text on a phone: the bar stays over the page as you
+         scroll, so it keeps to the time, the icon and the temperature;
+         the place and the condition are in its slip and its name. (A
+         missing reading still says so.) */
+      .world-controls .rh-place,
+      .world-controls .rh:not([data-status="unavailable"]) .rh-condition {
+        display: none;
+      }
+
+      /* and Sections is its map alone, a 44px key like the way back
+         (still read out as "Sections"), so the keys keep to one line */
+      .world-controls [popovertarget="places-menu"] {
+        width: 44px;
+        padding: 0;
+      }
+
+      .world-controls .places-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+      }
     }
   }
 
@@ -3013,6 +3066,11 @@ html {
       .world-controls .rh-chip {
         flex-wrap: wrap;
         white-space: normal;
+      }
+
+      .world-controls .rh-place,
+      .world-controls .rh:not([data-status="unavailable"]) .rh-condition {
+        display: none;
       }
     }
   }
@@ -3025,6 +3083,14 @@ html {
 
   .world-controls > .world-controls-end {
     flex-shrink: 0;
+  }
+
+  /* With large text on a phone on its side, the way back keeps its word
+     whole too; the display gives way */
+  @container (max-width: 34em) {
+    .world-controls > a.glass {
+      flex-shrink: 0;
+    }
   }
 }
 
@@ -3077,6 +3143,8 @@ html {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Words that outgrow it (very large text) start at its edge, not past it */
+  justify-content: safe center;
   gap: 0.5rem;
   min-height: 44px;
   padding: 0 1rem;
@@ -3094,6 +3162,14 @@ html {
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease;
+  /* A label breaks between its words, and inside one only when a word
+     alone is wider than the key (the phone sheet's "anywhere" would let
+     a key shrink round a single letter) */
+  overflow-wrap: break-word;
+}
+
+:where(.glass) > svg {
+  flex-shrink: 0;
 }
 
 .glass-primary {

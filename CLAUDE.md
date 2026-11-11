@@ -377,10 +377,18 @@ touch and emulated notch insets, not a real device):
   container: when it's narrow for its words (under 22.2em of its own
   text, a 379px phone or larger text on any phone) the way back is its
   arrow alone, and the time and weather may take two lines; at the usual
-  size the chip keeps one line, so nothing moves when a reading arrives
+  size the chip keeps one line, so nothing moves when a reading arrives.
+  With very large text on a phone (under 18em) Sections is its map
+  alone too and the chip keeps to time, icon and temperature (the place
+  and condition stay in its slip and its name), so the fixed bar doesn't
+  cover the page; the slip falls back to the middle of the screen when
+  it fits from neither edge of the chip
 - words longer than a line break rather than push the page sideways
   (`overflow-wrap: anywhere` on the sheet), since a phone otherwise
-  widens its layout viewport and the fixed bar and dialogs spill with it
+  widens its layout viewport and the fixed bar and dialogs spill with it.
+  Glass labels and the map's labels use `break-word` instead, so a key
+  never shrinks round one letter; a place's title and the name are
+  capped at 13vw so they stay whole
 - glass on the sheet has no backdrop blur on phones (it sits on opaque
   cream); only the bar's keys blur, over the world
 - hover only adds: put `:hover` styles under `@media (hover: hover)` so

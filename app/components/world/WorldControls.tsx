@@ -75,7 +75,7 @@ export default function WorldControls() {
             <path d="M3.5 6.5 9 4.5l6 2 5.5-2v13l-5.5 2-6-2-5.5 2Z" />
             <path d="M9 4.5v13M15 6.5v13" />
           </svg>
-          Sections
+          <span className="places-label">Sections</span>
         </button>
         <span className="control-round">
           <StillViewToggle />
