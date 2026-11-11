@@ -653,7 +653,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
+  /* Clear of a notch, a status bar and rounded corners (viewportFit:
+     "cover" in layout.tsx lets the page run under them) */
+  padding: max(1rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) 1rem max(1.25rem, env(safe-area-inset-left));
   pointer-events: none;
 }
 
@@ -661,7 +663,7 @@ body {
    the keyboard moves to something, or a link jumps to a part of the page
    (#skills), it stops below them, not hidden under them (WCAG 2.4.11) */
 html {
-  scroll-padding-top: 5rem;
+  scroll-padding-top: calc(5rem + env(safe-area-inset-top));
 }
 
 .world-controls > * {
@@ -677,10 +679,17 @@ html {
 
 /* The Places menu: a slip of paper under its button */
 .places-menu {
+  --menu-top: calc(4.25rem + env(safe-area-inset-top));
   position: fixed;
-  inset: 4.25rem 1.25rem auto auto;
+  inset: var(--menu-top) max(1.25rem, env(safe-area-inset-right)) auto auto;
   margin: 0;
   width: min(21rem, calc(100vw - 2rem));
+  /* Never past the bottom of the screen or under the home bar: it scrolls
+     inside instead, and the scroll stops at its ends (the page behind
+     stays put) */
+  max-height: calc(100svh - var(--menu-top) - max(0.75rem, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.5rem 0.5rem 0.9rem;
   color: var(--foreground);
 }
@@ -2041,13 +2050,41 @@ html {
 
   /* ---------- The bar along the top: the way back, and Sections ---------- */
   .world-controls {
-    padding: max(0.5rem, env(safe-area-inset-top)) 0.75rem 0.5rem;
+    padding: max(0.5rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0.5rem max(0.75rem, env(safe-area-inset-left));
+    column-gap: 0.5rem;
+  }
+
+  /* Sections and the two round keys: when there's no room for them all
+     on one line (very large text), they wrap under each other instead of
+     sliding over the way back */
+  .world-controls > .world-controls-end {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+
+  /* The smallest phones: the way back is its arrow alone (a 44px key; its
+     name, "Home", is still read out, and its tooltip says where it goes),
+     so the bar keeps to one line */
+  @media (max-width: 379px) {
+    .world-controls > a.glass {
+      width: 44px;
+      padding: 0;
+    }
+
+    .world-controls > a.glass > span {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
   }
 
   .places-menu {
-    inset: calc(3.6rem + env(safe-area-inset-top)) 0.75rem auto auto;
-    max-height: calc(100svh - 5rem);
-    overflow-y: auto;
+    --menu-top: calc(3.6rem + env(safe-area-inset-top));
+    right: max(0.75rem, env(safe-area-inset-right));
   }
 
   .places-menu a[href]:not(.text-link) {
@@ -2080,7 +2117,8 @@ html {
     width: auto;
     margin: var(--hero) 0 0;
     min-height: calc(100svh - var(--hero));
-    padding: 1rem 1rem max(2.5rem, env(safe-area-inset-bottom));
+    /* A phone on its side: the words stay clear of the notch */
+    padding: 1rem max(1rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--background) var(--grain);
     box-shadow: 0 -14px 34px -20px rgb(var(--shadow) / 0.4);
@@ -2123,27 +2161,17 @@ html {
     padding-top: var(--hero);
   }
 
+  /* At most 38rem wide, in the middle, clear of a notch */
   .map-sheet {
     width: auto;
-    max-width: 38rem;
-    margin: 0 1rem;
+    margin: 0 max(1rem, env(safe-area-inset-right), (100% - 38rem) / 2) env(safe-area-inset-bottom)
+      max(1rem, env(safe-area-inset-left), (100% - 38rem) / 2);
     padding: 1.4rem 1rem 0.5rem;
-  }
-
-  @media (min-width: 40rem) {
-    .map-sheet {
-      margin-inline: auto;
-    }
+    overflow-wrap: anywhere;
   }
 
   .lost-notice {
-    margin: 0 1rem;
-  }
-
-  .lost-notice-links a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
+    margin: 0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
   }
 
   .location-footer {
@@ -2624,6 +2652,9 @@ html {
 .rh-weather {
   flex: none;
   width: 12.5em;
+  /* The room left over is after the words, not round them (a button
+     centres its text) */
+  text-align: start;
 }
 
 /* A long condition gives way before anything else does (its full words
@@ -2691,9 +2722,11 @@ html {
   inset: 4.25rem 1.25rem auto auto;
   margin: 0;
   width: min(20.5rem, calc(100vw - 1.5rem));
-  /* On a short screen (a phone on its side, a zoomed window) it scrolls */
-  max-height: calc(100svh - 5rem);
+  /* On a short screen (a phone on its side, a zoomed window) it scrolls,
+     clear of the home bar, without scrolling the page behind */
+  max-height: calc(100svh - 5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.9rem 1.05rem 0.9rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius-lg);
@@ -2712,11 +2745,17 @@ html {
     anchor-name: --rh-chip;
   }
 
+  /* Below the button, its right edges in line; it's never taller than
+     the room under the button (100% is that room), and with no room to
+     its left (large text, a phone on its side) it hangs from the
+     button's other edge instead of off the screen */
   .rh-details {
     position-anchor: --rh-chip;
     inset: auto;
-    top: calc(anchor(bottom) + 0.5rem);
-    right: anchor(right);
+    position-area: block-end span-inline-start;
+    position-try-fallbacks: flip-inline;
+    margin: 0.5rem 0 0;
+    max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
   }
 }
 
@@ -2818,6 +2857,23 @@ html {
    so the first row stays exactly as it was (the way back and Sections
    never wrap apart) */
 @media (orientation: portrait), (max-width: 767px), (max-height: 480px) {
+  /* With very large text the time and weather take two lines rather than
+     lose words at the button's edge */
+  .world-controls .rh-chip {
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
+  /* The bar's gap spaces it from Sections; Sections and the round keys
+     keep their size, and the display gives way first */
+  .world-controls > .rh {
+    margin-right: 0;
+  }
+
+  .world-controls > .world-controls-end {
+    flex-shrink: 0;
+  }
+
   @media (max-width: 719px) {
     /* The way back on the left, the menu and toggles in the right-hand
        corner (the second track takes the rest of the row, whatever the
@@ -2826,7 +2882,7 @@ html {
       display: grid;
       grid-template-columns: auto minmax(0, 1fr);
       align-items: center;
-      row-gap: 0.4rem;
+      row-gap: 0.5rem;
     }
 
     .world-controls > .world-controls-end {
@@ -2850,7 +2906,7 @@ html {
 
     /* As tall as the controls above it (2.75rem on narrow screens) */
     .world-controls .rh-chip {
-      height: 2.75rem;
+      min-height: 2.75rem;
       padding: 0 0.85rem;
     }
 
@@ -2875,19 +2931,19 @@ html {
     }
 
     html {
-      scroll-padding-top: 7.25rem;
+      scroll-padding-top: calc(7.35rem + env(safe-area-inset-top));
     }
 
     .rh-details {
-      inset: calc(7.1rem + env(safe-area-inset-top)) auto auto 0.75rem;
-      max-height: calc(100svh - 8.1rem - env(safe-area-inset-top));
+      inset: calc(7.2rem + env(safe-area-inset-top)) auto auto max(0.75rem, env(safe-area-inset-left));
+      max-height: calc(100svh - 7.2rem - env(safe-area-inset-top) - max(0.75rem, env(safe-area-inset-bottom)));
     }
 
     @supports (anchor-name: --rh-chip) {
       .rh-details {
         inset: auto;
-        top: calc(anchor(bottom) + 0.5rem);
-        left: anchor(left);
+        position-area: block-end span-inline-end;
+        max-height: calc(100% - 0.5rem - max(0.75rem, env(safe-area-inset-bottom)));
       }
     }
   }
