@@ -44,7 +44,8 @@ const PREFIX = process.env.PREFIX || "now";
 mkdirSync(out, { recursive: true });
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
-const routes = listed.map((s) => s.href);
+// ROUTES=/,/contact and ONLY=320,844x390 narrow a run while working on something
+const routes = listed.map((s) => s.href).filter((r) => !process.env.ROUTES || process.env.ROUTES.split(",").includes(r));
 const slug = (route) => (route === "/" ? "home" : route.slice(1));
 const FAIL_KINDS = ["overflow", "small", "overlap", "close", "tiny-text", "unsafe", "fit", "chain", "clipped", "tap", "error"];
 
@@ -90,9 +91,13 @@ function report(kind, where, detail) {
 
 // Everything measured in one pass. `scope` limits it to an open layer (the
 // menu, the slip, the dialog); `insets` are the emulated safe areas.
-const measure = ({ scope, insets, phone }) => {
-  const vw = innerWidth;
-  const vh = innerHeight;
+const measure = ({ scope, insets, phone, touch, width, height }) => {
+  // Touch: 44px and 8px apart. A mouse only: WCAG 2.5.8 (24px), no spacing rule
+  const min = touch ? 43.5 : 23.5;
+  // The screen the profile is, not innerWidth: a phone (isMobile) widens
+  // its layout viewport when the page overflows, which would hide it
+  const vw = width;
+  const vh = height;
   const root = scope ? document.querySelector(scope) : document;
   const describe = (el) => {
     const id = el.id ? `#${el.id}` : "";
@@ -132,7 +137,7 @@ const measure = ({ scope, insets, phone }) => {
     return block && block.textContent.replace(/\s+/g, " ").trim().length > own + 3;
   };
   const targets = [...root.querySelectorAll("a[href], button, [role=tab], input, select, summary, [tabindex='0']")].filter(
-    (el) => visible(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link"),
+    (el) => visible(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link, .resume-doc"),
   );
   const out = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
   const scrollX0 = scrollX;
@@ -146,7 +151,7 @@ const measure = ({ scope, insets, phone }) => {
   });
 
   for (const b of boxes) {
-    if (!b.inline && (b.r.w < 43.5 || b.r.h < 43.5)) out.small.push(`${describe(b.el)} ${Math.round(b.r.w)}x${Math.round(b.r.h)}`);
+    if (!b.inline && (b.r.w < min || b.r.h < min)) out.small.push(`${describe(b.el)} ${Math.round(b.r.w)}x${Math.round(b.r.h)}`);
     // A label cut off by its own box (glass clips its insides): the words'
     // own extent against the box (the press's ripple, a pseudo-element,
     // is bigger than the box on purpose, so scrollWidth can't tell)
@@ -180,7 +185,7 @@ const measure = ({ scope, insets, phone }) => {
         continue;
       }
       const gap = Math.max(gx, gy);
-      if (gap >= 7.5) continue;
+      if (gap >= 7.5 || !touch) continue;
       // Side by side (gx is the gap): their heights are the shared edge
       const across = gx >= gy ? Math.min(a.r.h, c.r.h) : Math.min(a.r.w, c.r.w);
       const along = gx >= gy ? Math.min(a.r.w, c.r.w) : Math.min(a.r.h, c.r.h);
@@ -189,6 +194,22 @@ const measure = ({ scope, insets, phone }) => {
       out.close.push(`${describe(a.el)} / ${describe(c.el)} ${Math.round(gap)}px apart`);
     }
   }
+
+  // The part of a box that shows: cut by every ancestor that clips (a
+  // menu that scrolls, a drawing that clips its labels); null if none
+  const shownPart = (rect, el) => {
+    let { left, top, right, bottom } = rect;
+    for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      const er = e.getBoundingClientRect();
+      if (cs.overflowX !== "visible") (left = Math.max(left, er.left)), (right = Math.min(right, er.right));
+      if (cs.overflowY !== "visible") (top = Math.max(top, er.top)), (bottom = Math.min(bottom, er.bottom));
+    }
+    return right - left > 1 && bottom - top > 1 ? { left, top, right, bottom } : null;
+  };
+  const unsafeAt = (q, fixed) =>
+    q.left < insets.left - 0.5 || q.right > vw - insets.right + 0.5 || (fixed && (q.top < insets.top - 0.5 || q.bottom > vh - insets.bottom + 0.5));
 
   // Text
   const walker = document.createTreeWalker(root === document ? document.body : root, NodeFilter.SHOW_TEXT);
@@ -212,43 +233,27 @@ const measure = ({ scope, insets, phone }) => {
     range.selectNodeContents(n);
     const tr = range.getBoundingClientRect();
     if (tr.width === 0) continue;
-    if (tr.left < insets.left - 0.5 || tr.right > vw - insets.right + 0.5 || (fixed && (tr.top < insets.top - 0.5 || tr.bottom > vh - insets.bottom + 0.5))) {
-      // Clipped away by a scrolling ancestor (inside a menu that scrolls) is fine
-      let clipped = false;
-      for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
-        const ov = getComputedStyle(e).overflowY;
-        if (ov !== "visible") {
-          const er = e.getBoundingClientRect();
-          if (tr.bottom <= er.top + 1 || tr.top >= er.bottom - 1 || tr.right <= er.left + 1 || tr.left >= er.right - 1) clipped = true;
-          break;
-        }
-      }
-      if (!clipped && !(fixed ? false : r.bottom < 0)) out.unsafe.push(`text ${describe(el)} at ${Math.round(tr.left)},${Math.round(tr.top)}–${Math.round(tr.right)},${Math.round(tr.bottom)}`);
-    }
+    const shown = shownPart(tr, n); // from the text's own element up
+    if (shown && unsafeAt(shown, fixed) && !(!fixed && r.bottom < 0))
+      out.unsafe.push(`text ${describe(el)} at ${Math.round(shown.left)},${Math.round(shown.top)}–${Math.round(shown.right)},${Math.round(shown.bottom)}`);
   }
   // Controls under a safe area
   for (const b of boxes) {
     const r = b.v;
     if (b.el.matches(".resume-doc")) continue; // it scrolls under the home bar on purpose, and pads its pages for it
-    const side = r.left < insets.left - 0.5 || r.right > vw - insets.right + 0.5;
-    const vert = b.layer && (r.top < insets.top - 0.5 || r.bottom > vh - insets.bottom + 0.5);
-    if (side || vert) {
-      // Scrolled out of sight inside a scrolling menu or document is fine
-      let hidden = false;
-      for (let e = b.el.parentElement; e && e !== document.body; e = e.parentElement) {
-        if (getComputedStyle(e).overflowY !== "visible" && e.scrollHeight > e.clientHeight + 1) {
-          const er = e.getBoundingClientRect();
-          if (r.bottom <= er.top + 1 || r.top >= er.bottom - 1) hidden = true;
-          break;
-        }
-      }
-      if (!hidden) out.unsafe.push(`control ${describe(b.el)} at ${Math.round(r.left)},${Math.round(r.top)}–${Math.round(r.right)},${Math.round(r.bottom)}`);
-    }
+    // Only the part that shows (a row half scrolled out of its menu)
+    const part = shownPart(r, b.el);
+    if (part && unsafeAt(part, !!b.layer))
+      out.unsafe.push(`control ${describe(b.el)} at ${Math.round(part.left)},${Math.round(part.top)}–${Math.round(part.right)},${Math.round(part.bottom)}`);
     // A fixed control must also be the thing a tap at its middle reaches
     if (b.layer) {
       const x = r.left + r.width / 2;
       const y = r.top + r.height / 2;
-      if (x >= 0 && x < vw && y >= 0 && y < vh) {
+      // (Not one scrolled out of sight inside its menu)
+      const scroller = b.el.parentElement?.closest(":popover-open, .resume-doc");
+      const sr = scroller?.getBoundingClientRect();
+      const shown = !sr || (y > sr.top && y < sr.bottom);
+      if (shown && x >= 0 && x < vw && y >= 0 && y < vh) {
         const hit = document.elementFromPoint(x, y);
         if (hit && !b.el.contains(hit) && !hit.contains(b.el)) out.overlap.push(`${describe(b.el)} covered at its middle by ${describe(hit)}`);
       }
@@ -257,7 +262,7 @@ const measure = ({ scope, insets, phone }) => {
 
   // Sideways overflow
   if (!scope) {
-    out.docOverflow = document.documentElement.scrollWidth - vw;
+    out.docOverflow = Math.max(document.documentElement.scrollWidth, innerWidth) - vw;
     for (const el of document.body.querySelectorAll("*")) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || (r.right <= vw + 1 && r.left >= -1)) continue;
@@ -382,7 +387,7 @@ async function chains(page, cdp, selector) {
   return after - before;
 }
 
-for (const profile of profiles) {
+for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ONLY.split(",").includes(p.name))) {
   const { ctx, page, cdp } = await open(profile);
   const insets = profile.insets;
   for (const route of routes) {
@@ -390,11 +395,11 @@ for (const profile of profiles) {
     let step = "page";
     try {
     await visit(page, route);
-    file(profile, route, "", await page.evaluate(measure, { insets, phone: profile.phone }));
+    file(profile, route, "", await page.evaluate(measure, { insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
     // Fixed things again at the foot of the page
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await page.waitForTimeout(300);
-    file(profile, route, "scrolled", await page.evaluate(measure, { scope: ".world-controls", insets, phone: profile.phone }));
+    file(profile, route, "scrolled", await page.evaluate(measure, { scope: ".world-controls", insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
     if (SHOTS && !profile.text && SHOT_SIZES.has(profile.name) && SHOT_PAGES.has(route)) {
       await page.evaluate(() => scrollTo(0, 0));
       await page.waitForTimeout(400);
@@ -411,7 +416,7 @@ for (const profile of profiles) {
     const menuOpen = await page.evaluate(() => !!document.querySelector("#places-menu:popover-open"));
     if (!menuOpen) report("tap", where, "Sections didn't open the menu");
     else {
-      file(profile, route, "menu", await page.evaluate(measure, { scope: "#places-menu", insets, phone: profile.phone }));
+      file(profile, route, "menu", await page.evaluate(measure, { scope: "#places-menu", insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
       if (profile.touch) {
         const scrollable = await page.evaluate(() => {
           const m = document.querySelector("#places-menu");
@@ -437,7 +442,7 @@ for (const profile of profiles) {
       const slip = await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"));
       if (!slip) report("tap", where, "the time and weather didn't open their slip");
       else {
-        file(profile, route, "weather", await page.evaluate(measure, { scope: "#rh-details", insets, phone: profile.phone }));
+        file(profile, route, "weather", await page.evaluate(measure, { scope: "#rh-details", insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
         if (profile.touch) {
           const scrollable = await page.evaluate(() => {
             const m = document.querySelector("#rh-details");
@@ -451,22 +456,37 @@ for (const profile of profiles) {
         // A tap elsewhere closes it (light dismiss)
         if (profile.touch) {
           step = "weather: tap outside";
-          // A point with nothing to press under it, outside the slip
+          // A point with nothing to press within 24px of it, outside the
+          // slip (Chrome moves a tap onto a target close by, as a finger
+          // is wide: a tap in the gap between two links follows one)
           const spot = await page.evaluate(() => {
             const slip = document.querySelector("#rh-details").getBoundingClientRect();
+            const clear = (x, y) => {
+              const hit = document.elementFromPoint(x, y);
+              return hit && !hit.closest('a, button, [tabindex]:not([tabindex="-1"]), canvas, label, input');
+            };
             for (let y = innerHeight - 40; y > 0; y -= 17) {
-              for (const x of [20, innerWidth / 2, innerWidth - 20]) {
-                if (x >= slip.left && x <= slip.right && y >= slip.top && y <= slip.bottom) continue;
-                const hit = document.elementFromPoint(x, y);
-                if (hit && !hit.closest("a, button, [tabindex]:not([tabindex=\"-1\"]), canvas, label, input")) return { x: Math.round(x), y: Math.round(y) };
+              for (const x of [30, innerWidth / 2, innerWidth - 30]) {
+                if (x >= slip.left - 24 && x <= slip.right + 24 && y >= slip.top - 24 && y <= slip.bottom + 24) continue;
+                if ([[0, 0], [-24, 0], [24, 0], [0, -24], [0, 24]].every(([dx, dy]) => clear(x + dx, y + dy))) return { x: Math.round(x), y: Math.round(y) };
               }
             }
             return null;
           });
-          if (spot) await page.touchscreen.tap(spot.x, spot.y);
-          await page.waitForTimeout(300);
-          if (await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"))) report("tap", where, "a tap outside left the weather slip open");
-          // That tap may have followed a link; come back
+          // (Over the world on wide screens every point is the scene or a
+          // control: then Escape closes it instead)
+          if (spot) {
+            await page.touchscreen.tap(spot.x, spot.y);
+            await page.waitForTimeout(300);
+            if (await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"))) report("tap", where, "a tap outside left the weather slip open");
+          }
+          // (Escape with nothing open would go back to the park)
+          if (await page.evaluate(() => !!document.querySelector("#rh-details:popover-open"))) await page.keyboard.press("Escape");
+          // That tap may still have found something; come back
+          if (await page.evaluate(() => !!document.querySelector("dialog.resume")?.open)) {
+            await page.keyboard.press("Escape");
+            await page.waitForTimeout(400);
+          }
           if (new URL(page.url()).pathname !== route) await visit(page, route);
         } else await page.keyboard.press("Escape");
       }
@@ -477,12 +497,16 @@ for (const profile of profiles) {
     const link = page.locator("a[data-resume]:visible").first();
     if ((await link.count()) && (await link.isVisible())) {
       await link.scrollIntoViewIfNeeded();
-      await press(profile, link);
+      // The first opening fetches the viewer and pdf.js: the tap can take a
+      // moment to be acknowledged while the page is busy (slow, not stuck)
+      const t0 = Date.now();
+      await (profile.touch ? link.tap({ timeout: 20000 }) : link.click({ timeout: 20000 }));
+      if (Date.now() - t0 > 3000) report("slow", where, `the résumé link took ${Date.now() - t0}ms to take the tap`);
       const opened = await page.waitForSelector("dialog.resume[open] .resume-page[data-drawn] canvas", { timeout: 20000 }).then(() => true, () => false);
       if (!opened) report("tap", where, "the résumé link didn't open the viewer");
       else {
         await page.waitForTimeout(300);
-        file(profile, route, "résumé", await page.evaluate(measure, { scope: "dialog.resume", insets, phone: profile.phone }));
+        file(profile, route, "résumé", await page.evaluate(measure, { scope: "dialog.resume", insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
         if (SHOTS && !profile.text && SHOT_SIZES.has(profile.name) && route === "/") await page.screenshot({ path: `${SHOTS}/mobile-${PREFIX}-${profile.name}-resume.jpg`, type: "jpeg", quality: 62 });
         if (profile.touch && route === "/") {
           // Zoom in, then pan the page sideways and down with a finger
@@ -511,13 +535,19 @@ for (const profile of profiles) {
           // A pinch on the document: the layout must hold (the dialog
           // stays the size of the screen, nothing scrolls sideways)
           const layoutBefore = await page.evaluate(() => ({ w: document.querySelector("dialog.resume").getBoundingClientRect().width, sw: document.documentElement.scrollWidth }));
-          await cdp.send("Input.synthesizePinchGesture", { x: Math.round(doc.x + doc.width / 2), y: Math.round(doc.y + doc.height / 2), scaleFactor: 1.8, gestureSourceType: "touch" }).catch(() => {});
+          step = "résumé: pinch";
+          await cdp.send("Input.synthesizePinchGesture", { ...mid, scaleFactor: 1.8, gestureSourceType: "touch" });
           await page.waitForTimeout(400);
           const layoutAfter = await page.evaluate(() => ({ w: document.querySelector("dialog.resume").getBoundingClientRect().width, sw: document.documentElement.scrollWidth, scale: visualViewport.scale }));
           if (layoutAfter.w !== layoutBefore.w || layoutAfter.sw !== layoutBefore.sw) report("tap", where, `résumé: a pinch changed the layout ${JSON.stringify({ layoutBefore, layoutAfter })}`);
-          // Back to the page's own scale, as two fingers would
-          await cdp.send("Emulation.resetPageScaleFactor").catch(() => {});
-          await page.waitForTimeout(300);
+          // Pinch back (the gesture's point is in the zoomed view's own
+          // coordinates), and the page is as it was
+          step = "résumé: pinch back";
+          const vv = await page.evaluate(() => ({ x: Math.round(visualViewport.width / 2), y: Math.round(visualViewport.height / 2) }));
+          await cdp.send("Input.synthesizePinchGesture", { ...vv, scaleFactor: 1 / 1.8, gestureSourceType: "touch" });
+          await page.waitForTimeout(400);
+          const scale = await page.evaluate(() => visualViewport.scale);
+          if (Math.abs(scale - 1) > 0.02) report("tap", where, `résumé: pinching back left the page at ${scale.toFixed(2)}x`);
           // Fit width brings it back inside
           step = "résumé: Fit width";
           await page.locator(".resume-fit").tap();
