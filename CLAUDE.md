@@ -114,6 +114,17 @@ Build scenery as 3D in `world3d/`, through the shared painted material
 (`paint.ts`), not as CSS or SVG. Keep text on paper or open sky, never over
 busy scenery. Real content stays in HTML.
 
+Light after dark (`world3d/glow.ts`, driven by `atmosphere/Atmosphere.tsx`
+through `glowUniforms` and the paint's day/night `glow`): street lamps are
+spotlights at the bulb aimed straight down, with a per-pixel beam in the
+air (no halos, no cone meshes); every building sign is lit (lit-box faces,
+neon tube, or neon letters from a text mask) in baby-blue neon, warm
+white and the arcade's pink, with a soft wash on the wall. Nothing
+flickers. Keep light counts the same by day and night (drive intensity),
+so the 3 s blends build no shaders; shadowed lamps only on the desktop
+tiers. What was built and measured: `docs/world/3d-progress-log.md`,
+"Lamps and signs".
+
 ---
 
 ## Color Palette

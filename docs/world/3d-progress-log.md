@@ -40,6 +40,7 @@ layers) is commit `4acaddd`.
 | `world3d/vegetation/` | `shader.ts`: the lit three-band foliage and grass material (weather uniforms, wind per cluster/tuft); `foliage.ts`: crowns as lobed cluster masses, colour ramps; `grass.ts`: instanced tufts in coherent patches |
 | `world3d/props.ts` | bench (one with a school bag), lamp, utility pole and wires, vending machine, phone booth (door, receiver, cord, light), bicycle with basket, swing, fountain with water shader, notice board with notices, signpost, dust, sunbeams, sky dome with clouds, falling and fallen leaves |
 | `world3d/buildings.ts` | pavilion, sawtooth-roof workshop, station with clock tower, arcade, the empty city, hills, railings |
+| `world3d/glow.ts` | light after dark: the lamps' beams in the air, lit sign faces, neon tube and frames, the wash of a sign's light on its wall, halos round neon letters, and the uniforms the atmosphere drives them with |
 | `world3d/scenes/*.tsx` | the six places, each with its own lights, animation and hit areas |
 | `world3d/scenes.ts` | where each place is, its camera poses, the routes from the park |
 | `world3d/World3D.tsx` | canvas, the camera Director, wind and gusts, the park's name tags |
@@ -52,14 +53,15 @@ layers) is commit `4acaddd`.
   die away (measured: 0 → 0.78 → 0 over about 6 s, then still).
 - Park: the swing (pushed harder in gusts, or when clicked), the signpost's
   arms, falling leaves that rock down and lie on the ground before being
-  reused, water ripples, dust in the sun, the booth's light catching now and
-  then, the arcade sign's hum, the notice board's map lifting when you look.
+  reused, water ripples, dust in the sun, the notice board's map lifting
+  when you look. (The booth's light and the arcade's sign used to flicker;
+  since "Lamps and signs" below, no light in the world does.)
 - Workshop: monitors switch on (a bright line opening into the picture) with
   the real screenshots; dust in the window light.
 - Station: timetable flaps turn over when a line is chosen; the broken name
   sign swings on its last chain; tapping the clock makes its hand try to move.
 - Arcade: each cabinet plays a small game about its interest while it's on; the
-  neon buzzes and drops out.
+  neon on the wall is steady.
 - Pavilion: the notebook's page bends over the spine as it turns.
 - Phone booth: the door swings open on arrival; the receiver lifts off its hook.
 - Camera: walks in on arrival, breathes slightly at rest, parallax with the
@@ -220,3 +222,87 @@ source in `world3d/vegetation/` and `geometry.ts`.
 - Open: mid-distance grass still shows ground between tufts on the phone
   tier; real phones not tried; alpha-to-coverage is on only at the high
   tier (with 2x MSAA it dithered).
+
+## Lamps and signs (11 November 2026)
+
+Scene lighting and building signage only; layout, vegetation, interface,
+content and the weather system are as they were. No modelling tool was
+available (no Blender, no MCP for one), so the fixtures and signs are
+procedural, in `glow.ts`, `props.ts` and `buildings.ts`, inspected in
+code and from fixed-pose screenshots (`window.__pose` in `next dev`).
+
+- **Street lamps** (`props.ts: buildLamp`). The shade is now open
+  underneath: green enamel outside, a pale reflector inside, the bulb up
+  in it behind a frosted lens, so the light visibly comes from inside the
+  fixture. Each lamp is a `SpotLight` at the bulb aimed straight down
+  (half-angle 0.62 rad, penumbra 0.85, decay 1.6, warm `#ffc98a`): a soft
+  pool on paving and grass, nothing lit above the lamp. The two lamps in
+  the main park view and the one by the booth cast shadows on the desktop
+  tiers (512 px maps, near plane past the shade, drawn only while lit);
+  the other two park lamps and every lamp on the phone tier light without
+  shadows. They replace the park's two lamp point lights and the booth's.
+  The additive halo sprite is gone.
+- **The beam** (`glow.ts: lampBeam`). A cone mesh around the light, front
+  faces only, whose shader intersects each view ray with the cone and
+  sums the light the air throws back along it (8 samples, 5 on phones): a
+  Gaussian across the beam, strongest just under the lens, thinning with
+  distance, faded into the fog. Its edge is where the ray's path through
+  the light goes to nothing, so no outline or hard circle. No time term:
+  it can't pulse.
+- **Signs.** Every building sign, by what it's made of:
+
+  | Sign | Where | Treatment |
+  |---|---|---|
+  | 工坊  WORKSHOP | park, workshop front | lit box: the painted face glows, letters stay dark; baby-blue neon frame; blue wash on the wall |
+  | 光明公园站 | park, station tower | lit box, baby-blue frame; wash on the tower and on the hall wall behind its ends |
+  | 游戏厅 | park, arcade front | neon letters (emissive mask of the same text, `textures.ts: textMask`), soft pink halo, baby-blue frame, pink wash; the hum is gone |
+  | 公用电话 (×4) | park and contact scene, booth roof | lit boxes |
+  | 光明公园 / GUĀNGMÍNG GŌNGYUÁN | station scene, hanging sign | lit face on its own plane (the box face had cropped the texture to a mirrored corner); a warm light by it onto the canopy and platform |
+  | GAME (neon tube) | arcade scene, left wall | steady (it used to drop out), its glow on the wall, its pink light stronger after dark |
+
+  The pavilion and the workshop and pavilion interiors have no signs, so
+  none were added. The vending machine, signpost, notice board and
+  timetable aren't building signs and are unchanged.
+- **Day, dusk, night, weather** (`Atmosphere.tsx`). Lamps follow the
+  existing lamps-on curve of the night; signs come up a little earlier
+  (`smoothstep(0.05, 0.8, night)`), so dusk brightens smoothly over the
+  3 s blends. By day the neon is a trace (0.28 of night), lit faces 0.12,
+  washes and beams off: the sun isn't overpowered. Rain, snow and mist
+  (`uHaze`) make the beams a little stronger in the air, the lamps 15%
+  dimmer on the ground and the washes and halos a little wider. Light
+  counts are fixed per tier; only intensities change.
+- **The painted bands** (`paint.ts`). The material's three light bands
+  had a hard step between them, which drew rings round every local light
+  (the arcade's pink wall light had one before this work too). They turn
+  softly now; daylight looks unchanged.
+- **Bloom.** No bloom pass was added: the grade's existing glow of bright
+  pixels plus halos drawn in the signs' own shape give the glow where
+  it's wanted and nowhere else, at the cost of a few small quads.
+
+Measured (production builds, before `30e2a07` and after, alternated, 3
+runs each, Chrome on an M2 with other sessions busy, so noisy; clear night):
+
+| | before | after |
+|---|---|---|
+| Lights in the park's shaders | 11 point, 1 sun | 9 point, 4 spot (2 shadowed on desktop), 1 sun |
+| Draw calls per frame, park | 369 desktop, 280 phone | 395, 296 |
+| Uncapped frame p50, park | 20.4 ms desktop, 3.4 ms phone tier | 21.2 ms, 4.2 ms |
+| Uncapped frame p50, booth | 11.1 ms, 2.9 ms | 11.0 ms, 2.9 ms |
+| Capped rest fps (`trace.mjs`) | desktop 44–50 (noisy), phone 59.7–59.8 | desktop 59.8–59.9, phone 59.7–59.9 |
+| First frame, desktop 1× / 4× | 898 / 2104 ms | 919 / 1911 ms |
+| Longest walk-in frame, phone 1× / 4× | 150 / 283 ms | 67 / 283 ms |
+| Longest frame, park → workshop, phone 1× (6 more runs each) | 67–83 ms | 67 ms (two 333/483 ms outliers in the first 3 runs didn't recur) |
+| Shader compiles in a day↔night, rain, snow blend | 0 (2 for rain's first fall) | 0 (2 for rain's first fall) |
+| World chunk (gzip) | 301,557 | 304,203 (budget 316,000) |
+
+The real cost is about 0.8 ms a frame at the park on both tiers (the
+four spotlights on every pixel, and the beams); everything stays at 60 fps
+capped, at 1× and 4× CPU.
+
+Open: from the main park camera the workshop and station signs are 30 to
+47 m away and their letters 8 px tall, so they read as lit signs rather
+than as words (the arcade's, larger, reads); the words read on the way
+in and close up. Not tried on real phones or in Safari (the canvas blur
+for halos falls back to shrink-and-grow where `ctx.filter` is missing).
+Shots: `screenshots/lighting-{before,after}-*.jpg`; scripts:
+`scripts/lighting-shots.mjs`, `lighting-perf.mjs`, `lighting-blend.mjs`.
