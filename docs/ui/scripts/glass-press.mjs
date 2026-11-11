@@ -79,7 +79,8 @@ async function sheet(shots, file, captions = times.map((t) => `${t} ms`), column
 }
 
 // 2. The action isn't delayed: pointer down to the new address, on a glass
-// link and, for comparison, on a plain one (the Sections menu's)
+// link and, for comparison, on a plain one (the Sections slip's map link;
+// its section entries are glass too)
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
@@ -103,7 +104,7 @@ async function sheet(shots, file, captions = times.map((t) => `${t} ms`), column
     glass.push(await timeTo(() => page.locator(".park-actions .glass-primary").click()));
     plain.push(
       await timeTo(
-        () => page.locator('#places-menu a[href="/projects"]').click(),
+        () => page.locator("#places-menu a.text-link").click(),
         () => page.locator('[popovertarget="places-menu"]').click(),
       ),
     );
@@ -175,5 +176,50 @@ async function sheet(shots, file, captions = times.map((t) => `${t} ms`), column
   await ctx.close();
 }
 
+// 6. The controls brought onto the glass: each gets the press from the
+// pointer, the give is the button's own `scale` (it has no transform of
+// its own to fight), and a disabled one gets none
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await ctx.newPage();
+  const cases = [
+    ["/projects", '.bench-tab[aria-selected="false"]'],
+    ["/projects#marketlab", '.shot-thumb[aria-pressed="false"]'],
+    ["/interests", '.cabinet-button[aria-selected="false"]'],
+    ["/experience", '.timetable-line[aria-pressed="false"]'],
+    ["/about", '.notebook-turn:not([aria-disabled="true"])'],
+    ["/about", '.notebook-turn[aria-disabled="true"]', true],
+    ["/projects", '#places-menu a.glass:not([aria-current])', false, '[popovertarget="places-menu"]'],
+  ];
+  report.converted = [];
+  for (const [path, sel, disabled, open] of cases) {
+    await arrive(page, path);
+    if (open) {
+      await page.locator(open).click();
+      await page.waitForTimeout(400);
+    }
+    const el = page.locator(sel).first();
+    await el.scrollIntoViewIfNeeded();
+    const box = await el.boundingBox();
+    await page.mouse.move(box.x + box.width * 0.3, box.y + box.height * 0.6);
+    await page.mouse.down(); // held: the press, without the action
+    const r = await el.evaluate((node) => {
+      const press = node.getAnimations().find((a) => a.animationName === "glass-press");
+      if (press) {
+        press.pause();
+        press.currentTime = 105; // the deepest point of the give
+      }
+      const cs = getComputedStyle(node);
+      return { pressed: node.hasAttribute("data-pressed"), animations: node.getAnimations({ subtree: true }).map((a) => a.animationName).filter(Boolean), scale: cs.scale, transform: cs.transform };
+    });
+    await page.mouse.move(5, 890);
+    await page.mouse.up();
+    const ok = disabled ? !r.pressed && !r.animations.length : r.pressed && r.animations.includes("glass-press") && r.animations.includes("glass-ripple") && r.scale !== "none" && r.transform === "none";
+    report.converted.push({ sel, ...r, ok });
+  }
+  await ctx.close();
+}
+
 await browser.close();
 console.log(JSON.stringify(report, null, 1));
+if (report.converted.some((c) => !c.ok)) process.exitCode = 1;

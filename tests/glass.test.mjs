@@ -49,7 +49,8 @@ test("still view and reduced motion get a moment of tint, not movement", () => {
 });
 
 test("glass is 44px tall, with labels in opaque slate, and a fallback without blur", () => {
-  const glass = block(".glass");
+  // In :where(), so a control's own class sets its size and type over it
+  const glass = block(":where(.glass)");
   assert.match(glass, /min-height: 44px/);
   assert.match(glass, /color: var\(--slate\)/);
   assert.match(glass, /backdrop-filter: var\(--glass-blur\)/);
@@ -61,7 +62,46 @@ test("glass is 44px tall, with labels in opaque slate, and a fallback without bl
 });
 
 test("over the world, the corner controls' glass thickens under a dark sky", () => {
-  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& \.world-controls \.glass \{\s*--tint: rgb\(247 251 255 \/ (0\.\d+)\)/);
+  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& :is\(\.world-controls > \.glass, \.world-controls-end \.glass, \.bench-tab, \.cabinet-button\) \{\s*--tint: rgb\(247 251 255 \/ (0\.\d+)\)/);
   assert.ok(dark, "no dark-sky rule for the corner controls");
   assert.ok(Number(dark[1]) >= 0.85, `dark-sky glass is only ${dark[1]}`);
+});
+
+// Every button-like control is glass, so it shares the states and the press
+test("the tabs, choices, page turns, thumbnails and menu entries are glass", () => {
+  const files = {
+    "locations/Workbench.tsx": ["glass bench-tab", "glass shot-thumb"],
+    "locations/Cabinets.tsx": ["glass cabinet-button"],
+    "locations/Timetable.tsx": ["glass timetable-line"],
+    "locations/Notebook.tsx": ["glass notebook-turn"],
+  };
+  for (const [file, classes] of Object.entries(files)) {
+    const src = readFileSync(`${root}app/components/${file}`, "utf8");
+    for (const name of classes) assert.ok(src.includes(`className="${name}"`), `${file}: ${name}`);
+  }
+  const menu = readFileSync(`${root}app/components/world/WorldControls.tsx`, "utf8").match(/<nav id="places-menu"[\s\S]*?<\/nav>/)[0];
+  assert.equal((menu.match(/<Link [^>]*className="glass"/g) ?? []).length, 2, "the Sections slip's entries");
+  // Nothing of their old surfaces is left to fight the glass
+  for (const name of ["bench-tab", "cabinet-button", "timetable-line", "notebook-turn", "shot-thumb"])
+    for (const [, body] of css.matchAll(new RegExp(`\\n\\s*\\.${name}(?:\\[[^\\]]*\\])?(?::[a-z-]+)? \\{([^}]*)\\}`, "g")))
+      assert.doesNotMatch(body, /(?:^|\n)\s*(?:background|border|box-shadow|transform|opacity)(?:-[a-z]+)?:/, `.${name} sets its own surface`);
+});
+
+test("the states: chosen, disabled and focus, the same on every glass control", () => {
+  const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\], \[aria-selected="true"\], \[aria-current="page"\], \[data-copied\]\),[^{]*\{([^}]*)\}/)?.[1];
+  assert.ok(chosen, "one rule for every chosen state");
+  assert.match(chosen, /border-color: var\(--focus-blue\)/);
+  // Pressed in: a shade inside, no lift. Not colour alone.
+  assert.match(chosen, /--glass-in: inset 0 0 0 1px var\(--focus-blue\), inset/);
+  assert.match(chosen, /--glass-lift: 0 0 #0000/);
+  const disabled = block('.glass:is(:disabled, [aria-disabled="true"])');
+  assert.match(disabled, /border-style: dashed/);
+  assert.match(disabled, /cursor: default/);
+  assert.match(disabled, /color: var\(--muted\)/);
+  assert.match(css, /:where\(\.glass:not\(:disabled, \[aria-disabled="true"\]\)\):hover/, "no hover on a disabled control");
+  const focus = block(".glass:focus-visible");
+  assert.match(focus, /--glass-out: var\(--focus-halo\)/);
+  assert.match(focus, /outline: 2px solid var\(--focus-blue\)/);
+  // The press never lands on a disabled control
+  assert.match(press, /if \(el\.matches\(":disabled, \[aria-disabled='true'\]"\)\) return;/);
 });

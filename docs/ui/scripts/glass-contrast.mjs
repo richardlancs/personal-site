@@ -1,11 +1,15 @@
 // Composited contrast of the words on the glass buttons (the corner
-// controls, the home page's actions, a project's links) and of the name,
+// controls, the home page's actions, a project's links, the bench tabs,
+// the cabinets, the timetable's lines and the notebook's page turns, each
+// as it is and chosen or disabled) and of the name,
 // over every weather and daylight (the ?sky= preview: `next dev` only).
 // For each control the words are hidden, the control is
 // photographed as drawn over the live scene, and the darkest pixels under
 // it (1st percentile, so a stray anti-aliased edge doesn't count) are
 // measured against its text colours.
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-contrast.mjs http://localhost:3130 [desktop|phone] [route=/]
+// Each route measures the targets it has: / (corner, name, actions),
+// /projects, /interests, /experience, /about.
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3130", view = "desktop", route = "/"] = process.argv.slice(2);
@@ -27,6 +31,15 @@ const targets = [
   { name: "primary", sel: ".park-actions .glass-primary", ink: { slate: "#203245" } },
   { name: "secondary", sel: ".park-actions .glass:not(.glass-primary)", ink: { slate: "#203245" } },
   { name: "project", sel: ".project-links .glass >> nth=0", ink: { slate: "#203245" } },
+  // The tabs and choices over the scene, and the page turns on their paper
+  { name: "bench", sel: '.bench-tab[aria-selected="false"]', ink: { slate: "#203245" } },
+  { name: "bench-chosen", sel: '.bench-tab[aria-selected="true"]', ink: { slate: "#203245" } },
+  { name: "cabinet", sel: '.cabinet-button[aria-selected="false"]', ink: { slate: "#203245" } },
+  { name: "cabinet-chosen", sel: '.cabinet-button[aria-selected="true"]', ink: { slate: "#203245" } },
+  { name: "line", sel: '.timetable-line[aria-pressed="false"]', ink: { slate: "#203245" } },
+  { name: "line-chosen", sel: '.timetable-line[aria-pressed="true"]', ink: { slate: "#203245" } },
+  { name: "turn", sel: '.notebook-turn:not([aria-disabled="true"])', ink: { slate: "#203245" } },
+  { name: "turn-disabled", sel: '.notebook-turn[aria-disabled="true"]', ink: { muted: "#45474a" } },
 ];
 
 const browser = await launch();
@@ -51,12 +64,13 @@ for (const preset of presets) {
     await page.waitForFunction(() => document.querySelector(".world3d")?.getAttribute("data-arrived") === "true", null, { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2500);
     // Hide the words (and icons), keep everything behind them
-    await page.addStyleTag({ content: ".glass, .glass *, .park-name { color: transparent !important; } .glass svg, .rh-blank { visibility: hidden !important; }" });
+    await page.addStyleTag({ content: ".glass, .glass *, .park-name { color: transparent !important; } .glass svg, .rh-blank, .bench-tab-lamp, .cabinet-button-screen { visibility: hidden !important; }" });
     await page.waitForTimeout(150);
     const row = { sky: `${preset}-${phase}` };
     for (const t of targets) {
       const el = page.locator(t.sel).first();
       if (!(await el.count()) || !(await el.isVisible())) continue;
+      await el.scrollIntoViewIfNeeded();
       const box = await el.boundingBox();
       const inset = t.inset ?? 4; // inside the edge and its highlight
       const clip = { x: box.x + inset, y: box.y + inset, width: box.width - 2 * inset, height: box.height - 2 * inset };
