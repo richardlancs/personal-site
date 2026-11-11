@@ -356,6 +356,38 @@ Every change must work on:
 
 Do not optimize only for my current browser size.
 
+What's guaranteed, and checked by `docs/ui/scripts/mobile-audit.mjs`
+(every route, the open Sections menu, weather slip and résumé dialog, at
+320, 390, 430, 768, 1024 portrait and landscape, 1440, 844×390 and
+667×375, plus 200% text at 320, 390 and 844×390; headless Chrome with
+touch and emulated notch insets, not a real device):
+
+- no sideways scroll, and nothing reaching past the screen
+- every target at least 44×44 CSS px on touch, and none overlapping or
+  closer than 8px. Links inside a sentence are exempt; links that stand
+  on their own (the home page's GitHub / LinkedIn / Résumé, "Home",
+  "Open the map", the directory's lines) stay text links but take 44px
+  (`.text-link` sizing near the top of `globals.css`)
+- no text under 12px; body copy on phones at 16px
+- the corner controls, menus, the slip and the résumé's bar clear every
+  `env(safe-area-inset-*)` (top, sides in landscape, the home bar)
+- menus and dialogs fit the screen, scroll inside, and don't scroll the
+  page behind (`overscroll-behavior: contain`)
+- labels wrap or the bar wraps; nothing clips. The bar is a size
+  container: when it's narrow for its words (under 22.2em of its own
+  text, a 379px phone or larger text on any phone) the way back is its
+  arrow alone, and the time and weather may take two lines; at the usual
+  size the chip keeps one line, so nothing moves when a reading arrives
+- words longer than a line break rather than push the page sideways
+  (`overflow-wrap: anywhere` on the sheet), since a phone otherwise
+  widens its layout viewport and the fixed bar and dialogs spill with it
+- glass on the sheet has no backdrop blur on phones (it sits on opaque
+  cream); only the bar's keys blur, over the world
+- hover only adds: put `:hover` styles under `@media (hover: hover)` so
+  a tap doesn't leave them stuck (the audit lists any that aren't)
+- on a touch screen under 480px the map's drawing is a picture (its pins
+  can't be 44px apart there); the list under it takes the taps
+
 Check especially:
 
 - navigation
