@@ -144,6 +144,23 @@ body {
   box-shadow: 0 18px 40px -28px rgb(var(--shadow) / 0.35);
 }
 
+/* Links that stand on their own (not in a sentence) stay text links but
+   take a full 44px to tap: "Open the map", the way home at the foot of a
+   page, the map's way back, the notebook's "Read all the pages", the
+   lines of the directory, the home page's GitHub / LinkedIn / Résumé */
+button.text-link,
+.places-menu-map,
+.onward-back,
+.map-head > .text-link,
+.directory-value a,
+.park-links a:not(.glass),
+.lost-notice-links a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
 /* Text links inside content */
 .text-link {
   color: var(--accent);
@@ -155,9 +172,27 @@ body {
     text-decoration-color 0.2s ease;
 }
 
-.text-link:hover {
-  color: var(--accent-hover);
-  text-decoration-color: currentColor;
+/* Hover only where there's a pointer that hovers: on a touch screen a
+   tap would leave it stuck on */
+@media (hover: hover) {
+  .text-link:hover,
+  .park-links a:not(.glass):hover {
+    color: var(--accent-hover);
+    text-decoration-color: currentColor;
+  }
+
+  .map-pin:hover .map-pin-label {
+    background: var(--baby-pale);
+  }
+
+  .map-pin:hover .map-pin-section {
+    color: var(--accent);
+  }
+
+  .notebook-controls + .text-link:hover,
+  .notebook-sheet + .text-link:hover {
+    background-color: rgb(255 249 242 / 0.92);
+  }
 }
 
 /* Short points on paper (project notes, the timetable's notice): a small
@@ -460,8 +495,6 @@ body {
 }
 
 .park-links a:not(.glass) {
-  display: inline-block;
-  padding: 0.2rem 0;
   color: var(--accent);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, currentColor 30%, transparent);
@@ -469,11 +502,6 @@ body {
   transition:
     color 0.2s ease,
     text-decoration-color 0.2s ease;
-}
-
-.park-links a:not(.glass):hover {
-  color: var(--accent-hover);
-  text-decoration-color: currentColor;
 }
 
 /*
@@ -716,7 +744,10 @@ html {
   display: grid;
   grid-template-columns: 6.5rem 1fr;
   align-items: baseline;
+  align-content: center;
   gap: 0.75rem;
+  /* Rows that touch: each a little over the 44px minimum */
+  min-height: 3rem;
   padding: 0.55rem 0.75rem;
 }
 
@@ -732,8 +763,7 @@ html {
 }
 
 .places-menu-map {
-  display: inline-block;
-  margin: 0.6rem 0.75rem 0;
+  margin: 0.35rem 0.75rem 0;
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -948,6 +978,19 @@ html {
 
 .notebook-points li::before {
   background: var(--mark);
+}
+
+/* Links in the notebook ("Where to find me"): 44px to tap, the writing
+   still on its ruled line, and a blank line between them so two never
+   meet */
+.notebook-points a {
+  display: inline-block;
+  padding-block: calc((2.75rem - var(--rule)) / 2);
+  margin-block: calc((var(--rule) - 2.75rem) / 2);
+}
+
+.notebook-points:has(a) > li + li {
+  margin-top: var(--rule);
 }
 
 .notebook-folio {
@@ -1601,7 +1644,8 @@ html {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.25rem 0.75rem;
+  /* A line's address and its Copy keep 8px apart when they wrap */
+  gap: 0.5rem 0.75rem;
 }
 
 /* Long addresses break where they must, not mid-word when they needn't */
@@ -1828,13 +1872,8 @@ html {
   transition: background-color 0.2s ease;
 }
 
-.map-pin:hover .map-pin-label,
 .map-pin:focus-visible .map-pin-label {
   background: var(--baby-pale);
-}
-
-.map-pin:hover .map-pin-section {
-  color: var(--accent);
 }
 
 .map-pin-section {
@@ -1953,11 +1992,6 @@ html {
   transition:
     background-color 0.2s ease,
     border-color 0.2s ease;
-}
-
-.notebook-controls + .text-link:hover,
-.notebook-sheet + .text-link:hover {
-  background-color: rgb(255 249 242 / 0.92);
 }
 
 /* Over the dark desk: the ring on a halo of cream */
@@ -2092,10 +2126,6 @@ html {
     padding: 0.7rem 0.75rem;
   }
 
-  .places-menu-map {
-    padding: 0.5rem 0;
-  }
-
   /* The name tags in the park are always up on a touch screen, and are
      the way into each place from the top of the home page */
   .world-label {
@@ -2212,12 +2242,9 @@ html {
     margin-top: 0.9rem;
   }
 
-  /* The links under the actions stay text links, each a full 44px tall
-     to tap (the actions and the sheet's other buttons are glass) */
+  /* The links under the actions stay text links (44px to tap: the
+     standalone links, near the top of this file) */
   .park-links a:not(.glass) {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
     font-size: 0.9375rem;
   }
 
@@ -2310,19 +2337,12 @@ html {
   }
 
   .onward-back {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
     margin-top: 0.6rem;
     font-size: 0.9375rem;
     font-weight: 500;
   }
 
   /* ---------- The pavilion: one sheet from the notebook ---------- */
-  /* Links in the notebook: the whole ruled line is the place to tap */
-  .notebook-points a {
-    padding-block: 0.3rem;
-  }
 
   /* Narrow sheets: the margin line moves in and the writing gets the
      width; 20-24px of paper round it */
@@ -2501,8 +2521,6 @@ html {
   }
 
   .directory-value a {
-    display: inline-block;
-    padding: 0.5rem 0;
     font-size: 1rem;
   }
 
@@ -2510,6 +2528,28 @@ html {
   .map-pin {
     width: 2.75rem;
     height: 2.75rem;
+  }
+
+  /* Phone widths: the places on the drawing are too close for 44px keys
+     that don't overlap, so the drawing is a picture to read and the list
+     under it (.map-key, a full row for each place) is what takes the tap.
+     They stay links for the keyboard. */
+  @media (max-width: 479px) {
+    .map-drawing .map-pin {
+      pointer-events: none;
+    }
+  }
+
+  /* With very large text the names can reach past the drawing: they stay
+     on the sheet (the list under it has them all) */
+  .map-drawing {
+    overflow: clip;
+    overflow-clip-margin: 0.5rem;
+  }
+
+  /* The directory's note reads at body size on a phone */
+  .directory-head + p {
+    font-size: 1rem;
   }
 
   .map-pin-label {
@@ -2612,7 +2652,7 @@ html {
 }
 
 .rh-meridiem {
-  font-size: 0.78em;
+  font-size: max(0.78em, 12px);
   letter-spacing: 0.02em;
   color: var(--muted);
 }
