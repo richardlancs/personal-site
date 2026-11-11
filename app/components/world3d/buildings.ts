@@ -215,7 +215,7 @@ export function buildArcade() {
   const frame = new THREE.Mesh(neonTube(7.18, 1.78, 0.036, 0.16), mat("neonBlue", () => neon(NEON.blue)));
   frame.position.set(0, 5.2, 4.11);
   g.add(frame);
-  g.add(wash([7.2, 1.8], [1.0, 1.0, 0.42, 0.9], NEON.pink, 0.24).translateY(5.2).translateZ(4.012));
+  g.add(wash([7.2, 1.8], [1.0, 1.0, 0.42, 0.9], NEON.pink, 0.15, 0.26).translateY(5.2).translateZ(4.012));
   // Shopfront: glass, and a shutter part way down
   const glow = windowGlow(0.45);
   const front = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.2), glow);
