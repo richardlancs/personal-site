@@ -5,10 +5,12 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { SkyState } from "../../../lib/sky";
 import { envUniforms } from "../environment";
+import { glowUniforms } from "../glow";
 import { scenes, type SceneId } from "../scenes";
 import { world } from "../store";
 import {
   OUTDOORS,
+  clamp01,
   cloudColor,
   copyDaylight,
   copyWeather,
@@ -49,7 +51,7 @@ import { overlay, precip, waterUniforms } from "./state";
 const BLEND = 3; // seconds
 const OPENING = 2500; // ms after the first frame in which a first reading still snaps
 
-type Kind = "sun" | "hemi" | "sky" | "lamp" | "window" | "halo" | "beam";
+type Kind = "sun" | "hemi" | "sky" | "spot" | "sign" | "window" | "beam";
 type Base = { color: RGB; ground: RGB; intensity: number; dir?: THREE.Vector3 };
 type Tagged = { obj: THREE.Object3D; kind: Kind; base: Base };
 
@@ -69,8 +71,9 @@ function baseOf(obj: THREE.Object3D, kind: Kind): Base {
   } else if (kind === "sun" || kind === "window") {
     const l = obj as THREE.Light;
     b = { color: rgbOf(l.color), ground: [0, 0, 0], intensity: l.intensity };
-  } else if (kind === "lamp") {
-    b = { color: [0, 0, 0], ground: [0, 0, 0], intensity: (obj.userData.night as number) ?? 6 };
+  } else if (kind === "spot" || kind === "sign") {
+    // At full night; a sign's light also has its own by day (`ground[0]`)
+    b = { color: [0, 0, 0], ground: [(obj.userData.day as number) ?? 0, 0, 0], intensity: (obj.userData.night as number) ?? 6 };
   } else if (kind === "beam") {
     b = { color: [0, 0, 0], ground: [0, 0, 0], intensity: (obj.userData.strength as { value: number }).value };
   } else if (kind === "sky") {
@@ -232,7 +235,16 @@ export default function Atmosphere({ active }: { active: SceneId }) {
     const { d, w, c, c2 } = s;
     const indoor = !OUTDOORS.has(id);
     const night = d.night;
+    // The street lamps come on through dusk; the signs a little earlier,
+    // and both rise smoothly with the evening (a 3 s blend moves them too)
     const lampsOn = step01(0.3, 0.85, night);
+    const signsOn = step01(0.05, 0.8, night);
+    // Rain, snow and mist outdoors: the air holds more of the lamps'
+    // light, and glows spread a little wider and softer
+    const haze = indoor ? 0 : clamp01(Math.max(w.rain, w.flakes * 0.75, w.fogGrey * 0.7));
+    glowUniforms.uLamps.value = indoor ? 0 : lampsOn * (0.75 + 0.45 * haze);
+    glowUniforms.uSigns.value = signsOn;
+    glowUniforms.uHaze.value = haze;
 
     // Fog and background, from the place's own
     const def = scenes[id];
@@ -285,12 +297,17 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         dir.copy(base.dir!);
         dir.y *= d.sunHeight;
         dir.normalize();
-      } else if (kind === "lamp") {
-        (obj as THREE.PointLight).intensity = base.intensity * lampsOn;
+      } else if (kind === "spot") {
+        // A street lamp, straight down; a touch softer in rain and mist.
+        // Its shadow (where it has one) is drawn only while it's lit.
+        const l = obj as THREE.SpotLight;
+        l.intensity = base.intensity * lampsOn * (1 - 0.15 * haze);
+        if (l.castShadow) l.shadow.autoUpdate = l.intensity > 0.01;
+      } else if (kind === "sign") {
+        const day = base.ground[0];
+        (obj as THREE.PointLight).intensity = day + (base.intensity - day) * signsOn;
       } else if (kind === "window") {
         (obj as THREE.PointLight).intensity = base.intensity * (1 + 0.9 * night);
-      } else if (kind === "halo") {
-        ((obj as THREE.Sprite).material as THREE.SpriteMaterial).opacity = 0.5 * lampsOn;
       } else if (kind === "beam") {
         const sun = Math.min(1.1, d.sunScale * w.sunScale);
         (obj.userData.strength as { value: number }).value = base.intensity * sun * (1 - night);

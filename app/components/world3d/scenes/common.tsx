@@ -109,11 +109,13 @@ export function SunLight({
 }
 
 // Tags for the lights the weather and the hour change (atmosphere/
-// Atmosphere.tsx), as userData: the place's sky light, and lamps that
-// come on at night (their intensity is what they give at full night).
-// One object each, so a render never hands three.js a new one.
+// Atmosphere.tsx), as userData: the place's sky light, and the light a
+// sign throws round it (its intensity by day and at full night; the
+// street lamps tag their own, props.ts: buildLamp). One object each, so a
+// render never hands three.js a new one.
 export const HEMI = { atmos: "hemi" } as const;
-export const NIGHT_LAMP = { atmos: "lamp", night: 6 } as const;
+export const PLATFORM_SIGN_LIGHT = { atmos: "sign", day: 0, night: 1.6 } as const;
+export const NEON_LIGHT = { atmos: "sign", day: 1.2, night: 2.4 } as const;
 
 type Opening = { x: number; y: number; w: number; h: number };
 type WallSpec = { openings?: Opening[] };

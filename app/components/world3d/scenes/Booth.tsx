@@ -11,7 +11,7 @@ import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { flagstones, groundTexture } from "../textures";
-import { HEMI, Hitbox, NIGHT_LAMP, SunLight, type SceneProps } from "./common";
+import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -38,7 +38,7 @@ function buildBoothScene(quality: "high" | "low") {
   vending.position.set(1.6, 0.1, -0.9);
   vending.rotation.y = -0.15;
   root.add(vending);
-  const lamp = buildLamp({ lit: true });
+  const lamp = buildLamp({ lit: true, light: "shadow" });
   lamp.position.set(-2.6, 0.1, 1.2);
   lamp.rotation.y = 0.4;
   root.add(lamp);
@@ -108,7 +108,7 @@ export default function Booth({ active, quality }: SceneProps) {
     const still = world.get().still;
     const damp = (from: number, to: number, k: number) => (still ? to : THREE.MathUtils.damp(from, to, k, dt));
     built.sky.position.copy(camera.position);
-    const { door, receiver, light, tubeMat } = built.booth;
+    const { door, receiver, light } = built.booth;
     // The door opens once you're there
     door.rotation.y = damp(door.rotation.y, arrived ? -1.75 : 0, arrived ? 2.2 : 5);
     // The receiver lifts off the hook toward you
@@ -118,10 +118,8 @@ export default function Booth({ active, quality }: SceneProps) {
     receiver.position.z = damp(receiver.position.z, 0.06 + up * 0.32, 7);
     receiver.rotation.z = damp(receiver.rotation.z, up * 1.25, 7);
     receiver.rotation.x = damp(receiver.rotation.x, up * 0.35, 7);
-    // The light catches now and then; steady while the line is open
-    const flick = !still && !phoneUp && Math.sin(t * 0.45) > 0.97 ? 0.3 + 0.7 * Math.abs(Math.sin(t * 37)) : 1;
-    light.intensity = 2.4 * flick;
-    tubeMat.emissiveIntensity = 1.6 * flick;
+    // The light under the roof is steady (lights in the world don't flicker)
+    light.intensity = 2.4;
     if (!still) built.falling.update(Math.min(dt, 0.05), t);
   });
 
@@ -131,8 +129,6 @@ export default function Booth({ active, quality }: SceneProps) {
       <ShakeableTrees trees={built.shakeable} active={active} />
       <SunLight active={active} position={[-26, 16, 18]} target={[0, 0, 0]} color="#ffd39a" intensity={2.6} size={14} quality={quality} />
       <hemisphereLight userData={HEMI} args={["#f2dcb4", "#5a6338", 1.15]} />
-      {/* The street lamp beside the booth, at night (built at 0 by day) */}
-      <pointLight userData={NIGHT_LAMP} position={[-2.6 + Math.cos(0.4) * 0.55, 3.4, 1.2 - Math.sin(0.4) * 0.55]} color="#ffc98a" intensity={0} distance={12} decay={1.5} />
       {active && (
         <>
           <Hitbox

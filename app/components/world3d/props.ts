@@ -4,6 +4,8 @@ import { mesh, paint, windUniforms } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
+import { BEAM, NEON, lampBeam, lightbox } from "./glow";
+import { world } from "./store";
 import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
 // Props: the things people left behind, modelled from parts. Each builder
@@ -36,9 +38,11 @@ export const M = {
     mat("glass", () =>
       paint({ color: "#c9d8cf", transparent: true, opacity: 0.22, brush: 0.4, brushScale: 3, grime: 0.8, side: THREE.DoubleSide, depthWrite: false }),
     ),
-  lampGlow: () => mat("lampGlow", () => paint({ color: "#fff1c9", emissive: "#ffd99a", emissiveIntensity: 1.4, brush: 0, glow: { night: 1.35 } })),
+  lampGlow: () => mat("lampGlow", () => paint({ color: "#fff1c9", emissive: "#ffd99a", emissiveIntensity: 1.4, brush: 0, glow: { night: 1.6 } })),
   // A lamp that only comes on when it's dark
-  lampNight: () => mat("lampNight", () => paint({ color: "#d8d4c2", emissive: "#ffd99a", emissiveIntensity: 1.6, brush: 0, glow: { day: 0, night: 1 } })),
+  lampNight: () => mat("lampNight", () => paint({ color: "#d8d4c2", emissive: "#ffd99a", emissiveIntensity: 2.2, brush: 0, glow: { day: 0, night: 1 } })),
+  // Inside a lamp's shade: pale enamel, lit by the bulb after dark
+  lampShade: () => mat("lampShade", () => paint({ color: "#e8e2cf", emissive: "#ffcf8a", emissiveIntensity: 0.55, brush: 0.1, side: THREE.BackSide, glow: { day: 0, night: 1 } })),
   paper: () => mat("paper", () => paint({ color: "#efe6cf", brush: 0.15, brushScale: 4 })),
 };
 
@@ -71,25 +75,55 @@ export function buildBench({ bag = false } = {}) {
   return g;
 }
 
-// A street lamp. The one left on glows by day; at night they all come on,
-// with a soft halo (its strength follows the night: atmosphere/Atmosphere.tsx)
-export function buildLamp({ lit = false } = {}) {
+// A street lamp: an enamel shade on an iron arm, the bulb up inside it
+// behind a frosted lens. The one left on glows by day; at night they all
+// come on (atmosphere/Atmosphere.tsx), each a spotlight at the bulb aimed
+// straight down, with its beam in the air under it (glow.ts: lampBeam).
+// `light`: "shadow" for a lamp near the main view (its light is stopped
+// by what stands in it, on the desktop tiers), "plain" for one without
+// shadows, "none" for no light of its own.
+export const LAMP = { x: 0.55, lens: 3.7, bulb: 3.77, night: 11 };
+export function buildLamp({ lit = false, light = "plain" as "shadow" | "plain" | "none" } = {}) {
   const g = new THREE.Group();
-  g.add(mesh(merge([tube([v(0, 0, 0), v(0, 2, 0), v(0, 3.4, 0), v(0.12, 3.75, 0), v(0.5, 3.85, 0)], (t) => 0.07 - t * 0.03, 12, 6), at(box(0.22, 0.25, 0.22), 0, 0.12, 0)]), M.iron()));
-  g.add(mesh(at(new THREE.CylinderGeometry(0.08, 0.2, 0.18, 8), 0.55, 3.78, 0), M.green()));
-  const glow = mesh(at(new THREE.SphereGeometry(0.09, 10, 8), 0.55, 3.66, 0), lit ? M.lampGlow() : M.lampNight(), { cast: false });
-  g.add(glow);
-  const halo = new THREE.Sprite(lampHalo());
-  halo.position.set(0.55, 3.6, 0);
-  halo.scale.setScalar(1.6);
-  halo.userData.atmos = "halo";
-  g.add(halo);
+  const { x, lens, bulb } = LAMP;
+  g.add(mesh(merge([tube([v(0, 0, 0), v(0, 2, 0), v(0, 3.4, 0), v(0.12, 3.75, 0), v(0.5, 3.88, 0)], (t) => 0.07 - t * 0.03, 12, 6), at(box(0.22, 0.25, 0.22), 0, 0.12, 0)]), M.iron()));
+  // The shade: open underneath, enamel outside, a pale reflector inside
+  // that catches the bulb's light
+  g.add(mesh(merge([at(new THREE.CylinderGeometry(0.06, 0.2, 0.17, 16, 1, true), x, lens + 0.085, 0), at(new THREE.CircleGeometry(0.06, 16).rotateX(-Math.PI / 2), x, lens + 0.17, 0)]), M.green()));
+  g.add(mesh(at(new THREE.CylinderGeometry(0.055, 0.19, 0.16, 16, 1, true), x, lens + 0.085, 0), M.lampShade(), { cast: false }));
+  // The bulb, up inside, and the frosted lens it shines through
+  const glass = lit ? M.lampGlow() : M.lampNight();
+  g.add(mesh(at(new THREE.SphereGeometry(0.05, 10, 8), x, bulb, 0), glass, { cast: false }));
+  g.add(mesh(at(new THREE.CircleGeometry(0.185, 20).rotateX(Math.PI / 2), x, lens + 0.004, 0), glass, { cast: false, receive: false }));
+  if (light !== "none") {
+    // The light itself, at the bulb, straight down, soft at the edge of
+    // its cone. 0 by day (the atmosphere brings it up), so the night
+    // never asks for new shaders.
+    const spot = new THREE.SpotLight(NEON.lamp, 0, 11, 0.62, 0.85, 1.6);
+    spot.position.set(x, bulb - 0.03, 0);
+    spot.target.position.set(x, 0, 0);
+    spot.userData.atmos = "spot";
+    spot.userData.night = LAMP.night;
+    if (light === "shadow" && world.get().quality !== "mobile") {
+      spot.castShadow = true;
+      spot.shadow.mapSize.set(512, 512);
+      spot.shadow.camera.near = 0.12;
+      spot.shadow.bias = -0.0008;
+      spot.shadow.normalBias = 0.03;
+      spot.shadow.radius = 3;
+      // Drawn only while it's lit (Atmosphere.tsx), and once at the start:
+      // the shaders sample it whether it's lit or not, so it must exist
+      spot.shadow.autoUpdate = false;
+      spot.shadow.needsUpdate = true;
+    }
+    g.add(spot, spot.target);
+    // Its beam in the air, from the lens to the ground
+    const beam = lampBeam(lens + BEAM.apexAboveLens);
+    beam.position.set(x, lens + BEAM.apexAboveLens, 0);
+    g.add(beam);
+  }
   return g;
 }
-
-let halo: THREE.SpriteMaterial | null = null;
-const lampHalo = () =>
-  (halo ??= new THREE.SpriteMaterial({ map: softDot(), color: "#ffcf8a", transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, fog: false }));
 
 // A wooden utility pole with a crossarm
 export function buildPole() {
@@ -167,7 +201,8 @@ export function buildBooth() {
     valign: "middle",
     lines: [{ text: "公用电话", size: 38, font: "display", color: "#2f5a3c", weight: 600, align: "center" }],
   });
-  const signMat = mat("boothSign", () => paint({ map: signTex, brush: 0.15, emissive: "#ffe8b8", emissiveIntensity: 0.12 }));
+  // A lit box, like the real ones: the face glows after dark
+  const signMat = mat("boothSign", () => lightbox(signTex, { strength: 0.6, grime: 0 }));
   for (let i = 0; i < 4; i++) {
     const s = new THREE.Mesh(card(0.8, 0.2), signMat);
     const a = (i * Math.PI) / 2;
