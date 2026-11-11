@@ -199,8 +199,10 @@
 
 @media (max-width: 767px), (max-height: 480px) {
   .resume-bar {
-    gap: 0.5rem 0.5rem;
-    padding: max(0.6rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) 0.6rem
+    gap: 0.5rem;
+    /* A little more than the status bar: the title's letters rise above
+       its line */
+    padding: max(0.6rem, calc(env(safe-area-inset-top) + 0.35rem)) max(0.75rem, env(safe-area-inset-right)) 0.6rem
       max(1rem, env(safe-area-inset-left));
   }
 
@@ -227,11 +229,22 @@
   }
 }
 
+/* The smallest phones: zoom and Fit width still share a line */
+@media (max-width: 379px) {
+  .resume-percent {
+    min-width: 2.75rem;
+  }
+
+  .resume-zoom {
+    gap: 0.25rem;
+  }
+}
+
 /* A phone on its side: little height to spare, so the bar is one row
    whenever it fits */
 @media (max-height: 480px) and (min-width: 600px) {
   .resume-bar {
-    padding-block: max(0.35rem, env(safe-area-inset-top)) 0.35rem;
+    padding-block: max(0.35rem, calc(env(safe-area-inset-top) + 0.35rem)) 0.35rem;
   }
 
   .resume-title {
