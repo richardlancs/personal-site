@@ -88,3 +88,75 @@ Screenshots in `screenshots/`:
 - **Browser:** headless Chrome through the repo's Playwright harness. The
   Playwright MCP was held by other sessions, and Claude in Chrome wasn't
   used.
+
+---
+
+# Glass on every control, and the interface on phones (10 November 2026)
+
+Branch `feature/glass-mobile`, from `da822b6`.
+
+## What changed
+
+- **Glass everywhere.** The project tabs, cabinet tabs, timetable lines
+  (24 → 44px), notebook page turns, screenshot thumbnails and the
+  Sections menu's rows joined the corner controls, actions and résumé
+  controls on `.glass`. One state system: primary (stronger blue, 600),
+  secondary, chosen (`aria-pressed`, `aria-selected`, `aria-current`,
+  `data-copied`, an open popover: baby blue, a double focus-blue edge,
+  pressed in), disabled (`:disabled`, `aria-disabled`: no fill, dashed
+  edge, no press), focus (ring on a cream halo). Each keeps its own sign
+  (lamp, lit screen, tick). Name tags, map pins and tertiary text links
+  stay as they are.
+- **The press** lets go when a touch becomes a scroll (`pointercancel`)
+  and when a popover closes over a pressed row.
+- **Phones and tablets.** `docs/ui/scripts/mobile-audit.mjs`: 1,163
+  failures on the old build → 0. The bar's back and Sections no longer
+  overlap at 320 (the way back becomes its arrow when the bar is narrow
+  for its words); every control and text clears the safe-area insets;
+  standalone links and menu rows are 44–48px, 8px apart; menus and the
+  slip fit and scroll inside; hover is gated to `(hover: hover)`; the
+  résumé's toolbar is three rows at 320 instead of four; no blur behind
+  glass on the phone's opaque sheet (4–5 blurred elements on screen while
+  scrolling, was 6–12). With very large text on a phone, Sections is its
+  map alone and the chip keeps to time, icon and temperature, so the
+  fixed bar is 180px instead of 240–309px; tabs go to one column; titles
+  stay whole.
+
+## Validation (production build)
+
+| Check | Result |
+|---|---|
+| lint, `tsc --noEmit`, build | clean |
+| `SMOKE_URL=… npm test` | 94/94 |
+| `perf:budget` | all within; CSS 14,494 / 18,000 (a clean build; Tailwind now skips untracked folders, so local matches Vercel) |
+| `mobile-audit.mjs` (320, 390, 430, 768, 1024 ×2, 1440, 844×390, 667×375, and 200% text at 320, 390, 844×390; every route, menu, slip, résumé) | 0 failures, 1 warning (the name's brush deepening on hover) |
+| `glass-states.mjs`, `glass-press.mjs` | all states as specified; every converted control gets the press; navigation not delayed |
+| `glass-contrast.mjs`, 16 skies, 5 routes desktop + phone | worst label 5.34:1 |
+| `resume-viewer.mjs` | 233/233 |
+| matrix / motion / chip-layout | 261/261 / 29/29 / 100/100 (one run of chip-layout read 99/100, a 1px shift on a freshly started server; three reruns 100/100) |
+| Independent QA (emulated touch, keyboard, skies, 200% text) | 2 must-fix and 3 should-fix, all fixed and re-measured |
+
+Screenshots: `screenshots/responsive/{before,after}-{w320,w390,w430,land,w768,w1024,w1440}-{home,projects,experience,contact}.jpg`
+(before from the live site), `after-w320-text200-projects.jpg`,
+`screenshots/glass2-*.jpg` (each control's states),
+`screenshots/mobile-{before,after}-*.jpg`.
+
+## Open
+
+- No real phone or tablet was used: every touch check is Chrome's
+  emulation (`hasTouch`, `isMobile`, `tap()`, emulated notch insets).
+  Not tested in Safari, Firefox or with a screen reader.
+- Large text was emulated by raising the root font size, not a phone's
+  own text-size setting.
+- Over green scenery on clear days the corner keys' glass reads
+  grey-green rather than baby blue (contrast is fine).
+- The skip link is 37px tall and not glass (shown only on focus).
+
+## Tools used
+
+Three agents: one on the glass (skills `frontend-design`,
+`design:design-system`, `design:accessibility-review`), one on mobile
+(`design:accessibility-review`), in their own worktrees in parallel with
+separate files, then an independent QA agent (no skills). Headless
+Chrome through the repo's Playwright harness. The Playwright MCP and
+Claude in Chrome weren't used.
