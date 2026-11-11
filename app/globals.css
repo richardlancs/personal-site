@@ -1598,6 +1598,7 @@ html {
 
 .directory-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
@@ -2151,8 +2152,20 @@ html {
     padding: 1rem max(1rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
     background: var(--background) var(--grain);
+    /* A word longer than the line (very large text on a small phone)
+       breaks rather than push the page sideways */
+    overflow-wrap: anywhere;
     box-shadow: 0 -14px 34px -20px rgb(var(--shadow) / 0.4);
     pointer-events: auto;
+  }
+
+  /* Glass on the sheet sits on opaque cream: a blur behind it would change
+     nothing you can see but cost a filter for each button on every frame
+     while the page scrolls. (The bar's keys keep theirs: the world is
+     behind them.) */
+  :is(.location-column, .park-sheet, .map-sheet) .glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   /* A grip at the top of the sheet: it's there to be scrolled up */
@@ -2220,8 +2233,10 @@ html {
     pointer-events: auto;
   }
 
+  /* Already large: with very large text it keeps to the screen's width
+     (13vw at most for its smallest size) rather than run off it */
   .park-name {
-    font-size: clamp(2.5rem, 12vw, 3.5rem);
+    font-size: clamp(min(2.5rem, 13vw), 12vw, 3.5rem);
   }
 
   .park-headline {
