@@ -443,7 +443,7 @@ for (const view of Object.keys(views)) {
   // on hover, so let it in first
   await page.locator("a[data-resume]:visible").first().hover();
   await page.waitForTimeout(800);
-  await page.route(/\/_next\/static\/chunks\/.*\.js$/, (r) => r.abort("failed"));
+  await page.route(/\/_next\/static\/(immutable\/)?chunks\/.*\.js(\?|$)/, (r) => r.abort("failed"));
   await (await trigger(page, "/contact", "desktop")).click();
   const shown = await page.waitForSelector("dialog.resume[open] .resume-error", { timeout: 20000 }).then(
     () => true,
