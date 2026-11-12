@@ -34,10 +34,8 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
     t.needsUpdate = true;
   };
   if (opts.text && typeof document !== "undefined" && document.fonts && !fontsLoaded) {
-    // Words wait for the fonts (a moment, at the start). Drawn before
-    // them, the browser hunts through its own fonts for every Chinese
-    // character (a quarter of a second for the first sign) and the sign
-    // has to be painted again anyway.
+    // Words wait for the fonts (a moment, at the start): drawn before
+    // them, the sign would have to be painted again anyway.
     fontsReady().then(paint);
   } else {
     paint();
@@ -46,10 +44,9 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
   return t;
 }
 
-// Every Chinese character on a sign or notice in the world. A canvas
-// doesn't make the browser fetch a font's Unicode slices the way page text
-// does, so they're asked for up front, before the signs are painted.
-const CHINESE = "工坊光明公园站游戏厅导览图寻猫启事联系夏日祭傍晚开始通知冰镇用电话车凉亭时刻表";
+// A canvas doesn't make the browser fetch a font the way page text does,
+// so the weights the signs use are asked for up front, before they're
+// painted.
 let ready: Promise<unknown> | null = null;
 let fontsLoaded = false;
 function fontsReady() {
@@ -57,7 +54,7 @@ function fontsReady() {
     const f = fonts();
     ready = Promise.all([
       document.fonts.ready,
-      document.fonts.load(`600 40px ${f.display}`, CHINESE).catch(() => null),
+      document.fonts.load(`600 40px ${f.display}`, "Ag").catch(() => null),
       document.fonts.load(`500 40px ${f.display}`, "Ag").catch(() => null),
       document.fonts.load(`500 20px ${f.text}`, "Ag").catch(() => null),
     ]).then(() => {
@@ -77,10 +74,8 @@ function hash(s: string) {
 export function fonts() {
   if (typeof document === "undefined") return { display: "serif", text: "sans-serif" };
   const css = getComputedStyle(document.documentElement);
-  // Latin from Shippori Mincho, Chinese from Noto Serif SC
-  const chinese = css.getPropertyValue("--font-noto-sc").trim();
   return {
-    display: `${css.getPropertyValue("--font-shippori").trim() || "serif"}, ${chinese ? `${chinese}, ` : ""}"Songti SC", serif`,
+    display: `${css.getPropertyValue("--font-shippori").trim() || "serif"}, serif`,
     text: `${css.getPropertyValue("--font-zen-kaku").trim() || "sans-serif"}, "Hiragino Sans", sans-serif`,
   };
 }
@@ -735,10 +730,10 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
       g.fillStyle = "#2b2f27";
       g.strokeStyle = "#2b2f27";
       if (kind === "map") {
-        g.font = `600 26px ${f.display}`;
-        g.fillText("公园导览图", 20, 40);
+        g.font = `600 30px ${f.display}`;
+        g.fillText("Park Map", 20, 44);
         g.font = `500 14px ${f.text}`;
-        g.fillText("Park map", 20, 60);
+        g.fillText("You are here", 20, 64);
         g.lineWidth = 3;
         g.setLineDash([8, 6]);
         const paths = [
@@ -773,7 +768,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
         }
       } else if (kind === "cat") {
         g.font = `600 30px ${f.display}`;
-        g.fillText("寻猫启事", 20, 46);
+        g.fillText("Lost Cat", 20, 46);
         g.font = `500 15px ${f.text}`;
         g.fillText("Lost cat. Grey tabby,", 20, 74);
         g.fillText("answers to Mantou.", 20, 94);
@@ -798,7 +793,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
           g.translate(24 + i * 38, 270);
           g.rotate(-Math.PI / 2);
           g.font = `400 10px ${f.text}`;
-          g.fillText("联系 ...", -40, 4);
+          g.fillText("Call ...", -40, 4);
           g.restore();
         }
       } else if (kind === "festival") {
@@ -807,11 +802,11 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
         g.arc(190, 80, 46, 0, Math.PI * 2);
         g.fill();
         g.fillStyle = "#2b2f27";
-        g.font = `600 40px ${f.display}`;
-        g.fillText("夏日祭", 20, 170);
+        g.font = `600 38px ${f.display}`;
+        g.fillText("Summer", 20, 150);
+        g.fillText("Festival", 20, 188);
         g.font = `500 16px ${f.text}`;
-        g.fillText("Summer festival", 22, 196);
-        g.fillText("8.24  傍晚开始", 22, 222);
+        g.fillText("8.24  from dusk", 22, 222);
         g.strokeStyle = "rgba(43,47,39,0.6)";
         for (let i = 0; i < 6; i++) {
           g.beginPath();
@@ -821,7 +816,7 @@ export const notice = (kind: "map" | "cat" | "festival" | "faded") =>
       } else {
         g.globalAlpha = 0.35;
         g.font = `600 22px ${f.display}`;
-        g.fillText("通知", 20, 46);
+        g.fillText("Notice", 20, 46);
         g.font = `400 13px ${f.text}`;
         for (let i = 0; i < 9; i++) g.fillRect(20, 80 + i * 22, r.range(120, 210), 6);
         g.globalAlpha = 1;

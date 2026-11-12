@@ -10,6 +10,7 @@ import { mesh, paint, windUniforms } from "../paint";
 import { crownClusters, foliageGeometry, foliageMaterial, type Cluster } from "../vegetation/foliage";
 import { vegMesh } from "../vegetation/shader";
 import {
+  LAMP,
   M,
   buildBench,
   buildBicycle,
@@ -32,6 +33,7 @@ import { rng, type Rng } from "../rng";
 import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
+import { NEON } from "../glow";
 import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
@@ -174,6 +176,7 @@ function buildPark(quality: "high" | "low") {
   // Each lamp lights the ground under it at night. The two in the main
   // view, by the fountain and by the booth, also have shadows (on the
   // desktop tiers): every shadow is a second drawing of what's under it.
+  const lamps: THREE.Object3D[] = [];
   for (const [x, z, lit, light] of [
     [-2.4, 13, false, "plain"],
     // (right of the line from the steps to the station's sign)
@@ -185,13 +188,23 @@ function buildPark(quality: "high" | "low") {
     lamp.position.set(x, 0, z);
     lamp.rotation.y = r() * 6;
     root.add(lamp);
+    lamps.push(lamp);
   }
+  // The lights the fountain's water holds after dark: the two lamps
+  // behind it, the arcade's sign and the booth's. A sign is dimmer than
+  // its size says: only its words and frame are lit, not the board
+  fountain.reflect([
+    { obj: lamps[1], at: [LAMP.x, LAMP.bulb, 0], color: NEON.lamp, strength: 0.8, size: [0.2, 0.08], sign: false },
+    { obj: lamps[3], at: [LAMP.x, LAMP.bulb, 0], color: NEON.lamp, strength: 0.8, size: [0.2, 0.08], sign: false },
+    { obj: arcade.group, at: [0, 5.2, 4.1], color: NEON.pink, strength: 0.3, size: [2.2, 0.45], sign: true },
+    { obj: booth.group, at: [0, 2.5, 0], color: NEON.pink, strength: 0.45, size: [0.4, 0.08], sign: true },
+  ]);
   // Each arm points at its place (the angle is atan2(-dz, dx) from here)
   const sign = buildSignpost([
-    { zh: "工坊", label: "Workshop", angle: 1.0 },
-    { zh: "车站", label: "Station", angle: 1.43 },
-    { zh: "游戏厅", label: "Arcade", angle: 1.80 },
-    { zh: "凉亭", label: "Pavilion", angle: 2.47 },
+    { label: "Workshop", angle: 1.0 },
+    { label: "Station", angle: 1.43 },
+    { label: "Arcade", angle: 1.80 },
+    { label: "Pavilion", angle: 2.47 },
   ]);
   sign.group.position.set(-2.7, 0, -2.4);
   root.add(sign.group);

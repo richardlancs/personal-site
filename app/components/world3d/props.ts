@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { at, blob, box, buildVine, merge, tube, wire } from "./geometry";
+import { tuftsAt } from "./vegetation/grass";
 import { mesh, paint, windUniforms, type PaintOptions } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
-import { BEAM, NEON, lampBeam, lightbox, neonLetters, neonOf } from "./glow";
+import { BEAM, NEON, glowUniforms, lampBeam, neon, neonSign, neonTube } from "./glow";
 import { world } from "./store";
-import { enamel, flagstones, neonMask, notice, planks, plaster, singleLeaves, softDot, textPanel, type PanelOptions } from "./textures";
+import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
 // Props: the things people left behind, modelled from parts. Each builder
 // returns a group, plus handles for anything that moves.
@@ -155,7 +156,7 @@ export function buildVending() {
   const g = new THREE.Group();
   const front = textPanel("vending", 256, 512, {
     background: "#c9d4cf",
-    lines: [{ text: "冰镇", size: 22, color: "#3a6ea5", weight: 700 }],
+    lines: [{ text: "Ice cold", size: 22, color: "#3a6ea5", weight: 700 }],
   });
   const body = mesh(box(0.95, 1.85, 0.72), mat("vendingBody", () => paint({ map: enamel(200, 18, 70), rust: 0.35, grime: 0.6 })));
   body.position.y = 0.95;
@@ -199,28 +200,25 @@ export function buildBooth() {
   // Roof cap and the sign on each side
   g.add(mesh(at(box(W + 0.18, 0.16, W + 0.18), 0, H + 0.2, 0), M.green()));
   g.add(mesh(at(box(W + 0.24, 0.05, W + 0.24), 0, H + 0.3, 0), mat("boothRoof", () => paint({ map: enamel(140, 22, 28), rust: 0.6, moss: 0.8, grime: 0.3 }))));
-  const signText: PanelOptions = {
-    background: "#efe8d4",
-    padding: 6,
-    valign: "middle",
-    lines: [{ text: "公用电话", size: 38, font: "display", color: "#2f5a3c", weight: 600, align: "center" }],
-  };
-  const signTex = textPanel("booth-sign", 256, 64, signText);
-  const signWords = neonLetters(neonMask("booth-sign", 256, 64, signText, 5), [0.8, 0.2], neonOf("#2f5a3c"));
-  // A lit box, like the real ones: the face glows after dark
-  const signMat = mat("boothSign", () => lightbox(signTex, { strength: 0.6, grime: 0 }));
+  // Neon letters on a navy board, like the buildings' (glow.ts: neonSign)
+  const sign = neonSign("booth-sign-en", [256, 64], [0.8, 0.2], [{ text: "Telephone", size: 36 }], { halo: 5, padding: 6, grime: 0 });
+  const signWords = sign.letters;
+  const frames: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 4; i++) {
-    const s = new THREE.Mesh(card(0.8, 0.2), signMat);
+    const s = new THREE.Mesh(card(0.8, 0.2), sign.face);
     const a = (i * Math.PI) / 2;
     s.position.set(Math.sin(a) * (W / 2 + 0.1), H + 0.2, Math.cos(a) * (W / 2 + 0.1));
     s.rotation.y = a;
-    // Its words in neon, in their own green
+    // Its words in neon
     const words = new THREE.Mesh(signWords.geometry, signWords.material);
     words.renderOrder = 1;
     words.position.z = 0.004;
     s.add(words);
     g.add(s);
+    // A thin neon frame round it
+    frames.push(at(neonTube(0.8, 0.2, 0.007, 0.03), Math.sin(a) * (W / 2 + 0.106), H + 0.2, Math.cos(a) * (W / 2 + 0.106), a));
   }
+  g.add(new THREE.Mesh(merge(frames), mat("neonBlue", () => neon(NEON.blue))));
   // Base
   g.add(mesh(at(box(W + 0.12, 0.12, W + 0.12), 0, 0.06, 0), M.concrete()));
   // Glass on the three fixed sides
@@ -338,16 +336,43 @@ export function buildSwing() {
   return { group: g, seats };
 }
 
-// Water that holds a little of the sky
-export function waterMaterial(color = "#36432f", sky = "#cdb486") {
+// The water in the fountain's basin, long since a small still pond. Unlit
+// (it shows what's round it, not the sun's shading), and made of:
+// - depth: a deep green-brown in the middle, lighter over the shallow
+//   stone at its edge and round the column's foot
+// - ripples, as a gently moving slope: two slow trains crossing in the
+//   breeze and a few rings opening and fading on their own long beats
+//   (something touched the water); rings where the jet comes down, and
+//   where rain lands
+// - reflections, broken by that slope: the sky, the ragged dark line of
+//   the trees and walls round the park, the column upside down in the
+//   middle, and after dark each nearby light (`reflect`) as a soft streak
+//   drawn out toward the eye, the way light lies on rippled water
+// Everything follows the hour and the weather (atmosphere/state.ts,
+// environment.ts, glow.ts) and the world's clock, which stops in still
+// view, so the water holds still too.
+export const WATER_LIGHTS = 4;
+export function waterMaterial(color = "#2f3d2b", shallow = "#6f7550", sky = "#cdb486") {
   return new THREE.ShaderMaterial({
     uniforms: {
       uTime: windUniforms.uTime,
       uColor: { value: new THREE.Color(color) },
+      uShallow: { value: new THREE.Color(shallow) },
       uSky: { value: new THREE.Color(sky) },
       uSplash: { value: 0 }, // 0 to 1: how hard water is falling into it
       ...waterUniforms, // the weather and the hour (atmosphere/state.ts)
       uWet: envUniforms.uWet, // rain falling on it
+      uNight: envUniforms.uNight,
+      uLamps: glowUniforms.uLamps,
+      uSigns: glowUniforms.uSigns,
+      uHaze: glowUniforms.uHaze,
+      // The lights it reflects (world positions, set as it's drawn), their
+      // colours, their half size in metres (width, height) and whether
+      // each is a sign (1) or a lamp (0)
+      uLightPos: { value: Array.from({ length: WATER_LIGHTS }, () => new THREE.Vector3(0, -100, 0)) },
+      uLightCol: { value: Array.from({ length: WATER_LIGHTS }, () => new THREE.Color(0, 0, 0)) },
+      uLightSize: { value: Array.from({ length: WATER_LIGHTS }, () => new THREE.Vector2(0.1, 0.1)) },
+      uLightSign: { value: new THREE.Vector4() },
     },
     vertexShader: /* glsl */ `
       varying vec3 vWorld;
@@ -359,44 +384,139 @@ export function waterMaterial(color = "#36432f", sky = "#cdb486") {
         gl_Position = projectionMatrix * viewMatrix * w;
       }`,
     fragmentShader: /* glsl */ `
+      #define LIGHTS ${WATER_LIGHTS}
       uniform float uTime;
       uniform vec3 uColor;
+      uniform vec3 uShallow;
       uniform vec3 uSky;
       uniform float uSplash;
       uniform vec3 uSkyTint;
       uniform float uLight;
       uniform vec3 uSkyNow;
       uniform float uWet;
+      uniform float uNight;
+      uniform float uLamps;
+      uniform float uSigns;
+      uniform float uHaze;
+      uniform vec3 uLightPos[LIGHTS];
+      uniform vec3 uLightCol[LIGHTS];
+      uniform vec2 uLightSize[LIGHTS];
+      uniform vec4 uLightSign;
       varying vec3 vWorld;
       varying vec2 vLocal;
       float wh(vec2 c) { return fract(sin(dot(c, vec2(12.9898, 78.233))) * 43758.5453); }
+      float vn(vec2 p) {
+        vec2 i = floor(p);
+        vec2 f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(wh(i), wh(i + vec2(1.0, 0.0)), f.x), mix(wh(i + vec2(0.0, 1.0)), wh(i + vec2(1.0, 1.0)), f.x), f.y);
+      }
+      // The slope of one slow ring, opening from c over \`period\` seconds
+      // and fading as it goes
+      vec2 ring(vec2 q, vec2 c, float t, float period, float amp) {
+        float k = fract(t / period);
+        vec2 d = q - c;
+        float r = length(d) + 1e-4;
+        float x = r - k * 1.7;
+        float env = exp(-x * x * 16.0) * (1.0 - k) * smoothstep(0.0, 0.12, k);
+        return d / r * amp * 13.0 * cos(x * 13.0) * env;
+      }
       void main() {
-        vec2 p = vWorld.xz;
-        float ripple = sin(p.x * 3.1 + uTime * 0.9) * sin(p.y * 2.7 - uTime * 0.7) + sin(length(p) * 6.0 - uTime * 1.3) * 0.5;
-        // Rings spreading out from where the water comes down
-        float d = length(vLocal);
-        ripple += sin(d * 11.0 - uTime * 7.0) * uSplash * 1.4 * smoothstep(2.9, 0.6, d);
+        vec2 q = vLocal;
+        float r = length(q);
+        float t = uTime;
+        // The ripples' slope: two slow trains crossing in the breeze...
+        vec2 k1 = vec2(2.3, 1.1);
+        vec2 k2 = vec2(-1.3, 2.6);
+        vec2 k3 = vec2(4.6, -3.1);
+        vec2 g = k1 * cos(dot(q, k1) - t * 0.55) * 0.009
+          + k2 * cos(dot(q, k2) - t * 0.43 + 1.3) * 0.008
+          + k3 * cos(dot(q, k3) - t * 0.8 + 2.1) * 0.003;
+        // ...a few rings, each on its own long beat
+        g += ring(q, vec2(-1.5, -1.4), t, 7.0, 0.011);
+        g += ring(q, vec2(1.7, 0.8), t + 2.6, 9.0, 0.009);
+        g += ring(q, vec2(0.3, 1.9), t + 5.1, 11.0, 0.008);
+        // Rings spreading out from where the jet comes down
+        g += q / (r + 1e-4) * cos(r * 11.0 - t * 7.0) * 0.2 * uSplash * smoothstep(2.9, 0.6, r);
         // In rain: small rings where drops land, each opening and fading on
-        // its own beat (held still with the world's clock in still view)
+        // its own beat
         float rings = 0.0;
         if (uWet > 0.0) {
-          vec2 g = p * 1.3;
-          vec2 cell = floor(g);
-          float h = wh(cell);
-          float t = fract(uTime * 0.55 + h);
+          vec2 gp = vWorld.xz * 1.3;
+          vec2 cell = floor(gp);
+          float tr = fract(t * 0.55 + wh(cell));
           vec2 at = vec2(wh(cell + 3.7), wh(cell + 9.1)) * 0.6 + 0.2;
-          float r = length(fract(g) - at);
-          rings = smoothstep(0.045, 0.0, abs(r - t * 0.42)) * (1.0 - t) * uWet;
+          vec2 dd = fract(gp) - at;
+          float rr = length(dd);
+          rings = smoothstep(0.045, 0.0, abs(rr - tr * 0.42)) * (1.0 - tr) * uWet;
+          g += dd / (rr + 1e-4) * rings * 0.12;
         }
-        vec3 view = normalize(cameraPosition - vWorld);
-        float fres = pow(1.0 - max(view.y, 0.0), 3.0);
-        // A wet pool goes dark and holds a little of the grey sky it's under,
-        // broken by rings; a dry one the warm sky it was painted with
+        vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
+        vec3 v = normalize(cameraPosition - vWorld);
+        vec3 R = reflect(-v, n);
+
+        // What it reflects: the sky above the ragged line of the trees and
+        // walls round the park (low, so most of what's seen across the
+        // water from the steps)...
+        float az = atan(R.z, R.x);
+        float line = 0.15 + 0.05 * sin(az * 5.0 + 1.1) + 0.03 * sin(az * 13.0 + 0.4) + 0.02 * (vn(vec2(az * 9.0, 0.5)) - 0.5);
+        float soft = 0.05 + 0.05 * uHaze + 0.05 * uWet;
         vec3 sky = mix(uSky * uSkyTint, uSkyNow, uWet * 0.85);
-        vec3 deep = mix(uColor, uSkyNow * 0.3, 0.35 * uWet) * uLight * (1.0 - 0.15 * uWet);
-        vec3 col = mix(deep, sky, 0.07 + fres * (0.3 - 0.12 * uWet) + ripple * 0.025 * (1.0 + uWet) + rings * 0.5);
-        col += vec3(1.0, 0.92, 0.75) * smoothstep(1.0, 1.45, ripple) * 0.08 * uLight * (1.0 - uWet);
-        gl_FragColor = vec4(col, 0.94);
+        vec3 trees = mix(vec3(0.2, 0.24, 0.15), uSkyNow * 0.35, 0.3) * uLight;
+        // (what's lit only by the sky goes much darker after dark than the
+        // light level alone says, as the painted surfaces round it do)
+        float dim = uLight * mix(1.0, 0.3, uNight);
+        trees *= mix(1.0, 0.3, uNight);
+        vec3 refl = mix(trees, sky, smoothstep(line - soft, line + soft, R.y));
+        // ...and the column, upside down in the middle
+        vec2 rd = R.xz;
+        float tc = -dot(q, rd) / max(dot(rd, rd), 1e-5);
+        if (tc > 0.0) {
+          float dist = length(q + rd * tc);
+          float h = R.y * tc;
+          float rad = h < 0.95 ? 0.27 : h < 1.12 ? 0.84 : h < 1.6 ? 0.19 : 0.0;
+          float col = 1.0 - smoothstep(rad * 0.8, rad * 1.15 + 0.05, dist);
+          refl = mix(refl, vec3(0.4, 0.39, 0.33) * dim, col * 0.8);
+        }
+
+        // Through the water: deep in the middle, the shallow stone showing
+        // at the edge and round the column's foot, a little murk drifting
+        float shallow = clamp(smoothstep(1.9, 2.8, r) + 0.6 * (1.0 - smoothstep(0.38, 0.95, r)), 0.0, 1.0);
+        vec3 body = mix(uColor, uShallow, shallow * 0.75) * (0.9 + 0.16 * vn(q * 1.3 + vec2(t * 0.02, 0.0)));
+        body = mix(body, uSkyNow * 0.3, 0.35 * uWet) * mix(uLight, dim, 0.8) * (1.0 - 0.15 * uWet);
+
+        // More reflection at a low angle, less where it's shallow, broken
+        // further by rain
+        float k = mix(0.1, 0.55, pow(1.0 - max(dot(n, v), 0.0), 3.0)) * (1.0 - 0.3 * shallow) * (1.0 - 0.2 * uWet);
+        vec3 col = mix(body, refl, clamp(k + rings * 0.4, 0.0, 1.0));
+
+        // The lights after dark, each a soft streak toward the eye: narrow
+        // across, drawn out up and down by the ripples, wider in rain and
+        // mist; nothing by day
+        vec2 a = normalize(R.xz + 1e-5);
+        float spread = 1.0 + 1.2 * uHaze + 0.8 * uWet;
+        vec3 glints = vec3(0.0);
+        for (int i = 0; i < LIGHTS; i++) {
+          vec3 L = uLightPos[i] - vWorld;
+          float dist = length(L);
+          vec3 l = L / dist;
+          float on = mix(uLamps, uSigns, uLightSign[i]);
+          float across = acos(clamp(dot(a, normalize(l.xz + 1e-5)), -1.0, 1.0));
+          float w = uLightSize[i].x / dist;
+          float hh = uLightSize[i].y / dist;
+          float s = 1.0 - smoothstep(w * 0.6, w * 1.2 + 0.012 * spread, across);
+          float up = max(abs(R.y - l.y) - hh, 0.0);
+          s *= exp(-up * up * 900.0 / spread);
+          glints += uLightCol[i] * s * on;
+        }
+        // Broken across into short dashes by the ripples, which drift
+        float dashes = smoothstep(0.2, 0.8, vn(vec2(vWorld.x * 3.0 + g.x * 20.0, vWorld.z * 13.0 + g.y * 20.0) + vec2(0.0, t * 0.25)));
+        col += glints * (0.3 + 0.7 * dashes) * (0.75 - 0.25 * uWet);
+        // By day, a little of the sky caught on the ripples' crests
+        col += sky * smoothstep(0.1, 0.2, length(g)) * 0.05 * dim * (1.0 - uWet);
+        // Where it meets the stone, a thin line of light
+        col = mix(col, sky * dim, smoothstep(2.74, 2.84, r) * 0.25);
+        gl_FragColor = vec4(col, 0.95);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,
@@ -429,6 +549,7 @@ export function buildFountain() {
     floating.add(leaf);
   }
   g.add(floating);
+  g.add(buildPondEdge(stone));
 
   // The jet: a column of water rising from the top, which spreads into
   // drops falling back to the upper bowl and the basin
@@ -480,7 +601,98 @@ export function buildFountain() {
     }
     dropGeo.attributes.position.needsUpdate = true;
   };
-  return { group: g, floating, update, stone };
+  // The lights it reflects after dark (`waterMaterial`): each is a point
+  // on some object in the park (its position in that object's own
+  // frame), worked out in the world as the water is drawn
+  const reflect = (lights: { obj: THREE.Object3D; at: [number, number, number]; color: string; strength: number; size: [number, number]; sign: boolean }[]) => {
+    const u = waterMat.uniforms;
+    const list = lights.slice(0, WATER_LIGHTS);
+    list.forEach((l, i) => {
+      u.uLightCol.value[i].set(l.color).multiplyScalar(l.strength);
+      u.uLightSize.value[i].set(l.size[0], l.size[1]);
+      u.uLightSign.value.setComponent(i, l.sign ? 1 : 0);
+    });
+    const local = list.map((l) => new THREE.Vector3(...l.at));
+    water.onBeforeRender = () => {
+      list.forEach((l, i) => u.uLightPos.value[i].copy(local[i]).applyMatrix4(l.obj.matrixWorld));
+    };
+  };
+  return { group: g, floating, update, stone, reflect };
+}
+
+// What grows and lies at the pond's edge, kept to the shallow ring by the
+// rim so the water stays open and nothing stands in the views across it:
+// a few mossy stones, two clumps of reeds with grass at their feet (no
+// taller than the column's bowl), lily pads, some yellowing for autumn,
+// and a little grass at the basin's foot outside
+function buildPondEdge(stone: THREE.MeshLambertMaterial) {
+  const g = new THREE.Group();
+  const r = rng(47);
+  const polar = (a: number, d: number) => [Math.cos(a) * d, Math.sin(a) * d] as const;
+  // Stones, mostly under the water, in the shallows by the reeds
+  const stones: THREE.BufferGeometry[] = [];
+  for (const [a, d, size] of [
+    [3.6, 2.5, 0.2],
+    [3.85, 2.62, 0.14],
+    [4.05, 2.45, 0.17],
+    [0.2, 2.55, 0.16],
+    [0.42, 2.6, 0.12],
+    [2.5, 2.6, 0.13],
+  ] as const) {
+    const [x, z] = polar(a, d);
+    stones.push(at(blob(r, size, 0.55, 0.3, 1), x, 0.42, z, r() * 6));
+  }
+  g.add(mesh(merge(stones), stone, { cast: false }));
+  // Reeds in two clumps on the shallow ring: the larger at the back left,
+  // a smaller one on the right
+  const reeds: { x: number; y: number; z: number; h: number }[] = [];
+  const grassAt: { x: number; y: number; z: number; h: number }[] = [];
+  for (const [a0, a1, count, tall] of [
+    [3.55, 4.15, 13, 1.05],
+    [0.05, 0.45, 5, 0.8],
+  ] as const) {
+    for (let i = 0; i < count; i++) {
+      const [x, z] = polar(r.range(a0, a1), r.range(2.3, 2.7));
+      reeds.push({ x, y: 0.3, z, h: tall * r.range(0.75, 1.1) });
+    }
+    for (let i = 0; i < count; i++) {
+      const [x, z] = polar(r.range(a0 - 0.15, a1 + 0.15), r.range(2.4, 2.75));
+      grassAt.push({ x, y: 0.3, z, h: r.range(0.3, 0.45) });
+    }
+  }
+  // And a little grass at the foot of the basin, outside
+  for (const a of [1.2, 2.2, 2.9, 4.6, 5.5]) {
+    for (let i = 0; i < 2; i++) {
+      const [x, z] = polar(a + r.range(-0.12, 0.12), r.range(3.18, 3.3));
+      grassAt.push({ x, y: 0, z, h: r.range(0.25, 0.4) });
+    }
+  }
+  g.add(tuftsAt(reeds, "reeds", 48), tuftsAt(grassAt, "grass", 49));
+  // Lily pads: round leaves with a notch, in two loose groups on the
+  // open water near the edge, a few turning yellow
+  const pads: THREE.BufferGeometry[] = [];
+  const colors = ["#56733a", "#5f7c3c", "#6b7f3e", "#a1913f"].map((c) => new THREE.Color(c));
+  for (const [a, d] of [
+    [2.3, 2.2],
+    [2.5, 1.85],
+    [2.15, 1.7],
+    [2.65, 2.35],
+    [5.15, 2.15],
+    [5.35, 1.8],
+    [4.95, 1.95],
+  ] as const) {
+    const [x, z] = polar(a + r.range(-0.05, 0.05), d);
+    const size = r.range(0.14, 0.24);
+    const notch = r.range(0.35, 0.55);
+    const pad = new THREE.CircleGeometry(size, 18, notch / 2, Math.PI * 2 - notch).rotateX(-Math.PI / 2);
+    const c = r.pick(colors);
+    const col = new Float32Array(pad.attributes.position.count * 3);
+    for (let i = 0; i < col.length; i += 3) [col[i], col[i + 1], col[i + 2]] = [c.r, c.g, c.b];
+    pad.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    pads.push(at(pad, x, 0.462, z, r() * Math.PI * 2));
+  }
+  g.add(mesh(merge(pads), mat("lilyPads", () => paint({ vertexColors: true, brush: 0.25, brushScale: 6, side: THREE.DoubleSide })), { cast: false }));
+  return g;
 }
 
 // One leaf from the four in the fallen-leaves texture
@@ -525,7 +737,7 @@ export function buildNoticeBoard() {
 }
 
 // The signpost at the fork, pointing the way
-export function buildSignpost(arms: { label: string; zh: string; angle: number }[]) {
+export function buildSignpost(arms: { label: string; angle: number }[]) {
   const g = new THREE.Group();
   g.add(mesh(at(box(0.12, 2.6, 0.12), 0, 1.3, 0), M.darkWood()));
   const swing: THREE.Object3D[] = [];
@@ -534,12 +746,14 @@ export function buildSignpost(arms: { label: string; zh: string; angle: number }
       background: "#cdb48a",
       padding: 10,
       valign: "middle",
-      lines: [{ text: `${arm.zh}  ${arm.label} →`, size: 26, font: "display", color: "#3a2a1c", weight: 600 }],
+      lines: [{ text: `${arm.label} →`, size: 28, font: "display", color: "#3a2a1c", weight: 600, align: "center" }],
     });
     const pivot = new THREE.Group();
     pivot.position.y = 2.2 - i * 0.36;
     pivot.rotation.y = arm.angle;
-    const board = new THREE.Mesh(box(1.1, 0.24, 0.04), [M.wood(), M.wood(), M.wood(), M.wood(), mat(`sign-${arm.label}`, () => paint({ map: tex, brush: 0.2, brushScale: 4, moss: 0.2 })), M.wood()] as unknown as THREE.Material);
+    // Plain box UVs, so the face shows the whole label (box() scales them
+    // per metre, which showed only a blank corner of it)
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.24, 0.04), [M.wood(), M.wood(), M.wood(), M.wood(), mat(`sign-${arm.label}`, () => paint({ map: tex, brush: 0.2, brushScale: 4, moss: 0.2 })), M.wood()] as unknown as THREE.Material);
     board.position.x = 0.58;
     board.castShadow = true;
     pivot.add(board);

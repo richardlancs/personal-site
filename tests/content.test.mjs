@@ -129,25 +129,21 @@ test("the flat and world layouts use the same media queries in CSS and in code",
   }
 });
 
-test("every Chinese character on the signs is in the sign font's subset", () => {
-  // app/fonts/noto-serif-sc-signs-600.woff2 holds only the characters in
-  // app/fonts/signs.txt. When a sign gains a character, add it there and
-  // download the subset again:
-  //   https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600&text=<the characters, URL-encoded>
-  // (with a browser User-Agent, so it answers with woff2), then fetch the
-  // one URL in that CSS to app/fonts/noto-serif-sc-signs-600.woff2.
-  const subset = new Set(readFileSync(`${root}app/fonts/signs.txt`, "utf8").trim());
+test("the world's signs and notices are in English", () => {
+  // Every sign, notice and label drawn in the world is English, in the
+  // site's own Latin fonts (app/fonts/): no Chinese or Japanese characters
+  // anywhere in app/, so no CJK font is needed
   const cjk = /[　-ヿ一-鿿＀-￯]/g;
-  const missing = new Set();
+  const found = [];
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
       if (entry.isDirectory()) walk(path);
-      else if (/\.tsx?$/.test(entry.name)) for (const ch of readFileSync(path, "utf8").match(cjk) ?? []) if (!subset.has(ch)) missing.add(ch);
+      else if (/\.tsx?$/.test(entry.name)) for (const ch of readFileSync(path, "utf8").match(cjk) ?? []) found.push(`${path.slice(root.length)}: ${ch}`);
     }
   };
   walk(`${root}app`);
-  assert.deepEqual([...missing], [], "characters missing from app/fonts/signs.txt");
+  assert.deepEqual(found, [], "non-English characters on a sign");
 });
 
 test("the section starter is a template in docs, not a public page", () => {

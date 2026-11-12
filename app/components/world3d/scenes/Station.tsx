@@ -11,8 +11,8 @@ import { M, buildBeam, buildBench, buildDust, buildFallenLeaves, buildPole, buil
 import { buildCity } from "../buildings";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
-import { clockFace, enamel, groundTexture, neonMask, plaster, textPanel, type PanelOptions } from "../textures";
-import { NEON, lightbox, neonLetters, neonOf } from "../glow";
+import { clockFace, enamel, groundTexture, plaster, textPanel } from "../textures";
+import { NEON, neon, neonSign, neonTube } from "../glow";
 import { HEMI, Hitbox, PLATFORM_SIGN_LIGHT, SunLight, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -93,7 +93,7 @@ function buildStationScene(quality: "high" | "low") {
     background: "#15105a",
     padding: 16,
     valign: "middle",
-    lines: [{ text: "时刻表   TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],
+    lines: [{ text: "TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],
   });
   const headMesh = new THREE.Mesh(new THREE.PlaneGeometry(BOARD.w, 0.34), mat("timetableHead", () => paint({ map: head, brush: 0.12, emissive: "#ffffff", emissiveIntensity: 0.05 })));
   headMesh.position.set(0, BOARD.h / 2 - 0.2, 0.045);
@@ -123,28 +123,19 @@ function buildStationScene(quality: "high" | "low") {
   root.add(hand);
 
   // The name sign, hanging by one chain now
-  const nameText: PanelOptions = {
-    background: "#f0e8d6",
-    padding: 8,
-    valign: "middle",
-    lines: [
-      { text: "光明公园", size: 46, font: "display", color: "#22392b", weight: 600, align: "center", gap: 2 },
-      { text: "GUĀNGMÍNG GŌNGYUÁN", size: 22, color: "#22392b", weight: 500, align: "center" },
-    ],
-  };
-  const nameTex = textPanel("platform-name", 512, 128, nameText);
   const sign = new THREE.Group();
   sign.position.set(-7.4, TOP + 3.3, 0.6);
-  // An iron box with its name on the front, the whole name (the box's own
-  // face cropped the texture to a corner, mirrored), lit from inside
-  // after dark; a light by it (below) carries its light onto the platform
+  // An iron box with its name on the front (its own plane: the box's face
+  // cropped the texture to a corner, mirrored), made like the buildings'
+  // signs (glow.ts: neonSign): neon letters on a navy board, a thin neon
+  // frame. A light by it (below) carries its glow onto the platform.
   const signBoard = mesh(box(1.9, 0.5, 0.05), M.iron());
-  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 0.44), mat("platformName", () => lightbox(nameTex, { strength: 0.55 })));
+  const name = neonSign("platform-name-en", [512, 128], [1.84, 0.44], [{ text: "Park Station", size: 62 }], { halo: 7, brush: 0.15, grime: 0.3 });
+  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.84, 0.44), name.face);
   signFace.position.z = 0.026;
   signBoard.add(signFace);
-  // Its words in neon, in their own green: gentler than the others, as the
-  // face is lit brightest here (by its own box and the light beside it)
-  signBoard.add(neonLetters(neonMask("platform-name", 512, 128, nameText, 6), [1.84, 0.44], neonOf("#22392b"), { body: 0.1, core: 0.12, halo: 0 }).translateZ(0.03));
+  signBoard.add(name.letters.translateZ(0.03));
+  signBoard.add(new THREE.Mesh(neonTube(1.84, 0.44, 0.011, 0.05), mat("neonBlue", () => neon(NEON.blue))).translateZ(0.034));
   signBoard.position.set(0.85, -0.55, 0);
   signBoard.rotation.z = -0.28;
   signBoard.castShadow = true;
@@ -310,7 +301,7 @@ export default function Station({ active, quality }: SceneProps) {
       <hemisphereLight userData={HEMI} args={["#f2dcb4", "#5a6338", 1.15]} />
       {/* The name sign's light on the canopy and the platform, after dark
           (0 by day: always there, so the night needs no new shaders) */}
-      <pointLight userData={PLATFORM_SIGN_LIGHT} position={[-6.4, TOP + 2.3, 1.7]} color={NEON.warm} intensity={0} distance={6} decay={1.6} />
+      <pointLight userData={PLATFORM_SIGN_LIGHT} position={[-6.4, TOP + 2.3, 1.7]} color={NEON.pink} intensity={0} distance={6} decay={1.6} />
       {active && (
         <>
           <Hitbox id="station:timetable" position={[BOARD.x, BOARD.y + BOARD.h / 2 - 0.2, BOARD.z + 0.1]} size={[BOARD.w, 0.4, 0.2]} onSelect={() => world.set({ focus: "timetable" })} />

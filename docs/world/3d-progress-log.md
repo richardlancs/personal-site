@@ -437,3 +437,69 @@ The development-only scene handle (`World3D.tsx: DevHandle`) isn't in the
 production build.
 
 Shots: `screenshots/visibility-{before,after}-{w1440-neutral-day,w1440-cloudy-day,w1440-rain-day,w1024-cloudy-day,w390-neutral-day,w320-neutral-day,land667-neutral-day}.jpg`.
+
+## Signs in English on navy, and the fountain's pond (11 November 2026)
+
+Three things only: the signs' faces, their words, and the water in the
+fountain's basin. Buildings, composition, camera, clouds and interface
+are as they were.
+
+- **Why the signs were pale.** The workshop's, the station's, the
+  booth's and the platform's signs were lit boxes (`lightbox`): a cream
+  face that glowed from inside, with neon words added on top. The face was
+  as bright as the letters, so the words washed into it (see "Neon
+  lettering" above). It was the material, not fog, light or a second
+  layer. The arcade's sign was the one built the other way: a dark board
+  whose words glow on their own.
+- **One make of sign** (`glow.ts: neonSign`), taken from the arcade's:
+  a deep navy board (`#24314a`) that is never lit, words painted in pale
+  coral and glowing pink through an emissive mask of themselves, a neon
+  core and a tight halo over them (`neonLetters`), a thin baby-blue neon
+  frame. Used for the workshop, the station, the arcade (its board moved
+  from `#2f3a3c` to the navy), the four faces on the phone booth (which
+  gained a thin frame) and the platform's hanging sign (gained a frame;
+  its light onto the canopy is pink now, not warm white). Sizes, places,
+  mountings, frames and wall washes are unchanged. `lightbox` and
+  `neonOf` are gone.
+- **English.** Workshop, Station, Arcade, Telephone, Park Station (the
+  platform; 光明公园站 was the station's name), TIMETABLE (the station's
+  board, and the HTML timetable's head, which drops 时刻表), Ice cold
+  (the vending machine), the signpost's Workshop / Station / Arcade /
+  Pavilion, and the notices: Park Map, Lost Cat, Summer Festival
+  (8.24 from dusk), Notice. With no Chinese left, Noto Serif SC (the 9 KB
+  subset, its licence and `signs.txt`) is no longer loaded; the test that
+  checked the subset now checks that no CJK characters come back.
+- **The signpost's words had never shown.** `box()` scales UVs per
+  metre, so each arm's face showed a blank corner of its label. Its
+  boards are plain `BoxGeometry` now, and the words read.
+- **The pond** (`props.ts: waterMaterial`, `buildPondEdge`). The basin's
+  footprint, the column and the hitboxes are unchanged. The water is
+  deeper green-brown in the middle and lighter over the shallow stone at
+  its edge and round the column's foot. Ripples are a moving slope: two
+  slow crossing trains and three rings opening on 7–11 s beats, plus the
+  jet's rings and the rain's. Through that slope it reflects the sky
+  above a ragged tree line, the column upside down, and after dark the
+  two lamps behind it, the arcade's sign and the booth's, as soft
+  streaks broken into drifting dashes (dimmer than their size, as only a
+  sign's words are lit). Night darkens what it holds (`uNight`), rain
+  roughens and greys it, mist widens the streaks. At the edge: six mossy
+  stones (the fountain's own stone, so they warm with it on hover), two
+  clumps of reeds (instanced on the grass's shader, `grass.ts:
+  tuftsAt`, so no new program; at most 1.4 m tall, under every
+  sign's sight line), grass at their feet and at the basin's foot, and
+  seven lily pads, a few yellowing.
+- **Motion.** Everything moves on the world's clock, so in still view
+  (and with reduced motion) the water, the reeds and the rings stop:
+  two shots 1.5 s apart are identical, and differ with motion on.
+
+Checked: `npm run lint`, `npx tsc --noEmit`, `npm test` (95 with
+`SMOKE_URL`), `scripts/visibility.mjs` (10 sizes × 6 skies, 0 primary
+sign problems; the arcade's 89% is the pavilion's roof, as before),
+`docs/ui/scripts/mobile-audit.mjs` (0 failures; the one warning,
+`.park-intro:hover`, was there before), `npm run perf:budget` (largest
+chunk 308,131 / 316,000 gzip). Frame cost (production, `lighting-perf.mjs`,
+rain at night, 3 runs): desktop park 407 draws (401 before), p50
+11.7–12.4 ms; phone park 313 draws (308), p50 3.1–3.4 ms; no shader
+compiles at rest; light counts unchanged.
+
+Shots: `screenshots/signs-pond-{before,after}-*.jpg`.

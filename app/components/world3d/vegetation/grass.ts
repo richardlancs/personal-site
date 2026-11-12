@@ -11,7 +11,7 @@ import { vegMaterial } from "./shader";
 
 // A tuft of blades: near ones with more blades and bends, far ones with
 // fewer, wider, simpler blades (most of the far grass is a few pixels)
-function tuft(seed: number, blades: number, segments: number, width: number) {
+function tuft(seed: number, blades: number, segments: number, width: number, bend = 1) {
   const r = rng(seed);
   const pos: number[] = [];
   const nor: number[] = [];
@@ -23,7 +23,7 @@ function tuft(seed: number, blades: number, segments: number, width: number) {
     const ox = Math.cos(a) * r.range(0.02, 0.2);
     const oz = Math.sin(a) * r.range(0.02, 0.2);
     const h = r.range(0.45, 1);
-    const lean = r.range(0.15, 0.5) * (1.1 - h * 0.4);
+    const lean = r.range(0.15, 0.5) * (1.1 - h * 0.4) * bend;
     const w = width * r.range(0.8, 1.2);
     const dx = Math.cos(a);
     const dz = Math.sin(a);
@@ -161,5 +161,44 @@ export function grassField(count: number, place: (r: Rng) => { x: number; z: num
   mesh.receiveShadow = true;
   mesh.castShadow = false;
   mesh.frustumCulled = false;
+  return mesh;
+}
+
+// Tufts just where they're put, with no noise fields: the grass and the
+// reeds growing in the fountain's basin (props.ts: buildFountain). Reeds
+// are tall, narrow and nearly upright, straw and olive in autumn, and sway
+// less than the grass; both share the grass's shader (no new program).
+let reedGeometry: THREE.BufferGeometry | null = null;
+let reedMat: THREE.MeshLambertMaterial | null = null;
+function reedMaterial() {
+  if (!reedMat) {
+    reedMat = vegMaterial({
+      grass: true,
+      ramp: { light: "#d2c47e", mid: "#8f9550", shadow: "#36564c" },
+      ground: "#4d5634",
+      wind: { amp: 0.14, height: 1 },
+    });
+    reedMat.vertexColors = true;
+  }
+  return reedMat;
+}
+
+export function tuftsAt(spots: { x: number; y: number; z: number; h: number }[], kind: "grass" | "reeds", seed = 5) {
+  const geometry = kind === "reeds" ? (reedGeometry ??= tuft(13, 9, 4, 0.032, 0.35)) : tuftFor(false);
+  const mesh = new THREE.InstancedMesh(geometry, kind === "reeds" ? reedMaterial() : grassMaterial(), spots.length);
+  const r = rng(seed);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const e = new THREE.Euler();
+  const color = new THREE.Color();
+  spots.forEach((s, i) => {
+    const wide = kind === "reeds" ? r.range(0.5, 0.75) : r.range(0.8, 1.1);
+    m.compose(new THREE.Vector3(s.x, s.y, s.z), q.setFromEuler(e.set(r.range(-0.08, 0.08), r() * Math.PI * 2, r.range(-0.08, 0.08))), new THREE.Vector3(wide, s.h, wide));
+    mesh.setMatrixAt(i, m);
+    const c = r.range(-0.06, 0.06);
+    mesh.setColorAt(i, color.setRGB(0.95 + c, 0.95 + c, 0.92 + c));
+  });
+  mesh.receiveShadow = true;
+  mesh.castShadow = false;
   return mesh;
 }

@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { tube } from "./geometry";
 import { paint } from "./paint";
 import { world } from "./store";
+import { neonMask, textMask, textPanel, type PanelOptions } from "./textures";
 
 // Light after dark: the street lamps' beams in the air, and the signs.
 //
@@ -11,9 +12,10 @@ import { world } from "./store";
 //   (no cone outline: the edge is where the ray's path through the light
 //   goes to nothing), brightest just under the lens, fading toward the
 //   ground and into the fog
-// - Signs are lit by what they're made of: a lit box behind a painted
-//   face (`lightbox`), neon tube (`neonTube`, `neon`), or neon letters on a
-//   dark board (an emissive mask, textures.ts: textMask). Around them, a
+// - Every building sign is the same make (`neonSign`): neon letters on a
+//   deep navy board (an emissive mask, textures.ts: textMask, with a neon
+//   core and halo over it, `neonLetters`), framed in neon tube
+//   (`neonTube`, `neon`). Around them, a
 //   soft wash of their light on the wall (`wash`) and a halo round neon
 //   letters (`halo`), both additive and far dimmer than the sign itself,
 //   so the lettering stays the sharpest, brightest thing
@@ -27,11 +29,10 @@ export const glowUniforms = {
   uHaze: { value: 0 }, // rain, snow or mist outdoors: light spreads a little wider and softer
 };
 
-// The palette of the lights: baby blue for neon tube, warm white for lit
-// faces and lamps, the arcade's own pink as the one accent
+// The palette of the lights: baby blue for neon tube, pink for every
+// sign's words (the arcade's, where it started), warm for the lamps
 export const NEON = {
   blue: "#5fc4f2",
-  warm: "#fff0da",
   pink: "#ff8ea4",
   lamp: "#ffc98a",
 };
@@ -182,10 +183,27 @@ export function lampBeam(drop: number) {
 // ---------------------------------------------------------------------
 // Signs
 
-// A painted sign face lit from behind: its own colours, glowing; the
-// letters stay dark and crisp. Restrained by day, full at night.
-export function lightbox(map: THREE.Texture, { strength = 0.45, brush = 0.15, grime = 0.3 } = {}) {
-  return paint({ map, emissive: NEON.warm, emissiveMap: map, emissiveIntensity: strength, brush, grime, glow: { day: 0.12, night: 1 } });
+// Every building sign, made the way the arcade's was first: a deep navy
+// board, never lit itself, with its words painted on in a pale tint of
+// their neon and glowing from inside (an emissive mask of the same words),
+// and a neon core and tight halo laid over them (`neonLetters`). The words
+// are the brightest thing on it by day and at night; the board stays dark
+// round them. Frame it with `neonTube`. `key` names its textures (change
+// it when the words change), `px` their size in pixels (the face's
+// proportions), `size` the face in metres.
+export const SIGN = { board: "#24314a", paint: "#e6a2a0", neon: NEON.pink };
+type SignLine = { text: string; size: number; gap?: number };
+export function neonSign(key: string, px: [number, number], size: [number, number], lines: SignLine[], { halo = 9, padding = 10, brush = 0.25, grime = 0.4, core = 0.8, glow = 0.45 } = {}) {
+  const [w, h] = px;
+  const words: PanelOptions = {
+    background: SIGN.board,
+    padding,
+    valign: "middle",
+    lines: lines.map((l) => ({ ...l, font: "display", color: SIGN.paint, weight: 600, align: "center" })),
+  };
+  const face = paint({ map: textPanel(key, w, h, words), emissive: SIGN.neon, emissiveMap: textMask(key, w, h, words), emissiveIntensity: 2.4, brush, grime, glow: { day: 0.16, night: 1 } });
+  const letters = neonLetters(neonMask(key, w, h, words, halo), size, SIGN.neon, { body: 0, core, halo: glow, day: 0.12 });
+  return { face, letters };
 }
 
 // Neon tube: a near-white core in its colour, lit a little by day
@@ -295,16 +313,8 @@ export function wash(rect: [number, number], reach: [number, number, number, num
   return quad;
 }
 
-// A sign's lettering in neon: the colour of its own ink, brought up bright
-// (the same hue: a sign's green stays green, its brown turns amber)
-export function neonOf(ink: string) {
-  const hsl = { h: 0, s: 0, l: 0 };
-  new THREE.Color(ink).getHSL(hsl);
-  return `#${new THREE.Color().setHSL(hsl.h, Math.max(hsl.s, 0.9), 0.5).getHexString()}`;
-}
-
 // A sign's words lit as neon, on a quad laid just in front of its face
-// (the face itself unchanged): each stroke glows in its colour, hottest
+// (`neonSign` uses it): each stroke glows in its colour, hottest
 // along its middle (near white), with a soft halo of the same colour just
 // round it (textures.ts: neonMask). A trace by day, full at night, a
 // little wider in rain and mist; steady. `body` is the letters' own glow

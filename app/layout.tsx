@@ -37,18 +37,6 @@ const text = localFont({
   variable: "--font-zen-kaku",
   display: "swap",
 });
-// The Chinese on the world's signs comes from Noto Serif SC: one 9 KB
-// file with just the characters the signs use (app/fonts/signs.txt).
-// Through next/font/google it was 34 KB of CSS on every page and about
-// 460 KB of slices on wide screens. To add a character, add it to
-// signs.txt and download the subset again (the URL is in that file's
-// test, tests/content.test.mjs).
-const chinese = localFont({
-  src: "./fonts/noto-serif-sc-signs-600.woff2",
-  weight: "600",
-  preload: false,
-  variable: "--font-noto-sc",
-});
 
 export const metadata: Metadata = {
   // Makes canonical addresses and share images absolute (sections/registry.ts)
@@ -76,7 +64,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${display.variable} ${chinese.variable} ${text.variable}`}
+      className={`${display.variable} ${text.variable}`}
       // The script below sets data-still on <html> before React hydrates
       suppressHydrationWarning
     >

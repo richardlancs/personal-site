@@ -117,12 +117,15 @@ busy scenery. Real content stays in HTML.
 Light after dark (`world3d/glow.ts`, driven by `atmosphere/Atmosphere.tsx`
 through `glowUniforms` and the paint's day/night `glow`): street lamps are
 spotlights at the bulb aimed straight down, with a per-pixel beam in the
-air (no halos, no cone meshes); every building sign is lit (lit-box faces,
-neon tube, or neon letters from a text mask) in baby-blue neon, warm
-white and the arcade's pink, with a soft wash on the wall. Every sign's
-words glow as neon in their own ink's hue (`glow.ts: neonLetters`, a quad
-over the face from `textures.ts: neonMask`: a hot core along each stroke,
-a tight halo), gentlest where the face is brightest. Nothing
+air (no halos, no cone meshes); every building sign is made one way
+(`glow.ts: neonSign`, first made for the arcade): a deep navy board that
+is never lit itself, its English words in pink neon (an emissive text
+mask, plus `neonLetters`, a quad over the face from `textures.ts:
+neonMask`: a hot core along each stroke, a tight halo), a thin baby-blue
+neon frame, and a soft wash on the wall. The park's fountain is a small
+pond whose water (`props.ts: waterMaterial`) holds the sky, the trees,
+its column and, after dark, the nearby lamps and signs as broken
+streaks; reeds, stones and lily pads stay on its shallow edge. Nothing
 flickers. Keep light counts the same by day and night (drive intensity),
 so the 3 s blends build no shaders; shadowed lamps only on the desktop
 tiers. What was built and measured: `docs/world/3d-progress-log.md`,
@@ -182,10 +185,9 @@ place names (`font-display`), Zen Kaku Gothic New for text (`font-sans`).
 Only their Latin is used, so they load with `next/font/local` from the five
 Latin files in `app/fonts/`. Don't move them back to `next/font/google`:
 for these Japanese families it ships every Unicode slice (about 200 KB of
-CSS, and 8 MB of preloaded files). Noto Serif SC, for the Chinese on the
-world's signs, is a 9 KB local subset of just the characters the signs
-use (`app/fonts/signs.txt`; `npm test` checks nothing is missing, and
-says how to regenerate the file).
+CSS, and 8 MB of preloaded files). Every sign and notice in the world is
+in English, in these same fonts, so no CJK font is loaded (`npm test`
+checks no Chinese or Japanese characters come back into `app/`).
 
 Body copy is written as short points, not paragraphs: `.points` (a rust
 dash in the margin) on paper, `.notebook-points` in the notebook.
