@@ -85,9 +85,11 @@ arcade's mini-games moved out; the arcade's dressing (next commit). Also
 open: `app/icon.svg`
 (the favicon) is still indigo, as `apple-icon.png` probably is.
 
-`next build` and `next dev` stop once with "SecurityFatalError: Your
-version of Next.js is affected by a known security vulnerability" and
-pass when run again; Next.js 16.4.2 wants an upgrade (owner to decide).
+Next.js is 16.4.6 (was 16.4.2, in the range of GHSA-mfr8-8qww-v76h,
+which needs `unstable_cache()` and root params; the site uses neither).
+`next build` no longer stops with its security notice. `npm audit` still
+lists one moderate advisory, minimatch inside the ESLint toolchain
+(dev-only, never shipped).
 
 ## Remaining
 
