@@ -15,10 +15,25 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // 65 for the painting on the flat layout (a painting, seen small);
-    // 85 for it full-size; 75 (the default) for everything else
-    qualities: [65, 75, 85],
+    // Every image asks for the default, 75 (65 and 85 were never asked for)
+    qualities: [75],
     formats: ["image/avif", "image/webp"],
+    // Optimized copies are kept a month rather than 4 hours: the sources
+    // (screenshots, the painting) change only with a deploy, which starts
+    // a fresh cache anyway
+    minimumCacheTTL: 2_678_400,
+  },
+  // public/ files are served with max-age=0, so every visit asked again
+  // for the music (2.7 MB, on demand) and the screenshots. Their names
+  // aren't content-hashed, so a day's cache plus a week of serving the
+  // old copy while checking, not "immutable". ":path+" (at least one
+  // segment), so the /projects page itself keeps its own headers.
+  async headers() {
+    const cached = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
+    return [
+      { source: "/audio/:path+", headers: cached },
+      { source: "/projects/:path+", headers: cached },
+    ];
   },
   turbopack: {
     rules: {

@@ -159,3 +159,20 @@ rerun it to get them.
 - Safari and Firefox (all checks ran in Chrome 157).
 - Field data: INP and the p75 targets need real visitors.
 - Audio quality, and whether the LinkedIn link works for a person.
+
+## Hosting caches (17 November 2026)
+
+- `public/audio/` and `public/projects/` files were served `max-age=0`,
+  so every visit asked again for the screenshots and the music. They now
+  carry `public, max-age=86400, stale-while-revalidate=604800`
+  (`next.config.ts: headers()`). Not `immutable`: their names aren't
+  content-hashed. The rules use `:path+`, since `:path*` also matched
+  the `/projects` page itself and gave its HTML a day's cache (caught
+  locally, before it shipped).
+- The image optimizer keeps its copies 31 days (`minimumCacheTTL`, 4 h
+  by default), and offers only quality 75, the one every image asks for.
+- The 4.15 MB painting (`app/assets/park/park-v04.png`) stays a PNG: it's
+  the art reference, and visitors only ever get the optimizer's AVIF or
+  WebP of it, so re-encoding the source would save them nothing.
+- `/api/weather` already reaches Open-Meteo at most once per 15 minutes
+  for everyone (`"use cache"`, `cacheLife`); nothing changed there.
