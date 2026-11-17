@@ -616,3 +616,44 @@ Build times (production, `world:<place>`): booth 75–105 ms, arcade
 29–38 ms. Budgets: world chunk 271,447 / 285,000; all JS 535,526 / 558,000.
 Desktop and phone: both places arrive, no sideways scroll, no console
 errors.
+
+## Glass, Fraunces and Nunito, torch-lit signs (17 November 2026)
+
+At the owner's request: the panels over the world are glass like the
+time and weather, the coloured ones stained glass; the type has more
+personality; and the neon signs gave way to carved boards lit by
+torches, which suit the old buildings better.
+
+- **Type.** Fraunces (headings, place names, the signs' words) and Nunito
+  (text), two variable Latin files, 75 KB (the five before were 94 KB).
+  Fraunces is cut to weights 500 to 700, optical size 72, its soft and
+  wonky axes on.
+- **Glass.** Every panel is frosted pale-blue glass with the capsule's
+  thin bright edge and the light line along its top (`--paper`,
+  `--reading`, `--pane-hi`); the timetable, the notebook's cover and the
+  cabinets' screens are slate stained glass (`--stain-deep`), the phone's
+  line baby-blue (`--stain-baby`). How frosted is measured, not guessed:
+  `docs/ui/scripts/panel-contrast.mjs` photographs every panel's words
+  over all 16 skies. Half-frost (0.5) left page headers and footers at
+  2.3 to 3.4:1 over bright or busy scenery; the frost is now 0.7 (0.8
+  after dark), 0.84 (0.88) for what's read line by line, secondary text a
+  shade darker. Worst reading 4.59 (the phone line, clear dusk). The map's
+  small labels read 3.2:1 on the old cream map too, over its own drawing;
+  they have a frost chip now (6.05).
+- **Torch-lit signs** (`world3d/torch.ts`). Each board is dark stained wood
+  in a wooden frame, its words carved and painted cream, a dark line in
+  each cut. They read pale on dark by day (the paint holds a little light,
+  so they stay pale in cloud and mist, which the first try didn't: the
+  station's word went grey in the rain at dusk) and catch the torches'
+  warm light after dark. The board is never lit. The workshop, station and
+  arcade have a torch each side, beside the board, not in front of it;
+  their light is an additive wash on the wall, so no lights were added.
+  The booth's four small boards are lit by its own roof light; the
+  platform's light and the arcade's wall light turned warm; the arcade's
+  bent-neon "GAME" became a carved board with one torch. The pond holds
+  the torchlight, warm, where it held the pink.
+- **Checked.** `visibility.mjs`, 10 sizes × 6 skies: 0 primary sign
+  problems, every board as clear as before. Still view: two frames 1.5 s
+  apart identical (and different with motion). `lighting-blend.mjs`: 0
+  shader compiles in day/night blends (2 at rain's first fall, as before).
+  Budgets: world chunk 271,421 / 285,000.

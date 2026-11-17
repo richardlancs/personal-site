@@ -1,8 +1,5 @@
 import * as THREE from "three";
-import { tube } from "./geometry";
-import { paint } from "./paint";
 import { world } from "./store";
-import { neonMask, textMask, textPanel, type PanelOptions } from "./textures";
 
 // Light after dark: the street lamps' beams in the air, and the signs.
 //
@@ -12,13 +9,8 @@ import { neonMask, textMask, textPanel, type PanelOptions } from "./textures";
 //   (no cone outline: the edge is where the ray's path through the light
 //   goes to nothing), brightest just under the lens, fading toward the
 //   ground and into the fog
-// - Every building sign is the same make (`neonSign`): neon letters on a
-//   deep navy board (an emissive mask, textures.ts: textMask, with a neon
-//   core and halo over it, `neonLetters`), framed in neon tube
-//   (`neonTube`, `neon`). Around them, a
-//   soft wash of their light on the wall (`wash`) and a halo round neon
-//   letters (`halo`), both additive and far dimmer than the sign itself,
-//   so the lettering stays the sharpest, brightest thing
+// - The signs are carved boards lit by torches (torch.ts); their light on
+//   the walls is `wash`, below: additive, far dimmer than the words
 // - The day and the weather set how much of this shows, through
 //   `glowUniforms` (atmosphere/Atmosphere.tsx) and the painted material's
 //   own day/night glow (paint.ts: `glow`). Nothing flickers.
@@ -29,11 +21,9 @@ export const glowUniforms = {
   uHaze: { value: 0 }, // rain, snow or mist outdoors: light spreads a little wider and softer
 };
 
-// The palette of the lights: baby blue for neon tube, pink for every
-// sign's words (the arcade's, where it started), warm for the lamps
+// The palette of the lights: warm for the lamps (the signs' torches are
+// in torch.ts)
 export const NEON = {
-  blue: "#5fc4f2",
-  pink: "#ff8ea4",
   lamp: "#ffc98a",
 };
 
@@ -183,58 +173,6 @@ export function lampBeam(drop: number) {
 // ---------------------------------------------------------------------
 // Signs
 
-// Every building sign, made the way the arcade's was first: a deep navy
-// board, never lit itself, with its words painted on in a pale tint of
-// their neon and glowing from inside (an emissive mask of the same words),
-// and a neon core and tight halo laid over them (`neonLetters`). The words
-// are the brightest thing on it by day and at night; the board stays dark
-// round them. Frame it with `neonTube`. `key` names its textures (change
-// it when the words change), `px` their size in pixels (the face's
-// proportions), `size` the face in metres.
-export const SIGN = { board: "#24314a", paint: "#e6a2a0", neon: NEON.pink };
-type SignLine = { text: string; size: number; gap?: number };
-export function neonSign(key: string, px: [number, number], size: [number, number], lines: SignLine[], { halo = 9, padding = 10, brush = 0.25, grime = 0.4, core = 0.8, glow = 0.45 } = {}) {
-  const [w, h] = px;
-  const words: PanelOptions = {
-    background: SIGN.board,
-    padding,
-    valign: "middle",
-    lines: lines.map((l) => ({ ...l, font: "display", color: SIGN.paint, weight: 600, align: "center" })),
-  };
-  const face = paint({ map: textPanel(key, w, h, words), emissive: SIGN.neon, emissiveMap: textMask(key, w, h, words), emissiveIntensity: 2.4, brush, grime, glow: { day: 0.16, night: 1 } });
-  const letters = neonLetters(neonMask(key, w, h, words, halo), size, SIGN.neon, { body: 0, core, halo: glow, day: 0.12 });
-  return { face, letters };
-}
-
-// Neon tube: a near-white core in its colour, lit a little by day
-export function neon(color: string, strength = 2.2) {
-  return paint({ color: "#eef8ff", emissive: color, emissiveIntensity: strength, brush: 0, glow: { day: 0.28, night: 1 } });
-}
-
-// A tube round a sign's edge, with rounded corners and a small gap at
-// the foot of the sign where it's fed (as real neon is). Centred on the
-// origin in the xy plane.
-export function neonTube(w: number, h: number, radius = 0.03, corner = 0.12) {
-  const pts: THREE.Vector3[] = [];
-  const hw = w / 2;
-  const hh = h / 2;
-  const gap = 0.05;
-  pts.push(new THREE.Vector3(gap, -hh, 0));
-  const arc = (cx: number, cy: number, from: number) => {
-    for (let i = 0; i <= 4; i++) {
-      const a = from + (i / 4) * (Math.PI / 2);
-      pts.push(new THREE.Vector3(cx + Math.cos(a) * corner, cy + Math.sin(a) * corner, 0));
-    }
-  };
-  arc(hw - corner, -hh + corner, -Math.PI / 2);
-  arc(hw - corner, hh - corner, 0);
-  arc(-hw + corner, hh - corner, Math.PI / 2);
-  arc(-hw + corner, -hh + corner, Math.PI);
-  pts.push(new THREE.Vector3(-gap, -hh, 0));
-  const length = 2 * (w + h);
-  return tube(pts, () => radius, Math.round(length * 14), 6);
-}
-
 // What a sign's light does to the wall round it: a soft wash, brightest
 // at the sign's edge and gone well before the quad's own edge. `rect` is
 // the sign's size; `reach` how far the quad goes past it on each side
@@ -313,101 +251,3 @@ export function wash(rect: [number, number], reach: [number, number, number, num
   return quad;
 }
 
-// A sign's words lit as neon, on a quad laid just in front of its face
-// (`neonSign` uses it): each stroke glows in its colour, hottest
-// along its middle (near white), with a soft halo of the same colour just
-// round it (textures.ts: neonMask). A trace by day, full at night, a
-// little wider in rain and mist; steady. `body` is the letters' own glow
-// (0 where the face already lights them, as on the arcade's board).
-export function neonLetters(mask: THREE.Texture, size: [number, number], color: string, { body = 0.55, core = 0.4, halo = 0.12, day = 0.06 } = {}) {
-  const m = new THREE.ShaderMaterial({
-    uniforms: {
-      ...fogUniforms(),
-      uSigns: glowUniforms.uSigns,
-      uHaze: glowUniforms.uHaze,
-      uMask: { value: mask },
-      uColor: { value: new THREE.Color(color) },
-      uWeights: { value: new THREE.Vector4(body, core, halo, day) },
-    },
-    vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      varying float vDepth;
-      void main() {
-        vUv = uv;
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vDepth = -mv.z;
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: /* glsl */ `
-      ${FOG}
-      uniform float uSigns;
-      uniform float uHaze;
-      uniform sampler2D uMask;
-      uniform vec3 uColor;
-      uniform vec4 uWeights;
-      varying vec2 vUv;
-      varying float vDepth;
-      void main() {
-        vec3 m = texture2D(uMask, vUv).rgb;
-        float on = mix(uWeights.w, 1.0, uSigns);
-        if (on * (m.r + m.b) < 0.002) discard;
-        float core = smoothstep(0.75, 1.0, m.g) * m.r;
-        vec3 c = uColor * (m.r * uWeights.x + m.b * uWeights.z * (1.0 + 0.3 * uHaze))
-          + mix(uColor, vec3(1.0), 0.5) * core * uWeights.y;
-        gl_FragColor = vec4(c * on * glowFog(vDepth), 1.0);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    fog: true,
-  });
-  const quad = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), m);
-  quad.renderOrder = 1;
-  return quad;
-}
-
-// The halo round neon letters: their own shapes, blurred (textures.ts:
-// textMask, glowMask), laid just in front of them
-export function halo(mask: THREE.Texture, size: [number, number], color: string, strength: number) {
-  const m = new THREE.ShaderMaterial({
-    uniforms: {
-      ...fogUniforms(),
-      uSigns: glowUniforms.uSigns,
-      uHaze: glowUniforms.uHaze,
-      uMask: { value: mask },
-      uColor: { value: new THREE.Color(color) },
-      uStrength: { value: strength },
-    },
-    vertexShader: /* glsl */ `
-      varying vec2 vUv;
-      varying float vDepth;
-      void main() {
-        vUv = uv;
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vDepth = -mv.z;
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: /* glsl */ `
-      ${FOG}
-      uniform float uSigns;
-      uniform float uHaze;
-      uniform sampler2D uMask;
-      uniform vec3 uColor;
-      uniform float uStrength;
-      varying vec2 vUv;
-      varying float vDepth;
-      void main() {
-        float g = texture2D(uMask, vUv).r;
-        // By day a trace of it; rain and mist soften it a little wider
-        float on = 0.12 + 0.88 * uSigns;
-        gl_FragColor = vec4(uColor * g * uStrength * on * (1.0 + 0.3 * uHaze) * glowFog(vDepth), 1.0);
-      }`,
-    transparent: true,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    fog: true,
-  });
-  const quad = new THREE.Mesh(new THREE.PlaneGeometry(size[0], size[1]), m);
-  quad.renderOrder = 1;
-  return quad;
-}

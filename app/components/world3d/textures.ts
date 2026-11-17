@@ -537,6 +537,41 @@ export function textPanel(key: string, w: number, h: number, opts: PanelOptions)
   return texture(`text-${key}`, w, h, (g, r) => drawPanel(g, r, w, h, opts), { text: true });
 }
 
+// A carved sign: dark stained wood with its grain running along the
+// board, and the words cut into it and painted cream, a dark line under
+// and right of each stroke for the shadow in the cut. (torch.ts:
+// carvedSign.) Same options as a panel; its background is the wood.
+export function carvedPanel(key: string, w: number, h: number, opts: PanelOptions) {
+  return texture(
+    `carved-${key}`,
+    w,
+    h,
+    (g, r) => {
+      g.fillStyle = opts.background ?? "#3b2a1c";
+      g.fillRect(0, 0, w, h);
+      // The grain: long, slightly wavering lines, darker and lighter
+      for (let i = 0; i < h / 2.5; i++) {
+        const y = r() * h;
+        const dark = r() < 0.65;
+        g.strokeStyle = dark ? `rgba(${r.range(12, 26)}, ${r.range(8, 18)}, ${r.range(4, 10)}, ${r.range(0.25, 0.5)})` : `rgba(${r.range(90, 120)}, ${r.range(66, 86)}, ${r.range(40, 56)}, ${r.range(0.12, 0.25)})`;
+        g.lineWidth = r.range(0.6, 2.2);
+        g.beginPath();
+        g.moveTo(0, y);
+        g.bezierCurveTo(w / 3, y + r.range(-4, 4), (2 * w) / 3, y + r.range(-4, 4), w, y + r.range(-3, 3));
+        g.stroke();
+      }
+      // The cut's shadow, then the paint in the cut
+      const words = { ...opts, background: undefined, grain: false };
+      g.save();
+      g.translate(Math.max(1, w / 256), Math.max(1.5, h / 64));
+      drawPanel(g, r, w, h, { ...words, lines: opts.lines.map((l) => ({ ...l, color: "#140d07" })) });
+      g.restore();
+      drawPanel(g, r, w, h, words);
+    },
+    { text: true },
+  );
+}
+
 // Just the words of a panel, white on black and in exactly the same
 // place: what glows on a sign (its emissive map), or, blurred, the glow
 // around it. Same key and options as the panel it goes with.
@@ -551,43 +586,6 @@ export function textMask(key: string, w: number, h: number, opts: PanelOptions, 
     },
     { text: true },
   );
-}
-
-// A sign's words as neon, for glow.ts: neonLetters. Three masks in one
-// texture, in exactly the panel's places: red, the letters, sharp; green,
-// the letters a little blurred, so it's highest along the middle of each
-// stroke (the tube's bright core); blue, the letters well blurred (the
-// halo just round them). Data, not colour. Same key and options as the
-// panel it goes with; `halo` is the halo's blur in pixels.
-export function neonMask(key: string, w: number, h: number, opts: PanelOptions, halo: number) {
-  const t = texture(
-    `neon-${key}-${halo}`,
-    w,
-    h,
-    (g, r) => {
-      const words = { ...opts, background: "#000000", grain: false, rule: undefined, lines: opts.lines.map((l) => ({ ...l, color: "#ffffff" })) };
-      const layer = (blur: number) => {
-        const [, lg] = canvas(w, h);
-        drawPanel(lg, r, w, h, words);
-        if (blur) blurCanvas(lg, w, h, blur);
-        return lg.getImageData(0, 0, w, h).data;
-      };
-      const sharp = layer(0);
-      const core = layer(Math.max(1, Math.min(...opts.lines.map((l) => l.size)) * 0.035));
-      const soft = layer(halo);
-      const out = g.createImageData(w, h);
-      for (let i = 0; i < out.data.length; i += 4) {
-        out.data[i] = sharp[i];
-        out.data[i + 1] = core[i];
-        out.data[i + 2] = soft[i];
-        out.data[i + 3] = 255;
-      }
-      g.putImageData(out, 0, 0);
-    },
-    { text: true },
-  );
-  t.colorSpace = THREE.NoColorSpace;
-  return t;
 }
 
 // White strokes on black, blurred: the glow around a shape drawn in code

@@ -34,6 +34,7 @@ import { sectionForAnchor } from "../../../sections/registry";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
 import { NEON } from "../glow";
+import { TORCH } from "../torch";
 import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
@@ -196,8 +197,8 @@ function buildPark(quality: "high" | "low") {
   fountain.reflect([
     { obj: lamps[1], at: [LAMP.x, LAMP.bulb, 0], color: NEON.lamp, strength: 0.8, size: [0.2, 0.08], sign: false },
     { obj: lamps[3], at: [LAMP.x, LAMP.bulb, 0], color: NEON.lamp, strength: 0.8, size: [0.2, 0.08], sign: false },
-    { obj: arcade.group, at: [0, 5.2, 4.1], color: NEON.pink, strength: 0.3, size: [2.2, 0.45], sign: true },
-    { obj: booth.group, at: [0, 2.5, 0], color: NEON.pink, strength: 0.45, size: [0.4, 0.08], sign: true },
+    { obj: arcade.group, at: [0, 5.2, 4.1], color: TORCH.light, strength: 0.3, size: [2.2, 0.45], sign: true },
+    { obj: booth.group, at: [0, 2.5, 0], color: TORCH.light, strength: 0.4, size: [0.4, 0.08], sign: true },
   ]);
   // Each arm points at its place (the angle is atan2(-dz, dx) from here)
   const sign = buildSignpost([

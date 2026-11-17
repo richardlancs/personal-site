@@ -5,7 +5,8 @@ import { mesh, paint, windUniforms, type PaintOptions } from "./paint";
 import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
-import { BEAM, NEON, glowUniforms, lampBeam, neon, neonSign, neonTube } from "./glow";
+import { BEAM, NEON, glowUniforms, lampBeam } from "./glow";
+import { carvedSign } from "./torch";
 import { world } from "./store";
 import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
@@ -200,25 +201,15 @@ export function buildBooth() {
   // Roof cap and the sign on each side
   g.add(mesh(at(box(W + 0.18, 0.16, W + 0.18), 0, H + 0.2, 0), M.green()));
   g.add(mesh(at(box(W + 0.24, 0.05, W + 0.24), 0, H + 0.3, 0), mat("boothRoof", () => paint({ map: enamel(140, 22, 28), rust: 0.6, moss: 0.8, grime: 0.3 }))));
-  // Neon letters on a navy board, like the buildings' (glow.ts: neonSign)
-  const sign = neonSign("booth-sign-en", [256, 64], [0.8, 0.2], [{ text: "Telephone", size: 36 }], { halo: 5, padding: 6, grime: 0 });
-  const signWords = sign.letters;
-  const frames: THREE.BufferGeometry[] = [];
+  // A carved board on each side, like the buildings' (torch.ts); lit by
+  // the booth's own light after dark, no torches on a phone booth
+  const signFace = carvedSign("booth-sign-en", [256, 64], [{ text: "Telephone", size: 36 }], { padding: 6, grime: 0.3 });
+  const boards: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 4; i++) {
-    const s = new THREE.Mesh(card(0.8, 0.2), sign.face);
     const a = (i * Math.PI) / 2;
-    s.position.set(Math.sin(a) * (W / 2 + 0.1), H + 0.2, Math.cos(a) * (W / 2 + 0.1));
-    s.rotation.y = a;
-    // Its words in neon
-    const words = new THREE.Mesh(signWords.geometry, signWords.material);
-    words.renderOrder = 1;
-    words.position.z = 0.004;
-    s.add(words);
-    g.add(s);
-    // A thin neon frame round it
-    frames.push(at(neonTube(0.8, 0.2, 0.007, 0.03), Math.sin(a) * (W / 2 + 0.106), H + 0.2, Math.cos(a) * (W / 2 + 0.106), a));
+    boards.push(at(card(0.8, 0.2), Math.sin(a) * (W / 2 + 0.1), H + 0.2, Math.cos(a) * (W / 2 + 0.1), a));
   }
-  g.add(new THREE.Mesh(merge(frames), mat("neonBlue", () => neon(NEON.blue))));
+  g.add(new THREE.Mesh(merge(boards), signFace));
   // Base
   g.add(mesh(at(box(W + 0.12, 0.12, W + 0.12), 0, 0.06, 0), M.concrete()));
   // Glass on the three fixed sides

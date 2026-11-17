@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "./geometry";
-import { NEON, neon, neonSign, neonTube, wash } from "./glow";
+import { carvedSign, signFrame, torchPair } from "./torch";
 import { mesh, paint } from "./paint";
 import { CONCRETE, M, mat } from "./props";
 import { rng } from "./rng";
@@ -10,10 +10,18 @@ import { clockFace, facade, plaster, roofTiles, windowPanes } from "./textures";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
-// The shallow box a lit sign's face sits on, out from the wall at wallZ
-// (the face goes 8 cm out)
-function signCase(w: number, h: number, x: number, y: number, wallZ: number) {
-  return mesh(at(box(w + 0.06, h + 0.06, 0.07), x, y, wallZ + 0.035), M.iron());
+// A carved board on a wall at wallZ, its face 8 cm out, in a wooden
+// frame, a torch each side (torch.ts). The board keeps the size and place
+// the visibility check expects (docs/world/scripts/visibility.mjs).
+function carvedBoard(key: string, words: string, size: number, [w, h]: [number, number], y: number, wallZ: number, light = 0.55) {
+  const g = new THREE.Group();
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), carvedSign(key, [512, 128], [{ text: words, size }]));
+  face.position.set(0, y, wallZ + 0.08);
+  face.name = `${key}-face`;
+  g.add(face);
+  g.add(signFrame(w, h).translateY(y).translateZ(wallZ + 0.04));
+  g.add(torchPair(0, w, y, wallZ, { light, reach: 1.2 }));
+  return g;
 }
 
 // A hipped roof with eaves that flare out a little, like old temple and
@@ -122,20 +130,10 @@ export function buildWorkshop() {
   doorway.position.set(0, 1.6, 4.01);
   g.add(doorway);
   g.add(mesh(at(box(1.4, 3.3, 0.1, 0.5), 1.9, 1.65, 4.1), M.iron()));
-  // Its sign: neon letters on a navy board (glow.ts: neonSign), framed in
-  // baby-blue neon. Sized to be read from the park's steps, 45 m off:
-  // between the window frames (top 3.4 m) and the eaves (4.6 m)
-  const [sw, sh, sy] = [4.5, 1.12, 4.0];
-  const sign = neonSign("workshop-sign-en", [512, 128], [sw, sh], [{ text: "Workshop", size: 86 }], { halo: 8, brush: 0.3 });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), sign.face);
-  board.position.set(0, sy, 4.08);
-  g.add(board);
-  g.add(sign.letters.translateY(sy).translateZ(4.086));
-  g.add(signCase(sw, sh, 0, sy, 4.0));
-  const frame = new THREE.Mesh(neonTube(sw + 0.18, sh + 0.16, 0.032), mat("neonBlue", () => neon(NEON.blue)));
-  frame.position.set(0, sy, 4.1);
-  g.add(frame);
-  g.add(wash([sw + 0.2, sh + 0.18], [1.1, 1.1, 0.5, 0.95], NEON.blue, 0.3).translateY(sy).translateZ(4.012));
+  // Its sign: a carved board, a torch each side (torch.ts). Sized to be
+  // read from the park's steps, 45 m off: between the window frames (top
+  // 3.4 m) and the eaves (4.6 m)
+  g.add(carvedBoard("workshop-sign-en", "Workshop", 86, [4.5, 1.12], 4.0, 4.0));
   g.add(buildVine(61, [v(-6.6, 0, 4.1), v(-6.55, 2, 4.15), v(-6.2, 4.4, 4.1), v(-4, 4.5, 4.12), v(-3.6, 3.6, 4.15)], 0.4));
   g.add(buildVine(62, [v(6.6, 0, 3.4), v(6.62, 2.6, 3.2), v(6.6, 4.4, 2)], 0.4));
   return g;
@@ -165,22 +163,11 @@ export function buildStation() {
     panes.push(at(new THREE.PlaneGeometry(1.3, 2.2), i * 2.1, 2.4, 3.01));
   }
   g.add(new THREE.Mesh(merge(panes), windowGlow(0.35)));
-  // Its sign, neon letters on a navy board framed in baby-blue neon,
-  // across the tower's foot; its light falls on the tower and on the
-  // hall's wall behind its ends. Sized to be read from the park's steps,
-  // 63 m off: between the windows (top 3.5 m) and the eaves
-  const [sw, sh, sy] = [5.8, 1.4, 4.45];
-  const sign = neonSign("station-sign-en", [512, 128], [sw, sh], [{ text: "Station", size: 96 }], { halo: 8, brush: 0.2, grime: 0.3 });
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), sign.face);
-  board.position.set(0, sy, 3.68);
-  g.add(board);
-  g.add(sign.letters.translateY(sy).translateZ(3.686));
-  g.add(signCase(sw, sh, 0, sy, 3.6));
-  const frame = new THREE.Mesh(neonTube(sw + 0.18, sh + 0.16, 0.034), mat("neonBlue", () => neon(NEON.blue)));
-  frame.position.set(0, sy, 3.7);
-  g.add(frame);
-  g.add(wash([3.2, sh + 0.18], [0, 0, 1.2, 1.2], NEON.blue, 0.3).translateY(sy).translateZ(3.606));
-  g.add(wash([sw + 0.2, sh + 0.18], [0.9, 0.9, 0.3, 1.1], NEON.blue, 0.2).translateY(sy).translateZ(3.012));
+  // Its sign, a carved board across the tower's foot with a torch each
+  // side, their light on the hall's wall behind (torch.ts). Sized to be
+  // read from the park's steps, 63 m off: between the windows (top 3.5 m)
+  // and the eaves
+  g.add(carvedBoard("station-sign-en", "Station", 96, [5.8, 1.4], 4.45, 3.6, 0.6));
   g.add(buildVine(71, [v(-1.65, 0, 3.65), v(-1.7, 4, 3.66), v(-1.6, 9, 3.65), v(-0.8, 12.5, 3.66)], 0.5));
   return g;
 }
@@ -190,22 +177,9 @@ export function buildArcade() {
   const g = new THREE.Group();
   g.add(mesh(box(10, 6.5, 8, 0.3).translate(0, 3.25, 0), mat("arcadeWall", () => paint({ map: plaster("green"), grime: 0.9, grimeHeight: 2.5, moss: 0.3 }))));
   g.add(mesh(box(10.4, 0.3, 8.4).translate(0, 6.6, 0), M.concrete()));
-  // Neon letters on the dark board: only the letters glow (their own
-  // mask), with a soft pink halo round them, and the board framed in
-  // baby blue. Steady: it no longer hums. Every building sign is now
-  // made this way (glow.ts: neonSign).
-  const sign = neonSign("arcade-sign-en", [512, 128], [7, 1.6], [{ text: "Arcade", size: 72 }]);
-  const signMat = sign.face;
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(7, 1.6), signMat);
-  board.position.set(0, 5.2, 4.08);
-  g.add(board);
-  g.add(signCase(7, 1.6, 0, 5.2, 4.0));
-  sign.letters.position.set(0, 5.2, 4.1);
-  g.add(sign.letters);
-  const frame = new THREE.Mesh(neonTube(7.18, 1.78, 0.036, 0.16), mat("neonBlue", () => neon(NEON.blue)));
-  frame.position.set(0, 5.2, 4.11);
-  g.add(frame);
-  g.add(wash([7.2, 1.8], [1.0, 1.0, 0.42, 0.9], NEON.pink, 0.15, 0.26).translateY(5.2).translateZ(4.012));
+  // Its sign, a carved board over the shopfront, a torch each side
+  // (torch.ts)
+  g.add(carvedBoard("arcade-sign-en", "Arcade", 72, [7, 1.6], 5.2, 4.0, 0.6));
   // Shopfront: glass, and a shutter part way down
   const glow = windowGlow(0.45);
   const front = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 3.2), glow);
@@ -215,7 +189,7 @@ export function buildArcade() {
   g.add(shutter);
   g.add(buildVine(81, [v(-5.05, 0, 4.1), v(-5, 3, 4.12), v(-4.6, 6.4, 4.1), v(-2, 6.6, 4.2), v(-1.2, 5.6, 4.15)], 0.45));
   g.add(buildVine(82, [v(5.05, 0, 3.5), v(5.08, 3.2, 3.2), v(5.06, 6.3, 2.5)], 0.45));
-  return { group: g, signMat };
+  return { group: g };
 }
 
 // The empty city around the park: tall blocks, some broken at the top,

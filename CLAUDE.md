@@ -100,7 +100,9 @@ layouts render the same content from `app/data/`. The two media queries
 that decide which layout a screen gets are in `components/world/flat.ts`
 and, identically, in `globals.css` (`npm test` checks they match). Use
 `.only-flat` / `.only-world` for anything that belongs to one layout.
-Buttons are glass (see "Buttons" below); panels are cream paper.
+Buttons are glass (see "Buttons" below), and so are the panels: frosted
+glass in the time and weather's language (`--paper`, `--reading`), the
+coloured ones stained glass (`--stain-*`).
 
 The overall feeling should be:
 
@@ -111,18 +113,21 @@ The overall feeling should be:
 - recruiter-friendly: content stays readable and easy to skim
 
 Build scenery as 3D in `world3d/`, through the shared painted material
-(`paint.ts`), not as CSS or SVG. Keep text on paper or open sky, never over
+(`paint.ts`), not as CSS or SVG. Keep text on glass or open sky, never over
 busy scenery. Real content stays in HTML.
 
 Light after dark (`world3d/glow.ts`, driven by `atmosphere/Atmosphere.tsx`
 through `glowUniforms` and the paint's day/night `glow`): street lamps are
 spotlights at the bulb aimed straight down, with a per-pixel beam in the
-air (no halos, no cone meshes); every building sign is made one way
-(`glow.ts: neonSign`, first made for the arcade): a deep navy board that
-is never lit itself, its English words in pink neon (an emissive text
-mask, plus `neonLetters`, a quad over the face from `textures.ts:
-neonMask`: a hot core along each stroke, a tight halo), a thin baby-blue
-neon frame, and a soft wash on the wall. The park's fountain is a small
+air (no halos, no cone meshes); every sign is made one way
+(`world3d/torch.ts`): a board of dark stained wood in a wooden frame, its
+English words carved in and painted cream (`carvedSign`; they read pale
+on dark by day and catch the torches' warm light after dark, steadily,
+while the board itself is never lit), and on the buildings a torch on an
+iron bracket each side (`buildTorch`, `torchPair`) whose light is an
+additive wash on the wall (`glow.ts: wash`), not a light. The flames sway
+slowly; their brightness doesn't change, and they hold still in still
+view. The park's fountain is a small
 pond whose water (`props.ts: waterMaterial`) holds the sky, the trees,
 its column and, after dark, the nearby lamps and signs as broken
 streaks; reeds, stones and lily pads stay on its shallow edge. Nothing
@@ -148,7 +153,7 @@ from the steps".
 
 ## Color Palette
 
-One fixed theme: warm cream paper under a baby-blue interface. Cream
+One fixed theme: frosted glass and a baby-blue interface over the world. Cream
 `#fff9f2`, sky `#55c6f0`, sand `#e5ddd4`, ink `#1d1e1e`, error `#fb5745`
 (from Monkeytype's "Soaring Skies"), and the interface's blues: baby blue
 `#b8dcfa`, hover `#9bcbf1`, pale `#eaf5ff`, light `#f7fbff`, line
@@ -158,11 +163,14 @@ derived from them (`--background`, `--paper`, `--surface-2`,
 `--surface-deep`, `--foreground`, `--muted`, `--accent`, `--mark`,
 `--highlight`, `--focus`, `--shadow`, `--glass-*`, …). Baby blue is for
 surfaces, chosen states, washes and strokes, never text: text and links
-use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. Cream
-stays for paper, which suits the scenery. The enamel objects (timetable, the
-cabinets' screens, the notebook's cover) are a deep slate blue
-(`--surface-deep`); the contact page's phone line is a pale-blue slip
-(interface, not part of the green booth). Indigo is gone from the interface (`npm test` checks).
+use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. The
+panels over the world are frosted pale-blue glass (`--paper`, and
+`--reading` for what's read line by line), frosted only as much as the
+words need, more after dark: `docs/ui/scripts/panel-contrast.mjs` measures
+every panel's text over all 16 skies. The pieces that were coloured
+(the timetable, the cabinets' screens, the notebook's cover) are slate
+stained glass (`--stain-deep`), the contact page's phone line baby-blue
+stained glass (`--stain-baby`). Cream stays for the phone layout's sheet. Indigo is gone from the interface (`npm test` checks).
 There is no dark theme and no toggle; `npm test` checks that none comes
 back. The 3D scenes' skies, fog and thresholds are tuned to the same
 family; the landscape stays natural.
@@ -171,10 +179,10 @@ Avoid:
 - large areas of pure black or pure white
 - neon or highly saturated colors
 - rainbow gradients
-- excessive glassmorphism
+- glass so clear its words drop under 4.5:1 (measure with panel-contrast.mjs)
 - a second theme, or anything keyed on `prefers-color-scheme`
 
-Keep text contrast at 4.5:1 or better on paper and on every sky.
+Keep text contrast at 4.5:1 or better on glass and on every sky.
 
 ---
 

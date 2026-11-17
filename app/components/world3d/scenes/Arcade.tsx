@@ -11,8 +11,8 @@ import { mesh, paint } from "../paint";
 import { M, buildBeam, buildDust, buildSky, mat } from "../props";
 import { rng, type Rng } from "../rng";
 import { useWorld, world } from "../store";
-import { deadScreen, glowMask, planks, plaster, softDot, textPanel } from "../textures";
-import { NEON, halo, neon, neonSign, neonTube } from "../glow";
+import { deadScreen, planks, plaster, softDot, textPanel } from "../textures";
+import { buildTorch, carvedSign, signFrame, TORCH } from "../torch";
 import { HEMI, Hitbox, NEON_LIGHT, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
@@ -89,7 +89,7 @@ function deadCabinet() {
 // What else was left: a row of dead cabinets, the token counter, the prize
 // shelf under its sign, a pachinko board, cables along the skirting, a
 // ceiling tile come down, and stains where the roof let the rain in. No
-// lights of their own; the sign's light is its own neon.
+// lights of their own.
 function buildDressing(r: Rng) {
   const g = new THREE.Group();
   // Dead cabinets against the left wall, clear of its posters
@@ -135,16 +135,13 @@ function buildDressing(r: Rng) {
   shelf.add(mesh(merge(boxes), mat("prizeBox", () => paint({ color: "#b98b6a", brush: 0.4, brushScale: 5, grime: 0.5 }))));
   shelf.position.set(5.15, 0, -3.75);
   g.add(shelf);
-  // Its sign, made like the buildings' (glow.ts: neonSign): pink neon
-  // words on a navy board, a thin baby-blue frame
-  const prizeSign = neonSign("arcade-prizes-en", [256, 64], [1.1, 0.28], [{ text: "Prizes", size: 40 }], { halo: 5, padding: 6, grime: 0.3 });
-  const signBoard = mesh(box(1.16, 0.34, 0.04), M.iron());
-  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.28), prizeSign.face);
-  signFace.position.z = 0.021;
+  // Its sign, a small carved board like the buildings' (torch.ts)
+  const signBoard = new THREE.Group();
+  signBoard.add(signFrame(1.1, 0.28, 0.05, 0.05));
+  const signFace = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 0.28), carvedSign("arcade-prizes-en", [256, 64], [{ text: "Prizes", size: 40 }], { padding: 6, grime: 0.3 }));
+  signFace.position.z = 0.026;
   signBoard.add(signFace);
-  signBoard.add(prizeSign.letters.translateZ(0.025));
-  signBoard.add(new THREE.Mesh(neonTube(1.1, 0.28, 0.008, 0.04), mat("neonBlue", () => neon(NEON.blue))).translateZ(0.028));
-  signBoard.position.set(5.15, 2.95, -3.94);
+  signBoard.position.set(5.15, 2.95, -3.96);
   g.add(signBoard);
 
   // A pachinko board between the middle cabinets: pins, a tray of steel
@@ -244,40 +241,15 @@ function buildArcadeScene(quality: "high" | "low") {
     if (i > 1) p.scale.setScalar(0.65);
     root.add(p);
   });
-  // A neon sign on the left wall, missing strokes but still lit: steady,
-  // its glow on the wall behind it
-  const neonMat = neon(NEON.pink, 2.0);
+  // The arcade's name on the left wall, carved, with a torch beside it
+  // whose light falls on the wall (torch.ts)
   const sign = new THREE.Group();
-  const letters = [
-    [v(0, 0, 0), v(0, 0.5, 0), v(0.3, 0.5, 0)],
-    [v(0, 0, 0), v(0.3, 0, 0), v(0.3, 0.25, 0), v(0.15, 0.25, 0)],
-    [v(0.45, 0, 0), v(0.6, 0.5, 0), v(0.75, 0, 0)],
-    [v(0.9, 0, 0), v(0.9, 0.5, 0), v(1.05, 0.25, 0), v(1.2, 0.5, 0), v(1.2, 0, 0)],
-    [v(1.35, 0, 0), v(1.35, 0.5, 0), v(1.6, 0.5, 0)],
-    [v(1.35, 0.25, 0), v(1.55, 0.25, 0)],
-    [v(1.35, 0, 0), v(1.6, 0, 0)],
-  ];
-  sign.add(new THREE.Mesh(merge(letters.map((pts) => tube(pts, () => 0.018, 10, 5))), neonMat));
-  // The glow: the same strokes, blurred, on the wall (2.1 x 1 m round
-  // the letters, 122 px a metre)
-  const glow = glowMask(
-    "neon-game",
-    256,
-    122,
-    (g) => {
-      g.strokeStyle = "#ffffff";
-      g.lineWidth = 6;
-      g.lineJoin = g.lineCap = "round";
-      for (const pts of letters) {
-        g.beginPath();
-        pts.forEach((p, i) => g[i ? "lineTo" : "moveTo"]((p.x + 0.25) * 122, (0.75 - p.y) * 122));
-        g.stroke();
-      }
-    },
-    10,
-  );
-  sign.add(halo(glow, [2.1, 1.0], NEON.pink, 0.55).translateX(0.8).translateY(0.25).translateZ(-0.04));
-  sign.position.set(-5.95, 3.1, 1.6);
+  sign.add(signFrame(1.7, 0.5, 0.06, 0.06));
+  const gameFace = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.5), carvedSign("arcade-game-en", [512, 150], [{ text: "GAME", size: 92 }], { grime: 0.5 }));
+  gameFace.position.z = 0.031;
+  sign.add(gameFace);
+  sign.add(buildTorch(0.4, { light: 0.5, reach: 1.0 }).translateX(1.25).translateY(-0.15).translateZ(-0.03));
+  sign.position.set(-5.93, 3.35, 0.8);
   sign.rotation.y = Math.PI / 2;
   root.add(sign);
   // The claw machine in the corner, a few prizes still inside
@@ -323,7 +295,7 @@ function buildArcadeScene(quality: "high" | "low") {
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [0.8, 0.3, 0.2] });
   root.add(sky);
   root.add(mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false }));
-  return { root, cabinets, sky, neonMat };
+  return { root, cabinets, sky };
 }
 
 export default function Arcade({ active, quality }: SceneProps) {
@@ -358,7 +330,7 @@ export default function Arcade({ active, quality }: SceneProps) {
       (c.glass.material as THREE.MeshBasicMaterial).color.setScalar(0.45 + p * 0.75);
       c.marquee.emissiveIntensity = 0.15 + p * 0.55;
     });
-    // (The neon is steady: lights in the world don't flicker)
+    // (The torch's light is steady: lights in the world don't flicker)
   });
 
   return (
@@ -367,8 +339,8 @@ export default function Arcade({ active, quality }: SceneProps) {
       <SunLight active={active} position={[18, 9, 4]} target={[0, 0, 0]} color="#ffcf92" intensity={2.6} size={10} quality={quality} />
       <hemisphereLight userData={HEMI} args={["#ecd8c0", "#5a4438", 1.4]} />
       <pointLight position={[0, 3.2, 0.5]} color="#ffbf86" intensity={6} distance={12} decay={1.3} />
-      {/* The neon's light on the wall and the floor below it, stronger after dark */}
-      <pointLight userData={NEON_LIGHT} position={[-5.4, 3.2, 0.8]} color="#e07a8a" intensity={1.2} distance={4} />
+      {/* The torch's light on the wall and the floor below it, stronger after dark */}
+      <pointLight userData={NEON_LIGHT} position={[-5.4, 3.2, -0.45]} color={TORCH.light} intensity={1.2} distance={4} />
       {cabinetX.map((x, i) => (
         <pointLight key={i} position={[x, 1.5, -2.6]} color={`hsl(${hues[i]},60%,70%)`} intensity={i === interest && arrived ? 1.6 : 0} distance={2.5} />
       ))}

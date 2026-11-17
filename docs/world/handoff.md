@@ -91,6 +91,15 @@ which needs `unstable_cache()` and root params; the site uses neither).
 lists one moderate advisory, minimatch inside the ESLint toolchain
 (dev-only, never shipped).
 
+## Glass, new type, torch-lit signs (17 November 2026)
+
+Branch `glass-torches`: Fraunces and Nunito (8be1975); glass and stained
+glass panels (c26e304) tuned to 4.5:1 by `docs/ui/scripts/panel-contrast.mjs`
+(2ed9796); carved, torch-lit signs (`world3d/torch.ts`, next commit).
+Notes in `docs/world/3d-progress-log.md`, "Glass, Fraunces and Nunito,
+torch-lit signs". To measure the glass, run panel-contrast against a
+`next dev` you've just started (an old one can serve a stale stylesheet).
+
 ## Remaining
 
 Nothing queued. If something comes up: the measurement scripts and
