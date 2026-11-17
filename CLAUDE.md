@@ -180,13 +180,15 @@ Keep text contrast at 4.5:1 or better on paper and on every sky.
 
 ## Typography
 
-Two typefaces, set in `app/layout.tsx`: Shippori Mincho B1 for headings and
-place names (`font-display`), Zen Kaku Gothic New for text (`font-sans`).
-Only their Latin is used, so they load with `next/font/local` from the five
-Latin files in `app/fonts/`. Don't move them back to `next/font/google`:
-for these Japanese families it ships every Unicode slice (about 200 KB of
-CSS, and 8 MB of preloaded files). Every sign and notice in the world is
-in English, in these same fonts, so no CJK font is loaded (`npm test`
+Two typefaces, set in `app/layout.tsx`: Fraunces for headings and place
+names (`font-display`), a soft, slightly wonky serif with some personality;
+Nunito for text (`font-sans`), a rounded, friendly sans. Both load with
+`next/font/local` from two variable Latin files in `app/fonts/` (75 KB in
+all): Fraunces cut to weights 500 to 700, optical size 72, its "soft" and
+"wonky" axes set on; Nunito 400 to 700. To change a cut, fetch it from the
+Google Fonts CSS API with the axes pinned and replace the file. Every sign
+and notice in the world is in English, drawn in these same fonts
+(`world3d/textures.ts: fonts()`), so no CJK font is loaded (`npm test`
 checks no Chinese or Japanese characters come back into `app/`).
 
 Body copy is written as short points, not paragraphs: `.points` (a rust

@@ -9,33 +9,30 @@ import WorldControls from "./components/world/WorldControls";
 import { siteUrl } from "./sections/registry";
 import "./globals.css";
 
-// Headings: Shippori Mincho B1, a mincho with a slight ink spread, like
-// letterpress on old notices. Text: Zen Kaku Gothic New, a calm gothic,
-// like real wayfinding signs.
+// Headings: Fraunces, a soft, slightly wonky old-style serif, with some
+// of the warmth of a storybook. Text: Nunito, a rounded sans, friendly
+// and easy to read at small sizes.
 //
-// Both are Japanese families, and only their Latin is used here, so the
-// Latin files are kept in app/fonts/ (downloaded from Google Fonts; SIL
-// Open Font License, alongside). Through next/font/google each family
-// arrives as about 120 Unicode slices per weight: 200 KB of extra CSS on
-// every page, and (a next/font quirk with several weights) 313 slice files
-// preloaded, about 8 MB. To add a weight, add its Latin file here.
+// Both are variable fonts kept in app/fonts/ (downloaded from Google
+// Fonts; SIL Open Font License, alongside), Latin only. Fraunces is cut to
+// what the site uses: weights 500 to 700, its optical size fixed at 72
+// (display), and its "soft" and "wonky" axes set on (36 KB rather than
+// 121 KB for every axis). Nunito covers 400 to 700.
 const display = localFont({
-  src: [
-    { path: "./fonts/shippori-mincho-b1-latin-500.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/shippori-mincho-b1-latin-600.woff2", weight: "600", style: "normal" },
-  ],
-  variable: "--font-shippori",
+  src: "./fonts/fraunces-latin-soft-500-700.woff2",
+  weight: "500 700",
+  style: "normal",
+  variable: "--font-fraunces",
   display: "swap",
   adjustFontFallback: "Times New Roman",
 });
 const text = localFont({
-  src: [
-    { path: "./fonts/zen-kaku-gothic-new-latin-400.woff2", weight: "400", style: "normal" },
-    { path: "./fonts/zen-kaku-gothic-new-latin-500.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/zen-kaku-gothic-new-latin-700.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-zen-kaku",
+  src: "./fonts/nunito-latin-400-700.woff2",
+  weight: "400 700",
+  style: "normal",
+  variable: "--font-nunito",
   display: "swap",
+  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {

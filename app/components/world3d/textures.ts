@@ -75,8 +75,8 @@ export function fonts() {
   if (typeof document === "undefined") return { display: "serif", text: "sans-serif" };
   const css = getComputedStyle(document.documentElement);
   return {
-    display: `${css.getPropertyValue("--font-shippori").trim() || "serif"}, serif`,
-    text: `${css.getPropertyValue("--font-zen-kaku").trim() || "sans-serif"}, "Hiragino Sans", sans-serif`,
+    display: `${css.getPropertyValue("--font-fraunces").trim() || "serif"}, serif`,
+    text: `${css.getPropertyValue("--font-nunito").trim() || "sans-serif"}, sans-serif`,
   };
 }
 
