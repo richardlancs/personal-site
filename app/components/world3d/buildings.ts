@@ -126,7 +126,7 @@ export function buildWorkshop() {
   // baby-blue neon. Sized to be read from the park's steps, 45 m off:
   // between the window frames (top 3.4 m) and the eaves (4.6 m)
   const [sw, sh, sy] = [4.5, 1.12, 4.0];
-  const sign = neonSign("workshop-sign-en", [512, 128], [sw, sh], [{ text: "Workshop", size: 70 }], { halo: 8, brush: 0.3 });
+  const sign = neonSign("workshop-sign-en", [512, 128], [sw, sh], [{ text: "Workshop", size: 86 }], { halo: 8, brush: 0.3 });
   const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), sign.face);
   board.position.set(0, sy, 4.08);
   g.add(board);
@@ -170,7 +170,7 @@ export function buildStation() {
   // hall's wall behind its ends. Sized to be read from the park's steps,
   // 63 m off: between the windows (top 3.5 m) and the eaves
   const [sw, sh, sy] = [5.8, 1.4, 4.45];
-  const sign = neonSign("station-sign-en", [512, 128], [sw, sh], [{ text: "Station", size: 72 }], { halo: 8, brush: 0.2, grime: 0.3 });
+  const sign = neonSign("station-sign-en", [512, 128], [sw, sh], [{ text: "Station", size: 96 }], { halo: 8, brush: 0.2, grime: 0.3 });
   const board = new THREE.Mesh(new THREE.PlaneGeometry(sw, sh), sign.face);
   board.position.set(0, sy, 3.68);
   g.add(board);

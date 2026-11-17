@@ -551,3 +551,31 @@ workshop's chunk held back 1.8 s swaps at 2.2 s, when it lands (1.1 s
 when it's there), built; held back 6 s, the wait gives up at 2.9 s. On a
 390×844 phone: the contact deep link and park → arcade arrive, no
 sideways scroll, no errors.
+
+### Rain behind things, and the far signs' words
+
+- **Rain and snow stop crossing nearer things.** The scene's render target
+  keeps its depth as a texture, and a pass after the scene
+  (`Painterly.tsx: SceneDepth`) hands this frame's to the drops (the
+  composer alternates targets, so it's read each frame). A drop fades
+  over half a metre where it falls behind a wall, a tree or the ground
+  (`atmosphere/state.ts: sceneDepth`); the brushwork moves pixels, so a
+  hard cut would show. Compared with the fade off (a temporary switch,
+  removed): in the park the drops that fell under the plaza and behind
+  the buildings are gone and the rest are unchanged. At the booth, which
+  looks at a wall 5 m off, nearly every drop had been behind it, so the
+  field now draws in where a place's view is short (`fieldScale`: three
+  times the reach from the camera to what it looks at, at least 15 m):
+  the same drops, nearer, in the air you can see.
+- **The far signs' words** grow inside their boards (no board, building or
+  sight line moved): Workshop 70 → 86 px on its 512 px board, Station
+  72 → 96. From the steps at 1440 their capitals are now about 14.5 and
+  12.7 px tall (were 11 and 9). On a 390 phone they are 7 to 8 px.
+  `visibility.mjs`, 10 sizes × 6 skies: 0 primary sign problems.
+- **The phone tier's grass**, recorded as showing ground between tufts:
+  looked at again in the phone framings (390×844, 844×390), the sheet
+  covers the mid-distance grass, and what shows reads as grass. Left as
+  it is.
+
+Checked: lint, `tsc`, `npm test` (79), `perf:budget` (world chunk
+270,891), no console errors through rain, snow and journeys.

@@ -885,7 +885,7 @@ export default function World3D() {
             </group>
           );
         })}
-        <Precipitation quality={quality} />
+        <Precipitation quality={quality} active={active} />
         <Warm mounted={built} active={active} onReady={() => setWarm(true)} />
         {DevSkyPanel && <DevHandle />}
       </Canvas>

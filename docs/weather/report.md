@@ -144,8 +144,10 @@ Measured on production builds with the audit's scripts (`trace.mjs`,
 - Vegetation, compared with the reference: silhouettes are rounder and
   more regular than the painted ones; mid-distance grass on the phone
   tier still shows ground between tufts; phone-tier triangles are up 27%.
-- Precipitation is drawn after the brushwork without a depth test, so a
-  drop can cross a nearer object (hard to see at its alpha).
+- ~~Precipitation is drawn after the brushwork without a depth test, so a
+  drop can cross a nearer object.~~ Done 17 November 2026: it fades
+  against the scene's depth (`docs/world/3d-progress-log.md`, "Rain
+  behind things").
 - The introduction has two treatments: the haze by day, a paper sheet
   under dark skies.
 

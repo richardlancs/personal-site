@@ -17,6 +17,18 @@ export const waterUniforms = {
 // if they were part of the scene; on top, they stay strokes.
 export const overlay = new THREE.Scene();
 
+// The scene's depth, as drawn this frame (Painterly.tsx hands it over
+// after the scene is rendered, before the brushwork), so a drop can fade
+// where it falls behind something nearer: the overlay has no depth of its
+// own, and the brushwork shifts pixels, so the test is soft, not a cut
+export const sceneDepth = {
+  uSceneDepth: { value: null as THREE.DepthTexture | null },
+  uSceneSize: { value: new THREE.Vector2(1, 1) },
+  uDepthOn: { value: 0 },
+  uNear: { value: 0.1 },
+  uFar: { value: 900 },
+};
+
 export const precip = {
   rain: 0,
   snow: 0,

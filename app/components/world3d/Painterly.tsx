@@ -5,9 +5,10 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { Pass } from "three/addons/postprocessing/Pass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { overlay } from "./atmosphere/state";
+import { overlay, sceneDepth } from "./atmosphere/state";
 
 // The last step that turns a render into a painting.
 //
@@ -105,6 +106,24 @@ const Grade = {
     }`,
 };
 
+// Hands the depth of the scene just drawn to the rain and snow. The
+// composer swaps its two targets an odd number of times a frame, so which
+// one holds the scene changes from frame to frame: read it here, each time.
+class SceneDepth extends Pass {
+  constructor(private camera: THREE.Camera) {
+    super();
+    this.needsSwap = false;
+  }
+  render(_renderer: THREE.WebGLRenderer, _write: THREE.WebGLRenderTarget, read: THREE.WebGLRenderTarget) {
+    sceneDepth.uSceneDepth.value = read.depthTexture;
+    sceneDepth.uSceneSize.value.set(read.width, read.height);
+    sceneDepth.uDepthOn.value = read.depthTexture ? 1 : 0;
+    const cam = this.camera as THREE.PerspectiveCamera;
+    sceneDepth.uNear.value = cam.near;
+    sceneDepth.uFar.value = cam.far;
+  }
+}
+
 export default function Painterly({ brushwork, samples }: { brushwork: boolean; samples: number }) {
   const { gl, scene, camera, size } = useThree();
 
@@ -112,9 +131,12 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
     // The composer's own target has no antialiasing; the canvas's is
     // never seen because every frame goes through here. A multisampled
     // target keeps the edges of leaves, branches and wires smooth.
-    const target = new THREE.WebGLRenderTarget(1, 1, { samples, type: THREE.HalfFloatType });
+    // Its depth is kept as a texture too (resolved from the multisampled
+    // buffer), for the rain and snow drawn over the brushwork
+    const target = new THREE.WebGLRenderTarget(1, 1, { samples, type: THREE.HalfFloatType, depthTexture: new THREE.DepthTexture(1, 1) });
     const composer = new EffectComposer(gl, target);
     composer.addPass(new RenderPass(scene, camera));
+    composer.addPass(new SceneDepth(camera));
     const brush = new ShaderPass(Brushwork);
     composer.addPass(brush);
     // Rain and snow, over the brushwork (atmosphere/state.ts: overlay),

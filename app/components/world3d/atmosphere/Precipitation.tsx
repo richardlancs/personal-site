@@ -5,8 +5,9 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { windUniforms } from "../paint";
 import { rng } from "../rng";
+import { scenes, type SceneId } from "../scenes";
 import { world, type Quality } from "../store";
-import { overlay as scene, precip } from "./state";
+import { overlay as scene, precip, sceneDepth } from "./state";
 
 // Rain and snow, out of doors (how much: Atmosphere.tsx, `precip`).
 //
@@ -43,6 +44,17 @@ const MOBILE: Record<Kind, { box: [number, number, number]; size: [number, numbe
 };
 const LINGER = 20; // seconds after it stops (or you go indoors) before it's taken down
 
+// How far a place's view reaches: from where the camera rests to what it
+// looks at. Where that's short (the booth, 5 m, against a wall), most of
+// the field would fall behind the wall and be hidden (sceneDepth), so the
+// field draws in round the camera, never narrower than 15 m: the same
+// drops, closer together, in the air you can see.
+const reach = (id: SceneId) => {
+  const { pos, target } = scenes[id].home;
+  return Math.hypot(pos[0] - target[0], pos[1] - target[1], pos[2] - target[2]);
+};
+const fieldScale = (id: SceneId, width: number) => Math.min(1, Math.max(15, reach(id) * 3) / width);
+
 const vertexShader = /* glsl */ `
   attribute vec4 aSeed;
   uniform float uTime;
@@ -59,6 +71,7 @@ const vertexShader = /* glsl */ `
   uniform vec3 uShelterMax;
   varying vec2 vUv;
   varying float vAlpha;
+  varying float vDepth;
   void main() {
     float speed = 0.8 + 0.4 * aSeed.w;
     vec3 p = aSeed.xyz * uBox;
@@ -88,13 +101,21 @@ const vertexShader = /* glsl */ `
     float near = smoothstep(1.6, 3.6, -mv.z);
     vAlpha = uAlpha * edge * near * (1.0 - sheltered) * (1.0 - clear * 0.92) * (0.55 + 0.45 * aSeed.w);
     vUv = vec2(position.x + 0.5, position.y);
+    vDepth = -mv.z;
   }`;
 
 const fragmentShader = /* glsl */ `
+  #include <packing>
   uniform vec3 uColor;
   uniform float uRound;
+  uniform sampler2D uSceneDepth;
+  uniform vec2 uSceneSize;
+  uniform float uDepthOn;
+  uniform float uNear;
+  uniform float uFar;
   varying vec2 vUv;
   varying float vAlpha;
+  varying float vDepth;
   void main() {
     vec2 c = vUv - 0.5;
     // A stroke: soft across, tapering at both ends
@@ -102,12 +123,19 @@ const fragmentShader = /* glsl */ `
     // A flake: a soft dot
     float flake = 1.0 - smoothstep(0.12, 0.5, length(c));
     float alpha = mix(stroke, flake, uRound) * vAlpha;
+    // Behind something nearer (a wall, a tree, a roof): gone, over half a
+    // metre, so the brushwork's soft edges don't show a hard line
+    if (uDepthOn > 0.5) {
+      float d = texture2D(uSceneDepth, gl_FragCoord.xy / uSceneSize).x;
+      float sceneZ = -perspectiveDepthToViewZ(d, uNear, uFar);
+      alpha *= smoothstep(-0.5, 0.1, sceneZ - vDepth);
+    }
     if (alpha < 0.01) discard;
     gl_FragColor = vec4(uColor, alpha);
     #include <colorspace_fragment>
   }`;
 
-type Field = { mesh: THREE.Mesh; geometry: THREE.InstancedBufferGeometry; material: THREE.ShaderMaterial; full: number; alpha: number; idle: number };
+type Field = { mesh: THREE.Mesh; geometry: THREE.InstancedBufferGeometry; material: THREE.ShaderMaterial; full: number; alpha: number; idle: number; box: THREE.Vector3 };
 
 function build(kind: Kind, quality: Quality): Field {
   const mobile = quality === "mobile";
@@ -137,13 +165,15 @@ function build(kind: Kind, quality: Quality): Field {
       uShelterMax: { value: precip.shelterMax },
       uColor: { value: kind === "rain" ? precip.rainColor : precip.snowColor },
       uRound: { value: look.round },
+      ...sceneDepth,
     },
     vertexShader,
     fragmentShader,
     transparent: true,
     depthWrite: false,
     // Drawn over the painted scene (state.ts: overlay), which has no depth
-    // of its own: what's near is kept clear by the fade toward the lens
+    // of its own: what's near is kept clear by the fade toward the lens,
+    // and what's behind something nearer fades in the shader (sceneDepth)
     depthTest: false,
     // The stroke runs the way the drop falls, which mirrors the quad
     side: THREE.DoubleSide,
@@ -153,7 +183,7 @@ function build(kind: Kind, quality: Quality): Field {
   mesh.frustumCulled = false;
   mesh.renderOrder = 2;
   mesh.name = `precip:${kind}`;
-  return { mesh, geometry, material, full, alpha: look.alpha, idle: 0 };
+  return { mesh, geometry, material, full, alpha: look.alpha, idle: 0, box: new THREE.Vector3(...look.box) };
 }
 
 function dispose(scene: THREE.Scene, f: Field) {
@@ -162,7 +192,7 @@ function dispose(scene: THREE.Scene, f: Field) {
   f.material.dispose();
 }
 
-export default function Precipitation({ quality }: { quality: Quality }) {
+export default function Precipitation({ quality, active }: { quality: Quality; active: SceneId }) {
   const { camera, gl } = useThree();
   const fields = useRef<Record<Kind, Field | null>>({ rain: null, snow: null });
   const tmp = useRef({ dir: new THREE.Vector3(), frame: 0, mask: new THREE.Vector4(2, 2, 3, 3), top: 0.88 });
@@ -228,8 +258,11 @@ export default function Precipitation({ quality }: { quality: Quality }) {
       f.geometry.instanceCount = Math.ceil(f.full * Math.min(1, amount * 1.4) * (still ? 0.5 : 1));
       const u = f.material.uniforms;
       u.uAlpha.value = f.alpha * Math.min(1, amount);
-      // The box sits a little ahead of the camera, where it's looking
+      // The box sits a little ahead of the camera, where it's looking,
+      // drawn in where the view is short (fieldScale)
       const box = u.uBox.value as THREE.Vector3;
+      const s = fieldScale(active, f.box.x);
+      box.set(f.box.x * s, f.box.y, f.box.z * s);
       (u.uCenter.value as THREE.Vector3).copy(camera.position).addScaledVector(t.dir, box.x * 0.32);
       (u.uCenter.value as THREE.Vector3).y = camera.position.y + box.y * 0.22;
       (u.uMask.value as THREE.Vector4).copy(t.mask);
