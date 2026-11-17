@@ -579,3 +579,19 @@ sideways scroll, no errors.
 
 Checked: lint, `tsc`, `npm test` (79), `perf:budget` (world chunk
 270,891), no console errors through rain, snow and journeys.
+
+### The phone booth's street corner
+
+The booth was the thinnest place. Now (`scenes/Booth.tsx: buildCorner`):
+a kerb and gutter with an iron drain, a crossing nearly worn off the
+road, a post box gone to rust beside the booth, a bus stop (Park Gate,
+Route 12, its little timetable in English), a bench by the wall, a
+bicycle left against it, a second lamp that no longer comes on (no light
+of its own; its glass and shade stay dull after dark), and notes taped
+to the booth's glass. The receiver is a handset now, a bowed handle with
+rounded cups, and its coiled cord hangs in a loop
+(`props.ts: buildBooth`). The overhead wires swing slowly, each line from
+where it meets the poles; still in still view. No lights added; nothing
+flickers. Seen at 1440 by day and night, focused on the phone with the
+receiver up, mid walk-in (the bus stop and bicycle show there), and at
+390×844; no console errors.

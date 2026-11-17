@@ -3,18 +3,106 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo } from "react";
 import * as THREE from "three";
-import { box, buildBush, buildTree, buildVine, grass, treeKinds } from "../geometry";
+import { at, box, buildBush, buildTree, buildVine, grass, merge, treeKinds } from "../geometry";
 import { mesh, paint } from "../paint";
-import { M, buildBooth, buildDust, buildFallenLeaves, buildFallingLeaves, buildLamp, buildPole, buildSky, buildVending, buildWires } from "../props";
+import { M, buildBench, buildBicycle, buildBooth, buildDust, buildFallenLeaves, buildFallingLeaves, buildLamp, buildPole, buildSky, buildVending, buildWires, mat } from "../props";
 import { buildCity } from "../buildings";
 import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
-import { flagstones, groundTexture } from "../textures";
+import { flagstones, groundTexture, textPanel } from "../textures";
 import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
+
+// The street corner round the booth: the kerb and its gutter, a drain,
+// the crossing worn off the road, a post box, the bus stop, a bench, a
+// bicycle left against the wall, a lamp that no longer comes on, and
+// notes taped to the booth's glass. No lights of their own.
+function buildCorner(booth: THREE.Group) {
+  const g = new THREE.Group();
+  // Kerb and gutter, between the pavement and the road
+  g.add(mesh(box(40, 0.15, 0.24, 0.5).translate(0, 0.075, 3.92), M.stone()));
+  g.add(mesh(box(40, 0.02, 0.3, 0.4).translate(0, 0.045, 4.19), mat("gutter", () => paint({ color: "#57534a", brush: 0.4, brushScale: 1, moss: 0.5, grime: 0.6 })), { cast: false }));
+  // A drain in the gutter: an iron frame, bars, the dark under them
+  const drain = new THREE.Group();
+  drain.add(mesh(box(0.56, 0.005, 0.28).translate(0, 0.05, 0), mat("drainDark", () => paint({ color: "#1d1f1b", brush: 0 })), { cast: false }));
+  const bars: THREE.BufferGeometry[] = [at(box(0.62, 0.03, 0.04), 0, 0.06, -0.15), at(box(0.62, 0.03, 0.04), 0, 0.06, 0.15), at(box(0.04, 0.03, 0.34), -0.29, 0.06, 0), at(box(0.04, 0.03, 0.34), 0.29, 0.06, 0)];
+  for (let i = 0; i < 7; i++) bars.push(at(box(0.03, 0.03, 0.28), -0.21 + i * 0.07, 0.06, 0));
+  drain.add(mesh(merge(bars), M.iron(), { cast: false }));
+  drain.position.set(1.1, 0, 4.19);
+  g.add(drain);
+  // The crossing, nearly worn away
+  const stripes: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < 6; i++) stripes.push(at(box(0.45, 0.012, 3.6, 0.4), 7 + i * 0.9, 0.046, 7.2));
+  g.add(mesh(merge(stripes), mat("crossing", () => paint({ color: "#d8d0b8", brush: 0.5, brushScale: 0.8, grime: 0.9, moss: 0.35 })), { cast: false }));
+
+  // A post box, its red gone to rust
+  const post = new THREE.Group();
+  const postMat = mat("postBox", () => paint({ color: "#8c4a3a", brush: 0.3, brushScale: 3, rust: 0.45, grime: 0.6, moss: 0.25 }));
+  post.add(mesh(merge([new THREE.CylinderGeometry(0.24, 0.26, 1.15, 16).translate(0, 0.675, 0), new THREE.SphereGeometry(0.245, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(0, 1.25, 0)]), postMat));
+  post.add(mesh(new THREE.CylinderGeometry(0.29, 0.3, 0.1, 16).translate(0, 0.05, 0), M.concrete()));
+  post.add(mesh(at(box(0.22, 0.025, 0.04), 0, 1.06, 0.235), M.iron(), { cast: false }));
+  post.add(mesh(new THREE.PlaneGeometry(0.16, 0.1).translate(0, 0.84, 0.258), M.paper(), { cast: false }));
+  post.position.set(-1.5, 0.1, 0.4);
+  post.rotation.y = 0.35;
+  g.add(post);
+
+  // The bus stop: a post, its disc, and the times (the last bus long gone)
+  const stop = new THREE.Group();
+  stop.add(mesh(new THREE.CylinderGeometry(0.035, 0.04, 2.6, 8).translate(0, 1.3, 0), M.iron()));
+  const disc = textPanel("bus-stop-disc", 128, 128, { background: "#2f5d4a", lines: [{ text: "BUS", size: 40, font: "display", color: "#efe6cf", weight: 600 }] });
+  const discMat = mat("busDisc", () => paint({ map: disc, brush: 0.15, rust: 0.3, grime: 0.3, side: THREE.DoubleSide }));
+  stop.add(new THREE.Mesh(new THREE.CircleGeometry(0.22, 24).translate(0, 2.42, 0.045), discMat));
+  const times = textPanel("bus-stop-times", 256, 320, {
+    background: "#efe6cf",
+    padding: 18,
+    lines: [
+      { text: "Park Gate", size: 32, font: "display", weight: 600, color: "#2b2f27", gap: 8 },
+      { text: "Route 12", size: 22, color: "#3d4238", gap: 16 },
+      { text: "Weekdays every 20 min", size: 17, color: "#3d4238", gap: 4 },
+      { text: "Weekends every hour", size: 17, color: "#3d4238", gap: 4 },
+      { text: "Last bus 22:40", size: 17, color: "#3d4238" },
+    ],
+  });
+  stop.add(mesh(box(0.34, 0.42, 0.03).translate(0, 1.55, 0.03), M.iron()));
+  stop.add(new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.375).translate(0, 1.55, 0.047), mat("busTimes", () => paint({ map: times, brush: 0.12, grime: 0.5 }))));
+  stop.position.set(3.1, 0.1, 2.9);
+  stop.rotation.y = -0.3;
+  g.add(stop);
+
+  // A bench by the wall, facing the road
+  const bench = buildBench();
+  bench.position.set(-4.6, 0.1, 0.9);
+  g.add(bench);
+  // A bicycle left leaning on the wall
+  const bike = buildBicycle();
+  bike.position.set(3.3, 0.1, -1.4);
+  bike.rotation.x = -0.12;
+  g.add(bike);
+  // A second lamp, further along, that no longer comes on: no light of
+  // its own, and its glass and shade stay dull after dark
+  const dead = buildLamp({ light: "none" });
+  const dull = mat("lampDead", () => paint({ color: "#9a9686", brush: 0.3, grime: 0.6 }));
+  const lit = [M.lampNight(), M.lampShade(), M.lampGlow()];
+  dead.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (m.isMesh && lit.includes(m.material as THREE.MeshLambertMaterial)) m.material = dull;
+  });
+  dead.position.set(6.4, 0.1, 3.4);
+  dead.rotation.y = -Math.PI / 2;
+  g.add(dead);
+
+  // Notes taped to the booth's glass, inside and out
+  const notes: THREE.BufferGeometry[] = [
+    at(new THREE.PlaneGeometry(0.12, 0.16), 0.27, 1.75, -0.485, 0, 0, 0.08),
+    at(new THREE.PlaneGeometry(0.1, 0.13), -0.3, 0.78, -0.485, 0, 0, -0.12),
+    at(new THREE.PlaneGeometry(0.14, 0.1), 0.515, 1.45, 0.12, Math.PI / 2, 0, 0.05),
+  ];
+  booth.add(mesh(merge(notes), M.paper(), { cast: false }));
+  return g;
+}
 
 function buildBoothScene(quality: "high" | "low") {
   const root = new THREE.Group();
@@ -34,6 +122,7 @@ function buildBoothScene(quality: "high" | "low") {
   const booth = buildBooth();
   booth.group.position.set(0, 0.1, 0);
   root.add(booth.group);
+  root.add(buildCorner(booth.group));
   const vending = buildVending();
   vending.position.set(1.6, 0.1, -0.9);
   vending.rotation.y = -0.15;
@@ -48,7 +137,17 @@ function buildBoothScene(quality: "high" | "low") {
     pole.position.copy(p);
     root.add(pole);
   }
-  root.add(buildWires(poles, [8.3, 7.6]));
+  // The wires, each line hung from where it meets the poles, so it can
+  // swing a little in the wind (Booth, below) without leaving them
+  const wires = [8.3, 7.6].map((h) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(0, h, 4.2);
+    const line = buildWires(poles, [h]);
+    line.position.set(0, -h, -4.2);
+    pivot.add(line);
+    root.add(pivot);
+    return pivot;
+  });
   // A maple leaning over the booth, bushes, grass up through the paving
   const tree = buildTree(301, treeKinds.maple, { scale: 1.2 });
   tree.position.set(-3.8, 0, -3.2);
@@ -91,7 +190,7 @@ function buildBoothScene(quality: "high" | "low") {
   root.add(buildDust(quality === "low" ? 20 : 50, [6, 3, 5], [0, 1.6, 1.5]));
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [-0.7, 0.3, 0.5] });
   root.add(sky);
-  return { root, booth, sky, falling, shakeable };
+  return { root, booth, sky, falling, shakeable, wires };
 }
 
 export default function Booth({ active, quality }: SceneProps) {
@@ -121,6 +220,8 @@ export default function Booth({ active, quality }: SceneProps) {
     // The light under the roof is steady (lights in the world don't flicker)
     light.intensity = 2.4;
     if (!still) built.falling.update(Math.min(dt, 0.05), t);
+    // The wires swing slowly, each line a little out of step
+    built.wires.forEach((w, i) => (w.rotation.x = still ? 0 : Math.sin(t * 0.55 + i * 1.7) * 0.05));
   });
 
   return (

@@ -250,18 +250,24 @@ export function buildBooth() {
   for (let row = 0; row < 4; row++) for (let col = 0; col < 3; col++) keys.push(at(box(0.03, 0.025, 0.015), 0.02 + (col - 1) * 0.045, -0.05 - row * 0.035, 0.075));
   phone.add(mesh(merge(keys), mat("keys", () => paint({ color: "#e9e4d2", brush: 0.1 })), { cast: false }));
   phone.add(new THREE.Mesh(at(card(0.14, 0.05), 0.02, 0.1, 0.071), mat("lcd", () => paint({ color: "#9fb39a", emissive: "#6f8f6a", emissiveIntensity: 0.4 }))));
-  // The receiver on its hook, on the left of the phone
+  // The receiver on its hook, on the left of the phone: a handle bowed
+  // toward the wall, with a rounded cup at each end (ear above, mouth
+  // below), facing out
   const receiver = new THREE.Group();
   receiver.position.set(-0.17, 0.02, 0.06);
-  receiver.add(mesh(merge([at(box(0.045, 0.24, 0.05), 0, 0, 0), at(box(0.06, 0.06, 0.075), 0, 0.12, 0.015), at(box(0.06, 0.06, 0.075), 0, -0.12, 0.015)]), phoneMat));
+  const cup = (y: number) => new THREE.SphereGeometry(0.036, 14, 10).scale(1, 0.72, 1.15).translate(0, y, 0.024);
+  receiver.add(mesh(merge([tube([v(0, -0.118, 0.018), v(0, -0.07, -0.006), v(0, 0.07, -0.006), v(0, 0.118, 0.018)], () => 0.017, 12, 8), cup(0.122), cup(-0.122)]), phoneMat));
   phone.add(receiver);
-  // The cord, coiled
+  // The cord, coiled, from the foot of the receiver down in a loose loop
+  // and back up into the phone
+  const path = new THREE.CatmullRomCurve3([v(-0.17, -0.13, 0.08), v(-0.17, -0.26, 0.09), v(-0.13, -0.33, 0.085), v(-0.09, -0.26, 0.07), v(-0.08, -0.17, 0.05)]);
   const coil: THREE.Vector3[] = [];
-  for (let i = 0; i <= 60; i++) {
-    const t = i / 60;
-    coil.push(v(-0.13 + Math.cos(t * 40) * 0.015, -0.16 - t * 0.12 + Math.sin(t * 3.1) * 0.02, 0.05 + Math.sin(t * 40) * 0.015));
+  for (let i = 0; i <= 160; i++) {
+    const t = i / 160;
+    const p = path.getPoint(t);
+    coil.push(p.add(v(Math.cos(t * 2 * Math.PI * 26) * 0.011, 0, Math.sin(t * 2 * Math.PI * 26) * 0.011)));
   }
-  phone.add(mesh(tube(coil, () => 0.006, 120, 4), mat("cord", () => paint({ color: "#2b2f27", brush: 0 })), { cast: false }));
+  phone.add(mesh(tube(coil, () => 0.0045, 320, 4), mat("cord", () => paint({ color: "#2b2f27", brush: 0 })), { cast: false }));
   g.add(phone);
   // A shelf with the phone book
   g.add(mesh(at(box(0.6, 0.03, 0.26), 0, 1.0, -W / 2 + 0.15), M.wood()));
