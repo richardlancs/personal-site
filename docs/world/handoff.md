@@ -3,6 +3,9 @@
 For whoever picks this up, human or Claude. Read this first, then
 `docs/world/park-balance-2026-11-06.md` for the measurements.
 
+## Latest: clear glass, carved small signs, booth email
+- Panels and buttons over the world are clear glass with haloed words; panel-contrast.mjs measures buttons too. Restart `next dev` (rm -rf .next) before measuring: it serves stale CSS.
+
 ## Branches
 
 - `main` at f38a2dc: deployed at https://personal-site-flame-eight-52.vercel.app

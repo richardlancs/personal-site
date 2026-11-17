@@ -42,6 +42,9 @@
   --glass-radius: 10px;
   /* Behind a focus ring over the world, so it shows on any scene */
   --focus-halo: 0 0 0 6px rgb(255 249 242 / 0.92);
+  /* The halo round words on clear glass, as the time and weather's */
+  --halo-light: 0 0 2px rgb(255 249 242 / 0.9), 0 0 5px rgb(255 249 242 / 0.85), 0 0 12px rgb(255 249 242 / 0.6);
+  --halo-dark: 0 0 2px rgb(12 24 38 / 0.85), 0 0 5px rgb(12 24 38 / 0.8), 0 0 12px rgb(12 24 38 / 0.55);
 
   /* Backgrounds and surfaces */
   --background: var(--cream);
@@ -1613,7 +1616,7 @@ html {
   font-size: 0.9rem;
 }
 
-.phone-line[data-up] .phone-handset svg {
+.phone-line[data-up] .phone-handset:not(.phone-email) svg {
   transform: rotate(-24deg) translateY(-2px);
 }
 
@@ -2701,7 +2704,7 @@ html {
 .rh {
   --rh-ink: var(--slate);
   --rh-soft: var(--slate);
-  --rh-halo: 0 0 6px rgb(255 249 242 / 0.95), 0 0 2px rgb(255 249 242 / 0.9);
+  --rh-halo: var(--halo-light);
   position: relative;
   display: inline-flex;
   flex-wrap: wrap;
@@ -3018,7 +3021,7 @@ html {
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-radius);
   background: var(--tint, var(--glass-tint));
-  color: var(--slate);
+  color: var(--glass-ink, var(--slate));
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
@@ -3095,9 +3098,10 @@ html {
 .bench-tab,
 .cabinet-button,
 .park-actions .glass:not(.glass-primary) {
-  /* Bluer and a little thicker than the pale it was, so over green
-     scenery it reads baby blue, not grey-green */
-  --tint: rgb(216 236 253 / 0.72);
+  /* As clear as the time and weather beside them: a few percent of tint,
+     the label slate with a cream halo (cream with a dark one after dark) */
+  --tint: var(--glass-tint);
+  text-shadow: var(--halo-light);
 }
 
 .world-controls .glass {
@@ -3106,8 +3110,14 @@ html {
 
 :root:has(.world3d[data-sky-daylight="night"]),
 :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
-  & :is(.world-controls > .glass, .world-controls-end .glass, .bench-tab, .cabinet-button, .park-actions .glass:not(.glass-primary)) {
-    --tint: rgb(247 251 255 / 0.86);
+  & :is(.world-controls > .glass, .world-controls-end .glass, .bench-tab, .cabinet-button, .park-actions .glass):not([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied], [popovertarget="places-menu"]:has(~ #places-menu:popover-open)) {
+    --tint: rgb(14 26 40 / 0.3);
+    --glass-ink: var(--cream);
+    border-color: rgb(255 255 255 / 0.35);
+    text-shadow: var(--halo-dark);
+  }
+  & .park-actions .glass-primary {
+    --tint: rgb(60 110 160 / 0.42);
   }
 }
 
@@ -3124,7 +3134,7 @@ html {
   & .rh {
     --rh-ink: var(--cream);
     --rh-soft: var(--baby-pale);
-    --rh-halo: 0 0 6px rgb(12 24 38 / 0.9), 0 0 2px rgb(12 24 38 / 0.85);
+    --rh-halo: var(--halo-dark);
     border-color: rgb(255 255 255 / 0.32);
     background: rgb(234 245 255 / 0.06);
   }
@@ -3137,9 +3147,6 @@ html {
     background: rgb(255 249 242 / 0.22);
   }
 
-  & .park-actions .glass-primary {
-    --tint: rgb(184 220 250 / 0.92);
-  }
 }
 
 /* The press: a ripple (::before) and a sweep of light (::after) */
@@ -3255,4 +3262,151 @@ a[data-resume][data-opening] {
   cursor: progress;
   opacity: 0.6;
   transition: opacity 0.15s ease;
+}
+
+/*
+  Clear glass over the world (the wide layout; phones keep their cream
+  sheet). The panels and the buttons are glass as clear as the time and
+  weather (.rh): a few percent of pale-blue tint over a blur, a thin bright
+  edge, a light line along the top. The words carry their own contrast as
+  the time's do: slate with a cream halo by day, cream with a dark halo
+  after dark. What was coloured is stained glass of the same clearness:
+  deep slate (cream words, a dark halo), or baby blue (slate words, a cream
+  halo). panel-contrast.mjs and glass-contrast.mjs measure every line, halo
+  and all, over all 16 skies.
+*/
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  :root {
+    --paper: rgb(234 245 255 / 0.4);
+    --reading: rgb(234 245 255 / 0.5);
+    --paper-edge: rgb(255 255 255 / 0.5);
+    --veil: blur(14px) saturate(1.1);
+    --stain-deep: rgb(31 58 90 / 0.46);
+    --stain-deep-lit: rgb(42 77 114 / 0.38);
+    --stain-baby: rgb(184 220 250 / 0.5);
+    --glass-tint: rgb(234 245 255 / 0.38);
+    --glass-tint-strong: rgb(184 220 250 / 0.42);
+    --glass-blur: blur(10px) saturate(1.15);
+    --halo: var(--halo-light);
+    /* Links and small marks a shade deeper on clear glass, so even the
+       smallest (a date, a dial number) holds against its halo */
+    --accent: #1c4166;
+    --mark: #1f4669;
+  }
+
+  .paper,
+  .location-header,
+  .location-footer,
+  .project-notes,
+  .directory,
+  .cabinet-card,
+  .timetable-notice,
+  .tool-board,
+  .notebook-page,
+  .notebook-leaf,
+  .notebook-sheet,
+  .notebook-controls,
+  .notebook-controls + .text-link,
+  .notebook-sheet + .text-link,
+  .places-menu,
+  .lost-notice,
+  .phone-line,
+  .glass {
+    text-shadow: var(--halo);
+  }
+
+  .notebook-controls,
+  .notebook-controls + .text-link,
+  .notebook-sheet + .text-link {
+    background: var(--paper);
+  }
+
+  /* The skills' tags: little panes of the same glass */
+  .tool-tags li {
+    border-color: rgb(255 255 255 / 0.4);
+    background: rgb(234 245 255 / 0.14);
+  }
+
+  /* The notebook's pages are clear glass inside its stained cover */
+  .notebook-page,
+  .notebook-leaf,
+  .notebook-sheet {
+    --halo: var(--halo-light);
+    --glass-ink: var(--slate);
+  }
+
+  /* The timetable's lines, on its stained glass */
+  .timetable-line {
+    --tint: var(--glass-tint);
+  }
+
+  /* Stained deep slate: cream words, a dark halo, at every hour */
+  .timetable,
+  .notebook,
+  .cabinet-button-screen {
+    --halo: var(--halo-dark);
+    --glass-ink: var(--cream);
+    text-shadow: var(--halo);
+  }
+
+
+  /* The time and weather is the same glass as the rest */
+  .rh {
+    background: var(--glass-tint);
+  }
+
+  /* After dark, and at an overcast dusk, the words turn cream, with a
+     dark halo, as the corner keys' do */
+  :root:has(.world3d[data-sky-daylight="night"]),
+  :root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
+    & .rh {
+      --rh-ink: var(--cream);
+      --rh-soft: var(--baby-pale);
+      --rh-halo: var(--halo-dark);
+    }
+
+    /* Smoked a little, as glass at night looks: the world still shows
+       through, and cream words keep 4.5:1 even over a lit screen */
+    --paper: rgb(14 26 40 / 0.34);
+    --reading: rgb(14 26 40 / 0.44);
+    --paper-edge: rgb(255 255 255 / 0.3);
+    --stain-baby: rgb(52 96 138 / 0.42);
+    --glass-tint: rgb(14 26 40 / 0.3);
+    --glass-tint-strong: rgb(60 110 160 / 0.42);
+
+    & :is(.paper, .location-header, .location-footer, .project-notes, .directory, .cabinet-card, .timetable-notice, .tool-board, .notebook-page, .notebook-leaf, .notebook-sheet, .notebook-controls, .notebook-controls + .text-link, .notebook-sheet + .text-link, .places-menu, .lost-notice, .phone-line, .world-controls, .park-actions, .bench-tabs, .cabinet-row) {
+      --halo: var(--halo-dark);
+      --glass-ink: var(--cream);
+      --foreground: var(--cream);
+      --muted: #dbe6f1;
+      --accent: #cfe6fb;
+      --accent-hover: var(--cream);
+      --mark: #b8dcfa;
+      --error-ink: #ffb8ab;
+      --border: rgb(255 255 255 / 0.22);
+      --rule: rgb(206 231 252 / 0.4);
+      color: var(--foreground);
+    }
+
+    & .phone-line {
+      color: var(--cream);
+    }
+
+    & .tool-tags li {
+      border-color: rgb(255 255 255 / 0.28);
+      background: rgb(14 26 40 / 0.3);
+    }
+
+    & .rh {
+      background: rgb(14 26 40 / 0.3);
+    }
+  }
+}
+
+/* Chosen glass is filled baby blue at every hour, so its label is plain
+   slate */
+:root .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]),
+:root .world-controls:has(#places-menu:popover-open) [popovertarget="places-menu"] {
+  --glass-ink: var(--slate);
+  text-shadow: none;
 }

@@ -7,15 +7,18 @@
 // under them, the first photograph is what each letter stands on (the
 // glass, and the world through it). Contrast is each run of text's own
 // colour against those pixels, 2nd percentile; it fails under 4.5:1.
-// Whole screens are photographed at once, a screen's height at a time
+// The words' halos stay in both photographs: under each letter, the halo
+// is part of what it stands on (the clear glass carries its contrast in
+// them, as the time and weather does). Whole screens are photographed at once, a screen's height at a time
 // down the page, in still view so nothing in the scene moves.
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3130", routeArg, skyArg] = process.argv.slice(2);
-const routes = routeArg ? routeArg.split(",") : ["/projects", "/experience", "/interests", "/about", "/contact", "/map"];
+const routes = routeArg ? routeArg.split(",") : ["/", "/projects", "/experience", "/interests", "/about", "/contact", "/map"];
 const skies = skyArg ? skyArg.split(",") : ["clear", "cloudy", "rain", "snow"].flatMap((p) => ["dawn", "day", "dusk", "night"].map((d) => `${p}-${d}`));
-// The panels (globals.css: the glass in the world) and the stained glass
-const panels = [".location-header", ".location-footer", ".project-notes", ".tool-board", ".directory", ".phone-line", ".cabinet-card", ".timetable", ".timetable-notice", ".notebook-page", ".notebook-sheet", ".notebook-controls", ".map-sheet", ".lost-notice"];
+// The panels (globals.css: the glass in the world), the stained glass, the
+// corner controls and every glass button
+const panels = [".location-header", ".location-footer", ".project-notes", ".tool-board", ".directory", ".phone-line", ".cabinet-card", ".timetable", ".timetable-notice", ".notebook-page", ".notebook-sheet", ".notebook-controls", ".map-sheet", ".lost-notice", ".world-controls", ".glass"];
 
 const browser = await launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
@@ -88,8 +91,10 @@ for (const route of routes) {
               const range = document.createRange();
               range.selectNodeContents(n);
               const r = range.getBoundingClientRect();
-              if (r.width < 4 || r.height < 4 || r.bottom < 70 || r.top > innerHeight - 4) continue;
-              out.push({ sel, color: cs.color, box: { x: r.x, y: Math.max(r.y, 70), w: r.width, h: Math.min(r.bottom, innerHeight) - Math.max(r.y, 70) } });
+              // Under the fixed bar is the bar's, except for the bar itself
+              const top = sel === ".world-controls" || el.closest(".world-controls") ? 0 : 70;
+              if (r.width < 4 || r.height < 4 || r.bottom < top + 4 || r.top > innerHeight - 4) continue;
+              out.push({ sel, text: n.textContent.trim().slice(0, 28), color: cs.color, box: { x: r.x, y: Math.max(r.y, top), w: r.width, h: Math.min(r.bottom, innerHeight) - Math.max(r.y, top) } });
             }
           }
         return out;
@@ -100,7 +105,7 @@ for (const route of routes) {
           ({ panels, c }) => {
             let s = document.getElementById("measure-style");
             if (!s) document.head.append((s = Object.assign(document.createElement("style"), { id: "measure-style" })));
-            s.textContent = panels.map((p) => `${p}, ${p} *`).join(",") + `{ color: ${c} !important; -webkit-text-fill-color: ${c} !important; text-decoration-color: transparent !important; text-shadow: none !important; }`;
+            s.textContent = panels.map((p) => `${p}, ${p} *`).join(",") + `{ color: ${c} !important; -webkit-text-fill-color: ${c} !important; text-decoration-color: transparent !important; }`;
           },
           { panels, c },
         );
@@ -115,7 +120,7 @@ for (const route of routes) {
         if (c == null) return;
         const key = `${route} ${run.sel}`;
         if (!row[run.sel] || c < row[run.sel]) row[run.sel] = c;
-        if (!worst[key] || c < worst[key].c) worst[key] = { c, sky };
+        if (!worst[key] || c < worst[key].c) worst[key] = { c, sky, text: run.text, color: run.color };
       });
     }
     for (const c of Object.values(row)) if (typeof c === "number" && c < 4.5) failed++;
@@ -123,7 +128,7 @@ for (const route of routes) {
   }
 }
 console.log("worst:");
-for (const [k, v] of Object.entries(worst).sort((a, b) => a[1].c - b[1].c)) console.log(`  ${v.c < 4.5 ? "✗" : " "} ${k.padEnd(36)} ${v.c} (${v.sky})`);
+for (const [k, v] of Object.entries(worst).sort((a, b) => a[1].c - b[1].c)) console.log(`  ${v.c < 4.5 ? "✗" : " "} ${k.padEnd(36)} ${v.c} (${v.sky})  "${v.text}" ${v.color}`);
 console.log(failed ? `${failed} panel readings below 4.5:1` : "every panel's text at or above 4.5:1");
 await browser.close();
 process.exit(failed ? 1 : 0);

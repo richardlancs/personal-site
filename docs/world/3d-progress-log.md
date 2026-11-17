@@ -657,3 +657,24 @@ torches, which suit the old buildings better.
   apart identical (and different with motion). `lighting-blend.mjs`: 0
   shader compiles in day/night blends (2 at rain's first fall, as before).
   Budgets: world chunk 271,421 / 285,000.
+
+## Clear glass, carved small signs, a quick email at the booth
+
+- Over the world, the panels, the buttons (Sections included) and the time
+  and weather are one glass, as see-through as the light allows: a pale
+  frost by day (`--paper` 0.4, `--reading` 0.5, `--glass-tint` 0.38), a
+  light smoke after dark and at an overcast dusk, with the words cream.
+  Words carry a soft halo, as the time's always did (`--halo-light`,
+  `--halo-dark`). Clearer glass was tried first (8 to 20% tint): indoors
+  and under grey skies it measured as low as 1.6:1, so the frost is the
+  least that holds 4.5:1. Phones keep their cream sheet.
+- `panel-contrast.mjs` now also measures every glass button and the
+  corner controls, and keeps the halos in its photographs. Last sweep:
+  every page, all 16 skies, every reading at or above 4.5:1 (lowest 4.7,
+  the directory's dial numbers at rain-dawn).
+- The signpost's arms, the bus stop's disc and times, and the arcade's
+  token card are carved boards (torch.ts); the signpost and the bus stop
+  have a torch on their post (no wash: no wall behind). Carved words are
+  set smaller when they'd outrun their board (`textures.ts`: `fit`).
+- The booth: "Email me" (primary) beside "Pick up the phone" on the wide
+  layout, one press to a new email.

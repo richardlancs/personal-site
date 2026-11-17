@@ -100,9 +100,13 @@ layouts render the same content from `app/data/`. The two media queries
 that decide which layout a screen gets are in `components/world/flat.ts`
 and, identically, in `globals.css` (`npm test` checks they match). Use
 `.only-flat` / `.only-world` for anything that belongs to one layout.
-Buttons are glass (see "Buttons" below), and so are the panels: frosted
-glass in the time and weather's language (`--paper`, `--reading`), the
-coloured ones stained glass (`--stain-*`).
+Buttons are glass (see "Buttons" below), and so are the panels: over the
+world, glass as clear as the time and weather (`--paper`, `--reading`: a
+few percent of tint over a blur), the coloured ones stained glass of the
+same clearness (`--stain-*`). The words carry their own contrast, as the
+time's do: slate with a cream halo by day, cream with a dark halo at night
+(`--halo-light`, `--halo-dark`; the clear-glass block at the end of
+`globals.css`).
 
 The overall feeling should be:
 
@@ -125,7 +129,11 @@ English words carved in and painted cream (`carvedSign`; they read pale
 on dark by day and catch the torches' warm light after dark, steadily,
 while the board itself is never lit), and on the buildings a torch on an
 iron bracket each side (`buildTorch`, `torchPair`) whose light is an
-additive wash on the wall (`glow.ts: wash`), not a light. The flames sway
+additive wash on the wall (`glow.ts: wash`), not a light. The small signs
+are carved the same way (the signpost's arms, the bus stop's disc and
+times, the booth, the platform, the arcade's counters), the free-standing
+ones with a torch on their post; a carved sign's words are set smaller
+if they would outrun the board (`textures.ts`: `fit`). The flames sway
 slowly; their brightness doesn't change, and they hold still in still
 view. The park's fountain is a small
 pond whose water (`props.ts: waterMaterial`) holds the sky, the trees,
@@ -164,10 +172,10 @@ derived from them (`--background`, `--paper`, `--surface-2`,
 `--highlight`, `--focus`, `--shadow`, `--glass-*`, …). Baby blue is for
 surfaces, chosen states, washes and strokes, never text: text and links
 use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. The
-panels over the world are frosted pale-blue glass (`--paper`, and
-`--reading` for what's read line by line), frosted only as much as the
-words need, more after dark: `docs/ui/scripts/panel-contrast.mjs` measures
-every panel's text over all 16 skies. The pieces that were coloured
+panels and buttons over the world are clear pale-blue glass (`--paper`,
+`--reading`, `--glass-tint`), their words haloed (slate on cream by day,
+cream on dark at night): `docs/ui/scripts/panel-contrast.mjs` measures
+every panel's and button's text, halo and all, over all 16 skies. The pieces that were coloured
 (the timetable, the cabinets' screens, the notebook's cover) are slate
 stained glass (`--stain-deep`), the contact page's phone line baby-blue
 stained glass (`--stain-baby`). Cream stays for the phone layout's sheet. Indigo is gone from the interface (`npm test` checks).
@@ -179,7 +187,8 @@ Avoid:
 - large areas of pure black or pure white
 - neon or highly saturated colors
 - rainbow gradients
-- glass so clear its words drop under 4.5:1 (measure with panel-contrast.mjs)
+- words on clear glass without their halo, or under 4.5:1 with it (measure
+  with panel-contrast.mjs)
 - a second theme, or anything keyed on `prefers-color-scheme`
 
 Keep text contrast at 4.5:1 or better on glass and on every sky.
@@ -291,11 +300,13 @@ The states, the same on every control:
   edge, a muted label (still 4.5:1); no hover, press or pointer
 - focus: the focus-blue ring on a cream halo (`--focus-halo`)
 
-Where something dark can sit behind it (the corner controls, bench tabs
-and cabinets over the world, the timetable's enamel) the glass is
-thicker (`--tint`), near-opaque under a dark sky, so words keep 4.5:1
-(`docs/ui/scripts/glass-contrast.mjs` measures it over every sky;
-`glass-states.mjs` checks and photographs every state).
+Over the world (the corner controls, bench tabs, cabinets, the
+introduction's actions) the glass is as clear as the time and weather's,
+and its label carries a halo: slate on cream by day, cream on dark under
+a dark sky (`--glass-ink`); a chosen key is filled baby blue, so its
+label stays plain slate. `docs/ui/scripts/panel-contrast.mjs` measures
+every label over every sky; `glass-states.mjs` checks and photographs
+every state.
 
 The press is `components/ui/GlassPress.tsx`, mounted once in the layout:
 one listener sets `data-pressed` and the press point on whichever `.glass`

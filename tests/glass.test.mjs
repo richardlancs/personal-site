@@ -48,11 +48,11 @@ test("still view and reduced motion get a moment of tint, not movement", () => {
   assert.doesNotMatch(keyframes("glass-tint"), /scale|translate|transform/);
 });
 
-test("glass is 44px tall, with labels in opaque slate, and a fallback without blur", () => {
+test("glass is 44px tall, with labels in opaque slate (cream after dark), and a fallback without blur", () => {
   // In :where(), so a control's own class sets its size and type over it
   const glass = block(":where(.glass)");
   assert.match(glass, /min-height: 44px/);
-  assert.match(glass, /color: var\(--slate\)/);
+  assert.match(glass, /color: var\(--glass-ink, var\(--slate\)\)/);
   assert.match(glass, /backdrop-filter: var\(--glass-blur\)/);
   assert.match(css, /@supports not \(\(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\)\) \{\s*\.glass \{\s*background-color: var\(--glass-fallback\)/);
   // The press layers sit under the label and inside the button
@@ -61,10 +61,13 @@ test("glass is 44px tall, with labels in opaque slate, and a fallback without bl
   assert.match(block(".glass::before,\n.glass::after"), /z-index: -1/);
 });
 
-test("over the world, the corner controls' glass thickens under a dark sky", () => {
-  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& :is\(\.world-controls > \.glass, \.world-controls-end \.glass, \.bench-tab, \.cabinet-button, \.park-actions \.glass:not\(\.glass-primary\)\) \{\s*--tint: rgb\(247 251 255 \/ (0\.\d+)\)/);
+test("over the world, the corner controls are clear glass whose words turn cream under a dark sky", () => {
+  // As clear as the time and weather, a halo round the words
+  assert.match(block(".world-controls > .glass,\n.world-controls-end .glass,\n.bench-tab,\n.cabinet-button,\n.park-actions .glass:not(.glass-primary)"), /--tint: var\(--glass-tint\);\s*text-shadow: var\(--halo-light\)/);
+  const dark = css.match(/:root:has\(\.world3d\[data-sky-daylight="night"\]\),\s*:root:has\(\.world3d\[data-sky-daylight="dusk"\][^{]*\{\s*& :is\(\.world-controls > \.glass[^{]*\{([^}]*)\}/);
   assert.ok(dark, "no dark-sky rule for the corner controls");
-  assert.ok(Number(dark[1]) >= 0.85, `dark-sky glass is only ${dark[1]}`);
+  assert.match(dark[1], /--glass-ink: var\(--cream\)/);
+  assert.match(dark[1], /text-shadow: var\(--halo-dark\)/);
 });
 
 // Every button-like control is glass, so it shares the states and the press
