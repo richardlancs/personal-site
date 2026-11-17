@@ -503,3 +503,23 @@ rain at night, 3 runs): desktop park 407 draws (401 before), p50
 compiles at rest; light counts unchanged.
 
 Shots: `screenshots/signs-pond-{before,after}-*.jpg`.
+
+## Phase: richer places and a lighter load (measured first, 17 November 2026)
+
+The plan: split each place into its own chunk, tighten hosting caches,
+polish the interface's open items, fix rain over near objects and the
+phone tier's grass, read the far signs' words, then dress the booth and
+the arcade. Measured before anything changed:
+
+- **Bundle** (`npm run build && npm run perf:budget`): the world chunk is
+  308,149 / 316,000 gzip, so about 7.8 KB of room. The five scenes after
+  the park are 26.6 KB of gzipped source between them (Workshop 6.6,
+  Arcade 6.1, Station 5.7, Library 5.5, Booth 2.7), and only `World3D.tsx`
+  imports them: they can each be their own chunk.
+- **Far signs' words** (`visibility.mjs`, neutral day): all signs clear
+  (arcade 89%, the pavilion's roof as before; fog ≤ 9%). From their
+  widths and the 512×128 boards, the letters' cap height is about
+  11 px for the workshop and 9 px for the station at 1440, and 6 and 5 px
+  on a 390 phone. The station is under the ~11 px where a word reads, so
+  its letters (and the workshop's) grow inside their existing boards:
+  no building, board or sight line moves.
