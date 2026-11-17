@@ -118,7 +118,7 @@ for (const route of routes) {
         if (!worst[key] || c < worst[key].c) worst[key] = { c, sky };
       });
     }
-    for (const [k, c] of Object.entries(row)) if (typeof c === "number" && c < 4.5) failed++;
+    for (const c of Object.values(row)) if (typeof c === "number" && c < 4.5) failed++;
     console.log(JSON.stringify(row));
   }
 }

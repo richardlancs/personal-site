@@ -51,7 +51,7 @@
      only as much as the words need: panel-contrast.mjs measures every line
      over all 16 skies. (On phones the page is an opaque cream sheet, and
      --paper is cream there: the narrow-layout block.) */
-  --paper: rgb(240 247 255 / 0.5);
+  --paper: rgb(240 247 255 / 0.7);
   --paper-edge: rgb(255 255 255 / 0.55); /* a light edge, as if lit */
   --pane-hi: inset 0 1px 0 rgb(255 255 255 / 0.6), inset 0 -1px 0 rgb(255 255 255 / 0.14);
   --surface-2: var(--sand); /* secondary surface: boards, shells, tabs */
@@ -67,7 +67,7 @@
   /* Glass that's read through, line by line (project notes, the directory,
      the notices, the notebook's pages, the map): frosted a little more, so
      small and coloured text keeps 4.5:1 over the darkest scene behind it */
-  --reading: rgb(244 249 255 / 0.72);
+  --reading: rgb(244 249 255 / 0.84);
   /* Stained glass, for what used to be coloured: the station's enamel, the
      notebook's cover, the cabinets' screens (deep slate), the phone's line
      (baby blue). Tinted, still see-through */
@@ -79,7 +79,7 @@
 
   /* Text */
   --foreground: var(--ink);
-  --muted: #45474a; /* secondary text: 6:1 or better on paper over any scene */
+  --muted: #3a3d42; /* secondary text: 4.5:1 or better on the glass over any scene (panel-contrast.mjs) */
   --on-deep: var(--cream); /* text on the deep surfaces */
   --on-deep-muted: #c4d9ec; /* 6:1 on the enamel */
 
@@ -938,7 +938,7 @@ html {
   padding: 0.2rem 0.6rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius-sm);
-  background: var(--paper);
+  background: var(--reading);
   font-size: 0.75rem;
   color: var(--muted);
 }
@@ -1889,6 +1889,11 @@ html {
 .map-small-label {
   position: absolute;
   transform: translate(-50%, 0.2rem);
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  /* A little frost of its own, as the pins' labels have: these sit on the
+     map's own lines and greens */
+  background: rgb(248 251 255 / 0.88);
   font-size: 0.75rem;
   font-style: italic;
   color: var(--muted);
@@ -2012,10 +2017,10 @@ html {
   box-shadow: 0 2px 3px rgb(var(--shadow) / 0.3);
 }
 
-/* The map is drawn on its glass, and the notices behind it would muddle
-   the ink: frosted like the reading glass */
+/* The map is drawn on its glass, and its labels sit over its own lines
+   as well as the world: frosted nearly opaque */
 .map-sheet {
-  background-color: var(--reading);
+  background-color: rgb(248 251 255 / 0.94);
 }
 
 /* The cards that are read through, line by line, are frosted more: a dark
@@ -2024,7 +2029,8 @@ html {
 .project-notes,
 .directory,
 .cabinet-card,
-.timetable-notice {
+.timetable-notice,
+.location-footer {
   background-color: var(--reading);
 }
 
@@ -3111,8 +3117,9 @@ html {
 :root:has(.world3d[data-sky-daylight="night"]) {
   /* The glass panels frost over more after dark, so their slate words
      keep 4.5:1 over a dark world */
-  --paper: rgb(240 247 255 / 0.72);
-  --reading: rgb(244 249 255 / 0.84);
+  --paper: rgb(240 247 255 / 0.8);
+  --reading: rgb(244 249 255 / 0.88);
+  --stain-baby: rgb(206 231 252 / 0.84);
 
   & .rh {
     --rh-ink: var(--cream);
