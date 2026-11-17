@@ -45,9 +45,15 @@
 
   /* Backgrounds and surfaces */
   --background: var(--cream);
-  /* Sheets and notes: cream paper the world shows through, softly */
-  --paper: rgb(255 249 242 / 0.82);
-  --paper-edge: rgb(255 255 255 / 0.7); /* a light edge, as if lit */
+  /* The panels over the world are glass, in the time and weather's
+     language (.rh): a faint pale-blue frost the world shows through,
+     blurred, a thin bright edge and a light line along the top. Frosted
+     only as much as the words need: panel-contrast.mjs measures every line
+     over all 16 skies. (On phones the page is an opaque cream sheet, and
+     --paper is cream there: the narrow-layout block.) */
+  --paper: rgb(240 247 255 / 0.5);
+  --paper-edge: rgb(255 255 255 / 0.55); /* a light edge, as if lit */
+  --pane-hi: inset 0 1px 0 rgb(255 255 255 / 0.6), inset 0 -1px 0 rgb(255 255 255 / 0.14);
   --surface-2: var(--sand); /* secondary surface: boards, shells, tabs */
   --surface-deep: #1f3a5a; /* enamel, cabinets, the phone's line: deep slate blue */
   --surface-deep-2: #172d47; /* its darker edge */
@@ -57,11 +63,17 @@
   --lamp-off: #8f969d; /* a power light that's off */
   --clip: #b8b0a6; /* a worn steel clip, lit edge */
   --clip-shade: #857d74; /* its shaded edge */
-  --sheet: #fffdf8; /* an opaque sheet (the map, the notebook's pages) */
-  /* Cards that are read (project notes, the directory, the notices): the
-     sheet, nearly opaque, so small and coloured text keeps 4.5:1 over the
-     darkest scene behind it */
-  --reading: rgb(255 253 248 / 0.93);
+  --sheet: #fffdf8; /* an opaque sheet (the phone layout's cards) */
+  /* Glass that's read through, line by line (project notes, the directory,
+     the notices, the notebook's pages, the map): frosted a little more, so
+     small and coloured text keeps 4.5:1 over the darkest scene behind it */
+  --reading: rgb(244 249 255 / 0.72);
+  /* Stained glass, for what used to be coloured: the station's enamel, the
+     notebook's cover, the cabinets' screens (deep slate), the phone's line
+     (baby blue). Tinted, still see-through */
+  --stain-deep: rgb(31 58 90 / 0.66);
+  --stain-deep-lit: rgb(42 77 114 / 0.62);
+  --stain-baby: rgb(184 220 250 / 0.5);
   --nav: rgb(255 249 242 / 0.8);
   --label: rgb(255 249 242 / 0.8); /* name tags in the world */
 
@@ -84,9 +96,9 @@
   --focus: var(--focus-blue);
 
   /* Light and shadow */
-  --veil: blur(14px) saturate(1.1) brightness(1.03);
+  --veil: blur(18px) saturate(1.15);
   --shadow: 32 50 69; /* shadows are slate blue, like shade under a blue sky */
-  --float: 0 18px 44px -20px rgb(var(--shadow) / 0.22), 0 1px 0 rgb(255 255 255 / 0.6) inset;
+  --float: var(--pane-hi), 0 18px 44px -24px rgb(var(--shadow) / 0.28);
 
   /* The scene's own colours, for anything on the page that stands in for
      it: the haze while the world loads, the painting's edge */
@@ -150,7 +162,8 @@ body {
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
   background: var(--paper);
-  box-shadow: 0 18px 40px -28px rgb(var(--shadow) / 0.35);
+  backdrop-filter: var(--veil);
+  box-shadow: var(--float);
 }
 
 /* Links that stand on their own (not in a sentence) stay text links but
@@ -877,8 +890,8 @@ html {
   padding: 1rem 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
-  background: var(--paper) var(--grain);
-  box-shadow: 0 14px 30px -22px rgb(var(--shadow) / 0.5);
+  background: var(--paper);
+  box-shadow: var(--float);
 }
 
 .location-place {
@@ -923,6 +936,7 @@ html {
   margin-top: 2rem;
   width: fit-content;
   padding: 0.2rem 0.6rem;
+  border: 1px solid var(--paper-edge);
   border-radius: var(--radius-sm);
   background: var(--paper);
   font-size: 0.75rem;
@@ -935,9 +949,11 @@ html {
   display: grid;
   padding: var(--cover);
   border-radius: var(--radius-lg);
-  /* The cover, under the pages: slate-blue cloth */
-  background: linear-gradient(135deg, var(--surface-deep-lit), var(--surface-deep-2));
-  box-shadow: var(--lift);
+  /* The cover, under the pages: slate-blue stained glass */
+  border: 1px solid rgb(255 255 255 / 0.3);
+  background: linear-gradient(135deg, var(--stain-deep-lit), var(--stain-deep));
+  backdrop-filter: var(--veil);
+  box-shadow: var(--pane-hi), var(--lift);
   perspective: 1800px;
 }
 
@@ -958,14 +974,12 @@ html {
 .notebook-page,
 .notebook-leaf,
 .notebook-sheet {
-  /* Ruled paper: sky-blue lines and a red margin line */
-  background-color: var(--sheet);
+  /* Ruled glass: sky-blue lines and a red margin line on frost */
+  background-color: var(--reading);
   background-image:
-    var(--grain),
     linear-gradient(to right, transparent var(--margin), rgb(251 87 69 / 0.4) var(--margin), rgb(251 87 69 / 0.4) calc(var(--margin) + 1px), transparent calc(var(--margin) + 1px)),
     repeating-linear-gradient(to bottom, transparent 0 calc(var(--rule) - 1px), var(--rule) calc(var(--rule) - 1px) var(--rule));
   background-position:
-    0 0,
     0 0,
     0 2.75rem;
   color: var(--foreground);
@@ -1100,8 +1114,9 @@ html {
 
 .notebook-sheet {
   padding: 2.75rem 1.5rem 2.5rem 3.2rem;
-  /* The cover shows as a thin edge round the sheet */
-  border: 3px solid var(--surface-deep);
+  /* The cover shows as a thin edge of stained glass round the sheet */
+  border: 3px solid var(--stain-deep);
+  backdrop-filter: var(--veil);
   border-radius: var(--radius);
   box-shadow: var(--lift);
 }
@@ -1354,9 +1369,11 @@ html {
 .tool-board {
   position: relative;
   padding: 0.85rem 1.1rem 1.05rem;
+  border: 1px solid var(--paper-edge);
   border-radius: var(--radius-sm);
-  background: var(--sheet) var(--grain);
-  box-shadow: 0 10px 18px -12px rgb(var(--shadow) / 0.5);
+  background: var(--reading);
+  backdrop-filter: var(--veil);
+  box-shadow: var(--float);
 }
 
 .tool-board:nth-child(2) {
@@ -1401,13 +1418,14 @@ html {
 .timetable {
   padding: 1rem 1.5rem 1.5rem;
   /* The enamel sign's rim: a thin dark edge, not a frame */
-  border: 3px solid var(--surface-deep-2);
+  border: 1px solid rgb(255 255 255 / 0.32);
   border-radius: var(--radius);
-  background: linear-gradient(170deg, var(--surface-deep-lit), var(--surface-deep));
+  background: linear-gradient(170deg, var(--stain-deep-lit), var(--stain-deep));
+  backdrop-filter: var(--veil);
   color: var(--on-deep);
   box-shadow:
-    inset 0 0 0 1px rgb(255 249 242 / 0.3),
-    0 26px 50px -30px rgb(var(--shadow) / 0.7);
+    var(--pane-hi),
+    0 26px 50px -30px rgb(var(--shadow) / 0.6);
 }
 
 .timetable-head {
@@ -1518,7 +1536,8 @@ html {
   width: 3.5rem;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
-  background: var(--screen-off);
+  background: var(--stain-deep);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25);
   color: var(--screen-off-ink);
   transition:
     color 0.35s ease,
@@ -1543,8 +1562,8 @@ html {
   padding: 1.5rem;
   border: 1px solid var(--paper-edge);
   border-radius: var(--radius);
-  background: var(--paper) var(--grain);
-  box-shadow: 0 22px 40px -28px rgb(var(--shadow) / 0.55);
+  background: var(--paper);
+  box-shadow: var(--float);
   animation: card-out 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -1579,12 +1598,14 @@ html {
   align-items: center;
   gap: 0.75rem 1rem;
   padding: 0.85rem 1rem;
-  border: 1px solid var(--baby-line);
+  border: 1px solid rgb(255 255 255 / 0.55);
   border-radius: var(--radius);
-  /* A pale-blue slip: interface, not part of the booth (which is green) */
-  background: linear-gradient(170deg, var(--baby-light), var(--baby-pale));
+  /* A slip of baby-blue stained glass: interface, not part of the booth
+     (which is green) */
+  background: var(--stain-baby);
+  backdrop-filter: var(--veil);
   color: var(--slate);
-  box-shadow: 0 20px 40px -28px rgb(var(--shadow) / 0.45);
+  box-shadow: var(--float);
 }
 
 /* The receiver: the page's primary glass button */
@@ -1931,10 +1952,11 @@ html {
    (the "Still view" block, near the top) */
 
 /*
-  Paper in the world. Every sheet, tag and card is the same warm paper,
-  a little translucent: the scene behind shows through, blurred and
-  warmed, so the panels belong to the light of the place instead of
-  sitting on top of it. Soft corners, a lit edge, a golden shadow.
+  Glass in the world. Every panel and card is the same frosted glass as
+  the time and weather: the scene behind shows through, blurred, so the
+  panels belong to the light of the place instead of sitting on top of
+  it. Soft corners, a thin bright edge, a light line along the top. (The
+  park's name tags stay cream: they're scenery, read over anything.)
 */
 .paper,
 .location-header,
@@ -1955,6 +1977,10 @@ html {
   box-shadow: var(--float);
 }
 
+.world-label {
+  background-color: var(--label);
+}
+
 .location-header,
 .project-notes,
 .directory,
@@ -1972,22 +1998,10 @@ html {
   border-radius: var(--radius-sm);
 }
 
-/* The pieces that are objects, not paper, take on some of the light too */
-.timetable {
-  border-color: rgb(23 45 71 / 0.8);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(170deg, rgb(42 77 114 / 0.9), rgb(31 58 90 / 0.9));
-  backdrop-filter: var(--veil);
-  box-shadow:
-    inset 0 0 0 1px rgb(255 249 242 / 0.3),
-    0 18px 44px -20px rgb(var(--shadow) / 0.4);
-}
-
+/* The stained glass, rounded like the panels */
+.timetable,
 .phone-line {
   border-radius: var(--radius-lg);
-  background: linear-gradient(170deg, rgb(247 251 255 / 0.9), rgb(234 245 255 / 0.86));
-  backdrop-filter: var(--veil);
-  box-shadow: 0 18px 44px -20px rgb(var(--shadow) / 0.4);
 }
 
 /* The clip on the project notes and the pin on the directory sit on top
@@ -1998,15 +2012,15 @@ html {
   box-shadow: 0 2px 3px rgb(var(--shadow) / 0.3);
 }
 
-/* The map is drawn on its sheet, and the notices behind it would muddle
-   the ink: this one sheet stays nearly opaque */
+/* The map is drawn on its glass, and the notices behind it would muddle
+   the ink: frosted like the reading glass */
 .map-sheet {
-  background-color: color-mix(in srgb, var(--sheet) 94%, transparent);
+  background-color: var(--reading);
 }
 
-/* The cards that are read through, line by line, are nearly opaque too:
-   the scene still warms them, but a dark wall or a branch behind can't
-   pull small or coloured text (the dates, the dial numbers) under 4.5:1 */
+/* The cards that are read through, line by line, are frosted more: a dark
+   wall or a branch behind can't pull small or coloured text (the dates,
+   the dial numbers) under 4.5:1 */
 .project-notes,
 .directory,
 .cabinet-card,
@@ -2024,7 +2038,7 @@ html {
 .notebook-controls + .text-link,
 .notebook-sheet + .text-link {
   border-color: rgb(255 255 255 / 0.55);
-  background-color: rgb(255 249 242 / 0.76);
+  background-color: rgb(240 247 255 / 0.62);
   backdrop-filter: blur(10px) saturate(1.2);
   box-shadow: 0 6px 16px -10px rgb(var(--shadow) / 0.35);
   transition:
@@ -2041,7 +2055,7 @@ html {
 /* The notebook's controls carry a line of text (which pages are open):
    a little more paper behind it, so it reads over the dark shelves */
 .notebook-controls {
-  background-color: rgb(255 249 242 / 0.8);
+  background-color: rgb(240 247 255 / 0.7);
 }
 
 .notebook-controls + .text-link:active,
@@ -3095,6 +3109,11 @@ html {
    glass that stays clear (dusk, even overcast, is light enough for slate);
    the main action's glass is thicker */
 :root:has(.world3d[data-sky-daylight="night"]) {
+  /* The glass panels frost over more after dark, so their slate words
+     keep 4.5:1 over a dark world */
+  --paper: rgb(240 247 255 / 0.72);
+  --reading: rgb(244 249 255 / 0.84);
+
   & .rh {
     --rh-ink: var(--cream);
     --rh-soft: var(--baby-pale);
