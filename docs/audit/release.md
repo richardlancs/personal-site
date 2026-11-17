@@ -132,7 +132,11 @@ rerun it to get them.
 
 ## Open items
 
-- **Text scrolls under the corner controls.** On wide screens a page's
+- **Text scrolls under the corner controls** (done 17 November 2026: a
+  band of paper, slate after dark, as wide as the column, fades in behind
+  the controls once the page scrolls; `globals.css`, `.location-column::before`,
+  a CSS scroll timeline, so browsers without one keep the old behaviour).
+  On wide screens a page's
   column scrolls beneath the fixed controls; the Still view button made
   the right-hand group wider (at 1024 px the Sections pill starts 62 px
   further left). Focus is never hidden there, and nothing is covered at

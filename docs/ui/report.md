@@ -148,9 +148,11 @@ Screenshots: `screenshots/responsive/{before,after}-{w320,w390,w430,land,w768,w1
   Not tested in Safari, Firefox or with a screen reader.
 - Large text was emulated by raising the root font size, not a phone's
   own text-size setting.
-- Over green scenery on clear days the corner keys' glass reads
-  grey-green rather than baby blue (contrast is fine).
-- The skip link is 37px tall and not glass (shown only on focus).
+- ~~Over green scenery on clear days the corner keys' glass reads
+  grey-green rather than baby blue.~~ Done 17 November 2026: the glass
+  over the world is bluer and a little thicker (`rgb(216 236 253 / 0.72)`);
+  `glass-contrast.mjs` worst case 6.47:1 (rain at dawn).
+- ~~The skip link is 37px tall and not glass.~~ Done: glass, 44px.
 
 ## Tools used
 

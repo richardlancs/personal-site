@@ -52,6 +52,11 @@
   --surface-deep: #1f3a5a; /* enamel, cabinets, the phone's line: deep slate blue */
   --surface-deep-2: #172d47; /* its darker edge */
   --surface-deep-lit: #2a4d72; /* its lit side, for gradients */
+  --screen-off: #10223a; /* a cabinet's screen with the power off */
+  --screen-off-ink: #7f9fbf; /* its glyph, dim */
+  --lamp-off: #8f969d; /* a power light that's off */
+  --clip: #b8b0a6; /* a worn steel clip, lit edge */
+  --clip-shade: #857d74; /* its shaded edge */
   --sheet: #fffdf8; /* an opaque sheet (the map, the notebook's pages) */
   /* Cards that are read (project notes, the directory, the notices): the
      sheet, nearly opaque, so small and coloured text keeps 4.5:1 over the
@@ -650,16 +655,16 @@ button.text-link,
 
 /* For keyboard users: straight past the park to the page's content */
 .skip-link {
+  /* Glass (.glass), thick, since it shows over the world */
+  --tint: rgb(247 251 255 / 0.92);
   position: fixed;
-  top: 0.75rem;
+  top: max(0.75rem, env(safe-area-inset-top));
   left: 50%;
   z-index: 60;
+  min-height: 44px;
   padding: 0.5rem 1rem;
-  border-radius: var(--glass-radius);
-  background: var(--slate);
-  color: var(--cream);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   transform: translate(-50%, -200%);
 }
 
@@ -810,6 +815,47 @@ html {
 
 .location-column {
   width: var(--column);
+}
+
+/* Once a page has scrolled, its column passes under the corner controls
+   and the time: a quiet band of paper (slate after dark, where the time's
+   words are cream) sits behind them, as wide as the column, so nothing
+   reads through them. It fades in with the first few lines of scrolling
+   (a scroll timeline, no script); where a browser has none, there's no
+   band, as before. */
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  @supports (animation-timeline: scroll()) {
+    .location-column::before {
+      --band: calc(5rem + env(safe-area-inset-top));
+      content: "";
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      display: block;
+      height: var(--band);
+      /* In the padding above the column, taking no room: its height is
+         paid back by the negative margin above it */
+      margin: calc(-1 * var(--band)) -1.5rem 0;
+      background: linear-gradient(var(--background) 62%, rgb(255 249 242 / 0));
+      /* Soft at the sides too, so it's a haze over the world, not a slab */
+      mask-image: linear-gradient(to right, transparent, #000 1.5rem, #000 calc(100% - 1.5rem), transparent);
+      pointer-events: none;
+      opacity: 0;
+      animation: band-in linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 4rem;
+    }
+
+    :root:has(.world3d[data-sky-daylight="night"]) .location-column::before {
+      background: linear-gradient(var(--surface-deep-2) 62%, rgb(23 45 71 / 0));
+    }
+  }
+}
+
+@keyframes band-in {
+  to {
+    opacity: 1;
+  }
 }
 
 .location[data-side="below"] .location-column {
@@ -1093,7 +1139,7 @@ html {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #8f969d;
+  background: var(--lamp-off);
   transition:
     background-color 0.3s ease,
     box-shadow 0.3s ease;
@@ -1211,9 +1257,9 @@ html {
   width: 4.5rem;
   height: 16px;
   border-radius: 4px;
-  background: linear-gradient(#b8b0a6, #857d74);
+  background: linear-gradient(var(--clip), var(--clip-shade));
   transform: translateX(-50%);
-  box-shadow: 0 2px 3px rgb(0 0 0 / 0.25);
+  box-shadow: 0 2px 3px rgb(var(--shadow) / 0.35);
 }
 
 /* What it is, in one sentence, a size up from the points below */
@@ -1472,8 +1518,8 @@ html {
   width: 3.5rem;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
-  background: #10223a;
-  color: #7f9fbf;
+  background: var(--screen-off);
+  color: var(--screen-off-ink);
   transition:
     color 0.35s ease,
     box-shadow 0.35s ease;
@@ -1581,7 +1627,7 @@ html {
   height: 11px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, var(--baby), var(--focus-blue));
-  box-shadow: 1px 2px 2px rgb(0 0 0 / 0.3);
+  box-shadow: 1px 2px 2px rgb(var(--shadow) / 0.4);
 }
 
 .directory-head {
@@ -1744,7 +1790,7 @@ html {
   height: 12px;
   border-radius: 50%;
   background: radial-gradient(circle at 35% 35%, var(--baby), var(--focus-blue));
-  box-shadow: 1px 2px 2px rgb(0 0 0 / 0.3);
+  box-shadow: 1px 2px 2px rgb(var(--shadow) / 0.4);
 }
 
 @keyframes unfold {
@@ -3029,7 +3075,9 @@ html {
 .bench-tab,
 .cabinet-button,
 .park-actions .glass:not(.glass-primary) {
-  --tint: rgb(234 245 255 / 0.62);
+  /* Bluer and a little thicker than the pale it was, so over green
+     scenery it reads baby blue, not grey-green */
+  --tint: rgb(216 236 253 / 0.72);
 }
 
 .world-controls .glass {
@@ -3049,7 +3097,7 @@ html {
 :root:has(.world3d[data-sky-daylight="night"]) {
   & .rh {
     --rh-ink: var(--cream);
-    --rh-soft: #e3ecf5;
+    --rh-soft: var(--baby-pale);
     --rh-halo: 0 0 6px rgb(12 24 38 / 0.9), 0 0 2px rgb(12 24 38 / 0.85);
     border-color: rgb(255 255 255 / 0.32);
     background: rgb(234 245 255 / 0.06);

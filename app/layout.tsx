@@ -74,7 +74,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
       </head>
       <body>
-        <a href="#content" className="skip-link">
+        <a href="#content" className="skip-link glass">
           Skip to the page
         </a>
         <WorldControls />
