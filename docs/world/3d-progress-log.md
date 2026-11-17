@@ -595,3 +595,24 @@ where it meets the poles; still in still view. No lights added; nothing
 flickers. Seen at 1440 by day and night, focused on the phone with the
 receiver up, mid walk-in (the bus stop and bicycle show there), and at
 390×844; no console errors.
+
+### The arcade, dressed
+
+The mini-games moved to `scenes/arcadeGames.ts` first (no change in
+behaviour), and the cabinet's body became `cabinetShell`, shared by the
+working cabinets and the dead ones. Then (`scenes/Arcade.tsx:
+buildDressing`, its own seed so the rest of the room is as it was):
+three dead cabinets along the left wall (faded bodies, dark glass, blank
+marquees), a token counter by the right wall ("5 for $1" on a card), a
+prize shelf in the back corner under a small "Prizes" sign made like the
+buildings' (`neonSign`: navy board, pink neon words, baby-blue frame), a
+pachinko board between the middle cabinets, cables along the skirting and
+from each cabinet, a ceiling tile on the floor and the gap it left, and
+water stains high on the back wall. The hand-bent wall neon stays. No
+lights added. The page arrives on a cabinet, so most of this shows round
+the cabinets' views and on the way in.
+
+Build times (production, `world:<place>`): booth 75–105 ms, arcade
+29–38 ms. Budgets: world chunk 271,447 / 285,000; all JS 535,526 / 558,000.
+Desktop and phone: both places arrive, no sideways scroll, no console
+errors.

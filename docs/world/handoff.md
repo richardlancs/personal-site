@@ -79,9 +79,10 @@ Plan: `~/.claude/plans/plan-a-new-phase-sparkling-piglet.md`. Branch
   glass skip link, colours to tokens
 - d2eeb3a rain fades behind nearer things; far signs' words larger
 
-Still to do: slice 6, the phone booth's street corner and a rounded
-receiver; slice 7, the arcade's dressing (mini-games moved out first).
-Both wait on the owner's OK to the layout. Also open: `app/icon.svg`
+Slices 0–5 were merged to `main` and pushed (13fcf25). Then, approved by
+the owner: b43aa29 the booth's street corner and handset; e6f4b35 the
+arcade's mini-games moved out; the arcade's dressing (next commit). Also
+open: `app/icon.svg`
 (the favicon) is still indigo, as `apple-icon.png` probably is.
 
 `next build` and `next dev` stop once with "SecurityFatalError: Your
