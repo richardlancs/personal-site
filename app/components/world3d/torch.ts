@@ -45,6 +45,7 @@ export function carvedSign(key: string, px: [number, number], lines: SignLine[],
     background: TORCH.board,
     padding,
     valign: "middle",
+    fit: true,
     lines: lines.map((l) => ({ ...l, font: "display", color: TORCH.paint, weight: 600, align: "center" })),
   };
   return cached(`carved-${key}`, () =>

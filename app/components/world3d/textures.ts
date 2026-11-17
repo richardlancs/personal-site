@@ -529,7 +529,7 @@ export const singleLeaves = () =>
 
 type TextLine = { text: string; size: number; font?: "display" | "text"; color?: string; weight?: number; gap?: number; align?: CanvasTextAlign };
 
-export type PanelOptions = { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle" };
+export type PanelOptions = { background?: string; lines: TextLine[]; padding?: number; grain?: boolean; rule?: string; wrap?: boolean; valign?: "top" | "middle"; fit?: boolean };
 
 // A panel of text: signs, timetable rows, notebook pages, screens. `key`
 // must change when the text does.
@@ -641,10 +641,23 @@ function drawPanel(g: CanvasRenderingContext2D, r: Rng, w: number, h: number, op
     }
   }
   const pad = opts.padding ?? 24;
+  // `fit`: a line too wide for the board is set smaller until it fits
+  // (signs: the words always sit inside their frame, in any font)
+  const lines = opts.fit
+    ? opts.lines.map((line) => {
+        let size = line.size;
+        const room = w - pad * 2;
+        for (; size > 8; size -= 1) {
+          g.font = `${line.weight ?? 500} ${size}px ${line.font === "display" ? f.display : f.text}`;
+          if (g.measureText(line.text).width <= room) break;
+        }
+        return { ...line, size };
+      })
+    : opts.lines;
   // Lay the lines out first so they can be centred vertically
   const laid: { text: string; y: number; line: TextLine }[] = [];
   let y = pad;
-  for (const line of opts.lines) {
+  for (const line of lines) {
     g.font = `${line.weight ?? 500} ${line.size}px ${line.font === "display" ? f.display : f.text}`;
     const words = opts.wrap ? line.text.split(" ") : [line.text];
     let current = "";

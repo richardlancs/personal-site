@@ -108,8 +108,7 @@ function buildDressing(r: Rng) {
   const tokens: THREE.BufferGeometry[] = [];
   for (let k = 0; k < 14; k++) tokens.push(at(new THREE.CylinderGeometry(0.02, 0.02, 0.006, 10), r.range(-0.1, 0.1), 1.005 + (k % 4) * 0.007, -0.25 + r.range(-0.15, 0.15), 0, r.range(-0.3, 0.3)));
   counter.add(mesh(merge(tokens), mat("tokens", () => paint({ color: "#b89a5a", brush: 0.2, rust: 0.4 })), { cast: false }));
-  const price = textPanel("arcade-tokens", 128, 96, { background: "#efe6cf", padding: 8, lines: [{ text: "TOKENS", size: 22, font: "display", weight: 600, color: "#2b2f27", gap: 4 }, { text: "5 for $1", size: 18, color: "#3d4238" }] });
-  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.15), mat("tokenCard", () => paint({ map: price, brush: 0.12, grime: 0.4 })));
+  const card = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 0.15), carvedSign("arcade-tokens", [128, 96], [{ text: "Tokens", size: 26, gap: 4 }, { text: "5 for $1", size: 20 }], { padding: 8, grime: 0.3 }));
   card.position.set(-0.31, 1.07, 0.3);
   card.rotation.set(0, -Math.PI / 2, 0);
   card.rotateX(-0.3);

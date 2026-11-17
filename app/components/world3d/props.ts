@@ -6,7 +6,7 @@ import { rng } from "./rng";
 import { waterUniforms } from "./atmosphere/state";
 import { envUniforms } from "./environment";
 import { BEAM, NEON, glowUniforms, lampBeam } from "./glow";
-import { carvedSign } from "./torch";
+import { buildTorch, carvedSign } from "./torch";
 import { world } from "./store";
 import { enamel, flagstones, notice, planks, plaster, singleLeaves, softDot, textPanel } from "./textures";
 
@@ -739,24 +739,25 @@ export function buildSignpost(arms: { label: string; angle: number }[]) {
   g.add(mesh(at(box(0.12, 2.6, 0.12), 0, 1.3, 0), M.darkWood()));
   const swing: THREE.Object3D[] = [];
   arms.forEach((arm, i) => {
-    const tex = textPanel(`sign-${arm.label}`, 256, 64, {
-      background: "#cdb48a",
-      padding: 10,
-      valign: "middle",
-      lines: [{ text: `${arm.label} →`, size: 28, font: "display", color: "#3a2a1c", weight: 600, align: "center" }],
-    });
+    // A carved arm, like every sign (torch.ts)
+    const face = carvedSign(`signpost-${arm.label}`, [256, 64], [{ text: `${arm.label} →`, size: 30 }], { padding: 10, grime: 0.3 });
     const pivot = new THREE.Group();
     pivot.position.y = 2.2 - i * 0.36;
     pivot.rotation.y = arm.angle;
     // Plain box UVs, so the face shows the whole label (box() scales them
     // per metre, which showed only a blank corner of it)
-    const board = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.24, 0.04), [M.wood(), M.wood(), M.wood(), M.wood(), mat(`sign-${arm.label}`, () => paint({ map: tex, brush: 0.2, brushScale: 4, moss: 0.2 })), M.wood()] as unknown as THREE.Material);
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.1, 0.24, 0.04), [M.darkWood(), M.darkWood(), M.darkWood(), M.darkWood(), face, M.darkWood()] as unknown as THREE.Material);
     board.position.x = 0.58;
     board.castShadow = true;
     pivot.add(board);
     g.add(pivot);
     swing.push(pivot);
   });
+  // A torch on the post, under the arms, to read them by after dark (no
+  // wall behind it to light)
+  const torch = buildTorch(0.5, { light: 0 });
+  torch.position.set(0, 0.95, 0.06);
+  g.add(torch);
   return { group: g, swing };
 }
 

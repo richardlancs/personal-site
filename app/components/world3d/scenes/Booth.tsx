@@ -10,7 +10,8 @@ import { buildCity } from "../buildings";
 import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
-import { flagstones, groundTexture, textPanel } from "../textures";
+import { flagstones, groundTexture } from "../textures";
+import { buildTorch, carvedSign } from "../torch";
 import { HEMI, Hitbox, SunLight, type SceneProps } from "./common";
 import ShakeableTrees, { type ShakeTree } from "./ShakeableTrees";
 
@@ -52,22 +53,28 @@ function buildCorner(booth: THREE.Group) {
   // The bus stop: a post, its disc, and the times (the last bus long gone)
   const stop = new THREE.Group();
   stop.add(mesh(new THREE.CylinderGeometry(0.035, 0.04, 2.6, 8).translate(0, 1.3, 0), M.iron()));
-  const disc = textPanel("bus-stop-disc", 128, 128, { background: "#2f5d4a", lines: [{ text: "BUS", size: 40, font: "display", color: "#efe6cf", weight: 600 }] });
-  const discMat = mat("busDisc", () => paint({ map: disc, brush: 0.15, rust: 0.3, grime: 0.3, side: THREE.DoubleSide }));
-  stop.add(new THREE.Mesh(new THREE.CircleGeometry(0.22, 24).translate(0, 2.42, 0.045), discMat));
-  const times = textPanel("bus-stop-times", 256, 320, {
-    background: "#efe6cf",
-    padding: 18,
-    lines: [
-      { text: "Park Gate", size: 32, font: "display", weight: 600, color: "#2b2f27", gap: 8 },
-      { text: "Route 12", size: 22, color: "#3d4238", gap: 16 },
-      { text: "Weekdays every 20 min", size: 17, color: "#3d4238", gap: 4 },
-      { text: "Weekends every hour", size: 17, color: "#3d4238", gap: 4 },
-      { text: "Last bus 22:40", size: 17, color: "#3d4238" },
+  // Its disc and its times, carved boards like every sign (torch.ts), and
+  // a torch on the post to read them by
+  const disc = carvedSign("bus-stop-disc", [128, 128], [{ text: "Bus", size: 44 }], { padding: 14, grime: 0.3 });
+  stop.add(new THREE.Mesh(new THREE.CircleGeometry(0.22, 24).translate(0, 2.42, 0.045), disc));
+  stop.add(mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.04, 24).rotateX(Math.PI / 2).translate(0, 2.42, 0.02), M.darkWood()));
+  const times = carvedSign(
+    "bus-stop-times",
+    [256, 320],
+    [
+      { text: "Park Gate", size: 34, gap: 10 },
+      { text: "Route 12", size: 24, gap: 18 },
+      { text: "Weekdays every 20 min", size: 19, gap: 6 },
+      { text: "Weekends every hour", size: 19, gap: 6 },
+      { text: "Last bus 22:40", size: 19 },
     ],
-  });
-  stop.add(mesh(box(0.34, 0.42, 0.03).translate(0, 1.55, 0.03), M.iron()));
-  stop.add(new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.375).translate(0, 1.55, 0.047), mat("busTimes", () => paint({ map: times, brush: 0.12, grime: 0.5 }))));
+    { padding: 16, grime: 0.4 },
+  );
+  stop.add(mesh(box(0.34, 0.42, 0.03).translate(0, 1.55, 0.03), M.darkWood()));
+  stop.add(new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.375).translate(0, 1.55, 0.047), times));
+  const torch = buildTorch(0.2, { light: 0 });
+  torch.position.set(0, 1.95, 0.04);
+  stop.add(torch);
   stop.position.set(3.1, 0.1, 2.9);
   stop.rotation.y = -0.3;
   g.add(stop);
