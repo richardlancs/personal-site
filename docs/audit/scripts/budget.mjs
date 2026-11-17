@@ -24,10 +24,15 @@ const budgets = {
   // Limits keep about 5% headroom over the last. Loading rain and snow on
   // demand was tried: their own code is 2.5 KB and the split cost every
   // visit 1.8 KB, so they stay in the world chunk.
-  pageInitialJs: 210_000, // 193,785 / 194,150 / 199,980 (projects, the largest)
-  largestChunkGzip: 316_000, // 287,831 / 288,428 / 300,650
-  largestChunkRaw: 1_150_000, // 1,056,413 / 1,058,023 / 1,090,438
-  totalJs: 536_000, // 492,642 / 492,141 / 510,283
+  // Then (phase-scene-chunks) each place but the park became its own chunk
+  // (world3d/sceneChunks.ts): the world chunk, with the park, went from
+  // 308,149 to 270,844; all JS from 520,935 to 531,993, the five chunks'
+  // own runtime and what they now hold apart. The largest-chunk limits
+  // drop to keep that saving; the total keeps 5% for the places' dressing.
+  pageInitialJs: 210_000, // 193,785 / 194,150 / 199,980 / 201,103 (projects, the largest)
+  largestChunkGzip: 285_000, // 287,831 / 288,428 / 300,650 / 270,844
+  largestChunkRaw: 1_055_000, // 1,056,413 / 1,058,023 / 1,090,438 / 1,004,949
+  totalJs: 558_000, // 492,642 / 492,141 / 510,283 / 531,993
   totalCss: 18_000, // 11,654 / 15,552 / 16,788
   // feature/baby-blue-glass-resume: pdfjs-dist 5.4.624's legacy build
   // (141,641), its worker (301,558) and the viewer (4,726)

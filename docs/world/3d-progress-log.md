@@ -523,3 +523,31 @@ the arcade. Measured before anything changed:
   on a 390 phone. The station is under the ~11 px where a word reads, so
   its letters (and the workshop's) grow inside their existing boards:
   no building, board or sight line moves.
+
+### Each place its own chunk
+
+`world3d/sceneChunks.ts`: the workshop, station, arcade, pavilion and
+booth are each a chunk, loaded when wanted. The park stays in the world
+chunk: it's the home page and every journey's hub, and a chunk of its own
+copied `buildings.ts` into the station's and the booth's (tried first:
+all JS went up 18.7 KB).
+
+- **When a place loads.** The address's place loads at once. After arrival,
+  the rest load in idle time, as before, and are built (desktop tiers);
+  the phone tier fetches them one at a time but still builds none ahead.
+  A link to a place, pointed at or focused anywhere on the page (the
+  park's tags, Sections, the map, the foot of a page), fetches its chunk
+  straight away.
+- **No empty place.** `Warm` waits for the first place to be built before
+  compiling it and starting the frame loop. A journey whose place hasn't
+  arrived waits at the threshold, the iris closed, for up to 1.5 s
+  (`WAIT_FOR_PLACE_MS`), then goes on.
+
+Measured (production build): world chunk 308,149 → 270,844 gzip
+(−37.3 KB, −12%); all JS 520,935 → 531,993. Budgets tightened to keep
+it (`budget.mjs`). In the browser (production server): all six deep links
+arrive at their place with no console errors; park → workshop with the
+workshop's chunk held back 1.8 s swaps at 2.2 s, when it lands (1.1 s
+when it's there), built; held back 6 s, the wait gives up at 2.9 s. On a
+390×844 phone: the contact deep link and park → arcade arrive, no
+sideways scroll, no errors.

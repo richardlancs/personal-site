@@ -13,12 +13,7 @@ import { windUniforms } from "./paint";
 import { places, sectionForPath } from "../../sections/registry";
 import { routesFromPark, scenes, type Pose, type SceneId, type V3 } from "./scenes";
 import Painterly from "./Painterly";
-import Arcade from "./scenes/Arcade";
-import Booth from "./scenes/Booth";
-import Library from "./scenes/Library";
-import Park from "./scenes/Park";
-import Station from "./scenes/Station";
-import Workshop from "./scenes/Workshop";
+import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
 import { isFlat } from "../world/flat";
 import { FOUNTAIN_MS, useWorld, world, type Quality } from "./store";
 
@@ -28,7 +23,10 @@ import { FOUNTAIN_MS, useWorld, world, type Quality } from "./store";
 const DevSkyPanel = process.env.NODE_ENV === "development" ? lazy(() => import("./atmosphere/DevSkyPanel")) : null;
 
 const order: SceneId[] = ["park", "workshop", "station", "arcade", "library", "booth"];
-const components = { park: Park, workshop: Workshop, station: Station, arcade: Arcade, library: Library, booth: Booth };
+
+// A journey waits at the threshold, the iris closed, for a place whose
+// chunk hasn't landed yet (sceneChunks.ts), but never longer than this
+const WAIT_FOR_PLACE_MS = 1500;
 
 // Still view (still.ts, store.ts): the camera cuts instead of travelling,
 // and nothing sways, breathes or drifts
@@ -95,7 +93,7 @@ function Director({
   iris: React.RefObject<HTMLDivElement | null>;
   still: boolean;
 }) {
-  const { camera, gl, invalidate } = useThree();
+  const { camera, gl, invalidate, scene } = useThree();
   const st = useRef({
     pos: new THREE.Vector3(),
     look: new THREE.Vector3(),
@@ -114,6 +112,7 @@ function Director({
     shiftY: 0,
     arrived: false,
     framed: false,
+    waitingSince: 0,
   });
 
   // (The place's fog and background: atmosphere/Atmosphere.tsx, which
@@ -259,7 +258,18 @@ function Director({
 
     // Next segment
     while (!s.running && s.queue.length) {
-      const seg = s.queue.shift()!;
+      const seg = s.queue[0];
+      // Not into an empty place: hold at the threshold until it's built
+      if (seg.kind === "swap" && s.active !== seg.scene && !scene.getObjectByName(`scene:${seg.scene}`)?.children.length) {
+        const now = performance.now();
+        s.waitingSince ||= now;
+        if (now - s.waitingSince < WAIT_FOR_PLACE_MS) {
+          invalidate(); // keep checking, where the loop only runs on demand
+          break;
+        }
+      }
+      s.waitingSince = 0;
+      s.queue.shift();
       if (seg.kind === "swap") {
         s.pos.copy(seg.pose.pos);
         s.look.copy(seg.pose.target);
@@ -668,8 +678,10 @@ function Warm({ mounted, active, onReady }: { mounted: SceneId[]; active: SceneI
       }
     };
 
-    // The place showing first: the frame loop waits for its shaders
+    // The place showing first: the frame loop waits for its shaders (and,
+    // before that, for its chunk to land and the place to be built)
     if (!warmed.current.size) {
+      if (!mounted.includes(active)) return;
       let done = false;
       const ready = () => {
         if (done) return;
@@ -709,6 +721,25 @@ export default function World3D() {
   const target = sectionForPath(pathname).scene;
   const [active, setActive] = useState<SceneId>(target.id);
   const [mounted, setMounted] = useState<SceneId[]>([target.id]);
+  // The places whose chunks have landed (sceneChunks.ts); a place is built
+  // once it's both wanted (mounted) and here
+  const [modules, setModules] = useState<Partial<Record<SceneId, SceneComponent>>>(() =>
+    Object.fromEntries(order.flatMap((id) => (loadedScene(id) ? [[id, loadedScene(id)]] : []))),
+  );
+  useEffect(() => {
+    let live = true;
+    for (const id of mounted) {
+      if (modules[id]) continue;
+      loadScene(id).then(
+        (Scene) => live && setModules((m) => (m[id] ? m : { ...m, [id]: Scene })),
+        () => {}, // offline: the journey's wait runs out, and the next ask retries
+      );
+    }
+    return () => {
+      live = false;
+    };
+  }, [mounted, modules]);
+  const built = order.filter((id) => mounted.includes(id) && modules[id]);
   const [quality] = useState(detectQuality);
   const [visible, setVisible] = useState(true);
   // In still view the world holds still, so it's drawn only when
@@ -731,9 +762,19 @@ export default function World3D() {
   if (!mounted.includes(target.id)) setMounted([...mounted, target.id]);
   const arrived = useWorld((s) => s.arrived);
   useEffect(() => {
+    if (!arrived) return;
     // On the mobile tier nothing is built ahead: the memory and the CPU
-    // go to the place that's showing
-    if (!arrived || world.get().quality === "mobile") return;
+    // go to the place that's showing. Its chunks are still fetched, one
+    // at a time in idle time, so a journey doesn't wait on the network.
+    if (world.get().quality === "mobile") {
+      let cancelFetch = () => {};
+      const fetchNext = () => {
+        const id = order.find((s) => !loadedScene(s));
+        if (id) loadScene(id).then(() => (cancelFetch = onIdle(fetchNext, 4000)), () => {});
+      };
+      cancelFetch = onIdle(fetchNext, 6000);
+      return () => cancelFetch();
+    }
     let cancel = () => {};
     let cancelled = false;
     const next = () => {
@@ -752,6 +793,22 @@ export default function World3D() {
     };
     // Once, after the first arrival
   }, [arrived]);
+
+  // A link to a place, pointed at or focused anywhere on the page (the
+  // park's tags, the Sections menu, the map, the foot of a page): its
+  // chunk is fetched now, so the journey there doesn't wait for it
+  useEffect(() => {
+    const want = (e: Event) => {
+      const href = (e.target as Element | null)?.closest?.("a[href^='/']")?.getAttribute("href");
+      if (href) loadScene(sectionForPath(href.split("#")[0]).scene.id).catch(() => {});
+    };
+    document.addEventListener("pointerover", want, { passive: true });
+    document.addEventListener("focusin", want);
+    return () => {
+      document.removeEventListener("pointerover", want);
+      document.removeEventListener("focusin", want);
+    };
+  }, []);
 
   // Stop drawing when the tab is hidden, when the world is out of view,
   // or (narrow screens) once the page's sheet has been scrolled up over
@@ -820,18 +877,16 @@ export default function World3D() {
         {/* the scenes themselves know two tiers */}
         <Wind />
         <LabelProjector active={active} />
-        {order
-          .filter((id) => mounted.includes(id))
-          .map((id) => {
-            const Scene = components[id];
-            return (
-              <group key={id} name={`scene:${id}`} position={scenes[id].offset}>
-                <Scene active={active === id} quality={sceneTier(quality)} navigate={navigate} />
-              </group>
-            );
-          })}
+        {built.map((id) => {
+          const Scene = modules[id]!;
+          return (
+            <group key={id} name={`scene:${id}`} position={scenes[id].offset}>
+              <Scene active={active === id} quality={sceneTier(quality)} navigate={navigate} />
+            </group>
+          );
+        })}
         <Precipitation quality={quality} />
-        <Warm mounted={mounted} active={active} onReady={() => setWarm(true)} />
+        <Warm mounted={built} active={active} onReady={() => setWarm(true)} />
         {DevSkyPanel && <DevHandle />}
       </Canvas>
       <div ref={iris} className="world-iris" aria-hidden="true" />

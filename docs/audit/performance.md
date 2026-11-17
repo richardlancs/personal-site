@@ -172,6 +172,9 @@ on-demand frames in still view, the painting where WebGL is missing.
   page is 111–121 ms in the "before" mobile runs' main-thread breakdown
   (simulated 4×), small next to script evaluation (4.6–6.2 s there,
   mostly the build and the frames; 4.2–4.4 s after). Not split; budgeted instead (below).
+  Later split by place (17 November 2026, `world3d/sceneChunks.ts`): the
+  world chunk, with the park, is 270,844 gzip, and the other five places
+  load on demand (`docs/world/3d-progress-log.md`, "Each place its own chunk").
 - **Durations of the camera's journeys** (park → place 0.9 + 0.8 s,
   place → place 0.5 + 0.8 s, back to the park 0.55 + 1.0 s): measured
   with a script, after all places were built, three rounds: the page's
