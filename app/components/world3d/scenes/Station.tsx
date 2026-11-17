@@ -28,7 +28,7 @@ const when = (i: number) => {
 function rowTexture(i: number, selected: boolean) {
   const e = experience[i];
   return textPanel(`timetable-row-${i}-${selected}`, 512, 96, {
-    background: selected ? "#bfe9f8" : "#1e107a",
+    background: selected ? "#bfe9f8" : "#1f3a5a",
     padding: 16,
     valign: "middle",
     lines: [
@@ -90,7 +90,7 @@ function buildStationScene(quality: "high" | "low") {
   board.position.set(BOARD.x, BOARD.y, BOARD.z);
   board.add(mesh(box(BOARD.w + 0.16, BOARD.h + 0.16, 0.08), mat("boardFrame", () => paint({ map: enamel(150, 25, 20), rust: 0.5, brush: 0.2 }))));
   const head = textPanel("timetable-head", 512, 80, {
-    background: "#15105a",
+    background: "#172d47",
     padding: 16,
     valign: "middle",
     lines: [{ text: "TIMETABLE", size: 34, font: "display", color: "#ece3c9", weight: 600 }],

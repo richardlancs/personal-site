@@ -104,6 +104,11 @@ test("the theme is fixed: no dark theme, no toggle, no saved preference", () => 
   for (const hex of ["#fff9f2", "#55c6f0", "#e5ddd4", "#1d1e1e", "#fb5745", "#b8dcfa", "#9bcbf1", "#eaf5ff", "#f7fbff", "#c6dff0", "#203245", "#326e9f"]) assert.ok(css.includes(hex), `palette colour ${hex} is defined`);
   // The interface moved from indigo to baby blue: none of it is left
   assert.doesNotMatch(css, /#1e107a|--indigo|rgb\(30 16 122/, "no indigo in the interface");
+  // Nor in the world's own copies of interface things (the station's
+  // timetable is the slate enamel of its HTML twin, --surface-deep)
+  for (const file of readdirSync(`${root}app/components/world3d`, { recursive: true }).filter((f) => /\.tsx?$/.test(f))) {
+    assert.doesNotMatch(readFileSync(`${root}app/components/world3d/${file}`, "utf8"), /#1e107a|#15105a/i, `no indigo in world3d/${file}`);
+  }
   assert.ok(!existsSync(`${root}app/components/ThemeToggle.tsx`), "the toggle is gone");
   const layout = readFileSync(`${root}app/layout.tsx`, "utf8");
   assert.doesNotMatch(layout, /data-theme|localStorage\.getItem\("theme"\)/, "nothing reads a saved theme");

@@ -33,7 +33,7 @@ export default function DevSkyPanel() {
     padding: "2px 6px",
     borderRadius: 4,
     border: "1px solid #b9ad9d",
-    background: on ? "#1e107a" : "#fff9f2",
+    background: on ? "#203245" : "#fff9f2",
     color: on ? "#fff9f2" : "#1d1e1e",
     cursor: "pointer",
   });
