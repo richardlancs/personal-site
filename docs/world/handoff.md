@@ -1,4 +1,4 @@
-# Handoff: where the work stands (updated 6 November 2026, evening)
+# Handoff: where the work stands (updated 17 November 2026)
 
 For whoever picks this up, human or Claude. Read this first, then
 `docs/world/park-balance-2026-11-06.md` for the measurements.
@@ -65,6 +65,28 @@ git. Timing marks are on the performance timeline in production:
   point and two of its screenshots cover GaragePoker work that isn't on
   its GitHub yet: update them once that's pushed. `garage-poker/` in this
   folder is a separate, untracked repo; whole-folder lint picks it up.
+
+## Phase: richer places and a lighter load (17 November 2026)
+
+Plan: `~/.claude/plans/plan-a-new-phase-sparkling-piglet.md`. Branch
+`phase-places` (local, not pushed, not merged), on top of `main` 54593da:
+
+- 155ea3b measure (world chunk, far signs' words)
+- 653a1a3 each place but the park its own chunk (`world3d/sceneChunks.ts`)
+- bebd279 hosting caches (`next.config.ts`)
+- 368e5ae station timetable slate, indigo test covers world3d
+- 3e510f7 paper band behind the corner controls, bluer corner glass,
+  glass skip link, colours to tokens
+- d2eeb3a rain fades behind nearer things; far signs' words larger
+
+Still to do: slice 6, the phone booth's street corner and a rounded
+receiver; slice 7, the arcade's dressing (mini-games moved out first).
+Both wait on the owner's OK to the layout. Also open: `app/icon.svg`
+(the favicon) is still indigo, as `apple-icon.png` probably is.
+
+`next build` and `next dev` stop once with "SecurityFatalError: Your
+version of Next.js is affected by a known security vulnerability" and
+pass when run again; Next.js 16.4.2 wants an upgrade (owner to decide).
 
 ## Remaining
 
