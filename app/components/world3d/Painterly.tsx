@@ -20,6 +20,12 @@ import { overlay, sceneDepth } from "./atmosphere/state";
 //    old film), and a faint paper grain sits over everything.
 //
 // The brushwork is skipped on low-power devices; the grade is cheap.
+//
+// Over the brushwork, ink: a soft warm-brown line where the depth of the
+// scene jumps (silhouettes, a roof against the sky, a trunk against the
+// grass) and along creases, as the intro film's backgrounds are drawn.
+// It thins and fades with distance, so the far hills and haze stay soft.
+// Off on phones.
 
 const Brushwork = {
   uniforms: {
@@ -62,6 +68,59 @@ const Brushwork = {
       gl_FragColor = vec4(col, 1.0);
     }`,
 };
+
+const Ink = {
+  uniforms: {
+    tDiffuse: { value: null as THREE.Texture | null },
+    tDepth: { value: null as THREE.DepthTexture | null },
+    uTexel: { value: new THREE.Vector2() },
+    uNear: { value: 0.1 },
+    uFar: { value: 900 },
+  },
+  vertexShader: /* glsl */ `
+    varying vec2 vUv;
+    void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+  fragmentShader: /* glsl */ `
+    uniform sampler2D tDiffuse;
+    uniform sampler2D tDepth;
+    uniform vec2 uTexel;
+    uniform float uNear;
+    uniform float uFar;
+    varying vec2 vUv;
+    float lin(vec2 uv) {
+      float z = texture2D(tDepth, uv).x * 2.0 - 1.0;
+      return 2.0 * uNear * uFar / (uFar + uNear - z * (uFar - uNear));
+    }
+    void main() {
+      vec3 col = texture2D(tDiffuse, vUv).rgb;
+      float d = lin(vUv);
+      float l = lin(vUv - vec2(uTexel.x, 0.0)), r = lin(vUv + vec2(uTexel.x, 0.0));
+      float u = lin(vUv + vec2(0.0, uTexel.y)), b = lin(vUv - vec2(0.0, uTexel.y));
+      // A jump in depth (relative, so near and far edges ink alike) and a
+      // crease (the second difference)
+      float jump = max(max(abs(l - d), abs(r - d)), max(abs(u - d), abs(b - d))) / d;
+      float crease = abs(l + r + u + b - 4.0 * d) / d;
+      float edge = max(smoothstep(0.04, 0.16, jump), smoothstep(0.03, 0.12, crease) * 0.55);
+      // Fades out with distance; the sky (no depth) is never inked
+      float near = 1.0 - smoothstep(25.0, 85.0, d);
+      edge *= near * step(d, uFar * 0.9);
+      gl_FragColor = vec4(mix(col, col * vec3(0.42, 0.33, 0.27), edge * 0.6), 1.0);
+    }`,
+};
+
+// Hands the depth to the ink, from whichever target holds the scene
+class InkPass extends ShaderPass {
+  constructor(private camera: THREE.Camera) {
+    super(Ink);
+  }
+  render(renderer: THREE.WebGLRenderer, write: THREE.WebGLRenderTarget, read: THREE.WebGLRenderTarget, deltaTime: number, maskActive: boolean) {
+    this.uniforms.tDepth.value = read.depthTexture;
+    const cam = this.camera as THREE.PerspectiveCamera;
+    this.uniforms.uNear.value = cam.near;
+    this.uniforms.uFar.value = cam.far;
+    super.render(renderer, write, read, deltaTime, maskActive);
+  }
+}
 
 const Grade = {
   uniforms: {
@@ -124,10 +183,10 @@ class SceneDepth extends Pass {
   }
 }
 
-export default function Painterly({ brushwork, samples }: { brushwork: boolean; samples: number }) {
+export default function Painterly({ brushwork, ink: inked, samples }: { brushwork: boolean; ink: boolean; samples: number }) {
   const { gl, scene, camera, size } = useThree();
 
-  const { composer, brush, grade, over } = useMemo(() => {
+  const { composer, brush, ink, grade, over } = useMemo(() => {
     // The composer's own target has no antialiasing; the canvas's is
     // never seen because every frame goes through here. A multisampled
     // target keeps the edges of leaves, branches and wires smooth.
@@ -139,6 +198,9 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
     composer.addPass(new SceneDepth(camera));
     const brush = new ShaderPass(Brushwork);
     composer.addPass(brush);
+    // (after the brushwork, which would smear a line this thin away)
+    const ink = new InkPass(camera);
+    composer.addPass(ink);
     // Rain and snow, over the brushwork (atmosphere/state.ts: overlay),
     // only while there's any
     const over = new RenderPass(overlay, camera);
@@ -148,7 +210,7 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
     composer.addPass(new OutputPass());
     const grade = new ShaderPass(Grade);
     composer.addPass(grade);
-    return { composer, brush, grade, over };
+    return { composer, brush, ink, grade, over };
   }, [gl, scene, camera, samples]);
 
   useEffect(() => {
@@ -158,13 +220,16 @@ export default function Painterly({ brushwork, samples }: { brushwork: boolean; 
     const texel = new THREE.Vector2(1 / (size.width * ratio), 1 / (size.height * ratio));
     brush.uniforms.uTexel.value.copy(texel);
     grade.uniforms.uTexel.value.copy(texel);
+    // Lines about a pixel and a half wide on every screen
+    ink.uniforms.uTexel.value.copy(texel).multiplyScalar(Math.max(1, ratio * 0.9));
     // Brush strokes about the same size on every screen
     brush.uniforms.uSpread.value = Math.max(1, ratio * 0.85);
-  }, [composer, brush, grade, gl, size]);
+  }, [composer, brush, ink, grade, gl, size]);
 
   useEffect(() => {
     brush.enabled = brushwork;
-  }, [brush, brushwork]);
+    ink.enabled = inked;
+  }, [brush, brushwork, ink, inked]);
 
   useEffect(() => () => composer.dispose(), [composer]);
 

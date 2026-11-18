@@ -872,7 +872,7 @@ export default function World3D() {
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} />
         {still && <Still pathname={pathname} />}
-        <Painterly brushwork={quality === "high"} samples={quality === "high" ? 4 : 2} />
+        <Painterly brushwork={quality === "high"} ink={quality !== "mobile"} samples={quality === "high" ? 4 : 2} />
         <Atmosphere active={active} />
         {/* the scenes themselves know two tiers */}
         <Wind />
