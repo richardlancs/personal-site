@@ -702,3 +702,22 @@ torches, which suit the old buildings better.
   any pointer or key press stops that for good. Still view: no boot, no
   cycling, a frame held until a press, which jumps to the outcome (two
   shots 1.5 s apart identical).
+
+## The home page's intro: a painted walk into the park
+
+- On every full load of `/` on the wide layout, a 9.2 s painted intro
+  (gone by 9.5; a hard cap at 10) plays over the page while the world
+  loads underneath: six layers made in ChatGPT (`docs/world/intro-prompts.md`),
+  892 KB as WebP, moving in parallax toward the park's clock tower; a kid
+  drawn in code (`intro/kid.ts`, cel style, seen from behind, arms out)
+  runs past the camera, soft with lens blur, then down the path to the
+  park; a wall of grass wipes to the live park at its home view.
+- Its clock is the page's (`performance.now()`), so a slow start shortens
+  the opening, never extends the end: measured in the page, done at 9.21 s
+  and removed at 9.48 s from navigation start.
+- Skip: a clear-glass key (7.0:1 or better over the painting, by
+  panel-contrast.mjs on `/?intro=<t>`), Escape, or a click. The page
+  under it is inert; focus goes to the name only if it was on the key.
+- Never: in still view, on the phone layout (CSS hides it before any
+  script; 0 paintings fetched at 390x844 and 844x390), on deep links, or
+  on a client navigation back to `/`.

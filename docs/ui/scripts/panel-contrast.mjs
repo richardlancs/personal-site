@@ -18,7 +18,7 @@ const routes = routeArg ? routeArg.split(",") : ["/", "/projects", "/experience"
 const skies = skyArg ? skyArg.split(",") : ["clear", "cloudy", "rain", "snow"].flatMap((p) => ["dawn", "day", "dusk", "night"].map((d) => `${p}-${d}`));
 // The panels (globals.css: the glass in the world), the stained glass, the
 // corner controls and every glass button
-const panels = [".location-header", ".location-footer", ".project-notes", ".tool-board", ".directory", ".phone-line", ".cabinet-card", ".timetable", ".timetable-notice", ".notebook-page", ".notebook-sheet", ".notebook-controls", ".map-sheet", ".lost-notice", ".world-controls", ".glass"];
+const panels = [".intro-skip", ".location-header", ".location-footer", ".project-notes", ".tool-board", ".directory", ".phone-line", ".cabinet-card", ".timetable", ".timetable-notice", ".notebook-page", ".notebook-sheet", ".notebook-controls", ".map-sheet", ".lost-notice", ".world-controls", ".glass"];
 
 const browser = await launch();
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
@@ -67,7 +67,7 @@ const worst = {};
 let failed = 0;
 for (const route of routes) {
   for (const sky of skies) {
-    await page.goto(`${base}${route}?sky=${sky}`, { waitUntil: "load" });
+    await page.goto(`${base}${route}${route.includes("?") ? "&" : "?"}sky=${sky}`, { waitUntil: "load" });
     await page.waitForFunction(() => document.querySelector(".world3d")?.getAttribute("data-arrived") === "true", null, { timeout: 30000 }).catch(() => {});
     await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; animation: none !important; } nextjs-portal, [data-dev-sky-panel] { display: none !important; }" });
     await page.waitForTimeout(1500);
@@ -92,7 +92,7 @@ for (const route of routes) {
               range.selectNodeContents(n);
               const r = range.getBoundingClientRect();
               // Under the fixed bar is the bar's, except for the bar itself
-              const top = sel === ".world-controls" || el.closest(".world-controls") ? 0 : 70;
+              const top = sel === ".world-controls" || el.closest(".world-controls, .intro") ? 0 : 70;
               if (r.width < 4 || r.height < 4 || r.bottom < top + 4 || r.top > innerHeight - 4) continue;
               out.push({ sel, text: n.textContent.trim().slice(0, 28), color: cs.color, box: { x: r.x, y: Math.max(r.y, top), w: r.width, h: Math.min(r.bottom, innerHeight) - Math.max(r.y, top) } });
             }

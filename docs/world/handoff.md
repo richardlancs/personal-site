@@ -3,7 +3,10 @@
 For whoever picks this up, human or Claude. Read this first, then
 `docs/world/park-balance-2026-11-06.md` for the measurements.
 
-## Latest: oak signs, one arcade machine (branch `oak-arcade`)
+## Latest: the home page's intro (branch `intro`)
+- `components/intro/`: a 9.2 s painted walk into the park on full loads of `/`, wide layout only; layers from ChatGPT (`docs/world/intro-prompts.md`, `scripts/intro-assets.mjs`), kid in code. `?intro=<seconds>` on `next dev` holds it at a moment.
+
+## Earlier: oak signs, one arcade machine (merged)
 - Every carved sign is brown oak with burned-in dark letters (`textures.ts: carvedPanel`, `torch.ts: carvedSign`, drawn at 2x); after dark the oak catches the torchlight faintly.
 - The arcade has one machine (`scenes/arcadeMachine.ts`, rules in `arcadeLogic.ts`, tested by `tests/arcade.test.mjs`): tabs, its ◀/▶ buttons and idle cycling (10 s, stops once touched, never in still view) switch modes; a click on the screen or the card's play button (`arcadePress` in the store) plays.
 
