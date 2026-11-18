@@ -33,7 +33,8 @@ export type Section = {
   // place on the other (world3d/scenes.ts)
   side: "left" | "right" | "middle";
   // The 3D world, on wide screens: the scene the camera goes to and what
-  // it looks at there. "monitor" and "cabinet" mean the one that's chosen.
+  // it looks at there. "monitor" means the one that's chosen; "cabinet" is
+  // the arcade's one machine, whatever mode it's in.
   scene: { id: SceneId; focus: string | null };
   // The park's name tag for this section, if it has a building there
   // (world3d/scenes/Park.tsx keeps the positions, by this key)
@@ -118,8 +119,8 @@ export const sections: Section[] = [
     summary: "What I do away from the keyboard.",
     glyph: "arcade",
     listed: true,
-    intro: "The power came back on in a few of the cabinets.",
-    hint: "Choose an interest to explore.",
+    intro: "The power came back on in one of the cabinets.",
+    hint: "Choose an interest, then play it.",
     side: "left",
     scene: { id: "arcade", focus: "cabinet" },
     anchor: "arcade",

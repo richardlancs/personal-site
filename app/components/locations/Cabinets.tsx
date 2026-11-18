@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import type { Interest } from "../../data/portfolio";
+import { ACTIONS } from "../world3d/scenes/arcadeLogic";
 import { useWorld, world } from "../world3d/store";
 import { onChoiceKey } from "./selector";
 
@@ -57,17 +59,57 @@ function Sketch({ scene }: { scene: Interest["scene"] }) {
   }
 }
 
-// The arcade's cabinets, one for each interest. Choosing one here or in
-// the world (world3d/scenes/Arcade.tsx) walks up to that cabinet and
-// switches it on; its card comes out below, like a prize from the tray.
-// The flat layout has all four cards out already.
+// How long the machine waits, untouched, before it shows the next interest
+const IDLE_CYCLE_MS = 10000;
+
+// The arcade's machine: every interest is a mode of it. Choosing one here
+// or with the machine's own buttons (world3d/scenes/Arcade.tsx) boots it
+// into that game, and its card comes out below, like a prize from the
+// tray, with the one thing to do in that game ("Shoot", "Deal"…), which
+// does what a click on the screen does. Left alone after arriving, it
+// moves on to the next interest every ten seconds, until anything on the
+// page is touched; never in still view or a hidden tab. The flat layout
+// has all four cards out already.
 export default function Cabinets({ interests }: { interests: Interest[] }) {
   const selected = useWorld((s) => s.sel.interest);
+  const arrived = useWorld((s) => s.arrived);
+  const still = useWorld((s) => s.still);
+  const status = useWorld((s) => s.arcadeStatus);
   const interest = interests[selected];
+  const action = ACTIONS[interest.scene];
+  // Whether the visitor has done anything here yet; until then the
+  // machine cycles on its own, and its card changes aren't read out
+  const [touched, setTouched] = useState(false);
+  const [hovering, setHovering] = useState(false);
+
+  useEffect(() => {
+    if (touched) return;
+    const touch = () => setTouched(true);
+    window.addEventListener("pointerdown", touch);
+    window.addEventListener("keydown", touch);
+    return () => {
+      window.removeEventListener("pointerdown", touch);
+      window.removeEventListener("keydown", touch);
+    };
+  }, [touched]);
+
+  useEffect(() => {
+    if (touched || hovering || still || !arrived) return;
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      world.select("interest", (world.get().sel.interest + 1) % interests.length);
+    }, IDLE_CYCLE_MS);
+    return () => window.clearInterval(id);
+  }, [touched, hovering, still, arrived, interests.length]);
+
+  // A new mode starts with nothing said about it
+  useEffect(() => {
+    world.set({ arcadeStatus: "" });
+  }, [selected]);
 
   function choose(index: number) {
     world.select("interest", index);
-    world.set({ focus: `cabinet-${index}` });
+    world.set({ focus: "cabinet" });
   }
 
   return (
@@ -86,9 +128,9 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
         ))}
       </ul>
 
-      <div className="take-clicks only-world">
+      <div className="take-clicks only-world" onPointerEnter={() => setHovering(true)} onPointerLeave={() => setHovering(false)}>
         {/* One tab stop for the row; the arrow keys move along it (selector.ts) */}
-        <div role="tablist" aria-label="Cabinets" className="cabinet-row" onKeyDown={(event) => onChoiceKey(event, selected, interests.length, choose)}>
+        <div role="tablist" aria-label="Machine modes" className="cabinet-row" onKeyDown={(event) => onChoiceKey(event, selected, interests.length, choose)}>
           {interests.map((item, index) => (
             <button
               key={item.name}
@@ -111,11 +153,12 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
         </div>
 
         {/* The live region stays put; only the card inside it is replaced,
-            so the new card is announced. The card has nothing to focus in
-            it, so the panel itself is the next tab stop after the chosen
-            cabinet (the APG tabs pattern): Tab reads it, Shift+Tab goes
-            back to the cabinet. */}
-        <div id="cabinet-card" role="tabpanel" tabIndex={0} aria-labelledby={`cabinet-${slug(interest.name)}`} aria-live="polite" className="cabinet-panel">
+            so the new card is announced (once the visitor has touched
+            anything: while the machine cycles on its own it's quiet). The
+            panel is the next tab stop after the chosen tab (the APG tabs
+            pattern), then the card's play button; how a press turned out
+            is read out from the status line under it. */}
+        <div id="cabinet-card" role="tabpanel" tabIndex={0} aria-labelledby={`cabinet-${slug(interest.name)}`} aria-live={touched ? "polite" : "off"} className="cabinet-panel">
           <section key={interest.name} className="cabinet-card">
             <span className="cabinet-card-sketch">
               <Sketch scene={interest.scene} />
@@ -123,6 +166,18 @@ export default function Cabinets({ interests }: { interests: Interest[] }) {
             <div>
               <h2 className="font-display text-2xl font-semibold tracking-tight">{interest.name}</h2>
               <p className="mt-2 leading-relaxed text-muted">{interest.description}</p>
+              <div className="cabinet-play">
+                <button
+                  type="button"
+                  className="glass glass-primary cabinet-action"
+                  onClick={() => {
+                    world.set({ focus: "cabinet", arcadePress: world.get().arcadePress + 1 });
+                  }}
+                >
+                  {action.label}
+                </button>
+                <p className="cabinet-status">{status}</p>
+              </div>
             </div>
           </section>
         </div>

@@ -129,7 +129,7 @@ function Director({
     const sameScene = from === to;
     // Arrive looking at what's chosen in the place
     const sel = world.get().sel;
-    const focusId = target.focus === "monitor" ? `monitor-${sel.project}` : target.focus === "cabinet" ? `cabinet-${sel.interest}` : target.focus;
+    const focusId = target.focus === "monitor" ? `monitor-${sel.project}` : target.focus;
     world.set({ focus: focusId, hover: null, ...(sameScene ? {} : { arrived: false, phoneUp: false }) });
     if (iris.current) iris.current.style.background = scenes[to === "park" && from ? from : to].threshold;
     s.running = null;

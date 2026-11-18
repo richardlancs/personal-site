@@ -37,6 +37,10 @@ export type WorldState = {
   // and the clock, or by the development preview controls.
   sky: SkyState;
   sel: Selection;
+  // The arcade machine (world3d/scenes/arcadeMachine.ts): the page's play
+  // button counts presses, the machine says how each turned out
+  arcadePress: number;
+  arcadeStatus: string;
 };
 
 let state: WorldState = {
@@ -51,6 +55,8 @@ let state: WorldState = {
   covered: false,
   sky: { preset: "neutral", daylight: "day", progress: 0, source: "fallback" },
   sel: { project: 0, shot: 0, line: 0, interest: 0, page: 0 },
+  arcadePress: 0,
+  arcadeStatus: "",
 };
 
 const listeners = new Set<() => void>();

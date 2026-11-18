@@ -3,7 +3,11 @@
 For whoever picks this up, human or Claude. Read this first, then
 `docs/world/park-balance-2026-11-06.md` for the measurements.
 
-## Latest: clear glass, carved small signs, booth email
+## Latest: oak signs, one arcade machine (branch `oak-arcade`)
+- Every carved sign is brown oak with burned-in dark letters (`textures.ts: carvedPanel`, `torch.ts: carvedSign`, drawn at 2x); after dark the oak catches the torchlight faintly.
+- The arcade has one machine (`scenes/arcadeMachine.ts`, rules in `arcadeLogic.ts`, tested by `tests/arcade.test.mjs`): tabs, its ◀/▶ buttons and idle cycling (10 s, stops once touched, never in still view) switch modes; a click on the screen or the card's play button (`arcadePress` in the store) plays.
+
+## Earlier: clear glass, carved small signs, booth email
 - Panels and buttons over the world are clear glass with haloed words; panel-contrast.mjs measures buttons too. Restart `next dev` (rm -rf .next) before measuring: it serves stale CSS.
 
 ## Branches

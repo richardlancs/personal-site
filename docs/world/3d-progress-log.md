@@ -678,3 +678,27 @@ torches, which suit the old buildings better.
   set smaller when they'd outrun their board (`textures.ts`: `fit`).
 - The booth: "Email me" (primary) beside "Pick up the phone" on the wide
   layout, one press to a new email.
+
+## Oak signs, and one arcade machine for every interest
+
+- Signs: every carved board is brown oak (planks with seams, fine grain,
+  growth-ring arches, ray flecks, a knot or two, a lit top edge), its
+  words burned in dark with a lit lip on the far wall of each cut, drawn
+  at twice the board's pixel size with 8x anisotropy. The board's own
+  picture is its emissive map, so after dark the oak catches the torches'
+  light (0.35, faint) and the dark letters stand out against it; by day a
+  little (0.2) keeps the board bright through mist. visibility.mjs: 0
+  primary sign problems at w1440 in clear day, clear night and rain dusk.
+- The arcade: the four cabinets became one machine a third larger in the
+  middle of the back wall (two dead cabinets where the others were, the
+  pachinko board moved right, out from behind the page's panel). Its
+  screen boots on each mode change (0.9 s: dark, a line of light opening,
+  a loading bar, the title) and each mode has one thing to do: shoot the
+  ball, smash the shuttle, hop the knight to a lit square, deal a hand
+  (named). Clicks on the screen are read by their uv; the card's play
+  button does the same through the store, so it works by keyboard, and
+  the status line under it says how it turned out. Untouched, the machine
+  moves to the next interest every 10 s, with the card's live region off;
+  any pointer or key press stops that for good. Still view: no boot, no
+  cycling, a frame held until a press, which jumps to the outcome (two
+  shots 1.5 s apart identical).

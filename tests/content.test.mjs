@@ -174,11 +174,21 @@ test("the section starter is a template in docs, not a public page", () => {
 
 test("the hints say what the controls do (audit F3, F4)", () => {
   const hint = (id) => sections.find((s) => s.id === id)?.hint;
-  assert.equal(hint("interests"), "Choose an interest to explore.");
+  assert.equal(hint("interests"), "Choose an interest, then play it.");
   assert.equal(hint("experience"), "Select a role to read details.");
-  for (const s of sections) assert.doesNotMatch(s.hint ?? "", /\bplay\b|\bscroll\b/i, `${s.id}: hint promises something the page doesn't do`);
-  const arcade = readFileSync(`${root}app/components/world3d/scenes/Arcade.tsx`, "utf8");
-  assert.doesNotMatch(arcade, /INSERT COIN/i, "the cabinets don't invite play");
+  // Only the arcade's machine can be played
+  for (const s of sections) if (s.id !== "interests") assert.doesNotMatch(s.hint ?? "", /\bplay\b|\bscroll\b/i, `${s.id}: hint promises something the page doesn't do`);
+  assert.doesNotMatch(hint("interests"), /\bscroll\b/i);
+  // It is played: every mode has its one thing to do, on the page as well
+  // as on the screen, so it works by keyboard
+  const logic = readFileSync(`${root}app/components/world3d/scenes/arcadeLogic.ts`, "utf8");
+  for (const scene of ["basketball", "badminton", "chess", "poker"]) assert.match(logic, new RegExp(`${scene}: \\{ label: "[^"]+", hint: "[^"]+" \\}`), `${scene} has an action`);
+  const cabinets = readFileSync(`${root}app/components/locations/Cabinets.tsx`, "utf8");
+  assert.match(cabinets, /className="glass glass-primary cabinet-action"/);
+  assert.match(cabinets, /arcadePress/);
+  // Nothing asks for money
+  const machine = readFileSync(`${root}app/components/world3d/scenes/arcadeMachine.ts`, "utf8");
+  assert.doesNotMatch(machine, /INSERT COIN/i);
 });
 
 test("the site has its own icons and share card, not the framework's (audit F1)", () => {

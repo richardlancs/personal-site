@@ -1,10 +1,11 @@
 "use client";
 
-import { useFrame } from "@react-three/fiber";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { interests, type Interest } from "../../../data/portfolio";
-import { STILL_FRAME, attractScreen } from "./arcadeGames";
+import { interests } from "../../../data/portfolio";
+import { HUES } from "./arcadeLogic";
+import { createMachine } from "./arcadeMachine";
 import { timed } from "../idle";
 import { at, blob, box, buildBush, buildVine, merge, tube } from "../geometry";
 import { mesh, paint } from "../paint";
@@ -16,9 +17,11 @@ import { buildTorch, carvedSign, signFrame, TORCH } from "../torch";
 import { HEMI, Hitbox, NEON_LIGHT, SunLight, buildRoom, type SceneProps } from "./common";
 
 const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
-export const cabinetX = [-3.6, -1.2, 1.2, 3.6];
 const CAB_Z = -3.3;
-const hues = [18, 200, 140, 330];
+// The machine is a cabinet grown a third again, in the middle of the back
+// wall; the dead cabinets stand where the others were
+const BIG = 1.35;
+const deadX = [-2.3, -3.6];
 
 // A cabinet's body: slanted sides, the control panel with its stick and
 // buttons, the coin door. The working cabinets and the dead ones share it.
@@ -50,27 +53,23 @@ function cabinetShell(body: THREE.MeshLambertMaterial, buttons: THREE.MeshLamber
   return g;
 }
 
-function buildCabinet(i: number, interest: Interest) {
-  const hue = hues[i % hues.length];
-  const body = mat(`cab-${i}`, () => paint({ color: new THREE.Color().setHSL(hue / 360, 0.28, 0.32).getStyle(), brush: 0.3, brushScale: 4, grime: 0.6, grimeHeight: 0.8, rust: 0.15 }));
-  const g = cabinetShell(body, mat(`btn-${i}`, () => paint({ color: new THREE.Color().setHSL(hue / 360, 0.6, 0.55).getStyle(), brush: 0.2 })));
-  // The screen
-  const screen = attractScreen(interest, hue);
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.42), new THREE.MeshBasicMaterial({ map: screen.tex, toneMapped: false }));
+// The one machine that still works: every interest is a mode of it
+// (arcadeMachine.ts). Its screen, its marquee with the mode's name, and
+// on its panel the stick and three buttons: ◀, play, ▶.
+function buildMachine() {
+  const body = mat("cab-machine", () => paint({ color: "#2f4a5e", brush: 0.3, brushScale: 4, grime: 0.5, grimeHeight: 0.8, rust: 0.12 }));
+  const g = cabinetShell(body, mat("btn-machine", () => paint({ color: "#e0a24a", brush: 0.2 })));
+  const machine = createMachine(interests);
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(0.52, 0.406), new THREE.MeshBasicMaterial({ map: machine.tex, toneMapped: false }));
   glass.position.set(0, 1.3, 0.15);
   glass.rotation.x = -0.2;
+  glass.name = "arcade-screen";
   g.add(glass);
-  // The marquee with the interest's name
-  const marqueeTex = textPanel(`marquee-${interest.name}`, 256, 64, {
-    background: `hsl(${hue},45%,38%)`,
-    padding: 6,
-    valign: "middle",
-    lines: [{ text: interest.name, size: 34, font: "display", weight: 600, color: "#fff1d6", align: "center" }],
-  });
-  const marquee = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.16), paint({ map: marqueeTex, emissive: "#ffffff", emissiveMap: marqueeTex, emissiveIntensity: 0.15, brush: 0.15 }));
+  const marquee = new THREE.Mesh(new THREE.PlaneGeometry(0.62, 0.16), paint({ map: machine.marquee, emissive: "#ffffff", emissiveMap: machine.marquee, emissiveIntensity: 0.15, brush: 0.15 }));
   marquee.position.set(0, 1.735, 0.205);
   g.add(marquee);
-  return { group: g, screen, marquee: marquee.material as THREE.MeshLambertMaterial, glass };
+  g.scale.setScalar(BIG);
+  return { group: g, machine, marquee: marquee.material as THREE.MeshLambertMaterial, glass };
 }
 
 // A cabinet that never came back on: the same body, faded, its screen
@@ -157,12 +156,12 @@ function buildDressing(r: Rng) {
   const balls: THREE.BufferGeometry[] = [];
   for (let k = 0; k < 10; k++) balls.push(new THREE.SphereGeometry(0.013, 8, 6).translate(r.range(-0.2, 0.2), 0.665, 0.12 + r.range(-0.03, 0.03)));
   pach.add(mesh(merge(balls), mat("steelBall", () => paint({ color: "#c8c6bc", brush: 0.1 })), { cast: false }));
-  pach.position.set(0, 0, -3.88);
+  pach.position.set(2.4, 0, -3.88);
   g.add(pach);
 
   // Cables along the skirting, and one from each cabinet to the wall
   const cables: THREE.BufferGeometry[] = [tube([v(-5.8, 0.03, -3.92), v(-3, 0.05, -3.9), v(0, 0.03, -3.93), v(3, 0.05, -3.9), v(5.8, 0.03, -3.92)], () => 0.014, 40, 4)];
-  for (const x of cabinetX) cables.push(tube([v(x + 0.2, 0.3, CAB_Z - 0.42), v(x + 0.35, 0.05, CAB_Z - 0.5), v(x + 0.6, 0.03, -3.9)], () => 0.012, 8, 4));
+  for (const x of [0, ...deadX]) cables.push(tube([v(x + 0.2, 0.3, CAB_Z - 0.42), v(x + 0.35, 0.05, CAB_Z - 0.5), v(x + 0.6, 0.03, -3.9)], () => 0.012, 8, 4));
   g.add(mesh(merge(cables), mat("cable", () => paint({ color: "#2b2b26", brush: 0.1 })), { cast: false }));
 
   // A ceiling tile come down: the dark gap it left, the tile on the floor
@@ -220,13 +219,15 @@ function buildArcadeScene(quality: "high" | "low") {
     }),
   );
   root.add(buildDressing(rng(95))); // its own seed, so the rest of the room is as it was
-  const cabinets = interests.map((interest, i) => {
-    const c = buildCabinet(i, interest);
-    c.group.position.set(cabinetX[i], 0, CAB_Z);
-    c.group.rotation.y = r.range(-0.04, 0.04);
-    root.add(c.group);
-    return c;
-  });
+  const machine = buildMachine();
+  machine.group.position.set(0, 0, CAB_Z);
+  root.add(machine.group);
+  for (const x of deadX) {
+    const d = deadCabinet();
+    d.position.set(x, 0, CAB_Z + r.range(-0.05, 0.05));
+    d.rotation.y = r.range(-0.06, 0.06);
+    root.add(d);
+  }
   // Posters on the side walls, peeling
   [
     [-5.97, 2.2, -1.5, Math.PI / 2],
@@ -294,43 +295,86 @@ function buildArcadeScene(quality: "high" | "low") {
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [0.8, 0.3, 0.2] });
   root.add(sky);
   root.add(mesh(new THREE.PlaneGeometry(80, 80).rotateX(-Math.PI / 2).translate(0, -0.05, 0), paint({ color: "#6d7a3c", brush: 0.4, brushScale: 0.2 }), { cast: false }));
-  return { root, cabinets, sky };
+  return { root, machine, sky };
 }
+
+// Where the machine's parts are in the room: its screen, and the three
+// buttons on its panel (cabinetShell's, at the machine's size)
+const onMachine = (x: number, y: number, z: number): [number, number, number] => [x * BIG, y * BIG, CAB_Z + z * BIG];
+const buttons = [
+  { id: "prev", pos: onMachine(0.02, 1.06, 0.26) },
+  { id: "play", pos: onMachine(0.12, 1.06, 0.25) },
+  { id: "next", pos: onMachine(0.22, 1.06, 0.24) },
+] as const;
 
 export default function Arcade({ active, quality }: SceneProps) {
   const built = useMemo(() => timed("arcade", () => buildArcadeScene(quality)), [quality]);
   const interest = useWorld((s) => s.sel.interest);
   const arrived = useWorld((s) => s.arrived);
-  const power = useRef(built.cabinets.map(() => 0));
-  const lastDraw = useRef(0);
+  const power = useRef(0);
+  const lastDraw = useRef(-1);
+  const clockNow = useRef(0);
+  const shown = useRef({ mode: -1, on: false, press: world.get().arcadePress, dirty: true });
+
+  // A press, from the screen (where it was clicked) or a button (null)
+  const press = (uv: THREE.Vector2 | null) => {
+    const status = built.machine.machine.press(uv, clockNow.current, world.get().still);
+    shown.current.dirty = true;
+    if (status) world.set({ arcadeStatus: status });
+  };
 
   useFrame(({ camera, clock }, dt) => {
     if (!active) return;
     built.sky.position.copy(camera.position);
     const t = clock.elapsedTime;
-    // The screens loop for as long as a cabinet is on, so still view (WCAG
-    // 2.2.2: pause, stop, hide) holds each one on a single frame of its
-    // game, and the cabinets switch on and off without fading
+    clockNow.current = t;
     const still = world.get().still;
-    // (the clock restarts from 0 whenever the frame loop is paused, e.g.
-    // a hidden tab: then draw again rather than wait for the old time)
-    const redraw = still || t - lastDraw.current > 1 / 12 || t < lastDraw.current;
-    if (redraw) lastDraw.current = t;
-    built.cabinets.forEach((c, i) => {
-      const on = i === interest && arrived;
-      power.current[i] = still ? (on ? 1 : 0) : THREE.MathUtils.damp(power.current[i], on ? 1 : 0, 4, dt);
-      const p = power.current[i];
-      const shown = p > 0.3;
-      if (still ? c.screen.tex.userData.still !== shown : redraw && (p > 0.02 || c.screen.tex.userData.wasOn)) {
-        c.screen.draw(still ? STILL_FRAME : t, shown);
-        c.screen.tex.userData.wasOn = p > 0.02;
-      }
-      c.screen.tex.userData.still = still ? shown : undefined;
-      (c.glass.material as THREE.MeshBasicMaterial).color.setScalar(0.45 + p * 0.75);
-      c.marquee.emissiveIntensity = 0.15 + p * 0.55;
-    });
+    const m = built.machine;
+    const s = shown.current;
+    const on = arrived;
+    // Changing mode boots the screen (not in still view: it cuts)
+    if (on && s.mode !== interest) {
+      m.machine.setMode(interest, t, still);
+      s.mode = interest;
+      s.dirty = true;
+    }
+    // A press of the page's button
+    const pressed = world.get().arcadePress;
+    if (pressed !== s.press) {
+      s.press = pressed;
+      if (on) press(null);
+    }
+    power.current = still ? (on ? 1 : 0) : THREE.MathUtils.damp(power.current, on ? 1 : 0, 4, dt);
+    const p = power.current;
+    // The screen plays at 12 frames a second while it's on; in still view
+    // (WCAG 2.2.2) it's drawn only when something changes. (The clock
+    // restarts from 0 whenever the frame loop is paused, e.g. a hidden
+    // tab: then draw again rather than wait for the old time.)
+    const lit = p > 0.3;
+    const due = still ? s.dirty || s.on !== lit : t - lastDraw.current > 1 / 12 || t < lastDraw.current;
+    if (due && (lit || s.on !== lit || s.dirty)) {
+      m.machine.draw(t, lit, still);
+      lastDraw.current = t;
+      s.on = lit;
+      s.dirty = false;
+    }
+    (m.glass.material as THREE.MeshBasicMaterial).color.setScalar(0.45 + p * 0.75);
+    m.marquee.emissiveIntensity = 0.15 + p * 0.55;
     // (The torch's light is steady: lights in the world don't flicker)
   });
+
+  const hover = (id: string) => (e: ThreeEvent<PointerEvent>) => {
+    e.stopPropagation();
+    world.set({ hover: id });
+    document.body.style.cursor = "pointer";
+  };
+  const unhover = (id: string) => () => {
+    if (world.get().hover === id) world.set({ hover: null });
+    document.body.style.cursor = "";
+  };
+  // Pointing at the machine before it's in view walks up to it; once it
+  // is, a click on its screen plays
+  const focus = () => world.set({ focus: "cabinet" });
 
   return (
     <group visible={active}>
@@ -340,22 +384,44 @@ export default function Arcade({ active, quality }: SceneProps) {
       <pointLight position={[0, 3.2, 0.5]} color="#ffbf86" intensity={6} distance={12} decay={1.3} />
       {/* The torch's light on the wall and the floor below it, stronger after dark */}
       <pointLight userData={NEON_LIGHT} position={[-5.4, 3.2, -0.45]} color={TORCH.light} intensity={1.2} distance={4} />
-      {cabinetX.map((x, i) => (
-        <pointLight key={i} position={[x, 1.5, -2.6]} color={`hsl(${hues[i]},60%,70%)`} intensity={i === interest && arrived ? 1.6 : 0} distance={2.5} />
-      ))}
-      {active &&
-        cabinetX.map((x, i) => (
-          <Hitbox
-            key={i}
-            id={`arcade:cabinet-${i}`}
-            position={[x, 0.95, CAB_Z]}
-            size={[0.8, 1.9, 0.9]}
-            onSelect={() => {
-              world.select("interest", i);
-              world.set({ focus: `cabinet-${i}` });
+      {/* The screen's light on the floor and the stools, its mode's colour */}
+      <pointLight position={[0, 1.9, -2.4]} color={`hsl(${HUES[interests[interest].scene]},60%,70%)`} intensity={arrived ? 2 : 0} distance={3.2} />
+      {active && (
+        <>
+          <Hitbox id="arcade:cabinet" position={[0, 0.62, CAB_Z]} size={[0.8 * BIG, 0.95 * BIG, 0.9 * BIG]} onSelect={focus} />
+          <mesh
+            position={onMachine(0, 1.3, 0.152)}
+            rotation-x={-0.2}
+            userData={{ hitbox: "arcade:screen" }}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              if (e.delta > 8) return;
+              e.stopPropagation();
+              if (world.get().focus !== "cabinet") focus();
+              else press(e.uv ?? null);
             }}
-          />
-        ))}
+            onPointerOver={hover("arcade:screen")}
+            onPointerOut={unhover("arcade:screen")}
+          >
+            <planeGeometry args={[0.52 * BIG, 0.406 * BIG]} />
+            <meshBasicMaterial visible={false} />
+          </mesh>
+          {buttons.map((b) => (
+            <Hitbox
+              key={b.id}
+              id={`arcade:${b.id}`}
+              position={b.pos}
+              size={[0.09 * BIG, 0.07 * BIG, 0.09 * BIG]}
+              onSelect={() => {
+                const n = interests.length;
+                const i = world.get().sel.interest;
+                if (b.id === "play") press(null);
+                else world.select("interest", (i + (b.id === "next" ? 1 : n - 1)) % n);
+                world.set({ focus: "cabinet" });
+              }}
+            />
+          ))}
+        </>
+      )}
     </group>
   );
 }

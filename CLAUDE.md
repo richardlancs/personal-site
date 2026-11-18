@@ -74,7 +74,11 @@ WebGL isn't available. What was built and how it was checked:
 
 Six places, each its own 3D scene: the park (home; its notice board opens
 the map at `/map`), the workshop (Projects, Skills), the station
-(Experience), the arcade (Interests), the pavilion reading room (About) and
+(Experience), the arcade (Interests: one working machine, every interest
+a mode of it with a short boot and one small thing to do, by a click on
+its screen or the card's play button; `scenes/arcadeMachine.ts`, its rules
+in `arcadeLogic.ts`; untouched, it moves to the next interest every 10 s,
+never in still view), the pavilion reading room (About) and
 the phone booth (Contact). The URL picks the place; `World3D.tsx` moves the
 camera there. Each page's HTML panel and its 3D objects share state through
 `world3d/store.ts`. Progress, decisions and limits:

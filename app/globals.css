@@ -1581,6 +1581,21 @@ html {
   color: var(--accent);
 }
 
+/* The machine's one thing to do in this game, and how it turned out */
+.cabinet-play {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin-top: 1rem;
+}
+
+.cabinet-status {
+  min-height: 1.5em;
+  font-weight: 600;
+  color: var(--accent);
+}
+
 /* The interests' drawings (Cabinets.tsx): the same 1.5px line at every
    size they're shown */
 .sketch * {

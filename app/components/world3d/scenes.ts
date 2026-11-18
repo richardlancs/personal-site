@@ -95,10 +95,7 @@ export const scenes: Record<SceneId, SceneDef> = {
     enter: { pos: [-0.5, 1.75, 8.2], target: [0, 1.5, 0] },
     exit: { pos: [-0.5, 1.75, 8.2], target: [0, 1.5, 0] },
     focus: {
-      "cabinet-0": { pos: [-3.4, 1.62, -1.15], target: [-3.6, 1.42, -3.3] },
-      "cabinet-1": { pos: [-1.05, 1.62, -1.15], target: [-1.2, 1.42, -3.3] },
-      "cabinet-2": { pos: [1.35, 1.62, -1.15], target: [1.2, 1.42, -3.3] },
-      "cabinet-3": { pos: [3.75, 1.62, -1.15], target: [3.6, 1.42, -3.3] },
+      cabinet: { pos: [0, 1.82, -1.0], target: [0, 1.72, -3.3] },
     },
     frame: "right",
     threshold: "#1a1452",
