@@ -4,6 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { anchors } from "../anchors";
+import { buildDaisies, buildPampas } from "../vegetation/flowers";
 import { buildArcade, buildHills, buildOverpass, buildPavilion, buildPylon, buildRailing, buildRuinedTown, buildSea, buildStation, buildWorkshop } from "../buildings";
 import { buildBushes, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
@@ -303,6 +304,29 @@ function buildPark(quality: "high" | "low") {
   };
   root.add(grass(Math.round(bladeCount * 0.72), (rr) => placeBlade(rr, true)));
   mark("grass");
+
+  // Pampas grass tall at the paths' edges and daisies low in the grass,
+  // as in the intro film (vegetation/flowers.ts)
+  {
+    const fr = rng(512);
+    const plumes: { x: number; z: number; s: number }[] = [];
+    for (let tries = 0; plumes.length < (quality === "low" ? 60 : 140) && tries < 6000; tries++) {
+      const x = fr.range(-24, 24);
+      const z = fr.range(-24, 22);
+      if (blocked(x, z) || onPath(x, z, 0.5) || !onPath(x, z, 2.2) || Math.hypot(x - 1.4, z - 16.5) < 10) continue;
+      plumes.push({ x, z, s: fr.range(0.75, 1.25) });
+    }
+    root.add(buildPampas(plumes));
+    const daisies: { x: number; z: number; s: number }[] = [];
+    for (let tries = 0; daisies.length < (quality === "low" ? 160 : 420) && tries < 9000; tries++) {
+      const x = fr.range(-22, 22);
+      const z = fr.range(-20, 22);
+      if (blocked(x, z) || onPath(x, z, 0.4)) continue;
+      daisies.push({ x, z, s: fr.range(0.8, 1.3) });
+    }
+    root.add(buildDaisies(daisies));
+  }
+  mark("flowers");
 
   // Leaves on the ground, gathered along the edges of the paths
   root.add(
