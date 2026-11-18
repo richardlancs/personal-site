@@ -3,39 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { isFlat } from "../world/flat";
 import { world } from "../world3d/store";
-import farArt from "../../assets/intro/far.webp";
-import frontArt from "../../assets/intro/front.webp";
-import midArt from "../../assets/intro/mid.webp";
-import nearArt from "../../assets/intro/near.webp";
-import skyArt from "../../assets/intro/sky.webp";
 import wipeArt from "../../assets/intro/wipe.webp";
-import { drawKid } from "./kid";
-import { ART, CAP_MS, DURATION, LAYERS, cover, kid, layer, onLayer, painting, wipe, type Layer } from "./timeline";
+import { CAP_MS, DURATION, FILM_START, cover, painting, wipe } from "./timeline";
 
 // The home page's intro, on wide screens only, on every full load of the
-// home page: a walk down a painted, overgrown hillside, a kid running past
-// into the world, and a wipe of tall grass into the park, which has been
-// loading underneath all along. 9.5 s, never more than 10 (timeline.ts).
+// home page: a short painted film (a kid running down an overgrown
+// hillside path toward the park, made with AI video tools from a painting
+// made in ChatGPT; public/intro/, docs/world/intro-prompts.md), then a wipe
+// of tall grass into the park, which has been loading underneath all
+// along. 9.2 s, never more than 10 (timeline.ts).
 //
 // A deliberate exception to "words never wait for the world" (CLAUDE.md,
 // Motion): the page's words wait under it. It's skippable (the glass key,
 // Escape, a click anywhere), never shown in still view (so not with
 // reduced motion) or on the phone layout (CSS hides it before any script
-// runs, and its pictures are CSS backgrounds there, so never fetched),
-// and it doesn't play again on client navigation back to the home page.
-//
-// The painted layers are images made in ChatGPT (app/assets/intro/, their
-// prompts in docs/world/intro-prompts.md): the one part of the world not
-// made in code. The kid is drawn in code (kid.ts).
+// runs; the poster is a CSS background there and the film's source is only
+// set by script on the wide layout, so neither is ever fetched), and it
+// doesn't play again on client navigation back to the home page.
 
-const art: Record<Layer | "wipe", string> = {
-  sky: skyArt.src,
-  far: farArt.src,
-  mid: midArt.src,
-  near: nearArt.src,
-  front: frontArt.src,
-  wipe: wipeArt.src,
-};
+const FILM = { av1: "/intro/intro.av1.mp4", h264: "/intro/intro.h264.mp4", poster: "/intro/intro-poster.webp" };
 
 // Whether this document was first loaded on the home page (a client
 // navigation back to it doesn't count), and whether the intro has played
@@ -58,9 +44,8 @@ function heldAt() {
 export default function Intro() {
   const [show, setShow] = useState(() => typeof window === "undefined" || firstLoadHere());
   const root = useRef<HTMLDivElement>(null);
-  const skip = useRef<HTMLButtonElement>(null);
-  const canvas = useRef<HTMLCanvasElement>(null);
-  const layers = useRef<Partial<Record<Layer | "wipe", HTMLDivElement | null>>>({});
+  const film = useRef<HTMLVideoElement>(null);
+  const grass = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!show) return;
@@ -79,19 +64,25 @@ export default function Intro() {
         blocked.push(node);
       }
 
+    // The film: AV1 where it plays, H.264 otherwise; set only now, so a
+    // layout that never shows the intro never downloads it
+    const v = film.current!;
+    v.src = v.canPlayType('video/mp4; codecs="av01.0.08M.08"') ? FILM.av1 : FILM.h264;
     const held = heldAt();
-    // Its clock is the page's: it began with the first paint (the cream
-    // cover is in the HTML), so a slow start eats into the opening, never
-    // into the 10 s
+    if (held != null) {
+      v.addEventListener("loadedmetadata", () => (v.currentTime = Math.max(0, held - FILM_START)), { once: true });
+      v.load();
+    }
+
     let frame = 0;
     let ended = false;
     let fade = 0;
-    const ctx = canvas.current!.getContext("2d")!;
-
+    let started = false;
     const end = () => {
       if (ended) return;
       ended = true;
       cancelAnimationFrame(frame);
+      v.pause();
       el.dataset.done = "";
       const focusInside = el.contains(document.activeElement);
       for (const node of blocked) node.inert = false;
@@ -105,59 +96,18 @@ export default function Intro() {
       fade = window.setTimeout(() => setShow(false), 260);
     };
 
+    // Its clock is the page's: it began with the first paint (the cream
+    // cover is in the HTML), so a slow start eats into the opening, never
+    // into the 10 s
     const draw = () => {
       const t = held ?? performance.now() / 1000;
-      const W = innerWidth;
-      const H = innerHeight;
-      for (const name of LAYERS) {
-        const l = layer(name, t);
-        const node = layers.current[name];
-        if (node) node.style.transform = `translate(calc(-50% + ${l.x * 100}%), ${l.y * 100}%) scale(${l.scale})`;
+      if (!started && held == null && t >= FILM_START) {
+        started = true;
+        v.play().catch(() => {}); // no autoplay: the poster holds, the wipe still comes
       }
-      const w = wipe(t);
-      const wipeNode = layers.current.wipe;
-      if (wipeNode) wipeNode.style.transform = `translate(-50%, ${(1 - w) * 105}%)`;
       el.style.setProperty("--intro-cover", String(cover(t)));
       el.style.opacity = String(painting(t));
-
-      // The kid, carried by the hillside and then the fields as they move.
-      // The layers are a box covering the screen, anchored to its foot
-      // (.intro-layer): fractions of it map to the screen like this
-      const c = canvas.current!;
-      const dpr = Math.min(2, devicePixelRatio || 1);
-      if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) {
-        c.width = Math.round(W * dpr);
-        c.height = Math.round(H * dpr);
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, W, H);
-      const k = kid(t);
-      if (k) {
-        const bw = Math.max(W, (H * ART.w) / ART.h);
-        const bh = (bw * ART.h) / ART.w;
-        const a = onLayer("near", t, k.x, k.y);
-        const b = onLayer("mid", t, k.x, k.y);
-        const mix = (p: number, q: number) => p + (q - p) * k.field;
-        const sx = (W - bw) / 2 + mix(a.x, b.x) * bw;
-        const sy = H - bh + mix(a.y, b.y) * bh;
-        const sh = k.h * mix(a.scale, b.scale) * bh;
-        // Close to the lens, the kid passes too fast to see sharp: two
-        // fainter frames trail behind
-        // So close the lens can't hold them sharp: soft until they're on
-        // the path
-        const soft = Math.max(0, k.h - 0.3) * 7;
-        ctx.filter = soft > 0.3 ? `blur(${soft.toFixed(1)}px)` : "none";
-        if (k.h > 0.4) {
-          ctx.globalAlpha = k.alpha * 0.25;
-          drawKid(ctx, sx - sh * 0.06, sy + sh * 0.08, sh * 1.04, (k.phase + 0.9) % 1);
-          ctx.globalAlpha = k.alpha * 0.4;
-          drawKid(ctx, sx - sh * 0.03, sy + sh * 0.04, sh * 1.02, (k.phase + 0.95) % 1);
-        }
-        ctx.globalAlpha = k.alpha;
-        drawKid(ctx, sx, sy, sh, k.phase);
-        ctx.globalAlpha = 1;
-        ctx.filter = "none";
-      }
+      if (grass.current) grass.current.style.transform = `translate(-50%, ${(1 - wipe(t)) * 105}%)`;
       if (held == null && t >= DURATION) return end();
       frame = requestAnimationFrame(draw);
     };
@@ -182,26 +132,20 @@ export default function Intro() {
       window.removeEventListener("resize", hide);
       el.removeEventListener("click", end);
       for (const node of blocked) node.inert = false;
+      v.removeAttribute("src");
     };
   }, [show]);
 
   if (!show) return null;
-  const vars = Object.fromEntries(Object.entries(art).map(([k, v]) => [`--intro-${k}`, `url(${v})`])) as React.CSSProperties;
+  const vars = { "--intro-poster": `url(${FILM.poster})`, "--intro-wipe": `url(${wipeArt.src})` } as React.CSSProperties;
   return (
     <div ref={root} className="intro" style={vars}>
       <div className="intro-scene" aria-hidden="true">
-        {/* Back to front; the kid runs between the hillside and the tall
-            grass nearest the lens */}
-        {LAYERS.map((name) => (
-          <div key={name} className="intro-depth" data-layer={name}>
-            <div ref={(n) => void (layers.current[name] = n)} className="intro-layer" data-layer={name} />
-            {name === "near" && <canvas ref={canvas} className="intro-kid" />}
-          </div>
-        ))}
-        <div ref={(n) => void (layers.current.wipe = n)} className="intro-layer" data-layer="wipe" />
+        <video ref={film} className="intro-film" muted playsInline preload="none" disablePictureInPicture disableRemotePlayback />
+        <div ref={grass} className="intro-layer" data-layer="wipe" />
         <div className="intro-cover" />
       </div>
-      <button ref={skip} type="button" className="glass intro-skip">
+      <button type="button" className="glass intro-skip">
         Skip intro
       </button>
     </div>

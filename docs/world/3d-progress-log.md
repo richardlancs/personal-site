@@ -721,3 +721,13 @@ torches, which suit the old buildings better.
 - Never: in still view, on the phone layout (CSS hides it before any
   script; 0 paintings fetched at 390x844 and 844x390), on deep links, or
   on a client navigation back to `/`.
+
+- Replaced (same day): the moving layers read as photos sliding over each
+  other and the code-drawn kid didn't match the reference, so the intro
+  is now a film. ChatGPT painted the kid into the composed scene in the
+  reference's style; Google Flow (Veo 3.1 Lite, free) animated it: the kid
+  jogs down the path to the clock tower, grass swaying, a slow push in.
+  Slowed 12% with interpolated frames; AV1 3.3 MB, H.264 4.8 MB, poster
+  128 KB, fetched only on the wide layout (0 requests at 390x844, 844x390
+  and in still view). Measured in the page: done at 9.23 s, gone at 9.50 s.
+  Skip key 7.2:1 over the film.

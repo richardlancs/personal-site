@@ -70,11 +70,11 @@ It is built with three.js and React Three Fiber in
 in code from fixed seeds (no downloaded models, no Blender). The painting
 `app/assets/park/park-v04.png` is the art reference, and the fallback when
 WebGL isn't available. One deliberate exception: the home page's intro
-(`components/intro/`), a painted walk down an overgrown hillside to the
-park, whose layers are images made in ChatGPT (`app/assets/intro/`, their
-prompts in `docs/world/intro-prompts.md`, compressed by
-`scripts/intro-assets.mjs`, 900 KB at most); the kid running through it
-is drawn in code (`intro/kid.ts`). What was built and how it was checked:
+(`components/intro/`), a short painted film of a kid running down an
+overgrown hillside path toward the park, made with Google Flow (Veo) from
+a start frame painted in ChatGPT (`public/intro/`, encoded by
+`scripts/intro-video.sh`, 8 MB at most per file; how it was made:
+`docs/world/intro-prompts.md`). What was built and how it was checked:
 `docs/weather/report.md`.
 
 Six places, each its own 3D scene: the park (home; its notice board opens
@@ -393,12 +393,12 @@ Animations should be subtle. Words never wait for the world: a page's
 content comes in within about 0.1 s of arriving (`--arrive-delay`) while
 the camera's journey, a second or so, plays behind it. The one deliberate
 exception is the home page's intro: on every full load of `/`, wide
-layout only, a painted walk into the park plays over the page for 9.2 s
+layout only, a painted film of the walk into the park plays over the page for 9.2 s
 (gone by 9.5, a hard cap at 10; `intro/timeline.ts`) while the world
 loads underneath. A clear-glass "Skip intro" key, Escape or a click ends
 it; it never plays in still view (so not with reduced motion), on the
-phone layout (hidden by CSS before any script runs, its paintings never
-fetched), on deep links, or on a client navigation back to `/`. Interface
+phone layout (hidden by CSS before any script runs; the film and its
+poster never fetched), on deep links, or on a client navigation back to `/`. Interface
 transitions are 150–300 ms; a glass button's press settles in 0.42 s. The
 world stops drawing when the tab is hidden.
 
