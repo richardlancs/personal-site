@@ -20,14 +20,14 @@ export type Foliage = "green" | "ginkgo" | "maple" | "pine" | "bush" | "belt";
 // light. The green kinds take the reference's yellow-greens and deep teal;
 // the maples and ginkgo keep their autumn colour with cool shade.
 export const ramps: Record<Foliage, Ramp> = {
-  green: { light: "#a9c47a", mid: "#6a9659", shadow: "#24525b" },
-  bush: { light: "#a6c46e", mid: "#5f8c54", shadow: "#214d55" },
+  green: { light: "#b4c97a", mid: "#6e9259", shadow: "#3a5f50" },
+  bush: { light: "#afc772", mid: "#678f52", shadow: "#355a4a" },
   pine: { light: "#93ad68", mid: "#4a7552", shadow: "#1b414b" },
   belt: { light: "#8aa86e", mid: "#527d5e", shadow: "#264f5a" },
   ginkgo: { light: "#f0d474", mid: "#cf9f3e", shadow: "#5f6651" },
   // (the maple's shade is a muted, cooler wine, so the crown never reads as
   // a dark hole, whatever the weather)
-  maple: { light: "#d4936a", mid: "#a54f35", shadow: "#5b4954" },
+  maple: { light: "#e6a466", mid: "#c26b35", shadow: "#6a4c46" },
 };
 
 export type Cluster = { center: THREE.Vector3; radius: number; squash?: number };

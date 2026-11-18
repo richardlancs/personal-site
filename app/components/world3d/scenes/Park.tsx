@@ -220,10 +220,11 @@ function buildPark(quality: "high" | "low") {
   root.add(buildWires(poleSpots, [8.3, 7.6]));
   mark("props");
 
-  // Trees
+  // Trees: mostly summer greens, a few in autumn colour, as in the intro
+  // film (docs/world/film-look.md)
   const trees: [keyof typeof treeKinds, number, number, number][] = [
     ["zelkova", -7.8, 19.5, 1.2],
-    ["maple", 8.2, 18.8, 1.1],
+    ["zelkova", 8.2, 18.8, 1.1],
     ["zelkova", -17, 6, 1],
     // The ginkgo stands by the pavilion, out of the line from the steps to
     // the arcade's sign
@@ -232,10 +233,10 @@ function buildPark(quality: "high" | "low") {
     ["zelkova", 14.5, 10.5, 1],
     ["zelkova", 18, -3.5, 1.15],
     ["maple", 8, -14.5, 1],
-    ["maple", -11.5, 12.5, 0.9],
+    ["zelkova", -11.5, 12.5, 0.9],
     ["zelkova", 25, -14, 1],
     ["zelkova", -20, -27, 1.1],
-    ["ginkgo", -14, -16, 1],
+    ["zelkova", -14, -16, 1],
     // Left of the station's path, clear of its tower and sign and of the
     // arcade's sign
     ["ginkgo", -2.5, -31, 0.9],
@@ -283,7 +284,7 @@ function buildPark(quality: "high" | "low") {
     const z = r.range(-40, 24);
     if (onPath(x, z, 1.3) || blocked(x, z) || Math.hypot(x - 1.4, z - 16.5) < 4) continue;
     if (!onPath(x, z, 4.5) && r() < 0.6) continue;
-    bushes.push({ seed: 300 + bushes.length, size: r.range(0.6, 1.2), palette: r() < 0.25 ? "maple" : "bush", x, z });
+    bushes.push({ seed: 300 + bushes.length, size: r.range(0.6, 1.2), palette: r() < 0.1 ? "maple" : "bush", x, z });
   }
   root.add(buildBushes(bushes));
   mark("bushes");

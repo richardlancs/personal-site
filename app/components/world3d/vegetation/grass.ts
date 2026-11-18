@@ -83,7 +83,7 @@ export function grassMaterial() {
   if (!material) {
     material = vegMaterial({
       grass: true,
-      ramp: { light: "#a8c96a", mid: "#6e9e4c", shadow: "#2d5e55" },
+      ramp: { light: "#c2d46a", mid: "#77a447", shadow: "#30604d" }, // the film's sunlit yellow-green tips
       ground: "#67753c",
       wind: { amp: 0.32, height: 1 },
     });

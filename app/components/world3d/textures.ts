@@ -111,7 +111,7 @@ export const flagstones = () =>
     512,
     512,
     (g, r) => {
-      g.fillStyle = "#5b5a44";
+      g.fillStyle = "#6c6440";
       g.fillRect(0, 0, 512, 512);
       const cols = 4;
       const rows = 5;
@@ -130,7 +130,7 @@ export const flagstones = () =>
             [x0 + 5 + j(), y0 + hgt - 5 + j()],
           ];
           const l = r.range(56, 70);
-          g.fillStyle = hsl(r.range(36, 48), r.range(8, 16), l);
+          g.fillStyle = hsl(r.range(36, 48), r.range(20, 32), l); // warm sandstone, as the film's ochre path
           g.beginPath();
           pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
           g.closePath();
@@ -377,9 +377,9 @@ export const groundTexture = () =>
     512,
     512,
     (g, r) => {
-      g.fillStyle = "#6d7a3c";
+      g.fillStyle = "#71823c";
       g.fillRect(0, 0, 512, 512);
-      blotches(g, r, 512, 512, 140, ["rgba(140,150,70,0.45)", "rgba(80,95,40,0.5)", "rgba(150,120,60,0.35)", "rgba(190,160,80,0.3)"], [12, 60]);
+      blotches(g, r, 512, 512, 140, ["rgba(150,160,70,0.45)", "rgba(80,95,40,0.5)", "rgba(150,120,60,0.35)", "rgba(190,160,80,0.3)"], [12, 60]);
       for (let i = 0; i < 5000; i++) {
         g.strokeStyle = hsl(r.range(55, 95), r.range(30, 50), r.range(25, 55), 0.5);
         g.lineWidth = 1;

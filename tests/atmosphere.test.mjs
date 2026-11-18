@@ -75,7 +75,7 @@ test("every weather and every time of day has a look", () => {
 });
 
 test("all sixteen combinations compose to colours and numbers in range, in every place", () => {
-  const park = { sun: hexToRGB("#ffd09a"), fog: hexToRGB("#d7e4ec") };
+  const park = { sun: hexToRGB("#ffd09a"), fog: hexToRGB("#b3cbd8") };
   for (const p of WEATHER_PRESETS)
     for (const ph of DAYLIGHTS)
       for (const progress of [0, 0.5, 1]) {
@@ -92,13 +92,13 @@ test("all sixteen combinations compose to colours and numbers in range, in every
       }
 });
 
-test("neutral weather by day stays close to the painting's light", () => {
+test("neutral weather by day stays close to the intro film's light (docs/world/film-look.md)", () => {
   const d = daylightLook(newDaylight(), "day", 0.5);
   const w = weatherLook(newWeather(), "neutral");
   // The sky's own colours, the park's fog, its sun's colour and strength
-  assert.ok(dist(skyColor([0, 0, 0], d.top, w), hexToRGB("#4fbde8")) < 0.02);
-  assert.ok(dist(skyColor([0, 0, 0], d.horizon, w), hexToRGB("#fff1dc")) < 0.03);
-  assert.ok(dist(fogColor([0, 0, 0], hexToRGB("#d7e4ec"), d, w, false), hexToRGB("#d7e4ec")) < 0.03);
+  assert.ok(dist(skyColor([0, 0, 0], d.top, w), hexToRGB("#174a9e")) < 0.02);
+  assert.ok(dist(skyColor([0, 0, 0], d.horizon, w), hexToRGB("#9cc3e2")) < 0.03);
+  assert.ok(dist(fogColor([0, 0, 0], hexToRGB("#b3cbd8"), d, w, false), hexToRGB("#b3cbd8")) < 0.03);
   assert.ok(dist(lightColor([0, 0, 0], hexToRGB("#ffd09a"), d.sun, d.sunMix, w), hexToRGB("#ffd09a")) < 0.1);
   assert.ok(Math.abs(d.sunScale * w.sunScale - 1) < 0.1 && Math.abs(d.hemiScale * w.hemiScale - 1) < 0.1);
   assert.equal(w.wet + w.snow + w.rain + w.flakes, 0);

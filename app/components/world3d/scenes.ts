@@ -55,8 +55,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     // of them and never closes in nearer than `keep`, so their fronts and
     // signs read in every weather; the city and the trees before it take
     // more of it (Park.tsx: FAR_FOG) and stay as far off as they look.
-    fog: { color: "#d7e4ec", near: 40, far: 160, keep: { near: 30, far: 112 } },
-    background: "#d7e4ec",
+    fog: { color: "#b3cbd8", near: 40, far: 160, keep: { near: 30, far: 112 } },
+    background: "#b3cbd8",
   },
   workshop: {
     offset: [400, 0, 0],

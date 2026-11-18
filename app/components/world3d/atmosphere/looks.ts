@@ -73,12 +73,15 @@ type DaylightRow = { [K in keyof DaylightLook]: DaylightLook[K] extends RGB ? st
 // them with the phase's progress (lib/sky.ts: SkyState.progress): dusk
 // starts warm and ends cool, dawn starts lavender and ends gold. Day and
 // night hold one look.
+// The intro film's summer afternoon (docs/world/film-look.md): a deep
+// gouache blue overhead, still blue near the horizon, cream-gold cloud
+// tops with lavender-blue undersides, blue-green aerial haze
 const DAY: DaylightRow = {
-  sun: "#ffe2b8", sunMix: 0.3, sunScale: 1.05,
-  hemiSky: "#fbe9c9", hemiGround: "#6a6f42", hemiMix: 0.25, hemiScale: 1.06,
-  fog: "#d9e6ee", fogMix: 0.25, fogNear: 1, fogFar: 1.05,
-  top: "#4fbde8", horizon: "#fff2df", glow: "#ffe6c2",
-  cloudLit: "#fffbf3", cloudShade: "#d7ddf1", // the painting's (props.ts: buildSky)
+  sun: "#ffe3b0", sunMix: 0.3, sunScale: 1.08,
+  hemiSky: "#f3e8cc", hemiGround: "#5f6d3a", hemiMix: 0.25, hemiScale: 1.06,
+  fog: "#a9c6d6", fogMix: 0.3, fogNear: 1, fogFar: 1.05,
+  top: "#174a9e", horizon: "#9cc3e2", glow: "#ffe6c2",
+  cloudLit: "#ffeac2", cloudShade: "#b9b2c6", // the painting's (props.ts: buildSky)
   sunHeight: 1.1, night: 0,
 };
 
@@ -97,7 +100,7 @@ export const DAYLIGHT: Record<Daylight, { start: DaylightRow; end: DaylightRow }
       sun: "#e9b4a6", sunMix: 0.85, sunScale: 0.4,
       hemiSky: "#b9bfdc", hemiGround: "#454a4e", hemiMix: 0.7, hemiScale: 0.62,
       fog: "#c9cde0", fogMix: 0.8, fogNear: 0.55, fogFar: 0.7,
-      top: "#7b9fcf", horizon: "#f2cfc6", glow: "#ffd0b8",
+      top: "#6a8fcb", horizon: "#f2cfc6", glow: "#ffd0b8",
       cloudLit: "#f6dcd8", cloudShade: "#b5bad8",
       sunHeight: 0.12, night: 0.5,
     },
@@ -105,7 +108,7 @@ export const DAYLIGHT: Record<Daylight, { start: DaylightRow; end: DaylightRow }
       sun: "#ffd6a6", sunMix: 0.6, sunScale: 0.8,
       hemiSky: "#eadfd0", hemiGround: "#5a5e48", hemiMix: 0.45, hemiScale: 0.9,
       fog: "#e4e3e0", fogMix: 0.65, fogNear: 0.6, fogFar: 0.75,
-      top: "#78b6e0", horizon: "#fbe6cf", glow: "#ffe2b8",
+      top: "#4f8ed2", horizon: "#f6e2cb", glow: "#ffe2b8",
       cloudLit: "#fff6ea", cloudShade: "#cfd5ec",
       sunHeight: 0.35, night: 0.08,
     },
@@ -116,7 +119,7 @@ export const DAYLIGHT: Record<Daylight, { start: DaylightRow; end: DaylightRow }
       sun: "#ff9a4c", sunMix: 0.85, sunScale: 0.95,
       hemiSky: "#f8c294", hemiGround: "#5e4e34", hemiMix: 0.55, hemiScale: 0.86,
       fog: "#f0cdb0", fogMix: 0.6, fogNear: 0.95, fogFar: 1,
-      top: "#5a98cf", horizon: "#ffb27a", glow: "#ffac66",
+      top: "#3d78c0", horizon: "#ffb27a", glow: "#ffac66",
       cloudLit: "#ffe2c0", cloudShade: "#c6b6d4",
       sunHeight: 0.45, night: 0.12,
     },
