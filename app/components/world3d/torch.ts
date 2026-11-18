@@ -2,18 +2,17 @@ import * as THREE from "three";
 import { at, box, merge } from "./geometry";
 import { glowUniforms, wash } from "./glow";
 import { mesh, paint, windUniforms } from "./paint";
-import { carvedPanel, textMask, type PanelOptions } from "./textures";
+import { carvedPanel, type PanelOptions } from "./textures";
 
 // Signs lit by fire, the way a place like this would have lit them: every
-// sign is a board of dark stained wood with its words carved in and
-// painted cream (`carvedSign`), and a torch on an iron bracket each side
-// of it (`buildTorch`), whose light falls warm on the wall round it.
+// sign is a board of brown oak with its words burned in, dark
+// (`carvedSign`), and a torch on an iron bracket each side of it
+// (`buildTorch`), whose light falls warm on the wall round it.
 //
-// - The words read by their value, pale on dark, by day (their paint holds
-//   a little light, so they stay pale under cloud and through mist); after
-//   dark they catch the torches' light (a steady warm glow in the cut
-//   letters). The board itself is never lit, so the words never wash into
-//   it.
+// - The words read by their value, dark on mid-brown oak, by day; after
+//   dark the oak catches the torches' light (a steady warm glow in the
+//   wood, its grain and all), and the burned letters, which hold almost
+//   none of it, stand out dark against it.
 // - The flames sway slowly; their light does not change. They hold still
 //   in still view (the world's clock stops) and with reduced motion.
 // - No lights of their own: the light on the wall is an additive wash
@@ -21,7 +20,7 @@ import { carvedPanel, textMask, type PanelOptions } from "./textures";
 //   rest of the night, so light counts and shaders are the same at every
 //   hour.
 
-export const TORCH = { light: "#ffb46a", board: "#3b2a1c", paint: "#f1e3c4" };
+export const TORCH = { light: "#ffb46a", board: "#a87642", paint: "#2a180c" };
 
 const mats = new Map<string, THREE.Material>();
 const cached = <T extends THREE.Material>(key: string, make: () => T) => {
@@ -37,36 +36,39 @@ const cached = <T extends THREE.Material>(key: string, make: () => T) => {
 type SignLine = { text: string; size: number; gap?: number };
 
 // A carved board's face: `key` names its textures (change it when the
-// words change), `px` their size in pixels (the face's proportions). Lay
-// it on a plane the size of the face.
-export function carvedSign(key: string, px: [number, number], lines: SignLine[], { padding = 10, brush = 0.3, grime = 0.5, night = 0.85 } = {}) {
-  const [w, h] = px;
+// words change), `px` their size in pixels at the board's proportions
+// (painted at `DETAIL` times that, sizes and all, so the grain holds up
+// close). Lay it on a plane the size of the face.
+const DETAIL = 2;
+export function carvedSign(key: string, px: [number, number], lines: SignLine[], { padding = 10, brush = 0.25, grime = 0.3, night = 0.35 } = {}) {
+  const [w, h] = [px[0] * DETAIL, px[1] * DETAIL];
   const words: PanelOptions = {
     background: TORCH.board,
-    padding,
+    padding: padding * DETAIL,
     valign: "middle",
     fit: true,
-    lines: lines.map((l) => ({ ...l, font: "display", color: TORCH.paint, weight: 600, align: "center" })),
+    lines: lines.map((l) => ({ ...l, size: l.size * DETAIL, gap: l.gap == null ? undefined : l.gap * DETAIL, font: "display", color: TORCH.paint, weight: 700, align: "center" })),
   };
-  return cached(`carved-${key}`, () =>
-    paint({
-      map: carvedPanel(key, w, h, words),
-      // The cut letters catch the torches' light after dark: warm, steady
+  return cached(`carved-${key}`, () => {
+    const map = carvedPanel(key, w, h, words);
+    return paint({
+      map,
+      // After dark the oak catches the torches' light, warm and steady:
+      // the board's own picture is its glow, so the burned letters, near
+      // black in it, stay dark against the lit wood
       emissive: TORCH.light,
-      emissiveMap: textMask(key, w, h, words),
+      emissiveMap: map,
       emissiveIntensity: night,
       brush,
       grime,
-      // A little by day too, as pale paint holds the light under cloud and
-      // through mist; the board round them never glows
-      glow: { day: 0.35, night: 1 },
-    }),
-  );
+      glow: { day: 0.2, night: 1 },
+    });
+  });
 }
 
 // A wooden frame round a carved board, `depth` out from the wall
 export function signFrame(w: number, h: number, depth = 0.08, rail = 0.09) {
-  const wood = cached("signFrameWood", () => paint({ color: "#2a1d13", brush: 0.35, brushScale: 3, grime: 0.5 }));
+  const wood = cached("signFrameWood", () => paint({ color: "#5a3a1f", brush: 0.45, brushScale: 3, grime: 0.4 }));
   const parts = [
     at(box(w + rail * 2, rail, depth), 0, h / 2 + rail / 2, 0),
     at(box(w + rail * 2, rail, depth), 0, -h / 2 - rail / 2, 0),

@@ -124,10 +124,12 @@ Light after dark (`world3d/glow.ts`, driven by `atmosphere/Atmosphere.tsx`
 through `glowUniforms` and the paint's day/night `glow`): street lamps are
 spotlights at the bulb aimed straight down, with a per-pixel beam in the
 air (no halos, no cone meshes); every sign is made one way
-(`world3d/torch.ts`): a board of dark stained wood in a wooden frame, its
-English words carved in and painted cream (`carvedSign`; they read pale
-on dark by day and catch the torches' warm light after dark, steadily,
-while the board itself is never lit), and on the buildings a torch on an
+(`world3d/torch.ts`): a board of brown oak (planks, grain, knots, drawn
+at twice the board's pixel size so the grain holds up close) in a darker
+oak frame, its English words burned in dark (`carvedSign`; they read dark
+on mid-brown by day, and after dark the oak catches the torches' warm
+light, steadily and faintly, so the letters stay dark against it; the
+letters themselves are never lit), and on the buildings a torch on an
 iron bracket each side (`buildTorch`, `torchPair`) whose light is an
 additive wash on the wall (`glow.ts: wash`), not a light. The small signs
 are carved the same way (the signpost's arms, the bus stop's disc and

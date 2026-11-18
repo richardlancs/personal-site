@@ -14,7 +14,7 @@ function canvas(w: number, h: number) {
   return [c, c.getContext("2d")!] as const;
 }
 
-function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D, r: Rng) => void, opts: { repeat?: boolean; text?: boolean } = {}) {
+function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingContext2D, r: Rng) => void, opts: { repeat?: boolean; text?: boolean; anisotropy?: number } = {}) {
   const hit = cache.get(key);
   if (hit) return hit;
   const [c, g] = canvas(w, h);
@@ -24,7 +24,7 @@ function texture(key: string, w: number, h: number, draw: (g: CanvasRenderingCon
   };
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
+  t.anisotropy = opts.anisotropy ?? 4;
   if (opts.repeat) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   // Each texture's painting time, on the performance timeline
   const paint = () => {
@@ -537,38 +537,124 @@ export function textPanel(key: string, w: number, h: number, opts: PanelOptions)
   return texture(`text-${key}`, w, h, (g, r) => drawPanel(g, r, w, h, opts), { text: true });
 }
 
-// A carved sign: dark stained wood with its grain running along the
-// board, and the words cut into it and painted cream, a dark line under
-// and right of each stroke for the shadow in the cut. (torch.ts:
-// carvedSign.) Same options as a panel; its background is the wood.
+// A carved sign: a board of brown oak, two or three planks butted
+// together, with the grain you'd see on one up close (fine straight
+// grain, the arches of the growth rings, pale ray flecks, a knot or two),
+// a lit top edge and a shadowed foot, and the words burned into it, dark,
+// with the far wall of each cut catching the light below and right of the
+// stroke. (torch.ts: carvedSign.) Same options as a panel; its background
+// is the oak's own colour. Sizes are in the texture's pixels, so the
+// detail scales with it.
 export function carvedPanel(key: string, w: number, h: number, opts: PanelOptions) {
   return texture(
     `carved-${key}`,
     w,
     h,
     (g, r) => {
-      g.fillStyle = opts.background ?? "#3b2a1c";
+      const s = Math.max(1, Math.min(w, h) / 128); // a pixel at 128px
+      g.fillStyle = opts.background ?? "#a87642";
       g.fillRect(0, 0, w, h);
-      // The grain: long, slightly wavering lines, darker and lighter
-      for (let i = 0; i < h / 2.5; i++) {
-        const y = r() * h;
-        const dark = r() < 0.65;
-        g.strokeStyle = dark ? `rgba(${r.range(12, 26)}, ${r.range(8, 18)}, ${r.range(4, 10)}, ${r.range(0.25, 0.5)})` : `rgba(${r.range(90, 120)}, ${r.range(66, 86)}, ${r.range(40, 56)}, ${r.range(0.12, 0.25)})`;
-        g.lineWidth = r.range(0.6, 2.2);
+      const count = h / w > 0.6 ? 3 : 2;
+      const ph = h / count;
+      for (let p = 0; p < count; p++) {
+        const top = p * ph;
+        g.save();
         g.beginPath();
-        g.moveTo(0, y);
-        g.bezierCurveTo(w / 3, y + r.range(-4, 4), (2 * w) / 3, y + r.range(-4, 4), w, y + r.range(-3, 3));
-        g.stroke();
+        g.rect(0, top, w, ph);
+        g.clip();
+        // Each plank its own shade of the oak
+        const shade = r.range(-0.08, 0.08);
+        g.fillStyle = shade < 0 ? `rgba(60,34,14,${-shade * 1.6})` : `rgba(214,170,112,${shade * 1.4})`;
+        g.fillRect(0, top, w, ph);
+        // Fine straight grain along the plank
+        for (let i = 0; i < ph / (1.6 * s); i++) {
+          const y = top + r() * ph;
+          g.strokeStyle = r() < 0.7 ? `rgba(${r.range(52, 78)},${r.range(28, 44)},${r.range(10, 20)},${r.range(0.12, 0.32)})` : `rgba(${r.range(200, 226)},${r.range(156, 182)},${r.range(100, 124)},${r.range(0.1, 0.22)})`;
+          g.lineWidth = r.range(0.5, 1.6) * s;
+          g.beginPath();
+          g.moveTo(0, y);
+          g.bezierCurveTo(w / 3, y + r.range(-2, 2) * s, (2 * w) / 3, y + r.range(-2, 2) * s, w, y + r.range(-1.5, 1.5) * s);
+          g.stroke();
+        }
+        // The arches of the growth rings, nested, pointing along the board
+        const cx = r.range(0.2, 0.8) * w;
+        const cy = top + r.range(0.55, 0.9) * ph;
+        for (let k = 1; k <= 9; k++) {
+          g.strokeStyle = `rgba(70,38,14,${r.range(0.16, 0.32)})`;
+          g.lineWidth = r.range(0.8, 2) * s;
+          g.beginPath();
+          g.ellipse(cx + r.range(-3, 3) * s, cy, k * w * 0.045, k * ph * 0.07, 0, Math.PI * 1.04, Math.PI * 1.96);
+          g.stroke();
+        }
+        // Ray flecks: short pale dashes across the grain's run
+        for (let i = 0; i < (w * ph) / (900 * s * s); i++) {
+          const x = r() * w;
+          const y = top + r() * ph;
+          g.strokeStyle = `rgba(226,190,136,${r.range(0.15, 0.35)})`;
+          g.lineWidth = r.range(0.6, 1.4) * s;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.lineTo(x + r.range(2, 7) * s, y + r.range(-0.5, 0.5) * s);
+          g.stroke();
+        }
+        g.restore();
       }
-      // The cut's shadow, then the paint in the cut
+      // A knot or two near the ends, where the words aren't, its grain
+      // drawn round it
+      for (let k = 0; k < (w >= 2 * h ? 2 : 1); k++) {
+        const x = (k === 0 ? r.range(0.06, 0.2) : r.range(0.8, 0.94)) * w;
+        const y = r.range(0.25, 0.75) * h;
+        const rad = r.range(4, 7) * s;
+        for (let ring = 4; ring >= 1; ring--) {
+          g.strokeStyle = `rgba(66,36,14,${0.18 + ring * 0.04})`;
+          g.lineWidth = 1.2 * s;
+          g.beginPath();
+          g.ellipse(x, y, rad * (1 + ring * 0.9), rad * (0.55 + ring * 0.35), r.range(-0.1, 0.1), 0, Math.PI * 2);
+          g.stroke();
+        }
+        const core = g.createRadialGradient(x, y, 0, x, y, rad);
+        core.addColorStop(0, "rgba(44,22,8,0.95)");
+        core.addColorStop(1, "rgba(80,44,18,0)");
+        g.fillStyle = core;
+        g.beginPath();
+        g.ellipse(x, y, rad, rad * 0.7, 0, 0, Math.PI * 2);
+        g.fill();
+      }
+      // The seams between the planks: a dark gap, a lit lip under it
+      for (let p = 1; p < count; p++) {
+        const y = p * ph;
+        g.fillStyle = "rgba(34,18,6,0.85)";
+        g.fillRect(0, y - s, w, 2 * s);
+        g.fillStyle = "rgba(224,184,128,0.35)";
+        g.fillRect(0, y + s, w, s);
+      }
+      // The board's edges: lit along the top, in shadow at the foot and
+      // a little at the ends; weather low down, where the rain sits
+      const edge = (x0: number, y0: number, x1: number, y1: number, color: string) => {
+        const gr = g.createLinearGradient(x0, y0, x1, y1);
+        gr.addColorStop(0, color);
+        gr.addColorStop(1, "rgba(0,0,0,0)");
+        return gr;
+      };
+      g.fillStyle = edge(0, 0, 0, 4 * s, "rgba(236,200,146,0.5)");
+      g.fillRect(0, 0, w, 4 * s);
+      g.fillStyle = edge(0, h, 0, h - 6 * s, "rgba(40,20,6,0.6)");
+      g.fillRect(0, h - 6 * s, w, 6 * s);
+      g.fillStyle = edge(0, 0, 5 * s, 0, "rgba(40,20,6,0.35)");
+      g.fillRect(0, 0, 5 * s, h);
+      g.fillStyle = edge(w, 0, w - 5 * s, 0, "rgba(40,20,6,0.35)");
+      g.fillRect(w - 5 * s, 0, 5 * s, h);
+      g.fillStyle = edge(0, h, 0, h * 0.7, "rgba(96,86,74,0.18)");
+      g.fillRect(0, h * 0.7, w, h * 0.3);
+      // The words, burned in: the lit far wall of the cut, then the cut
       const words = { ...opts, background: undefined, grain: false };
       g.save();
-      g.translate(Math.max(1, w / 256), Math.max(1.5, h / 64));
-      drawPanel(g, r, w, h, { ...words, lines: opts.lines.map((l) => ({ ...l, color: "#140d07" })) });
+      g.translate(1.2 * s, 1.6 * s);
+      drawPanel(g, r, w, h, { ...words, lines: opts.lines.map((l) => ({ ...l, color: "rgba(232,196,140,0.7)" })) });
       g.restore();
       drawPanel(g, r, w, h, words);
     },
-    { text: true },
+    { text: true, anisotropy: 8 },
   );
 }
 
