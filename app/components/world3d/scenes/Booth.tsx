@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { at, box, buildBush, buildTree, buildVine, grass, merge, treeKinds } from "../geometry";
 import { mesh, paint } from "../paint";
 import { M, buildBench, buildBicycle, buildBooth, buildDust, buildFallenLeaves, buildFallingLeaves, buildLamp, buildPole, buildSky, buildVending, buildWires, mat } from "../props";
-import { buildCity } from "../buildings";
+import { buildHills, buildRuinedTown } from "../buildings";
 import { timed } from "../idle";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
@@ -192,8 +192,11 @@ function buildBoothScene(quality: "high" | "low") {
   root.add(buildFallenLeaves(quality === "low" ? 250 : 600, (rr) => [rr.range(-6, 6), rr.range(0.6, 5)] as [number, number], 13));
   const falling = buildFallingLeaves(quality === "low" ? 8 : 16, [{ center: v(-3.8, 6, -3.2), radius: 2.4 }]);
   root.add(falling.group);
+  // Beyond the street, the intro film's far view: a small drowned town and
+  // blue hills (buildings.ts), brought nearer for the booth's fog
   const cityR = rng(55);
-  root.add(buildCity(21, Array.from({ length: 22 }, () => ({ x: cityR.range(-90, 90), z: cityR.range(-90, -35), w: cityR.range(9, 14), d: cityR.range(9, 12), h: cityR.range(12, 38) }))));
+  root.add(buildRuinedTown(21, Array.from({ length: 12 }, () => ({ x: cityR.range(-60, 60), z: cityR.range(-62, -32), ry: cityR.range(-0.4, 0.4) }))));
+  root.add(buildHills(0.36));
   root.add(buildDust(quality === "low" ? 20 : 50, [6, 3, 5], [0, 1.6, 1.5]));
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [-0.7, 0.3, 0.5] });
   root.add(sky);

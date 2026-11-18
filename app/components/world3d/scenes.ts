@@ -86,8 +86,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     },
     frame: "left",
     threshold: "#efe7dc",
-    fog: { color: "#d8e4ea", near: 18, far: 100 },
-    background: "#d8e4ea",
+    fog: { color: "#b6ccd9", near: 18, far: 100 },
+    background: "#b6ccd9",
   },
   arcade: {
     offset: [1200, 0, 0],
@@ -125,8 +125,8 @@ export const scenes: Record<SceneId, SceneDef> = {
     },
     frame: "right",
     threshold: "#24306a",
-    fog: { color: "#dbe4e8", near: 14, far: 80 },
-    background: "#dbe4e8",
+    fog: { color: "#b6ccd9", near: 14, far: 80 },
+    background: "#b6ccd9",
   },
 };
 

@@ -233,19 +233,20 @@ export function buildCity(seed: number, spots: { x: number; z: number; w: number
 // The far view of the intro film (docs/world/film-look.md): two rings of
 // hills, green-blue nearer and blue with distance; all far enough that
 // the fog paints them as aerial perspective
-export function buildHills() {
+// (`scale` brings them nearer, for the places whose fog is shorter)
+export function buildHills(scale = 1) {
   const r = rng(91);
   const near: THREE.BufferGeometry[] = [];
   const far: THREE.BufferGeometry[] = [];
   for (let i = 0; i < 14; i++) {
     const a = -Math.PI * 1.15 + (i / 13) * Math.PI * 1.3;
     const d = r.range(165, 210);
-    near.push(blob(r, r.range(44, 72), 0.36, 0.22, 2).translate(Math.cos(a) * d, 2, Math.sin(a) * d));
+    near.push(blob(r, r.range(44, 72) * scale, 0.36, 0.22, 2).translate(Math.cos(a) * d * scale, 2 * scale, Math.sin(a) * d * scale));
   }
   for (let i = 0; i < 12; i++) {
     const a = -Math.PI * 1.1 + (i / 11) * Math.PI * 1.2;
     const d = r.range(240, 300);
-    far.push(blob(r, r.range(70, 100), 0.46, 0.22, 2).translate(Math.cos(a) * d, 6, Math.sin(a) * d));
+    far.push(blob(r, r.range(70, 100) * scale, 0.46, 0.22, 2).translate(Math.cos(a) * d * scale, 6 * scale, Math.sin(a) * d * scale));
   }
   const g = new THREE.Group();
   g.add(mesh(merge(near), mat("hillsNear", () => paint({ color: "#5f8270", brush: 0.35, brushScale: 0.05, fog: true })), { cast: false, receive: false }));

@@ -8,7 +8,7 @@ import { timed } from "../idle";
 import { at, blob, box, buildBush, buildTree, buildVine, grass, merge, treeKinds, tube } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
 import { M, buildBeam, buildBench, buildDust, buildFallenLeaves, buildPole, buildSky, buildVending, buildWires, mat } from "../props";
-import { buildCity } from "../buildings";
+import { buildHills, buildRuinedTown } from "../buildings";
 import { rng } from "../rng";
 import { useWorld, world } from "../store";
 import { clockFace, enamel, groundTexture, plaster, textPanel } from "../textures";
@@ -215,13 +215,13 @@ function buildStationScene(quality: "high" | "low") {
     t.scale.setScalar(s as number);
     root.add(t);
   });
+  // Past the tracks, the intro film's far view: a small drowned town and
+  // blue hills (buildings.ts), brought nearer for the station's fog
   const cityR = rng(77);
-  root.add(
-    buildCity(
-      13,
-      Array.from({ length: 26 }, () => ({ x: cityR.range(-120, 120), z: cityR.range(45, 110), w: cityR.range(9, 15), d: cityR.range(9, 13), h: cityR.range(12, 40) })),
-    ),
-  );
+  root.add(buildRuinedTown(13, Array.from({ length: 12 }, () => ({ x: cityR.range(-60, 60), z: cityR.range(40, 70), ry: cityR.range(-0.4, 0.4) }))));
+  const hills = buildHills(0.42);
+  hills.rotation.y = Math.PI; // (they stand to the north of the park; here, beyond the tracks)
+  root.add(hills);
   root.add(buildDust(quality === "low" ? 30 : 80, [10, 3, 5], [1, TOP + 1.8, 0]));
   const sky = buildSky({ top: "#4fbde8", horizon: "#fff1dc", sun: "#ffe4bd", sunDir: [0.8, 0.25, 0.5] });
   root.add(sky);
