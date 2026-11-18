@@ -893,6 +893,8 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
         return mix(mix(h21(i), h21(i + vec2(1, 0)), f.x), mix(h21(i + vec2(0, 1)), h21(i + vec2(1, 1)), f.x), f.y);
       }
       float fbm(vec2 p) { float s = 0.0; float a = 0.5; for (int i = 0; i < 5; i++) { s += a * n2(p); p *= 2.07; a *= 0.5; } return s; }
+      // (three octaves: enough for small lumps, at a little over half the cost)
+      float fbm3(vec2 p) { float s = 0.0; float a = 0.5; for (int i = 0; i < 3; i++) { s += a * n2(p); p *= 2.07; a *= 0.5; } return s / 0.875; }
       void main() {
         vec3 d = normalize(vDir);
         float h = clamp(d.y, -0.2, 1.0);
@@ -920,10 +922,13 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
         vec3 up = normalize(d + vec3(0.0, 0.035, 0.0));
         vec2 uvUp = up.xz / (max(up.y, 0.0) + 0.2) * 0.5 + drift;
         float cUp = fbm(uvUp * 1.15) + 0.22 * fbm(uvUp * 3.4);
-        float band = smoothstep(0.0, 0.1, h) * smoothstep(0.85 + over * 0.6, 0.3, h);
+        // (the flat heaps sit higher now: the horizon belongs to the towers)
+        float band = smoothstep(0.1 - over * 0.1, 0.26 - over * 0.16, h) * smoothstep(0.85 + over * 0.6, 0.3, h);
         float thr = 0.6 + (0.5 - uCover) * 0.4;
-        float cloud = smoothstep(thr, thr + 0.045 + over * 0.06, c) * band;
-        float lit = 0.25 + 0.75 * smoothstep(-0.03, 0.05, c - cUp);
+        // Painted lumps along the heaps' edges and inside them, as in the film
+        float lumpS = fbm3(uv * 7.0 + 4.0);
+        float cloud = smoothstep(thr, thr + 0.03 + over * 0.06, c + (lumpS - 0.5) * 0.09) * band;
+        float lit = clamp(0.2 + 0.7 * smoothstep(-0.03, 0.05, c - cUp) + (lumpS - 0.5) * 0.5, 0.0, 1.0);
         vec3 cloudCol = mix(uCloudShade, uCloudLit, lit);
         cloudCol += uSun * pow(s, 3.0) * 0.18 * uSunDisc;
         // The overcast layer, soft and a little darker toward the zenith
@@ -932,6 +937,28 @@ export function buildSky(opts: { top: string; horizon: string; sun: string; sunD
         float wisp = smoothstep(0.58, 0.8, fbm(vec2(uv.x * 0.7, uv.y * 3.0) + 9.0)) * smoothstep(0.35, 0.7, h) * 0.35 * (1.0 - over);
         col = mix(col, uCloudLit * vec3(1.0, 1.01, 1.04), wisp);
         col = mix(col, cloudCol, cloud * 0.95);
+        // Towering cumulus, as in the intro film: stacks that rise from the
+        // horizon, their height and where they stand drawn from noise taken
+        // round the horizon (so there's no seam), their edges billowing
+        // with brush-like lumps, lit cream on top and lavender at the base.
+        // Clearer skies have fewer, taller towers; more cover, more of them.
+        vec2 ring = vec2(d.x, d.z) / max(length(d.xz), 1e-4);
+        float stack = fbm(ring * 2.6 + 3.0 + drift * 2.0);
+        float topH = 0.04 + pow(stack, 2.2) * (0.75 + uCover * 0.25);
+        // Two sizes of lump: big heaps on the outline, small ones inside
+        float billow = fbm(ring * 9.0 + vec2(h * 11.0, -h * 8.0) + drift * 5.0);
+        float lumps = fbm3(ring * 22.0 + vec2(h * 26.0, h * 19.0) + drift * 9.0);
+        float edge = topH - h + (billow - 0.5) * 0.16 + (lumps - 0.5) * 0.035;
+        float stands = smoothstep(0.6 - uCover * 0.28, 0.67 - uCover * 0.28, stack);
+        float tower = smoothstep(0.0, 0.008, edge) * smoothstep(-0.01, 0.04, h) * stands * (1.0 - over * 0.75);
+        float rise = clamp(h / max(topH, 0.02), 0.0, 1.0);
+        // Lit from above and from the lumps' own tops; the hollows between
+        // lumps and the base stay in lavender shade
+        float hollow = smoothstep(0.35, 0.7, lumps) * 0.5 + smoothstep(0.3, 0.75, billow) * 0.5;
+        float tLit = clamp(smoothstep(0.05, 0.9, rise) * 0.7 + hollow * 0.55 - 0.12, 0.0, 1.0);
+        vec3 towerCol = mix(uCloudShade, uCloudLit, tLit);
+        towerCol += uSun * pow(s, 3.0) * 0.2 * uSunDisc;
+        col = mix(col, towerCol, tower * 0.97);
         // In haze the sky low down is the air's own colour, so the far
         // city and hills, fogged, sit in it rather than against it
         col = mix(col, uHaze, uHazeAmt * (1.0 - smoothstep(-0.02, 0.32, h)));
