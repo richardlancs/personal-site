@@ -344,7 +344,7 @@ Keep the hero simple.
 The introduction is the name, the subtitle `cs@uwaterloo`, View
 projects and Contact, and the GitHub / LinkedIn / Résumé links: no
 paragraph. The name is its one bold element (`.park-name`): slate-blue
-Shippori Mincho with a baby-blue brushstroke under it, brushed in once on
+Shippori Mincho with an ochre brushstroke under it (the intro film's path colour), brushed in once on
 arrival. Over the park there is no card behind the introduction: by day
 the name, the subtitle and the links each sit on their own soft, blurred
 cream backing; at night (`.world3d`'s `data-sky-daylight`) the backings
