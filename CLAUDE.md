@@ -60,7 +60,13 @@ Keep content/data separate from visual components where practical.
 ## Design Direction
 
 The site is a small real-time 3D world: an abandoned, overgrown Japanese
-park and the places around it, in autumn. Its light and weather follow
+park and the places around it, at the turn from summer to autumn, painted
+to match the intro's hand-painted film (`docs/world/film-look.md`: a deep
+gouache-blue sky with towering cumulus, the film's sage greens and sunlit
+grass with a few orange trees, ochre paths, firm painted light and shade
+with a soft ink line, and the film's far view of a calm sea, a small
+drowned town, a rusted pylon, a broken overpass and blue hills; measure
+how close a view is with `docs/world/scripts/film-compare.mjs`). Its light and weather follow
 Richmond Hill's: the time of day from the local clock and that day's
 sunrise and sunset, and clear, cloudy, rain or snow from the current
 reading (`world3d/atmosphere/`, driven by `components/weather/`; the
@@ -160,7 +166,7 @@ weather and at every hour, on every screen. The sky's clouds are on the
 sky dome, behind everything; what can hide a place is the fog, something
 standing in front, or a tag. So the park's fog starts past its places and
 has a floor the weather can't draw it past (`scenes.ts: fog.keep`), while
-the far city and its trees take more of it (`fogScale`); nothing stands on the
+the far view (sea, town, overpass) and its trees take more of it (`fogScale`); nothing stands on the
 line to a sign; near places' tags sit low, on themselves; and portrait
 phones get their own framing (`scenes.ts: portrait`, `short`). After
 moving anything in the park, run `docs/world/scripts/visibility.mjs`

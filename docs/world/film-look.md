@@ -32,7 +32,12 @@ the page hidden beside the film's frame and prints the colour difference
 |---|---|---|---|---|---|---|---|---|
 | Before (pale cyan sky, grey towers) | 44.9 | (other regions measured differently) | | | | | | 29.7 |
 | Phase 1 (palette) | 14.0 | 8.6 | 19.0 | 15.9 | 18.4 | 8.6 | 20.8 | 14.8 |
+| Phase 5 (clouds, ink, far view, plants) | 14.0 | 9.7 | 17.9 | 7.3 | 18.0 | 8.6 | 20.6 | 13.5 |
 
-What's left is shape, not colour: flat clouds instead of towering ones, and
-grey city towers where the film has a coast and hills (phases 2 and 4 of
-the remodel plan).
+Since then: towering, lumpy cumulus on the horizon (`props.ts: buildSky`),
+firmer cel bands and a soft ink line (`paint.ts`, `Painterly.tsx: Ink`),
+the film's far view in place of the city (`buildings.ts: buildSea,
+buildRuinedTown, buildPylon, buildOverpass, buildHills`), pampas and
+daisies (`vegetation/flowers.ts`), and the camera rising from the park's
+gate as the intro's grass wipe opens (`World3D.tsx: held`). What's left is
+mostly composition: the film is a field and a path, the park a plaza.

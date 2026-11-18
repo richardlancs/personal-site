@@ -3,7 +3,10 @@
 For whoever picks this up, human or Claude. Read this first, then
 `docs/world/park-balance-2026-11-06.md` for the measurements.
 
-## Latest: the home page's intro, now a film (branch `intro-video`)
+## Latest: the world painted to match the intro film (branch `film-look`)
+- Target `docs/world/film-look.md`, measured by `docs/world/scripts/film-compare.mjs`. Restart `next dev` with `rm -rf .next` before judging CSS changes (it serves stale CSS).
+
+## Earlier: the home page's intro, now a film (merged)
 - `components/intro/`: a 9.2 s painted film into the park on full loads of `/`, wide layout only (`public/intro/`, made in ChatGPT + Google Flow: `docs/world/intro-prompts.md`, encoded by `scripts/intro-video.sh`). `?intro=<seconds>` on `next dev` holds it at a moment.
 
 ## Earlier: oak signs, one arcade machine (merged)

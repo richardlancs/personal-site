@@ -731,3 +731,34 @@ torches, which suit the old buildings better.
   128 KB, fetched only on the wide layout (0 requests at 390x844, 844x390
   and in still view). Measured in the page: done at 9.23 s, gone at 9.50 s.
   Skip key 7.2:1 over the film.
+
+## The world painted to match the intro film
+
+- Target and measure: `docs/world/film-look.md` (the film's palette by
+  region) and `docs/world/scripts/film-compare.mjs` (ΔE per region beside
+  a film frame). Clear day, the park: mean ΔE 29.7 before, 13.5 after; the
+  far horizon 23.9 to 7.3.
+- Palette (`looks.ts`, foliage and grass ramps, ground, paving, fog):
+  deep gouache-blue sky, cream-gold cloud tops, blue-green haze, sage
+  greens, sunlit grass, warm sandstone; mostly green trees, a few orange.
+- Sky (`buildSky`): towering cumulus from the horizon, outline and lumps
+  from noise taken round the horizon (no seam), cream tops, lavender
+  hollows; the flat heaps higher, with lumps; three-octave noise for the
+  small lumps, to keep the sky cheap.
+- Shading and ink: cel bands blend 55% (was 30%); an ink pass (depth
+  jumps and creases, warm brown, fading with distance) after the
+  brushwork (before it, the Kuwahara filter smeared the line away); off
+  on phones. Day/night blends compile no new shaders (rain's first fall
+  compiles 2, as before).
+- Far view: the city is gone; the sea and a drowned town to the left, a
+  rusted pylon behind the clock tower, a broken overpass, two rings of
+  hills; the station and booth look out on the same, nearer.
+- Plants: pampas and daisies as crossed single-sided cards lit as facing
+  up (double-sided ones turned dark blue on their backs).
+- One shot from the intro: under the intro the camera waits at the
+  park's gate in the grass (it must not settle toward its rest pose while
+  held) and rises to the home view from 8.0 s as the grass wipe fades;
+  a 10.5 s cap releases it whatever happens.
+- The name: larger, heavier, an ochre brushstroke. Every check held:
+  intro-contrast and panel-contrast 4.5:1 over 16 skies, visibility.mjs
+  0 primary sign problems at every size and sky.
