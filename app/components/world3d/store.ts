@@ -41,6 +41,9 @@ export type WorldState = {
   // button counts presses, the machine says how each turned out
   arcadePress: number;
   arcadeStatus: string;
+  // The home page's intro has begun to reveal the park (components/intro):
+  // the camera's walk in, held under it, starts
+  introReveal: boolean;
 };
 
 let state: WorldState = {
@@ -57,6 +60,7 @@ let state: WorldState = {
   sel: { project: 0, shot: 0, line: 0, interest: 0, page: 0 },
   arcadePress: 0,
   arcadeStatus: "",
+  introReveal: false,
 };
 
 const listeners = new Set<() => void>();

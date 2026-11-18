@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { anchors } from "../anchors";
-import { buildArcade, buildCity, buildHills, buildPavilion, buildRailing, buildStation, buildWorkshop } from "../buildings";
+import { buildArcade, buildHills, buildOverpass, buildPavilion, buildPylon, buildRailing, buildRuinedTown, buildSea, buildStation, buildWorkshop } from "../buildings";
 import { buildBushes, buildTree, distanceToPath, grass, merge, pathRibbon, treeKinds, type TreeKind } from "../geometry";
 import { mesh, paint, windUniforms } from "../paint";
 import { crownClusters, foliageGeometry, foliageMaterial, type Cluster } from "../vegetation/foliage";
@@ -323,20 +323,24 @@ function buildPark(quality: "high" | "low") {
     lateTrees.length = 0;
     root.add(grass(Math.round(bladeCount * 0.28), (rr) => placeBlade(rr, false), 8, true));
     const cityR = rng(404);
-    const spots = [];
-    for (let i = 0; i < 46; i++) {
-      const a = cityR.range(-Math.PI * 0.98, -Math.PI * 0.02);
-      const d = cityR.range(68, 130);
-      spots.push({ x: Math.cos(a) * d, z: Math.sin(a) * d - 10, w: cityR.range(9, 16), d: cityR.range(9, 14), h: cityR.range(12, 44) });
-    }
-    for (let i = 0; i < 10; i++) {
-      const side = i % 2 ? 1 : -1;
-      spots.push({ x: side * cityR.range(62, 90), z: cityR.range(-5, 40), w: cityR.range(9, 14), d: cityR.range(9, 14), h: cityR.range(10, 30) });
-    }
-    // As hazy as when the park's fog started at 20 m (scenes.ts)
-    root.add(buildCity(7, spots, FAR_FOG));
+    // Past the park, the far view of the intro film (docs/world/film-look.md):
+    // the sea to the left with a small drowned town on its shore, a rusted
+    // pylon leaning behind the workshop, a broken overpass to the right,
+    // hills beyond, all hazy with distance. (The city's towers are gone.)
+    root.add(buildSea(FAR_FOG));
+    const town = [];
+    for (let i = 0; i < 18; i++) town.push({ x: cityR.range(-74, -48), z: cityR.range(-140, -58), ry: cityR.range(-0.4, 0.4) });
+    root.add(buildRuinedTown(7, town, FAR_FOG));
+    const pylon = buildPylon(32);
+    pylon.position.set(16, 0, -92);
+    pylon.rotation.set(0.05, 0.4, -0.26);
+    root.add(pylon);
+    const overpass = buildOverpass(FAR_FOG);
+    overpass.position.set(52, 0, -150);
+    overpass.rotation.y = -0.35;
+    root.add(overpass);
     root.add(buildHills());
-    // Stands of trees between the park and the city: each a crown of
+    // Stands of trees between the park and the far view: each a crown of
     // leaf masses, lit like the near trees, all in one mesh
     const belt: Cluster[][] = [];
     for (let i = 0; i < 70; i++) {

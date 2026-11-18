@@ -71,6 +71,14 @@ type Move = {
 };
 type Swap = { kind: "swap"; scene: SceneId; pose: { pos: THREE.Vector3; target: THREE.Vector3 } };
 type Seg = Move | Swap;
+
+// The home page's intro is over the world (components/intro): its cover is
+// in the page from the first paint, shown only where it will play
+const introShowing = () => {
+  if (typeof document === "undefined" || world.get().introReveal) return false;
+  const el = document.querySelector(".intro");
+  return !!el && getComputedStyle(el).display !== "none";
+};
 type Running = { seg: Move; t: number; pos: THREE.CatmullRomCurve3; look: THREE.CatmullRomCurve3; irisFrom: number };
 
 // The pose the camera rests at in a place: what it's looking at, or home
@@ -113,6 +121,9 @@ function Director({
     arrived: false,
     framed: false,
     waitingSince: 0,
+    // The walk into the park, held while the home page's intro plays over
+    // it (components/intro): it starts as the grass parts
+    held: null as Seg | null,
   });
 
   // (The place's fog and background: atmosphere/Atmosphere.tsx, which
@@ -144,14 +155,25 @@ function Director({
     if (!from) {
       // Arriving on the site: the camera walks in, the iris opens
       const start = inWorld(to, scenes[to].enter);
-      s.queue = [
-        { kind: "swap", scene: to, pose: start },
-        { kind: "move", dur: to === "park" && !focusId ? 1.6 : 1.1, ease: easeInOut, to: [final], iris: { to: 0, from: 0.05, until: 0.45 } },
-      ];
+      const walk: Seg = { kind: "move", dur: to === "park" && !focusId ? 1.6 : 1.1, ease: easeInOut, to: [final], iris: { to: 0, from: 0.05, until: 0.45 } };
+      if (to === "park" && introShowing()) {
+        // Under the intro: wait low at the park's gate, in the grass, and
+        // rise to the home view as the intro's grass wipe opens onto it, so
+        // the film and the park read as one shot (a slower walk, to match)
+        s.queue = [{ kind: "swap", scene: to, pose: start }];
+        s.held = { ...walk, dur: 2.2 } as Seg;
+      } else {
+        s.queue = [{ kind: "swap", scene: to, pose: start }, walk];
+      }
       s.started = true;
       return;
     }
     if (sameScene) {
+      // (still under the intro: the held walk goes where it's now aimed)
+      if (s.held && s.held.kind === "move") {
+        s.held = { ...s.held, to: [final] };
+        return;
+      }
       s.queue = [];
       if (s.iris > 0) s.queue.push({ kind: "move", dur: 0.4, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } });
       return;
@@ -189,6 +211,26 @@ function Director({
       s.queue = [{ kind: "move", dur: 0.5, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
     }
   }, [target.id, target.focus, iris]);
+
+  // The intro reveals the park: let the held walk go (and, whatever
+  // happens to the intro, never hold it past its 10 s)
+  useEffect(() => {
+    const go = () => {
+      const s = st.current;
+      if (!s.held) return;
+      s.queue.push(s.held);
+      s.held = null;
+      invalidate();
+    };
+    const off = world.subscribe(() => {
+      if (world.get().introReveal) go();
+    });
+    const cap = window.setTimeout(go, 10500);
+    return () => {
+      off();
+      clearTimeout(cap);
+    };
+  }, [invalidate]);
 
   // Still view turned on in the middle of a journey: cut to where it was
   // going, at once
@@ -304,8 +346,9 @@ function Director({
         s.iris = THREE.MathUtils.lerp(r.irisFrom, ir.to, k * k * (3 - 2 * k));
       }
       if (r.t >= 1) s.running = null;
-    } else if (!s.queue.length) {
-      // At rest: settle on what we're looking at
+    } else if (!s.queue.length && !s.held) {
+      // At rest: settle on what we're looking at (not while the walk in
+      // is held under the intro: then it waits where it is)
       const rest = restPose(s.active, world.get().focus);
       const k = 1 - Math.exp(-dt * (reduce ? 60 : 2.4));
       s.pos.lerp(rest.pos, k);
@@ -318,7 +361,7 @@ function Director({
     }
 
     // Idle breathing, parallax and looking around
-    const resting = !r && !s.queue.length && !reduce;
+    const resting = !r && !s.queue.length && !s.held && !reduce;
     const t = clock.elapsedTime;
     tmp.p.copy(s.pos);
     tmp.l.copy(s.look);

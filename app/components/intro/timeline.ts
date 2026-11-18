@@ -29,3 +29,6 @@ export const cover = (t: number) => 1 - smooth(span(t, 0, 0.5));
 // it), and then the whole intro's opacity as it fades to the park
 export const wipe = (t: number) => smooth(span(t, 7.0, 8.3));
 export const painting = (t: number) => 1 - smooth(span(t, 8.3, 9.2));
+// When the park's camera starts to rise out of the grass (World3D.tsx):
+// just before the painting starts to fade, so it's moving as it's seen
+export const REVEAL = 8.0;

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { isFlat } from "../world/flat";
 import { world } from "../world3d/store";
 import wipeArt from "../../assets/intro/wipe.webp";
-import { CAP_MS, DURATION, FILM_START, cover, painting, wipe } from "./timeline";
+import { CAP_MS, DURATION, FILM_START, REVEAL, cover, painting, wipe } from "./timeline";
 
 // The home page's intro, on wide screens only, on every full load of the
 // home page: a short painted film (a kid running down an overgrown
@@ -53,6 +53,7 @@ export default function Intro() {
     const el = root.current!;
     // Phones and still view never see it (CSS has hidden it already)
     if (isFlat() || world.get().still) {
+      world.set({ introReveal: true });
       const id = requestAnimationFrame(() => setShow(false));
       return () => cancelAnimationFrame(id);
     }
@@ -78,9 +79,16 @@ export default function Intro() {
     let ended = false;
     let fade = 0;
     let started = false;
+    let revealed = false;
+    const reveal = () => {
+      if (revealed) return;
+      revealed = true;
+      world.set({ introReveal: true });
+    };
     const end = () => {
       if (ended) return;
       ended = true;
+      reveal();
       cancelAnimationFrame(frame);
       v.pause();
       el.dataset.done = "";
@@ -105,6 +113,9 @@ export default function Intro() {
         started = true;
         v.play().catch(() => {}); // no autoplay: the poster holds, the wipe still comes
       }
+      // The grass has covered the frame: the park's camera starts to rise
+      // out of it while the painting fades (World3D.tsx)
+      if (held == null && t >= REVEAL) reveal();
       el.style.setProperty("--intro-cover", String(cover(t)));
       el.style.opacity = String(painting(t));
       if (grass.current) grass.current.style.transform = `translate(-50%, ${(1 - wipe(t)) * 105}%)`;

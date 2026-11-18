@@ -230,16 +230,112 @@ export function buildCity(seed: number, spots: { x: number; z: number; w: number
   return g;
 }
 
-// Low hills far off, blue with distance
+// The far view of the intro film (docs/world/film-look.md): two rings of
+// hills, green-blue nearer and blue with distance; all far enough that
+// the fog paints them as aerial perspective
 export function buildHills() {
   const r = rng(91);
-  const parts: THREE.BufferGeometry[] = [];
-  for (let i = 0; i < 9; i++) {
-    const a = -Math.PI * 0.95 + (i / 8) * Math.PI * 0.9;
-    const d = r.range(230, 300);
-    parts.push(blob(r, r.range(40, 70), 0.35, 0.2, 2).translate(Math.cos(a) * d, -8, Math.sin(a) * d));
+  const near: THREE.BufferGeometry[] = [];
+  const far: THREE.BufferGeometry[] = [];
+  for (let i = 0; i < 14; i++) {
+    const a = -Math.PI * 1.15 + (i / 13) * Math.PI * 1.3;
+    const d = r.range(165, 210);
+    near.push(blob(r, r.range(44, 72), 0.36, 0.22, 2).translate(Math.cos(a) * d, 2, Math.sin(a) * d));
   }
-  return mesh(merge(parts), mat("hills", () => paint({ color: "#8a8f8a", brush: 0.3, brushScale: 0.03, fog: true })), { cast: false, receive: false });
+  for (let i = 0; i < 12; i++) {
+    const a = -Math.PI * 1.1 + (i / 11) * Math.PI * 1.2;
+    const d = r.range(240, 300);
+    far.push(blob(r, r.range(70, 100), 0.46, 0.22, 2).translate(Math.cos(a) * d, 6, Math.sin(a) * d));
+  }
+  const g = new THREE.Group();
+  g.add(mesh(merge(near), mat("hillsNear", () => paint({ color: "#5f8270", brush: 0.35, brushScale: 0.05, fog: true })), { cast: false, receive: false }));
+  g.add(mesh(merge(far), mat("hillsFar", () => paint({ color: "#7a9cb2", brush: 0.3, brushScale: 0.03, fog: true })), { cast: false, receive: false }));
+  return g;
+}
+
+// The sea, calm, off to the left of the park as in the film: a flat
+// sheet past the trees that the fog turns to blue haze toward the hills
+export function buildSea(fogScale = 1) {
+  const shape = new THREE.Shape();
+  // A long coast with a few bays, then out past the fog
+  const pts: [number, number][] = [[-70, -60], [-82, -110], [-74, -150], [-96, -190], [-88, -235], [-130, -260], [-360, -260], [-360, 40], [-120, 40], [-96, 0], [-78, -30]];
+  shape.moveTo(pts[0][0], pts[0][1]);
+  for (const [x, z] of pts.slice(1)) shape.lineTo(x, z);
+  const geo = new THREE.ShapeGeometry(shape).rotateX(Math.PI / 2).translate(0, 0.06, 0);
+  return mesh(geo, mat(`sea-${fogScale}`, () => paint({ color: "#5d8fb6", brush: 0.12, brushScale: 0.08, fogScale })), { cast: false, receive: false });
+}
+
+// A small seaside town, long abandoned and swallowed by trees: low houses
+// with red and grey tiled roofs, some fallen in, greens over them
+export function buildRuinedTown(seed: number, spots: { x: number; z: number; ry: number }[], fogScale = 1) {
+  const r = rng(seed);
+  const walls: THREE.BufferGeometry[] = [];
+  const red: THREE.BufferGeometry[] = [];
+  const grey: THREE.BufferGeometry[] = [];
+  const greens: THREE.BufferGeometry[] = [];
+  for (const sp of spots) {
+    const w = r.range(5, 9);
+    const d = r.range(5, 8);
+    const h = r.range(3, 6);
+    walls.push(at(box(w, h, d), sp.x, h / 2, sp.z, sp.ry));
+    // Most roofs still on; some caved in to a jagged stub
+    if (r() < 0.75) {
+      const roof = hipRoof(w * 0.62, d * 0.62, r.range(1.6, 2.6), 0.2).rotateY(sp.ry).translate(sp.x, h, sp.z);
+      (r() < 0.6 ? red : grey).push(roof);
+    } else {
+      grey.push(at(box(w * 0.5, 1.2, d * 0.4), sp.x + w * 0.15, h + 0.4, sp.z, sp.ry, 0, r.range(-0.3, 0.3)));
+    }
+    for (let k = 0; k < 3; k++) greens.push(blob(r, r.range(1.6, 3.2), 0.6, 0.3, 1).translate(sp.x + r.range(-0.5, 0.5) * w, h * r.range(0.4, 1.2), sp.z + r.range(-0.5, 0.5) * d));
+  }
+  const g = new THREE.Group();
+  g.add(mesh(merge(walls), mat(`townWall-${fogScale}`, () => paint({ color: "#b8aa8e", brush: 0.35, brushScale: 0.3, grime: 0.5, grimeHeight: 3, moss: 0.4, fogScale })), { cast: false }));
+  g.add(mesh(merge(red), mat(`townRoofRed-${fogScale}`, () => paint({ color: "#a24f37", brush: 0.35, brushScale: 0.4, moss: 0.4, fogScale })), { cast: false }));
+  g.add(mesh(merge(grey), mat(`townRoofGrey-${fogScale}`, () => paint({ color: "#6f6d6a", brush: 0.35, brushScale: 0.4, moss: 0.5, fogScale })), { cast: false }));
+  g.add(mesh(merge(greens), mat(`townGreen-${fogScale}`, () => paint({ color: "#5c8243", brush: 0.45, brushScale: 0.4, fogScale })), { cast: false }));
+  return g;
+}
+
+// A transmission pylon, rusted and leaning, as in the film: four legs
+// drawn in to a mast, crossed with braces, two arms for wires long gone
+export function buildPylon(height = 26) {
+  const parts: THREE.BufferGeometry[] = [];
+  const base = height * 0.16;
+  const top = height * 0.04;
+  const legAt = (y: number) => base + (top - base) * (y / height);
+  for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) parts.push(tube([new THREE.Vector3(sx * base, 0, sz * base), new THREE.Vector3(sx * top, height, sz * top)], () => 0.12, 2, 4));
+  // Braces: an X on each face every few metres
+  for (let y = 0; y < height - 2; y += 3.2) {
+    const a = legAt(y);
+    const b = legAt(y + 3.2);
+    for (const [ax, az, bx, bz] of [[-1, -1, 1, -1], [1, -1, 1, 1], [1, 1, -1, 1], [-1, 1, -1, -1]]) {
+      parts.push(tube([new THREE.Vector3(ax * a, y, az * a), new THREE.Vector3(bx * b, y + 3.2, bz * b)], () => 0.06, 2, 3));
+      parts.push(tube([new THREE.Vector3(bx * a, y, bz * a), new THREE.Vector3(ax * b, y + 3.2, az * b)], () => 0.06, 2, 3));
+    }
+  }
+  for (const y of [height * 0.72, height * 0.88]) parts.push(at(box(height * 0.36, 0.25, 0.25), 0, y, 0));
+  return mesh(merge(parts), M.rust(), { cast: false });
+}
+
+// A broken overpass under vines: a deck on pillars, a span fallen out of
+// the middle
+export function buildOverpass(fogScale = 1) {
+  const r = rng(77);
+  const parts: THREE.BufferGeometry[] = [];
+  const greens: THREE.BufferGeometry[] = [];
+  const spans = [0, 1, 2, 4, 5, 6]; // (span 3 has fallen)
+  for (const i of spans) {
+    parts.push(at(box(14, 1.2, 7), i * 14, 7.6, 0));
+    parts.push(at(box(14, 0.9, 0.4), i * 14, 8.6, 3.3));
+    parts.push(at(box(14, 0.9, 0.4), i * 14, 8.6, -3.3));
+    for (let k = 0; k < 4; k++) greens.push(blob(r, r.range(1.2, 2.6), 0.6, 0.3, 1).translate(i * 14 + r.range(-6, 6), 8.4 + r.range(-0.8, 0.4), r.range(-3, 3)));
+  }
+  for (let i = 0; i <= 7; i++) parts.push(at(box(1.6, 7, 1.6), i * 14 - 7, 3.5, 0));
+  // The fallen span, broken on the ground
+  parts.push(at(box(13, 1.2, 7), 3 * 14, 0.8, 1, 0, 0.18, 0.12));
+  const g = new THREE.Group();
+  g.add(mesh(merge(parts), mat(`overpass-${fogScale}`, () => paint({ ...CONCRETE, moss: 0.6, fogScale })), { cast: false }));
+  g.add(mesh(merge(greens), mat(`townGreen-${fogScale}`, () => paint({ color: "#5c8243", brush: 0.45, brushScale: 0.4, fogScale })), { cast: false }));
+  return g;
 }
 
 // An iron railing along a line (the park's edge)
