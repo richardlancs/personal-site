@@ -1,6 +1,6 @@
-// Smoke checks against a running build: every route answers, and the
-// content a recruiter needs is in the HTML before any script or WebGL runs
-// (so it's still there while the world loads, or where it can't).
+// Smoke checks against a running build: the one page answers, every
+// station is on it at its anchor, the old addresses redirect there, and the
+// content a recruiter needs is in the HTML before any script runs.
 //
 //   npm run build && npx next start -p 3100
 //   SMOKE_URL=http://localhost:3100 npm test
@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { profile, projects, experience, interests } from "../app/data/portfolio.ts";
-import { listed, places, siteUrl } from "../app/sections/registry.ts";
+import { listed, siteUrl, stations } from "../app/sections/registry.ts";
 
 const base = process.env.SMOKE_URL?.replace(/\/$/, "");
 const skip = base ? false : "set SMOKE_URL to a running build to run the smoke checks";
@@ -18,78 +18,128 @@ const cache = new Map();
 async function get(path) {
   if (!cache.has(path)) {
     const res = await fetch(base + path, { redirect: "manual" });
-    cache.set(path, { status: res.status, type: res.headers.get("content-type") ?? "", body: await res.text() });
+    cache.set(path, { status: res.status, type: res.headers.get("content-type") ?? "", location: res.headers.get("location") ?? "", body: await res.text() });
   }
   return cache.get(path);
 }
 // The HTML escapes apostrophes and ampersands; compare like with like
 const html = (text) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;");
 
-test("every listed route answers 200 with its own title", { skip }, async () => {
-  const titles = new Set();
-  for (const s of listed) {
-    const { status, body } = await get(s.href);
-    assert.equal(status, 200, `${s.href}: status`);
-    const title = body.match(/<title>([^<]*)<\/title>/)?.[1];
-    assert.ok(title, `${s.href}: no <title>`);
-    titles.add(title);
+// One station's HTML on `/`: from its <section id> to the next station's
+// (or the foot of the page)
+const anchorOf = (s) => s.hash || "home";
+async function station(id) {
+  const { body } = await get("/");
+  const start = body.indexOf(`<section id="${id}"`);
+  assert.ok(start >= 0, `no station #${id} on /`);
+  const ends = stations.map((s) => body.indexOf(`<section id="${anchorOf(s)}"`, start + 1)).filter((i) => i > start);
+  const foot = body.indexOf("<footer", start);
+  return body.slice(start, Math.min(...ends, foot >= 0 ? foot : body.length));
+}
+
+// The sections' own content comes with their tasks (the Shanghai plan,
+// Tasks 8 to 12); until a station is filled its content test is a todo
+const filledLater = (task) => `the station is filled by Task ${task} of the Shanghai plan`;
+
+test("the one page answers 200 with the site's title", { skip }, async () => {
+  const { status, body } = await get("/");
+  assert.equal(status, 200);
+  assert.match(body, /<title>Richard Lan \| Software Engineering Portfolio<\/title>/);
+});
+
+test("every old address redirects to its station, temporarily", { skip }, async () => {
+  for (const s of stations.filter((s) => s.hash)) {
+    const { status, location } = await get(`/${s.hash}`);
+    assert.equal(status, 307, `/${s.hash}: status`);
+    assert.ok(location.endsWith(`/#${s.hash}`), `/${s.hash} goes to ${location}`);
   }
-  assert.equal(titles.size, listed.length, "titles are unique");
+  const map = await get("/map");
+  assert.equal(map.status, 307, "/map: status");
+  assert.ok(new URL(map.location, base).pathname === "/" && !new URL(map.location, base).hash, `/map goes to ${map.location}`);
+});
+
+test("every station, and Skills inside Projects, is on / at its anchor", { skip }, async () => {
+  const { body } = await get("/");
+  for (const id of ["about", "projects", "skills", "experience", "interests", "contact"]) assert.ok(body.includes(`id="${id}"`), `no id="${id}"`);
+  // In page order, each a labelled section that can take focus
+  let last = -1;
+  for (const s of stations) {
+    const at = body.indexOf(`<section id="${anchorOf(s)}"`);
+    assert.ok(at > last, `${s.id} is out of order`);
+    last = at;
+    assert.match(body.slice(at, at + 300), new RegExp(`aria-labelledby="${anchorOf(s)}-title"`), `${s.id}: labelled`);
+  }
+  assert.ok((await station("projects")).includes('id="skills"'), "Skills is inside Projects");
 });
 
 test("an unknown address is a 404 with the way back", { skip }, async () => {
   const { status, body } = await get("/a-path-that-isnt-on-the-map");
   assert.equal(status, 404);
   assert.match(body, /href="\/"/);
+  assert.match(body, /Back to the start/);
 });
 
 test("the section starter isn't served (audit F2)", { skip }, async () => {
   assert.equal((await get("/greenhouse")).status, 404);
 });
 
-test("every page has the skip link and its main content in the HTML", { skip }, async () => {
-  for (const s of listed) {
-    const { body } = await get(s.href);
-    assert.match(body, /class="skip-link"/, `${s.href}: skip link`);
-    assert.match(body, /id="content"/, `${s.href}: skip target`);
-    assert.match(body, /<main/, `${s.href}: <main>`);
-    assert.match(body, /<h1/, `${s.href}: <h1>`);
-  }
-});
-
-test("every page links to every listed place (the menu and lists are in the HTML)", { skip }, async () => {
-  for (const s of listed) {
-    const { body } = await get(s.href);
-    for (const place of places) assert.ok(body.includes(`href="${place.href}"`), `${s.href} has no link to ${place.href}`);
-  }
-});
-
-test("the home page names me and links to GitHub, LinkedIn and the résumé", { skip }, async () => {
+test("the page has the skip link, one h1 and its main content in the HTML", { skip }, async () => {
   const { body } = await get("/");
-  assert.ok(body.includes(profile.name));
-  for (const href of [profile.githubUrl, profile.linkedinUrl, profile.resumeUrl]) assert.ok(body.includes(`href="${href}"`), `home: ${href}`);
+  assert.match(body, /<a href="#content" class="skip-link[ "]/, "skip link");
+  assert.match(body, /id="content"/, "skip target");
+  assert.match(body, /<main/, "<main>");
+  assert.equal((body.match(/<h1[\s>]/g) ?? []).length, 1, "one <h1>");
 });
 
-test("all four projects are on /projects, the first with its code and demo links", { skip }, async () => {
-  // The projects are tabs: every title is a tab in the HTML, and the chosen
-  // project's notes (the first, until one is chosen) are written out.
-  // Each project's own links are checked by choosing it, in the browser.
-  const { body } = await get("/projects");
-  assert.equal(projects.length, 4);
+test("the page links to every listed station and its parts (the menu is in the HTML)", { skip }, async () => {
+  const { body } = await get("/");
+  for (const s of listed) {
+    assert.ok(body.includes(`href="${s.href}"`), `no link to ${s.href}`);
+    for (const sub of s.subsections ?? []) assert.ok(body.includes(`href="${sub.href}"`), `no link to ${sub.href}`);
+  }
+});
+
+test("the home station names me and links to GitHub, LinkedIn and the résumé", { skip }, async () => {
+  const home = await station("home");
+  assert.ok(home.includes(profile.name));
+  for (const href of [profile.githubUrl, profile.linkedinUrl, profile.resumeUrl]) assert.ok(home.includes(`href="${href}"`), `home: ${href}`);
+});
+
+test("every project is in the projects station, the first with its code and demo links", { skip, todo: !skip && filledLater(9) }, async () => {
+  const body = await station("projects");
+  assert.ok(projects.length > 0);
   for (const project of projects) assert.ok(body.includes(html(project.title)), `projects: ${project.title}`);
   const [first] = projects;
   assert.ok(body.includes(`href="${first.githubUrl}"`), `projects: ${first.githubUrl}`);
   if (first.liveUrl) assert.ok(body.includes(`href="${first.liveUrl}"`), `projects: ${first.liveUrl}`);
 });
 
-test("every role, interest and contact address is readable without scripts", { skip }, async () => {
-  const exp = (await get("/experience")).body;
-  for (const stop of experience) assert.ok(exp.includes(html(stop.role)), `experience: ${stop.role}`);
-  const int = (await get("/interests")).body;
-  for (const interest of interests) assert.ok(int.includes(html(interest.name)), `interests: ${interest.name}`);
-  const contact = (await get("/contact")).body;
-  for (const email of profile.emails) assert.ok(contact.includes(`mailto:${email.address}`), `contact: ${email.address}`);
-  assert.ok(contact.includes(`href="${profile.resumeUrl}"`), "contact: résumé");
+test("every role is readable in the experience station without scripts", { skip, todo: !skip && filledLater(10) }, async () => {
+  const body = await station("experience");
+  for (const stop of experience) assert.ok(body.includes(html(stop.role)), `experience: ${stop.role}`);
+});
+
+test("every interest is readable in the interests station without scripts", { skip, todo: !skip && filledLater(11) }, async () => {
+  const body = await station("interests");
+  for (const interest of interests) assert.ok(body.includes(html(interest.name)), `interests: ${interest.name}`);
+});
+
+test("every contact address and the résumé are in the contact station", { skip, todo: !skip && filledLater(12) }, async () => {
+  const body = await station("contact");
+  for (const email of profile.emails) assert.ok(body.includes(`mailto:${email.address}`), `contact: ${email.address}`);
+  assert.ok(body.includes(`href="${profile.resumeUrl}"`), "contact: résumé");
+});
+
+test("the copy feedback is a live region drawn on screen, not screen-reader-only", { skip, todo: !skip && filledLater(12) }, async () => {
+  const contact = await station("contact");
+  const copyStatus = contact.match(/<p[^>]*role="status"[^>]*>/)?.[0];
+  assert.ok(copyStatus, "contact: the copy status");
+  assert.doesNotMatch(copyStatus, /sr-only/, "contact: the copy status is visible");
+});
+
+test("the music feedback is a live region drawn on screen", { skip }, async () => {
+  const { body } = await get("/");
+  assert.match(body, /<span role="status" class="music-status">/);
 });
 
 test("the résumé is served as a PDF", { skip }, async () => {
@@ -98,40 +148,24 @@ test("the résumé is served as a PDF", { skip }, async () => {
   assert.match(res.headers.get("content-type") ?? "", /^application\/pdf/);
 });
 
-test("the corner menu is called Sections on every layout (audit I1)", { skip }, async () => {
-  for (const s of listed) {
-    const { body } = await get(s.href);
-    const button = body.match(/<button[^>]*popoverTarget="places-menu"[^>]*>([\s\S]*?)<\/button>/i);
-    assert.ok(button, `${s.href}: the menu button`);
-    assert.equal(button[1].replace(/<[^>]+>/g, "").trim(), "Sections", `${s.href}: menu button label`);
-    assert.match(body, /<nav id="places-menu"[^>]*aria-label="Sections"/, `${s.href}: menu name`);
-  }
+test("the corner menu is called Sections (audit I1)", { skip }, async () => {
+  const { body } = await get("/");
+  const button = body.match(/<button[^>]*popoverTarget="places-menu"[^>]*>([\s\S]*?)<\/button>/i);
+  assert.ok(button, "the menu button");
+  assert.equal(button[1].replace(/<[^>]+>/g, "").trim(), "Sections", "menu button label");
+  assert.match(body, /<nav id="places-menu"[^>]*aria-label="Sections"/, "menu name");
 });
 
-test("copy and music feedback are live regions drawn on screen, not screen-reader-only", { skip }, async () => {
-  const contact = (await get("/contact")).body;
-  const copyStatus = contact.match(/<p[^>]*role="status"[^>]*>/)?.[0];
-  assert.ok(copyStatus, "contact: the copy status");
-  assert.doesNotMatch(copyStatus, /sr-only/, "contact: the copy status is visible");
-  for (const s of listed) {
-    const { body } = await get(s.href);
-    assert.match(body, /<span role="status" class="music-status">/, `${s.href}: the music status`);
-  }
+test("the page names its canonical address and a share card (audit: metadata)", { skip }, async () => {
+  const { body } = await get("/");
+  assert.ok(body.includes(`<link rel="canonical" href="${siteUrl}"/>`), "canonical");
+  assert.ok(body.includes(`<meta property="og:url" content="${siteUrl}"/>`), "og:url");
+  assert.ok(body.includes(`<meta property="og:image" content="${siteUrl}/share-card.jpg"/>`), "og:image");
+  assert.ok(body.includes('<meta name="twitter:card" content="summary_large_image"/>'), "twitter:card");
+  assert.ok(body.includes(`<meta name="twitter:image" content="${siteUrl}/share-card.jpg"/>`), "twitter:image");
 });
 
-test("every page names its canonical address and a share card (audit: metadata)", { skip }, async () => {
-  for (const s of listed) {
-    const { body } = await get(s.href);
-    const canonical = s.href === "/" ? siteUrl : `${siteUrl}${s.href}`;
-    assert.ok(body.includes(`<link rel="canonical" href="${canonical}"/>`), `${s.href}: canonical`);
-    assert.ok(body.includes(`<meta property="og:url" content="${canonical}"/>`), `${s.href}: og:url`);
-    assert.ok(body.includes(`<meta property="og:image" content="${siteUrl}/share-card.jpg"/>`), `${s.href}: og:image`);
-    assert.ok(body.includes('<meta name="twitter:card" content="summary_large_image"/>'), `${s.href}: twitter:card`);
-    assert.ok(body.includes(`<meta name="twitter:image" content="${siteUrl}/share-card.jpg"/>`), `${s.href}: twitter:image`);
-  }
-});
-
-test("robots.txt allows crawling and points at the sitemap, which lists every listed section", { skip }, async () => {
+test("robots.txt allows crawling and points at the sitemap, which lists the one page", { skip }, async () => {
   const robots = await get("/robots.txt");
   assert.equal(robots.status, 200);
   assert.match(robots.body, /User-Agent: \*\nAllow: \//);
@@ -139,7 +173,7 @@ test("robots.txt allows crawling and points at the sitemap, which lists every li
   const sitemap = await get("/sitemap.xml");
   assert.equal(sitemap.status, 200);
   const locs = [...sitemap.body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-  assert.deepEqual(locs.sort(), listed.map((s) => (s.href === "/" ? siteUrl : `${siteUrl}${s.href}`)).sort());
+  assert.deepEqual(locs, [siteUrl]);
 });
 
 test("the icons and the share card are served with the right types", { skip }, async () => {

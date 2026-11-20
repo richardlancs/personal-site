@@ -10,7 +10,7 @@ import Atmosphere from "./atmosphere/Atmosphere";
 import Precipitation from "./atmosphere/Precipitation";
 import { onIdle } from "./idle";
 import { windUniforms } from "./paint";
-import { places, sectionForPath } from "../../sections/registry";
+import { parkRooms as places, parkSectionForPath as sectionForPath } from "../world/park";
 import { routesFromPark, scenes, type Pose, type SceneId, type V3 } from "./scenes";
 import Painterly from "./Painterly";
 import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";

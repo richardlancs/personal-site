@@ -57,6 +57,8 @@
      before script runs. */
   --bar-h: calc(4.25rem + env(safe-area-inset-top));
   --menu-top: calc(4.25rem + env(safe-area-inset-top));
+  /* Where a jump to part of the page stops: below the sticky bar */
+  --scroll-offset: calc(var(--bar-h) + 0.5rem);
 }
 
 /* Makes the tokens usable as Tailwind classes, e.g. bg-ink, text-muted,
@@ -82,7 +84,15 @@
 html {
   background: var(--ink);
   /* A jump to part of the page stops below the sticky bar (WCAG 2.4.11) */
-  scroll-padding-top: calc(var(--bar-h) + 0.5rem);
+  scroll-padding-top: var(--scroll-offset);
+}
+
+/* Jumps down the page glide, unless still view is on or motion isn't
+   welcome (the still script sets data-still before the first paint) */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-still="off"] {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -483,6 +493,152 @@ a[data-resume][data-opening] {
   --glass-lift: var(--glow-cyan);
   border-color: var(--cyan);
   background-color: var(--glass-chosen);
+}
+
+/* Very large text on a phone: a bar taller than a quarter of the screen
+   (SectionsMenu.tsx sets data-bar-tall) stops being sticky and scrolls
+   away with the top of the page, so it never covers what you're reading.
+   Jumps then stop at the very top, and the menu opens under its button
+   where the button is on the page. */
+:root[data-bar-tall] {
+  --scroll-offset: 0.5rem;
+}
+
+:root[data-bar-tall] .top-bar {
+  position: static;
+}
+
+:root[data-bar-tall] .sections-menu {
+  position: absolute;
+}
+
+/* ---------- Stations (components/city2d/Station.tsx) ----------
+   The page is six stations down the line. Each opens with its district's
+   band across the full width (a dark gradient until its painting is
+   wired in), then a centred column: the stop, the heading, a line naming
+   the place, and the section. */
+
+.station {
+  position: relative;
+}
+
+/* It takes focus only so the Sections menu can hand focus to it */
+.station:focus {
+  outline: none;
+}
+
+.band {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  background: linear-gradient(to bottom, var(--ink-2), var(--ink));
+}
+
+@media (max-width: 767px) {
+  .band {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+.station-body {
+  width: min(72rem, 100%);
+  margin-inline: auto;
+  padding: clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-right)) clamp(4rem, 10vw, 7.5rem) max(1.25rem, env(safe-area-inset-left));
+}
+
+/* The stop: its number and name, small signage type (muted: accents only
+   at 24px and over) */
+.station-stop {
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.station-number {
+  font-variant-numeric: tabular-nums;
+  margin-right: 0.35em;
+}
+
+.station-title {
+  margin-top: 0.5rem;
+  color: var(--text);
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  font-weight: 700;
+}
+
+/* The name, the page's one h1, in the home station (capped so a long
+   word never pushes past a phone's width) */
+.station-name {
+  margin-top: 0.5rem;
+  color: var(--text);
+  font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
+  font-weight: 700;
+  overflow-wrap: break-word;
+}
+
+.station-line {
+  margin-top: 0.75rem;
+  max-width: 40rem;
+  color: var(--muted);
+  font-size: 1.125rem;
+}
+
+/* The foot of the page: the colophon */
+.page-foot {
+  width: min(72rem, 100%);
+  margin-inline: auto;
+  padding: 2rem max(1.25rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+/* ---------- The notice (components/ui/Notice.tsx) ----------
+   A page that isn't there, or one that failed: a panel in the middle of
+   the dark ground, with what happened and the way back. */
+
+.notice {
+  display: grid;
+  place-items: center;
+  min-height: calc(100svh - var(--bar-h));
+  padding: 3rem max(1.25rem, env(safe-area-inset-right)) max(3rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+}
+
+.notice-panel {
+  width: min(34rem, 100%);
+  padding: clamp(1.5rem, 5vw, 2.5rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+}
+
+.notice-kicker {
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.notice-title {
+  margin-top: 0.5rem;
+  font-size: clamp(2.25rem, 7vw, 3rem);
+  font-weight: 700;
+}
+
+.notice-text {
+  margin-top: 1rem;
+  color: var(--text);
+}
+
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
 }
 
 /*

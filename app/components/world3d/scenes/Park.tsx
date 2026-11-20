@@ -31,7 +31,7 @@ import {
 } from "../props";
 import { onIdle, timed } from "../idle";
 import { rng, type Rng } from "../rng";
-import { sectionForAnchor } from "../../../sections/registry";
+import { parkSectionForAnchor as sectionForAnchor } from "../../world/park";
 import { FOUNTAIN_MS, runFountain, useWorld, world } from "../store";
 import { groundTexture } from "../textures";
 import { NEON } from "../glow";

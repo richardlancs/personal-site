@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-// A notice on paper, in the middle of the view: for a page that isn't
-// there, a page that failed, or a section with nothing in it yet. Always
-// says what happened and gives the way back.
+// A notice in the middle of the page (city.css, "The notice"): for a page
+// that isn't there or a page that failed. Always says what happened and
+// gives the way back to the start of the site.
 export default function Notice({
   kicker,
   title,
@@ -15,19 +15,19 @@ export default function Notice({
   action?: { label: string; onClick: () => void };
 }) {
   return (
-    <main className="over-world location" data-side="middle">
-      <div className="lost-notice paper arrive take-clicks">
-        <p className="location-place">{kicker}</p>
-        <h1 className="location-title">{title}</h1>
-        <p className="location-intro">{children}</p>
-        <p className="lost-notice-links">
+    <main className="notice">
+      <div className="notice-panel">
+        <p className="notice-kicker">{kicker}</p>
+        <h1 className="notice-title">{title}</h1>
+        <p className="notice-text">{children}</p>
+        <p className="notice-actions">
           {action && (
             <button type="button" className="glass glass-primary" onClick={action.onClick}>
               {action.label}
             </button>
           )}
           <Link href="/" className="glass">
-            Back to the park
+            Back to the start
           </Link>
         </p>
       </div>

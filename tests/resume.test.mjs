@@ -47,18 +47,18 @@ test("pdfjs-dist is pinned to an exact version", () => {
 });
 
 test("every résumé link is a real link to the PDF that opens the viewer", () => {
-  // Only two places name the PDF's address: the link component, and the
-  // contact page's directory line (marked to open the viewer)
+  // Only the link component names the PDF's address (the one page's
+  // stations link to it through ResumeLink); the park's phone line, no
+  // longer loaded, marked its own line to open the viewer
   const users = sources.filter((file) => read(file).includes("profile.resumeUrl"));
-  assert.deepEqual(users.sort(), ["app/components/resume/ResumeLink.tsx", "app/contact/page.tsx"]);
-  assert.match(read("app/contact/page.tsx"), /href: profile\.resumeUrl, viewer: true/);
+  assert.deepEqual(users.sort(), ["app/components/resume/ResumeLink.tsx"]);
   const link = read("app/components/resume/ResumeLink.tsx");
   assert.match(link, /href=\{profile\.resumeUrl\}/);
   assert.match(link, /data-resume=""/);
   assert.match(read("app/components/locations/Payphone.tsx"), /data-resume=\{line\.viewer \? "" : undefined\}/);
   // The link component stays a server component: the listener is the host's
   assert.ok(!link.includes('"use client"'));
-  for (const page of ["app/page.tsx", "app/about/page.tsx"]) assert.match(read(page), /<ResumeLink[\s>]/, `${page} uses ResumeLink`);
+  assert.match(read("app/page.tsx"), /<ResumeLink[\s>]/, "app/page.tsx uses ResumeLink");
   assert.ok(existsSync(`${root}public${profile.resumeUrl}`));
 });
 

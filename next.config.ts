@@ -23,11 +23,26 @@ const nextConfig: NextConfig = {
     // a fresh cache anyway
     minimumCacheTTL: 2_678_400,
   },
+  // One page now (app/page.tsx): the old one-page-per-section addresses
+  // go to their station's anchor, so links already shared keep working.
+  // Temporary, so the addresses stay free for the 3D city (a later plan).
+  // The map is gone; it goes to the top. (A fragment such as
+  // /projects#skills never reaches the server: it lands on #projects.)
+  async redirects() {
+    return [
+      { source: "/about", destination: "/#about", permanent: false },
+      { source: "/projects", destination: "/#projects", permanent: false },
+      { source: "/experience", destination: "/#experience", permanent: false },
+      { source: "/interests", destination: "/#interests", permanent: false },
+      { source: "/contact", destination: "/#contact", permanent: false },
+      { source: "/map", destination: "/", permanent: false },
+    ];
+  },
   // public/ files are served with max-age=0, so every visit asked again
   // for the music (2.7 MB, on demand) and the screenshots. Their names
   // aren't content-hashed, so a day's cache plus a week of serving the
   // old copy while checking, not "immutable". ":path+" (at least one
-  // segment), so the /projects page itself keeps its own headers.
+  // segment), so /projects itself stays a redirect.
   async headers() {
     const cached = [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }];
     return [

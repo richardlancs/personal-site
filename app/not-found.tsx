@@ -5,11 +5,11 @@ export const metadata: Metadata = {
   title: "Not found",
 };
 
-// An address with no page: a notice in the park, and the way back
+// An address with no page: a notice, and the way back
 export default function NotFound() {
   return (
-    <Notice kicker="A path that isn't on the map" title="Nothing here">
-      There&apos;s no page at this address. Everything else is still where it was.
+    <Notice kicker="Not found" title="Nothing here">
+      There&apos;s no page at this address. The rest of the site is where it was.
     </Notice>
   );
 }

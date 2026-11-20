@@ -1,62 +1,52 @@
 import type { Metadata } from "next";
-import type { GlyphId } from "../components/world/glyphs";
 import type { SceneId } from "../components/world3d/scenes";
 
 // The sections of the site, and everything the rest of the site needs to
-// know about each one: its address, its name, its place in the park, how
-// it's drawn on the map and the painting, which scene the camera goes to.
-// The Places menu, the home page's list, the map, the name tags
-// in the world and the "Other sections" links are all generated from this
-// list, so adding a section means adding an entry here and a page for it
-// (docs/adding-a-section.md). Nothing else has to change.
+// know about each one: its anchor on the one page, its name, its station
+// on the metro line and the district painted above it. The Sections menu,
+// the list of stations and the metro line are generated from this list.
 //
 // The words themselves (projects, experience, the notebook) stay in
 // app/data/portfolio.ts; this is only the sections' metadata.
 
-export type SectionId = "home" | "about" | "projects" | "experience" | "interests" | "contact" | "map";
+export type SectionId = "home" | "about" | "projects" | "experience" | "interests" | "contact";
+
+// The six districts of the city, one per section (docs/city/style.md,
+// docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md)
+export type DistrictId = "lujiazui" | "longtang" | "towers" | "metro" | "nanjing-road" | "bund";
 
 export type Section = {
   id: SectionId;
-  href: `/${string}`;
+  // The section's anchor on `/` ("" for home, which is the top of the page)
+  hash: string;
+  href: "/" | `/#${string}`;
   title: string; // the section: "About"
-  place: string; // where it is in the park: "The pavilion"
   summary: string; // one line, for lists
-  glyph: GlyphId; // its drawing, from the map (components/world/PlaceGlyph.tsx)
-  // In the menu, the lists and the map. A section
-  // that isn't listed still has its page; it's just not pointed at.
+  // In the menu and the lists. A section that isn't listed is still on
+  // the page; it's just not pointed at.
   listed: boolean;
-  // The sign at the top of the page: a line about the place, and (on
-  // wide screens, where there's something to choose) how to use it
-  intro?: string;
-  hint?: string;
-  // Which side of a wide screen the page sits on; the camera frames the
-  // place on the other (world3d/scenes.ts)
-  side: "left" | "right" | "middle";
-  // The 3D world, on wide screens: the scene the camera goes to and what
-  // it looks at there. "monitor" means the one that's chosen; "cabinet" is
-  // the arcade's one machine, whatever mode it's in.
+  district: DistrictId; // the painting above it
+  station: string; // its stop on the line: "Lujiazui"
+  districtLine: string; // one line naming the place, under the band
+  // The 3D city (a later plan): the scene a section belongs to
   scene: { id: SceneId; focus: string | null };
-  // The park's name tag for this section, if it has a building there
-  // (world3d/scenes/Park.tsx keeps the positions, by this key)
-  anchor?: "library" | "workshop" | "station" | "arcade" | "booth" | "board";
-  // Its pin on the map sheet (percent). `label`: where the name goes on
-  // small sheets, where neighbours would otherwise overlap
-  map?: { x: number; y: number; label?: "right" | "side" | "below" };
-  // Deeper links inside the section, for the menu
-  subsections?: { title: string; place: string; href: `/${string}` }[];
+  // Deeper anchors inside the section, for the menu
+  subsections?: { title: string; href: `/#${string}` }[];
   metadata: { title: string; description: string };
 };
 
-export const sections: Section[] = [
+// In page order: the stops are numbered 01 to 06 down the page
+export const stations: Section[] = [
   {
     id: "home",
+    hash: "",
     href: "/",
     title: "Home",
-    place: "The park",
     summary: "My name, what I do, and the way to everything else.",
-    glyph: "board",
     listed: true,
-    side: "middle",
+    district: "lujiazui",
+    station: "Lujiazui",
+    districtLine: "The skyline across the Huangpu, from the Bund.",
     scene: { id: "park", focus: null },
     metadata: {
       title: "Richard Lan | Software Engineering Portfolio",
@@ -65,102 +55,82 @@ export const sections: Section[] = [
   },
   {
     id: "about",
-    href: "/about",
+    hash: "about",
+    href: "/#about",
     title: "About",
-    place: "The pavilion",
     summary: "Who I am and what I'm working toward.",
-    glyph: "pavilion",
     listed: true,
-    intro: "A notebook someone left open on the desk, by the lit window.",
-    side: "right",
+    district: "longtang",
+    station: "Longtang",
+    districtLine: "A lane of shikumen houses, one window lit.",
     scene: { id: "library", focus: "notebook" },
-    anchor: "library",
-    map: { x: 16, y: 55.5 },
     metadata: { title: "About", description: "About Richard Lan, a Computer Science student at the University of Waterloo." },
   },
   {
     id: "projects",
-    href: "/projects",
+    hash: "projects",
+    href: "/#projects",
     title: "Projects",
-    place: "The workshop",
     summary: "The software I've built, and my tools.",
-    glyph: "workshop",
     listed: true,
-    intro: "Old screens on the benches, still wired up.",
-    hint: "Choose one to switch it on.",
-    side: "left",
+    district: "towers",
+    station: "Century Avenue",
+    districtLine: "Street level, under the three towers.",
     scene: { id: "workshop", focus: "monitor" },
-    anchor: "workshop",
-    map: { x: 66.7, y: 23.5, label: "below" },
-    subsections: [{ title: "Skills", place: "The workshop's tool wall", href: "/projects#skills" }],
+    subsections: [{ title: "Skills", href: "/#skills" }],
     metadata: { title: "Projects", description: "Software projects by Richard Lan, with screenshots, code and live demos." },
   },
   {
     id: "experience",
-    href: "/experience",
+    hash: "experience",
+    href: "/#experience",
     title: "Experience",
-    place: "The station",
     summary: "Where I've worked and studied.",
-    glyph: "station",
     listed: true,
-    intro: "Work and education, on the old timetable.",
-    hint: "Select a role to read details.",
-    side: "right",
+    district: "metro",
+    station: "Line 2",
+    districtLine: "An elevated platform, the board still running.",
     scene: { id: "station", focus: "timetable" },
-    anchor: "station",
-    map: { x: 52, y: 13, label: "side" },
     metadata: { title: "Experience", description: "Richard Lan's experience and education." },
   },
   {
     id: "interests",
-    href: "/interests",
+    hash: "interests",
+    href: "/#interests",
     title: "Interests",
-    place: "The arcade",
     summary: "What I do away from the keyboard.",
-    glyph: "arcade",
     listed: true,
-    intro: "The power came back on in one of the cabinets.",
-    hint: "Choose an interest, then play it.",
-    side: "left",
+    district: "nanjing-road",
+    station: "Nanjing Road",
+    districtLine: "The shopping street after dark.",
     scene: { id: "arcade", focus: "cabinet" },
-    anchor: "arcade",
-    // The arcade stands to the left of the park, past the pavilion; the
-    // map follows the world
-    map: { x: 38, y: 21, label: "below" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
   {
     id: "contact",
-    href: "/contact",
+    hash: "contact",
+    href: "/#contact",
     title: "Contact",
-    place: "The phone booth",
     summary: "Email, GitHub, LinkedIn and my résumé.",
-    glyph: "booth",
     listed: true,
-    intro: "The light inside still comes on, and the line still works.",
-    side: "left",
+    district: "bund",
+    station: "The Bund",
+    districtLine: "The promenade, by the Customs House clock.",
     scene: { id: "booth", focus: null },
-    anchor: "booth",
-    map: { x: 85, y: 60.5 },
     metadata: { title: "Contact", description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé." },
   },
 ];
 
-export const section = (id: SectionId): Section => sections.find((s) => s.id === id)!;
+// Every section is a station; the older name is kept for its readers
+export const sections = stations;
 
-// The sections that are pointed at: in the menu, the lists and the map
-export const listed = sections.filter((s) => s.listed);
+export const section = (id: SectionId): Section => stations.find((s) => s.id === id)!;
 
-// The places in the park, in the order they're listed: every listed
-// section except home
-export const places = listed.filter((s) => s.id !== "home");
+// A station's stop number, "01" to "06", in page order
+export const stopNumber = (s: Section): string => String(stations.indexOf(s) + 1).padStart(2, "0");
 
-// Which section an address shows (the park for anything unknown, so the
-// not-found page still has a world behind it)
-export const sectionForPath = (pathname: string): Section => sections.find((s) => s.href === pathname) ?? section("home");
-
-// The section a building in the park leads to
-export const sectionForAnchor = (anchor: NonNullable<Section["anchor"]>): Section | undefined => sections.find((s) => s.anchor === anchor);
+// The sections that are pointed at: in the menu and the lists
+export const listed = stations.filter((s) => s.listed);
 
 // Where the site is published. Canonical addresses, the sitemap, robots.txt
 // and the share cards are all made absolute from this (layout.tsx sets it

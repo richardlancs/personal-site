@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { listed } from "../../sections/registry";
+import { parkSections } from "./park";
 import MusicToggle from "../MusicToggle";
 import WeatherClock from "../weather/WeatherClock";
 import StillViewToggle from "./StillViewToggle";
@@ -45,7 +45,7 @@ export default function WorldControls() {
   // Close the menu once a place is chosen (the page changes underneath)
   const close = () => document.getElementById("places-menu")?.hidePopover();
 
-  const menu = listed.filter((s) => s.id !== "map");
+  const menu = parkSections.filter((s) => s.listed);
 
   return (
     <div className="world-controls">
@@ -96,7 +96,6 @@ export default function WorldControls() {
               {s.subsections?.map((sub) => (
                 <Link key={sub.href} href={sub.href} onClick={close} className="glass">
                   <span className="places-menu-section">{sub.title}</span>
-                  <span className="places-menu-place only-world">{sub.place}</span>
                 </Link>
               ))}
             </li>

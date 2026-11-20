@@ -6,8 +6,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { about, experience, interests, profile, projects, skillGroups } from "../app/data/portfolio.ts";
-import { places, sectionForAnchor, sectionForPath, sections, siteUrl } from "../app/sections/registry.ts";
-import { glyphs } from "../app/components/world/glyphs.ts";
+import { section, sections, siteUrl } from "../app/sections/registry.ts";
 import { scenes } from "../app/components/world3d/scenes.ts";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -67,26 +66,24 @@ test("contact details point somewhere real", () => {
   for (const email of profile.emails) assert.match(email.address, /^[^@\s]+@[^@\s]+\.[a-z]+$/);
 });
 
-test("every section in the registry is complete and has a page", () => {
+test("every section in the registry is complete and is a station on the one page", () => {
   const ids = sections.map((s) => s.id);
   const hrefs = sections.map((s) => s.href);
   assert.equal(new Set(ids).size, ids.length, "ids are unique");
   assert.equal(new Set(hrefs).size, hrefs.length, "addresses are unique");
+  assert.ok(existsSync(`${root}app/page.tsx`), "the one page");
+  const page = readFileSync(`${root}app/page.tsx`, "utf8");
   for (const s of sections) {
-    const dir = s.href === "/" ? "" : s.href;
-    assert.ok(existsSync(`${root}app${dir}/page.tsx`), `${s.href} has no page`);
-    assert.ok(s.glyph in glyphs, `${s.id}: no glyph "${s.glyph}"`);
+    assert.equal(s.href, s.hash ? `/#${s.hash}` : "/", `${s.id}: its address is its anchor`);
+    assert.match(page, new RegExp(`<Station\\s+section=\\{section\\("${s.id}"\\)\\}`), `${s.id} has no station on the page`);
     assert.ok(s.scene.id in scenes, `${s.id}: no scene "${s.scene.id}"`);
     if (s.scene.focus && !["monitor", "cabinet"].includes(s.scene.focus)) assert.ok(s.scene.focus in scenes[s.scene.id].focus, `${s.id}: scene has no focus "${s.scene.focus}"`);
     assert.ok(s.metadata.title && s.metadata.description, `${s.id}: metadata`);
     assert.ok(isSentence(s.summary), `${s.id}: summary "${s.summary}"`);
+    assert.ok(isSentence(s.districtLine), `${s.id}: districtLine "${s.districtLine}"`);
+    assert.equal(section(s.id), s);
+    for (const sub of s.subsections ?? []) assert.match(sub.href, /^\/#[a-z-]+$/, `${s.id}: ${sub.title} is an anchor`);
   }
-  // Every listed place with a building is on the map
-  for (const s of places) if (s.anchor && s.id !== "map") assert.ok(s.map, `${s.id} has no pin on the map`);
-  // Addresses resolve both ways, and unknown ones fall back to the park
-  for (const s of sections) assert.equal(sectionForPath(s.href).id, s.id);
-  assert.equal(sectionForPath("/nowhere").id, "home");
-  for (const s of sections) if (s.anchor) assert.equal(sectionForAnchor(s.anchor)?.id, s.id);
 });
 
 test("the section starter is a template in docs, not a public page", () => {
@@ -110,21 +107,14 @@ test("the section starter is a template in docs, not a public page", () => {
   assert.ok(!sections.some((s) => s.id === "greenhouse"), "no greenhouse entry in the registry");
 });
 
-test("the hints say what the controls do (audit F3, F4)", () => {
-  const hint = (id) => sections.find((s) => s.id === id)?.hint;
-  assert.equal(hint("interests"), "Choose an interest, then play it.");
-  assert.equal(hint("experience"), "Select a role to read details.");
-  // Only the arcade's machine can be played
-  for (const s of sections) if (s.id !== "interests") assert.doesNotMatch(s.hint ?? "", /\bplay\b|\bscroll\b/i, `${s.id}: hint promises something the page doesn't do`);
-  assert.doesNotMatch(hint("interests"), /\bscroll\b/i);
-  // It is played: every mode has its one thing to do, on the page as well
-  // as on the screen, so it works by keyboard
+// The park's arcade machine (no longer loaded; a later plan reuses it):
+// still played by keyboard, and never asks for money
+test("the arcade's machine is played, by keyboard too, and asks for nothing", () => {
   const logic = readFileSync(`${root}app/components/world3d/scenes/arcadeLogic.ts`, "utf8");
   for (const scene of ["basketball", "badminton", "chess", "poker"]) assert.match(logic, new RegExp(`${scene}: \\{ label: "[^"]+", hint: "[^"]+" \\}`), `${scene} has an action`);
   const cabinets = readFileSync(`${root}app/components/locations/Cabinets.tsx`, "utf8");
   assert.match(cabinets, /className="glass glass-primary cabinet-action"/);
   assert.match(cabinets, /arcadePress/);
-  // Nothing asks for money
   const machine = readFileSync(`${root}app/components/world3d/scenes/arcadeMachine.ts`, "utf8");
   assert.doesNotMatch(machine, /INSERT COIN/i);
 });
