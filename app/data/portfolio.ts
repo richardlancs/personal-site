@@ -109,6 +109,7 @@ export const projects: Project[] = [
   {
     title: "MarketLab",
     summary: "A stock market simulator: a web app that runs on simulated prices, not real market data.",
+    role: "Lead developer.",
     features: [
       "Market dashboard and a screener covering about 95 US stocks.",
       "Paper trading, with portfolio risk analytics.",
@@ -155,7 +156,7 @@ export const projects: Project[] = [
   {
     title: "Empyrean",
     summary: "Camera glasses that tell a blind or low-vision wearer what they're pointing at, down to the brand when the label is readable.",
-    role: "Built with three teammates at HackUMass XIV (November 2026). I owned Grok naming and the data layer.",
+    role: "Led a team of four at HackUMass XIV (November 2026). I owned Grok naming and the data layer.",
     features: [
       "A webcam on a pair of glasses watches the wearer's hands: YOLO tracks objects, MediaPipe finds the fingers.",
       "Point at something and a Bluetooth speaker says its name; Grok vision reads the label for the brand.",
@@ -210,7 +211,7 @@ export const projects: Project[] = [
   {
     title: "Scrollganizer",
     summary: "A Chrome side-panel extension that makes saved TikTok videos and photo posts searchable.",
-    role: "Software developer on a team of three.",
+    role: "Lead developer on a team of three.",
     features: [
       "Builds a library of saved videos and photo posts, right in the browser.",
       "Search by caption, creator, hashtag, or collection instead of scrolling through Favorites.",
@@ -251,7 +252,7 @@ export const projects: Project[] = [
   {
     title: "Codebase Puzzles",
     summary: "A LeetCode-style site where every puzzle is set inside a real open-source repository.",
-    role: "Building it with one other developer.",
+    role: "Lead developer, building it with one other developer.",
     features: [
       "100 puzzles across 15 TypeScript and Python repositories, including FastAPI, Flask, Zod and Hono, each pinned to a commit.",
       "Read the code in a browser IDE and answer by clicking on symbols, files or lines.",
@@ -294,7 +295,7 @@ export const projects: Project[] = [
   {
     title: "GaragePoker",
     summary: "A free real-time poker web app for private home games: share a link and friends join, with no accounts.",
-    role: "Contributor to a project started by another developer.",
+    role: "Lead developer.",
     features: [
       "Eight variants, from Hold'em and Omaha to Short Deck, with bomb pots, double board and run it twice.",
       "A pure TypeScript engine, tested on every five-card hand and 100,000 random ones.",
