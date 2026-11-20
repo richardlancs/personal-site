@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { profile } from "../../data/portfolio";
+import { backgroundMusic, profile } from "../../data/portfolio";
 import MusicToggle from "../MusicToggle";
 import WeatherClock from "../weather/WeatherClock";
 import StillViewToggle from "./StillViewToggle";
@@ -39,7 +39,7 @@ export default function TopBar() {
         </button>
         <StillViewToggle />
         <span className="top-bar-music">
-          <MusicToggle />
+          <MusicToggle backgroundMusic={backgroundMusic} />
         </span>
       </div>
       <SectionsMenu />

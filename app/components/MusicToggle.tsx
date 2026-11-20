@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { backgroundMusic } from "../data/portfolio";
+import type { backgroundMusic as Song } from "../data/portfolio";
 
 // Quieter than full volume so it sits in the background.
 const VOLUME = 0.35;
@@ -17,7 +17,11 @@ type State = "off" | "loading" | "on" | "failed";
 // what was asked for: pressed while the song loads or plays, so a second
 // press stops it either way. If the song can't be loaded, the button goes
 // back to off and a short note under it says so (read out too).
-export default function MusicToggle() {
+// The song comes in as a prop from the server (TopBar), not by importing
+// app/data/portfolio.ts here: a client import of it puts the whole data
+// file in every page's first-load JavaScript, since the 3D scenes' chunks
+// import it too.
+export default function MusicToggle({ backgroundMusic }: { backgroundMusic: typeof Song }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [state, setState] = useState<State>("off");
   const on = state === "loading" || state === "on";
