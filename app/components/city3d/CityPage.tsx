@@ -11,7 +11,7 @@ import Interests from "../city2d/sections/Interests";
 import Projects from "../city2d/sections/Projects";
 import Arrivals from "../ui/Arrivals";
 import Colophon from "../ui/Colophon";
-import CityFocus from "./CityFocus";
+import CityPanel from "./panels/CityPanel";
 import { scenes } from "./scenes";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
@@ -29,6 +29,12 @@ import { scenes } from "./scenes";
 // title, and the section, told where="3d", starts its own headings at h2
 // (city2d/Heading.tsx), so each page's outline runs h1, h2, h3 with
 // nothing skipped.
+//
+// After the heading, the panel's behaviour (panels/CityPanel.tsx): focus
+// on the heading after a journey, and on Projects, Experience and
+// Interests the row of keys that chooses what the scene shows, loaded with
+// the 3D city. The panel's markup stays here, on the server, so none of
+// it adds to the page's first load.
 const content: Record<SectionId, ReactNode> = {
   home: <Hero where="3d" />,
   about: <About where="3d" />,
@@ -70,6 +76,7 @@ export default function CityPage({ id }: { id: SectionId }) {
             {s.title}
           </h1>
         )}
+        <CityPanel section={id} />
         {content[id]}
         <p className="city-panel-foot">
           <Link href={twoDHref(s.city)} className="text-link text-link-solo">
@@ -80,7 +87,6 @@ export default function CityPage({ id }: { id: SectionId }) {
           <Colophon />
         </footer>
       </div>
-      <CityFocus id={id} />
       <Arrivals />
     </main>
   );
