@@ -16,7 +16,7 @@ body:has(.city-page) .top-bar .rh {
 
 .city-band {
   position: relative;
-  height: 46svh;
+  height: var(--hero);
   background: var(--ink);
 }
 
@@ -75,5 +75,125 @@ body:has(.city-page) .top-bar .rh {
     border-radius: var(--radius-lg);
     background: color-mix(in srgb, var(--panel) 94%, transparent);
     box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.9);
+  }
+}
+
+/* ---------- The canvas (city3d/CityShell.tsx, City3D.tsx) ----------
+   --hero: how much of a narrow screen the scene keeps above the sheet
+   (a length, so the canvas can read it in pixels). The canvas is fixed
+   over the whole window on both layouts, over the band, under the panel;
+   the band hides once the canvas has drawn its first frame, and comes
+   back whenever html[data-city3d] isn't "on". */
+@property --hero {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
+
+:root {
+  --hero: 46svh;
+}
+
+@media (max-height: 480px) {
+  :root {
+    --hero: 38svh;
+  }
+}
+
+html[data-city3d="on"]:has(.city3d[data-drawn]) .city-band {
+  visibility: hidden;
+}
+
+.city3d {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+html:not([data-city3d="on"]) .city3d {
+  visibility: hidden;
+}
+
+.city3d-canvas {
+  position: absolute !important;
+  inset: 0;
+}
+
+.city-iris {
+  position: absolute;
+  inset: 0;
+  opacity: var(--iris, 0);
+  pointer-events: none;
+}
+
+/* The riverside's tags: links pinned over the signs (TagProjector) */
+.city-tags {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.city-tags[data-hidden] {
+  visibility: hidden;
+}
+
+.city-tag {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: auto;
+  white-space: nowrap;
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Where they can't all stand over their signs 8px apart: a row of keys
+   at the foot of the view */
+.city-tags[data-row] {
+  inset: auto max(1rem, env(safe-area-inset-right)) 1.5rem auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: calc(50% - 2rem);
+}
+
+.city-tags[data-row] .city-tag {
+  position: static;
+  transform: none !important;
+}
+
+/* What stands in for the scene when it can't be drawn, or waits */
+.city3d-note {
+  position: fixed;
+  right: max(1.5rem, env(safe-area-inset-right));
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  max-width: min(24rem, calc(50% - 3rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  color: var(--text);
+}
+
+/* FLAT_QUERY: the narrow layout (city3d/flat.ts; a test keeps them equal) */
+@media (orientation: portrait), (max-width: 767px), (max-height: 480px) /* FLAT_QUERY */ {
+  .city-tags[data-row],
+  .city3d-note {
+    inset: auto max(0.75rem, env(safe-area-inset-right)) auto max(0.75rem, env(safe-area-inset-left));
+    top: calc(var(--hero) - 2.5rem);
+    max-width: none;
+    transform: translateY(-100%);
+  }
+
+  .city-tags[data-row] {
+    justify-content: center;
   }
 }

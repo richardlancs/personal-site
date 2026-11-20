@@ -1,0 +1,850 @@
+"use client";
+
+import { Canvas, useFrame, useThree, type RootState } from "@react-three/fiber";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { cityPath, sectionForCityPath } from "../../lib/cityRoutes";
+import { parseSkyParam } from "../../lib/skyParam";
+import { listed, pageSections, section, type SectionId } from "../../sections/registry";
+import { anchors } from "./anchors";
+import { WorldLights } from "./common";
+import { isFlat } from "./flat";
+import { onIdle } from "./idle";
+import Post from "./Post";
+import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
+import { routesFromRiverside, sceneOrder, scenes, type Pose, type SceneId, type V3 } from "./scenes";
+import { useWorld, world } from "./store";
+import { TIERS, type Quality } from "./tiers";
+
+// The 3D city's canvas: one for every /city page, kept across their
+// navigations (app/city/layout.tsx mounts the shell, CityShell.tsx, which
+// loads this). The address picks the place; the Director moves the camera
+// there. Carried over from the park's World3D.tsx: the Director (journeys,
+// drag-to-look on fine pointers, cuts in still view), the frame loop that
+// stops when nothing changes, the warm-up, and the tags pinned over the
+// riverside's signs.
+
+const RIVERSIDE: SceneId = "lujiazui";
+
+// Which place an address shows: the section's district, the riverside for
+// /city (and anything that isn't a section)
+const placeFor = (pathname: string): SceneId => {
+  const id = sectionForCityPath(pathname);
+  return id ? section(id).district : RIVERSIDE;
+};
+const sectionOf = (place: SceneId): SectionId => pageSections.find((s) => s.district === place)!.id;
+
+// A journey waits at the threshold, the view closed, for a place whose
+// chunk hasn't landed yet, but never longer than this
+const WAIT_FOR_PLACE_MS = 1500;
+
+// Still view (app/lib/still.ts, store.ts): the camera cuts instead of
+// travelling, and nothing moves
+const holdingStill = () => world.get().still;
+
+// Nothing in the grey city moves on its own yet (no rain, boats or
+// trains), so the loop draws only when something changes, still view or
+// not. The scenes that bring motion turn this on.
+const LIVE = false;
+
+// On narrow screens the panel is a sheet over the lower part of the
+// screen, from --hero down (city-pages.css); the camera's subject is
+// lifted into the part above it. Read once per resize or page change.
+let hero = { key: "", px: 0 };
+const heroHeight = (height: number) => {
+  const key = `${height}|${location.pathname}`;
+  if (hero.key !== key) hero = { key, px: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0 };
+  return hero.px || height * (height <= 480 ? 0.38 : 0.46);
+};
+// Where the sheet's rounded top edge starts (it comes up 2rem over the band)
+const SHEET_OVERLAP = 32;
+const narrowLift = (height: number, ceiling: number) => {
+  // The middle of the strip between the bar and the sheet
+  const middle = (ceiling + heroHeight(height) - SHEET_OVERLAP) / 2;
+  return 0.5 - middle / height;
+};
+
+// The lowest edge of the top bar, in the canvas's pixels; read on a resize
+// and now and then (the time and weather fill in)
+let bar = { key: "", ticks: 0, bottom: 0 };
+const barBottom = (width: number, height: number) => {
+  const key = `${width}x${height}`;
+  if (bar.key !== key || ++bar.ticks > 120) {
+    const el = document.querySelector(".top-bar");
+    bar = { key, ticks: 0, bottom: el ? el.getBoundingClientRect().bottom : 0 };
+  }
+  return bar.bottom;
+};
+
+// The panel's right edge on wide screens: the tags stay clear of it
+let panel = { key: "", ticks: 0, right: 0 };
+const panelRight = (width: number, height: number) => {
+  const key = `${width}x${height}|${location.pathname}`;
+  if (panel.key !== key || ++panel.ticks > 120) {
+    const el = document.querySelector(".city-panel");
+    panel = { key, ticks: 0, right: el && !isFlat() ? el.getBoundingClientRect().right : 0 };
+  }
+  return panel.right;
+};
+
+const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
+const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
+const restPose = (scene: SceneId) => inWorld(scene, scenes[scene].home);
+
+const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
+const easeIn = (t: number) => t * t * t;
+
+type Move = {
+  kind: "move";
+  dur: number;
+  ease: (t: number) => number;
+  to: { pos: THREE.Vector3; target: THREE.Vector3 }[];
+  iris?: { to: number; from: number; until: number };
+};
+type Swap = { kind: "swap"; scene: SceneId; pose: { pos: THREE.Vector3; target: THREE.Vector3 } };
+type Seg = Move | Swap;
+type Running = { seg: Move; t: number; pos: THREE.CatmullRomCurve3; look: THREE.CatmullRomCurve3; irisFrom: number };
+
+// How far the view's middle moves right on a wide screen for a place
+// framed on the right, as a share of the width: to the middle of the part
+// the panel leaves (the panel takes about the left half)
+const FRAME_SHIFT = 0.24;
+
+// The camera, and every journey it makes
+function Director({
+  target,
+  active,
+  onSwap,
+  iris,
+  still,
+  tier,
+}: {
+  target: SceneId;
+  active: SceneId;
+  onSwap: (scene: SceneId) => void;
+  iris: React.RefObject<HTMLDivElement | null>;
+  still: boolean;
+  tier: Quality;
+}) {
+  const { camera, gl, invalidate, scene } = useThree();
+  const st = useRef({
+    pos: new THREE.Vector3(),
+    look: new THREE.Vector3(),
+    queue: [] as Seg[],
+    running: null as Running | null,
+    iris: 1,
+    active,
+    started: false,
+    yaw: 0,
+    pitch: 0,
+    dragging: false,
+    lastDrag: 0,
+    pointer: new THREE.Vector2(),
+    parallax: new THREE.Vector2(),
+    shift: 0,
+    shiftY: 0,
+    framed: false,
+    waitingSince: 0,
+  });
+
+  useEffect(() => {
+    st.current.active = active;
+  }, [active]);
+
+  // Plan the journey whenever the address changes. A new choice in the
+  // middle of a journey plans from wherever the camera is now.
+  useEffect(() => {
+    const s = st.current;
+    const to = target;
+    const from = s.started ? s.active : null;
+    if (from !== to) world.set({ arrived: false, hover: null });
+    if (iris.current) iris.current.style.background = scenes[to === RIVERSIDE && from ? from : to].threshold;
+    s.running = null;
+    const final = restPose(to);
+    invalidate();
+
+    if (holdingStill()) {
+      // Still view: a cut, no travel
+      s.queue = [{ kind: "swap", scene: to, pose: final }];
+      s.iris = 0;
+      s.started = true;
+      return;
+    }
+    if (!from) {
+      // Arriving on the site (or a deep link): already there, the view
+      // opening from the threshold's colour, no travel from anywhere
+      s.queue = [{ kind: "swap", scene: to, pose: final }, { kind: "move", dur: 0.5, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } }];
+      s.started = true;
+      return;
+    }
+    if (from === to) {
+      s.queue = [];
+      if (s.iris > 0) s.queue.push({ kind: "move", dur: 0.35, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } });
+      return;
+    }
+    const arrive: Seg[] = [
+      { kind: "swap", scene: to, pose: inWorld(to, scenes[to].enter) },
+      { kind: "move", dur: 0.55, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 0.5 } },
+    ];
+    if (from === RIVERSIDE) {
+      // Fly toward the section's sign on a gentle arc; the threshold closes
+      // over the last part
+      const route = routesFromRiverside[to as Exclude<SceneId, "lujiazui">];
+      const look = add(route.look, scenes[RIVERSIDE].offset);
+      const pts = route.path.map((p, i) => {
+        const t = (i + 1) / route.path.length;
+        return { pos: add(p, scenes[RIVERSIDE].offset), target: s.look.clone().lerp(look, t * t) };
+      });
+      pts[pts.length - 1].target = look;
+      s.queue = [{ kind: "move", dur: 0.7, ease: easeInOut, to: pts, iris: { to: 1, from: 0.55, until: 1 } }, ...arrive];
+    } else if (to === RIVERSIDE) {
+      // Back out of the place, then pull back from the sign to the view
+      const route = routesFromRiverside[from as Exclude<SceneId, "lujiazui">];
+      const door = add(route.path[route.path.length - 1], scenes[RIVERSIDE].offset);
+      const look = add(route.look, scenes[RIVERSIDE].offset);
+      const back = [...route.path]
+        .reverse()
+        .slice(1)
+        .map((p) => ({ pos: add(p, scenes[RIVERSIDE].offset), target: look.clone().lerp(final.target, 0.5) }));
+      s.queue = [
+        { kind: "move", dur: 0.4, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } },
+        { kind: "swap", scene: RIVERSIDE, pose: { pos: door, target: look } },
+        { kind: "move", dur: 0.8, ease: easeInOut, to: [...back, final], iris: { to: 0, from: 0, until: 0.35 } },
+      ];
+    } else {
+      // From one section's place straight to another's
+      s.queue = [{ kind: "move", dur: 0.4, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
+    }
+  }, [target, iris, invalidate]);
+
+  // Still view turned on in the middle of a journey: cut to where it was
+  // going, at once
+  useEffect(() => {
+    const s = st.current;
+    if (!still || !s.started) return;
+    s.running = null;
+    s.queue = [{ kind: "swap", scene: target, pose: restPose(target) }];
+    s.iris = 0;
+    s.yaw = s.pitch = 0;
+    s.parallax.set(0, 0);
+    invalidate();
+  }, [still, target, invalidate]);
+
+  // Look around by dragging; a little parallax follows the mouse. Not on
+  // touch screens or the mobile tier: there a drag is a scroll, and the
+  // camera must never catch it. Not in still view either.
+  useEffect(() => {
+    if (tier === "mobile" || matchMedia("(pointer: coarse)").matches) return;
+    const el = gl.domElement;
+    let last: [number, number] | null = null;
+    const down = (e: PointerEvent) => {
+      last = [e.clientX, e.clientY];
+    };
+    const move = (e: PointerEvent) => {
+      const s = st.current;
+      s.pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
+      if (holdingStill()) return;
+      invalidate();
+      if (!last || !(e.buttons & 1)) return;
+      const dx = e.clientX - last[0];
+      const dy = e.clientY - last[1];
+      last = [e.clientX, e.clientY];
+      if (Math.abs(dx) + Math.abs(dy) > 1) {
+        s.dragging = true;
+        s.lastDrag = performance.now();
+        s.yaw = THREE.MathUtils.clamp(s.yaw - dx * 0.0035, -0.5, 0.5);
+        s.pitch = THREE.MathUtils.clamp(s.pitch - dy * 0.0025, -0.22, 0.22);
+      }
+    };
+    const up = () => {
+      last = null;
+      st.current.dragging = false;
+    };
+    el.addEventListener("pointerdown", down);
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("pointerup", up);
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [gl, invalidate, tier]);
+
+  const tmp = useMemo(() => ({ dir: new THREE.Vector3(), right: new THREE.Vector3(), p: new THREE.Vector3(), l: new THREE.Vector3() }), []);
+
+  useFrame(({ size }, rawDt) => {
+    const dt = Math.min(rawDt, 0.05);
+    const s = st.current;
+    const reduce = holdingStill();
+    let busy = false;
+    if (!s.framed) {
+      s.framed = true;
+      performance.mark("city:first-frame");
+      // The band under the canvas can hide now (city-pages.css)
+      gl.domElement.closest(".city3d")?.setAttribute("data-drawn", "");
+    }
+
+    // Next segment
+    while (!s.running && s.queue.length) {
+      const seg = s.queue[0];
+      // Not into an empty place: hold at the threshold until it's built
+      if (seg.kind === "swap" && s.active !== seg.scene && !scene.getObjectByName(`scene:${seg.scene}`)?.children.length) {
+        const now = performance.now();
+        s.waitingSince ||= now;
+        if (now - s.waitingSince < WAIT_FOR_PLACE_MS) {
+          busy = true;
+          break;
+        }
+      }
+      s.waitingSince = 0;
+      s.queue.shift();
+      if (seg.kind === "swap") {
+        s.pos.copy(seg.pose.pos);
+        s.look.copy(seg.pose.target);
+        s.yaw = s.pitch = 0;
+        if (s.active !== seg.scene) {
+          s.active = seg.scene;
+          onSwap(seg.scene);
+        }
+        if (reduce) s.iris = 0;
+      } else {
+        s.running = {
+          seg,
+          t: 0,
+          pos: new THREE.CatmullRomCurve3([s.pos.clone(), ...seg.to.map((p) => p.pos)], false, "centripetal"),
+          look: new THREE.CatmullRomCurve3([s.look.clone(), ...seg.to.map((p) => p.target)], false, "centripetal"),
+          irisFrom: s.iris,
+        };
+      }
+    }
+
+    const r = s.running;
+    if (r) {
+      busy = true;
+      r.t = Math.min(1, r.t + dt / r.seg.dur);
+      const e = r.seg.ease(r.t);
+      r.pos.getPoint(e, s.pos);
+      r.look.getPoint(e, s.look);
+      const ir = r.seg.iris;
+      if (ir) {
+        const k = THREE.MathUtils.clamp((r.t - ir.from) / Math.max(ir.until - ir.from, 0.001), 0, 1);
+        s.iris = THREE.MathUtils.lerp(r.irisFrom, ir.to, k * k * (3 - 2 * k));
+      }
+      if (r.t >= 1) s.running = null;
+    } else if (!s.queue.length) {
+      // At rest: settle on the place's home view
+      const rest = restPose(s.active);
+      const k = reduce ? 1 : 1 - Math.exp(-dt * 6);
+      s.pos.lerp(rest.pos, k);
+      s.look.lerp(rest.target, k);
+      const settled = s.pos.distanceTo(rest.pos) < 0.02 && s.look.distanceTo(rest.target) < 0.05;
+      if (!settled) busy = true;
+      else {
+        s.pos.copy(rest.pos);
+        s.look.copy(rest.target);
+        if (!world.get().arrived) world.set({ arrived: true });
+      }
+    }
+
+    // Parallax and looking around, at rest and not in still view
+    tmp.p.copy(s.pos);
+    tmp.l.copy(s.look);
+    const resting = !r && !s.queue.length && !reduce;
+    if (resting && tier !== "mobile") {
+      const before = s.parallax.clone();
+      s.parallax.lerp(s.pointer, 1 - Math.exp(-dt * 3));
+      if (before.distanceTo(s.parallax) > 0.0005) busy = true;
+      tmp.dir.subVectors(tmp.l, tmp.p).normalize();
+      tmp.right.crossVectors(tmp.dir, camera.up).normalize();
+      tmp.p.addScaledVector(tmp.right, s.parallax.x * 0.25);
+      tmp.p.y += -s.parallax.y * 0.1;
+      if (!s.dragging && performance.now() - s.lastDrag > 2500) {
+        s.yaw *= Math.exp(-dt * 1.2);
+        s.pitch *= Math.exp(-dt * 1.2);
+      }
+    } else if (reduce) {
+      s.yaw = s.pitch = 0;
+    } else if (!s.dragging) {
+      s.yaw *= Math.exp(-dt * 4);
+      s.pitch *= Math.exp(-dt * 4);
+    }
+    if (Math.abs(s.yaw) + Math.abs(s.pitch) > 0.0005) busy = true;
+    else s.yaw = s.pitch = 0;
+    camera.position.copy(tmp.p);
+    camera.lookAt(tmp.l);
+    camera.rotateY(s.yaw);
+    camera.rotateX(s.pitch);
+
+    // Frame the place on its side on wide screens, leaving the panel its
+    // half; on narrow screens in the strip between the bar and the sheet
+    const cam = camera as THREE.PerspectiveCamera;
+    const narrow = isFlat();
+    const wide = !narrow && size.width >= 900;
+    const def = scenes[s.active];
+    const aspect = size.width / size.height;
+    // A portrait screen at a place's home view: a wider lens if needed to
+    // show `half` degrees either side, the middle turned by `yaw`
+    const portrait = narrow && aspect < 1 ? def.portrait : undefined;
+    let fov = aspect < 1 ? def.fov * 1.2 : def.fov;
+    if (portrait) fov = Math.max(fov, 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(portrait.half)) / aspect)));
+    const across = 2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect;
+    const want = wide && def.frame !== "center" ? (def.frame === "left" ? FRAME_SHIFT : -FRAME_SHIFT) : portrait ? Math.tan(THREE.MathUtils.degToRad(portrait.yaw)) / across : 0;
+    const ceiling = barBottom(size.width, size.height);
+    let wantY = narrow ? narrowLift(size.height, ceiling) : 0;
+    // A phone on its side: the place's fronts (`short`, degrees under the
+    // aim) go to the middle of the strip
+    if (narrow && aspect >= 1 && size.height <= 480 && def.short !== undefined) {
+      const fronts = (Math.tan(THREE.MathUtils.degToRad(def.short)) * size.height) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+      const aim = (ceiling + heroHeight(size.height) - SHEET_OVERLAP) / 2 - fronts;
+      wantY = 0.5 - aim / size.height;
+    }
+    // (in still view, and before the first arrival, the framing is simply there)
+    const glide = reduce || !s.started || !world.get().arrived ? 1 : 1 - Math.exp(-dt * 4);
+    s.shift += (want - s.shift) * glide;
+    s.shiftY += (wantY - s.shiftY) * glide;
+    if (Math.abs(want - s.shift) > 0.0005 || Math.abs(wantY - s.shiftY) > 0.0005) busy = true;
+    if (cam.fov !== fov) cam.fov = fov;
+    if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
+    else cam.clearViewOffset();
+    cam.updateProjectionMatrix();
+
+    // The threshold
+    const el = iris.current;
+    if (el) {
+      el.style.setProperty("--iris", s.iris.toFixed(3));
+      el.style.visibility = s.iris > 0.002 ? "visible" : "hidden";
+    }
+    if (busy) invalidate();
+  });
+
+  return null;
+}
+
+// Whether a tag box is too close to another: less than 8px apart
+const TAG_GAP = 8;
+const TAG_LIFT = 6; // the tag's foot above its sign's top edge
+type Box = { l: number; r: number; t: number; b: number };
+const clash = (a: Box, b: Box) => a.l < b.r + TAG_GAP && a.r > b.l - TAG_GAP && a.t < b.b + TAG_GAP && a.b > b.t - TAG_GAP;
+
+// Moves the riverside's tags to their signs: each above its sign; where
+// two would come closer than 8px, the later one (left to right) goes up a
+// row. If they can't all fit in the view that way (a narrow phone), they
+// stand as a row of keys at the foot of the view instead (city-pages.css:
+// .city-tags[data-row]).
+function TagProjector({ active }: { active: SceneId }) {
+  const v = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ camera, size }) => {
+    const nav = document.querySelector<HTMLElement>(".city-tags");
+    if (!nav) return;
+    const els = [...nav.querySelectorAll<HTMLElement>("[data-anchor]")];
+    const shown = active === RIVERSIDE && world.get().arrived;
+    if (!shown) {
+      nav.setAttribute("data-hidden", "");
+      return;
+    }
+    nav.removeAttribute("data-hidden");
+    const narrow = isFlat();
+    const ceiling = barBottom(size.width, size.height) + 4;
+    const floor = narrow ? heroHeight(size.height) - SHEET_OVERLAP - 4 : size.height - 8;
+    const left = Math.max(12, panelRight(size.width, size.height) + 12);
+    const tags: { el: HTMLElement; x: number; top: number; foot: number; w: number; h: number }[] = [];
+    let fits = true;
+    const screenY = (p: THREE.Vector3) => {
+      v.copy(p).project(camera);
+      if (v.z > 1) fits = false;
+      return ((1 - v.y) / 2) * size.height;
+    };
+    for (const el of els) {
+      const id = el.dataset.anchor!;
+      const p = anchors.get(id);
+      const f = anchors.get(`${id}:foot`);
+      if (!p || !f) {
+        fits = false;
+        continue;
+      }
+      const foot = screenY(f);
+      const top = screenY(p); // (leaves v at the sign's top)
+      const w = el.offsetWidth;
+      const h = el.offsetHeight;
+      const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, left + w / 2, size.width - w / 2 - 12);
+      tags.push({ el, x, top, foot, w, h });
+    }
+    // Each tag's places, in order: just above its sign, just below it, then
+    // a row higher or lower
+    const placed: Box[] = [];
+    const boxes: Box[] = [];
+    for (const tag of [...tags].sort((a, b) => a.x - b.x)) {
+      const step = tag.h + TAG_GAP;
+      const tops = [tag.top - TAG_LIFT - tag.h, tag.foot + TAG_LIFT, tag.top - TAG_LIFT - tag.h - step, tag.foot + TAG_LIFT + step, tag.top - TAG_LIFT - tag.h - 2 * step];
+      let box: Box | null = null;
+      for (const t of tops) {
+        const candidate = { l: tag.x - tag.w / 2, r: tag.x + tag.w / 2, t, b: t + tag.h };
+        if (candidate.t < ceiling || candidate.b > floor || placed.some((o) => clash(candidate, o))) continue;
+        box = candidate;
+        break;
+      }
+      if (!box) {
+        fits = false;
+        break;
+      }
+      placed.push(box);
+      boxes[tags.indexOf(tag)] = box;
+    }
+    if (!fits) {
+      nav.setAttribute("data-row", "");
+      for (const { el } of tags) el.style.transform = "";
+      return;
+    }
+    nav.removeAttribute("data-row");
+    tags.forEach(({ el }, i) => {
+      const b = boxes[i];
+      el.style.transform = `translate3d(${Math.round(b.l)}px, ${Math.round(b.t)}px, 0)`;
+    });
+  });
+  return null;
+}
+
+// The riverside's signs as links: the keyboard's and screen reader's way
+// to each section, and a second target for a pointer. Every listed section
+// but Home, named by its title from the registry.
+const tagged = listed.filter((s) => s.id !== "home");
+
+function Tags({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <nav aria-label="Sections in the city" className="city-tags" data-hidden="">
+      {tagged.map((s) => (
+        <Link key={s.id} className="glass city-tag" href={cityPath(s.id)} data-anchor={`sign:${s.id}`}>
+          {section(s.id).title}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
+// The place's fog and background (the atmosphere, a later task, will move
+// them with the weather and the hour)
+function Look({ active }: { active: SceneId }) {
+  const { scene, invalidate } = useThree();
+  useEffect(() => {
+    const def = scenes[active];
+    scene.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
+    scene.background = new THREE.Color(def.background);
+    invalidate();
+  }, [active, scene, invalidate]);
+  return null;
+}
+
+// The loop draws on demand: a few frames whenever something the picture
+// shows changes (the address, the store), and none in between. A change
+// of sky alone draws nothing yet (no atmosphere).
+function Demand({ pathname }: { pathname: string }) {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    let last = world.get();
+    const off = world.subscribe(() => {
+      const now = world.get();
+      const skyOnly = now.sky !== last.sky && (Object.keys(now) as (keyof typeof now)[]).every((k) => k === "sky" || now[k] === last[k]);
+      last = now;
+      if (!skyOnly) invalidate(2);
+    });
+    return () => {
+      off();
+    };
+  }, [invalidate]);
+  const frameloop = useThree((s) => s.frameloop);
+  useEffect(() => {
+    invalidate(2);
+  }, [pathname, frameloop, invalidate]);
+  return null;
+}
+
+// The shaders, compiled before they're needed (compileAsync), against the
+// target the frame draws into: on the composer tiers a HalfFloat target
+// with no tone mapping in the scene's programs; on mobile the screen,
+// tone-mapped by the renderer. Mounted after <Post>, so the composer has
+// already set the renderer's tone mapping. Each place alone, with fog.
+function Warm({ mounted, active, tier, onReady }: { mounted: SceneId[]; active: SceneId; tier: Quality; onReady: () => void }) {
+  const { gl, scene, camera } = useThree();
+  const warmed = useRef(new Set<SceneId>());
+  const target = useMemo(() => (tier === "mobile" ? null : new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType })), [tier]);
+  useEffect(() => () => target?.dispose(), [target]);
+
+  useEffect(() => {
+    const compile = (id: SceneId, ready?: () => void) => {
+      warmed.current.add(id);
+      const group = scene.getObjectByName(`scene:${id}`);
+      if (!group) return ready?.();
+      const def = scenes[id];
+      const alone = new THREE.Scene();
+      alone.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
+      const wasVisible = group.visible;
+      group.visible = true;
+      const previous = gl.getRenderTarget();
+      gl.setRenderTarget(target);
+      let pending: Promise<unknown>;
+      try {
+        pending = gl.compileAsync(group, camera, alone);
+      } catch {
+        pending = Promise.resolve();
+      } finally {
+        gl.setRenderTarget(previous);
+        group.visible = wasVisible;
+      }
+      if (ready) {
+        const fallback = window.setTimeout(ready, 2500);
+        pending.then(() => {
+          window.clearTimeout(fallback);
+          ready();
+        }, ready);
+      }
+    };
+    if (!warmed.current.size) {
+      if (!mounted.includes(active)) return;
+      let done = false;
+      compile(active, () => {
+        if (done) return;
+        done = true;
+        performance.mark("city:shaders-ready");
+        onReady();
+      });
+      return;
+    }
+    const cancels = mounted.filter((id) => !warmed.current.has(id)).map((id) => onIdle(() => compile(id), 3000));
+    return () => cancels.forEach((cancel) => cancel());
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- the first place is the one active at mount
+  }, [mounted, gl, scene, camera, target]);
+  return null;
+}
+
+type CityHandle = {
+  tier: Quality;
+  go: (id: SectionId | SceneId) => void;
+  sky: (param: string) => void;
+  scene: () => RootState;
+  THREE: typeof THREE;
+  frames: number; // frames drawn since the canvas started
+  frameTimes: number[]; // the last 600 intervals between drawn frames, ms
+};
+
+// For measuring scripts (docs/city/scripts/visibility.mjs) and the
+// console: in development, or any build opened with ?perf
+const handleWanted = () => process.env.NODE_ENV === "development" || new URLSearchParams(location.search).has("perf");
+
+function DevHandle({ tier, navigate }: { tier: Quality; navigate: (href: string) => void }) {
+  const get = useThree((s) => s.get);
+  const handle = useRef<CityHandle | null>(null);
+  const last = useRef(0);
+  useEffect(() => {
+    const h: CityHandle = {
+      tier,
+      go: (id) => navigate(cityPath((id in scenes ? sectionOf(id as SceneId) : id) as SectionId)),
+      sky: (param) => {
+        const sky = parseSkyParam(param);
+        if (sky) world.set({ sky });
+      },
+      scene: () => get(),
+      THREE,
+      frames: 0,
+      frameTimes: [],
+    };
+    handle.current = h;
+    (window as unknown as { __city?: CityHandle }).__city = h;
+    // ?sky=… in development: the preview's sky (nothing draws it yet)
+    h.sky(new URLSearchParams(location.search).get("sky") ?? "");
+  }, [get, tier, navigate]);
+  useFrame(() => {
+    const h = handle.current;
+    if (!h) return;
+    const now = performance.now();
+    if (last.current) {
+      h.frameTimes.push(now - last.current);
+      if (h.frameTimes.length > 600) h.frameTimes.shift();
+    }
+    last.current = now;
+    h.frames++;
+  });
+  return null;
+}
+
+export default function City3D({ tier }: { tier: Quality }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const target = placeFor(pathname);
+  const [active, setActive] = useState<SceneId>(target);
+  const [mounted, setMounted] = useState<SceneId[]>([target]);
+  // The places whose chunks have landed; a place is built once it's both
+  // wanted (mounted) and here
+  const [modules, setModules] = useState<Partial<Record<SceneId, SceneComponent>>>(() =>
+    Object.fromEntries(sceneOrder.flatMap((id) => (loadedScene(id) ? [[id, loadedScene(id)]] : []))),
+  );
+  useEffect(() => {
+    let live = true;
+    for (const id of mounted) {
+      if (modules[id]) continue;
+      loadScene(id).then(
+        (Scene) => live && setModules((m) => (m[id] ? m : { ...m, [id]: Scene })),
+        () => {}, // offline: the journey's wait runs out, and the next ask retries
+      );
+    }
+    return () => {
+      live = false;
+    };
+  }, [mounted, modules]);
+  const built = sceneOrder.filter((id) => mounted.includes(id) && modules[id]);
+  const [visible, setVisible] = useState(true);
+  const still = useWorld((s) => s.still);
+  // Under the résumé the canvas holds its last frame: ResumeViewer sets
+  // html.resume-lock while it is open
+  const [covered, setCovered] = useState(false);
+  // The first frame waits for the first place's shaders
+  const [warm, setWarm] = useState(false);
+  const [handle] = useState(handleWanted);
+  const iris = useRef<HTMLDivElement>(null);
+  const arrived = useWorld((s) => s.arrived);
+  useEffect(() => world.set({ quality: tier }), [tier]);
+
+  if (!mounted.includes(target)) setMounted([...mounted, target]);
+
+  // After the first arrival, the other places in idle time: desktop tiers
+  // build them; the mobile tier only fetches their chunks
+  useEffect(() => {
+    if (!arrived) return;
+    if (tier === "mobile") {
+      let cancelFetch = () => {};
+      const fetchNext = () => {
+        const id = sceneOrder.find((s) => !loadedScene(s));
+        if (id) loadScene(id).then(() => (cancelFetch = onIdle(fetchNext, 4000)), () => {});
+      };
+      cancelFetch = onIdle(fetchNext, 6000);
+      return () => cancelFetch();
+    }
+    let cancel = () => {};
+    let cancelled = false;
+    const next = () => {
+      if (cancelled) return;
+      setMounted((m) => {
+        const missing = sceneOrder.find((s) => !m.includes(s));
+        if (!missing) return m;
+        cancel = onIdle(next, 4000);
+        return [...m, missing];
+      });
+    };
+    cancel = onIdle(next, 6000);
+    return () => {
+      cancelled = true;
+      cancel();
+    };
+    // Once, after the first arrival
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arrived]);
+
+  // A link to a place, pointed at or focused anywhere on the page: its
+  // chunk is fetched now, so the journey there doesn't wait for it
+  useEffect(() => {
+    const want = (e: Event) => {
+      const href = (e.target as Element | null)?.closest?.("a[href^='/city']")?.getAttribute("href");
+      if (href) loadScene(placeFor(href.split("#")[0])).catch(() => {});
+    };
+    document.addEventListener("pointerover", want, { passive: true });
+    document.addEventListener("focusin", want);
+    return () => {
+      document.removeEventListener("pointerover", want);
+      document.removeEventListener("focusin", want);
+    };
+  }, []);
+
+  // Escape in a section's place goes back to the riverside, unless a
+  // dialog or menu is open (they take Escape themselves)
+  useEffect(() => {
+    if (target === RIVERSIDE) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.documentElement.classList.contains("resume-lock") || document.querySelector(":popover-open, dialog[open]")) return;
+      router.push(cityPath("home"));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [target, router]);
+
+  // The résumé covers the page: no frames under it
+  useEffect(() => {
+    const html = document.documentElement;
+    const read = () => setCovered(html.classList.contains("resume-lock"));
+    read();
+    const observer = new MutationObserver(read);
+    observer.observe(html, { attributes: true, attributeFilter: ["class"] });
+    return () => observer.disconnect();
+  }, []);
+
+  // Stop drawing when the tab is hidden, and (narrow screens) once the
+  // sheet has been scrolled up over the whole of the view
+  useEffect(() => {
+    let sheetOver = false;
+    const update = () => setVisible(!sheetOver && document.visibilityState !== "hidden");
+    document.addEventListener("visibilitychange", update);
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        const next = isFlat() && window.scrollY > heroHeight(window.innerHeight) + 24;
+        if (next !== sheetOver) {
+          sheetOver = next;
+          update();
+        }
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      document.removeEventListener("visibilitychange", update);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  const navigate = (href: string) => router.push(href);
+  const t = TIERS[tier];
+
+  return (
+    <div className="city3d" data-scene={active} data-tier={tier} data-arrived={arrived || undefined}>
+      <Canvas
+        className="city3d-canvas"
+        shadows="percentage"
+        dpr={t.dpr}
+        frameloop={!visible || !warm || covered ? "never" : still || !LIVE ? "demand" : "always"}
+        gl={{ antialias: t.canvasAntialias, powerPreference: "high-performance" }}
+        camera={{ fov: scenes[target].fov, near: 0.1, far: 1200, position: [0, 2, 20] }}
+        onCreated={({ gl }) => {
+          if (tier === "mobile") {
+            gl.toneMapping = THREE.NeutralToneMapping;
+            gl.toneMappingExposure = 1.12;
+          }
+        }}
+        aria-hidden="true"
+      >
+        <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} tier={tier} />
+        <Demand pathname={pathname} />
+        <Look active={active} />
+        <WorldLights />
+        <TagProjector active={active} />
+        {built.map((id) => {
+          const Scene = modules[id]!;
+          return (
+            <group key={id} name={`scene:${id}`} position={scenes[id].offset} visible={id === active}>
+              <Scene active={active === id} quality={tier} navigate={navigate} />
+            </group>
+          );
+        })}
+        <Post tier={tier} />
+        <Warm mounted={built} active={active} tier={tier} onReady={() => setWarm(true)} />
+        {handle && <DevHandle tier={tier} navigate={navigate} />}
+      </Canvas>
+      <div ref={iris} className="city-iris" aria-hidden="true" />
+      <Tags show={target === RIVERSIDE} />
+    </div>
+  );
+}
