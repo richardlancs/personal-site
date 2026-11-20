@@ -73,6 +73,9 @@ const TRAM_Z = 4.0; // the tram's front, parked just down the street, right of t
 // The arcade: its building's length along the street, and the open
 // shopfront in it (z), the room's depth and height
 const ARCADE = { z0: 2.4, z1: 6.8, open0: 3.6, open1: 5.6, depth: 0.62, height: 0.44, band: 0.56 };
+// The arched window over its door, as painted: from over the board up to
+// a round head
+const ARCH = { z0: 3.8, z1: 5.4, y0: 0.76, spring: 0.9, top: 1.16 };
 // The machine: where it stands in the door, how it's turned (toward the
 // street and the camera), and its size (it's built in metres)
 const MACHINE = { x: XL - 0.14, z: 4.5, ry: Math.PI / 2 - 0.55, scale: 0.1 * 1.9 };
@@ -219,6 +222,8 @@ function build(quality: Quality): Built {
       if ((f + 0.37) * FLOOR < GROUND + 0.06) continue;
       const share = wr() < 0.6 ? 0.85 : 0.3;
       for (let k = Math.ceil(z0 / BAY + 0.1); (k + 1) * BAY < z1 - 0.05; k++) {
+        // (over the arcade's door, its arched window instead)
+        if (arcade && (f + 0.37) * FLOOR < ARCH.top + 0.04 && (k + 0.7) * BAY > ARCH.z0 - 0.05 && (k + 0.3) * BAY < ARCH.z1 + 0.05) continue;
         (wr() < share ? litPanes : darkPanes).push(pane(-1, XL + 0.003, (f + 0.37) * FLOOR, (f + 0.73) * FLOOR, (k + 0.3) * BAY, (k + 0.7) * BAY));
       }
     }
@@ -313,12 +318,40 @@ function build(quality: Quality): Built {
     glowMaterial({ day: "#4d4740", night: "#c58f55" }),
     "arcade:room",
   );
+  // inside, along the back wall: a low counter and two darker cabinets
+  // either side (the room's shapes, lit by its warm light)
+  {
+    const bx = XL - A.depth + 0.03;
+    mesh(
+      merge([pane(-1, bx, 0.004, 0.1, A.open0, A.open1), pane(-1, bx, 0.004, 0.3, A.open0 + 0.08, A.open0 + 0.28), pane(-1, bx, 0.004, 0.3, A.open1 - 0.28, A.open1 - 0.08)]),
+      glowMaterial({ day: "#2a2724", night: "#8a5a34" }),
+      "arcade:inside",
+    );
+  }
   // the door's frame: posts at the opening's ends and a transom
   mesh(
     merge([slab(XL - 0.03, XL + 0.01, 0, A.height, A.open0, A.open0 + 0.04), slab(XL - 0.03, XL + 0.01, 0, A.height, A.open1 - 0.04, A.open1), slab(XL - 0.03, XL + 0.01, A.height - 0.1, A.height - 0.08, A.open0, A.open1)]),
     surface({ color: FRAME }),
     "arcade:frame",
   );
+  // the arched window over the door: lit glass in a stone surround,
+  // its glazing bars dark
+  {
+    const half = (ARCH.z1 - ARCH.z0) / 2;
+    const mid = (ARCH.z0 + ARCH.z1) / 2;
+    const rise = ARCH.top - ARCH.spring;
+    const head = (r: number) => new THREE.CircleGeometry(1, 24, 0, Math.PI).scale(r, (rise / half) * r, 1).rotateY(Math.PI / 2).translate(XL + 0.004, ARCH.spring, mid);
+    const glass = merge([pane(-1, XL + 0.004, ARCH.y0, ARCH.spring, ARCH.z0, ARCH.z1), head(half)]);
+    mesh(glass, glowMaterial({ day: "#4a6075", night: "#e2a85f" }), "arcade:arch");
+    const bars: THREE.BufferGeometry[] = [slab(XL, XL + 0.012, ARCH.spring - 0.006, ARCH.spring + 0.006, ARCH.z0, ARCH.z1)];
+    for (let i = 1; i < 6; i++) {
+      const z = ARCH.z0 + ((ARCH.z1 - ARCH.z0) * i) / 6;
+      const u = (z - mid) / half;
+      bars.push(slab(XL, XL + 0.012, ARCH.y0, ARCH.spring + rise * Math.sqrt(1 - u * u), z - 0.006, z + 0.006));
+    }
+    bars.push(slab(XL, XL + 0.03, ARCH.y0 - 0.03, ARCH.y0, ARCH.z0 - 0.05, ARCH.z1 + 0.05));
+    mesh(merge(bars), surface({ color: FRAME }), "arcade:bars");
+  }
   // a light in its ceiling
   mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.01, 12).translate(XL - A.depth / 2, A.height - 0.012, (A.open0 + A.open1) / 2), glowMaterial({ day: "#d8d2c4", night: "#ffd49a" }), "arcade:light");
   lights.push({ x: XL - 0.05, z: (A.open0 + A.open1) / 2, w: 0.5, color: "#ffc98a", height: 0.3 });
