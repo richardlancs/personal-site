@@ -319,7 +319,8 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         setColor(u, "uHaze", s.air);
         setNumber(u, "uHazeAmt", Math.max(0, w.fogGrey) * 0.9);
         setNumber(u, "uCover", w.cover);
-        setNumber(u, "uSunDisc", w.sunDisc);
+        // (a place without a moon: no moon's glow either after dark)
+        setNumber(u, "uSunDisc", w.sunDisc * (def.moon === false ? 1 - step01(0.6, 1, night) : 1));
         setNumber(u, "uMoon", def.moon === false ? 0 : step01(0.6, 1, night));
         setNumber(u, "uStars", step01(0.5, 1, night) * (1 - step01(0.4, 0.85, w.cover)));
         setNumber(u, "uCityGlow", cityGlowLevel(d, w));

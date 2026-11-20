@@ -104,3 +104,12 @@ test("the kit's new pieces: glass along the railings, slabs on the plaza, the sc
   assert.match(src, /if \(!active\) \{\s*for \(const f of built\.faces\) f\.userData\.release\?\.\(\);/);
   assert.match(src, /for \(const f of built\.faces\) f\.userData\.restore\?\.\(\);/);
 });
+
+test("the kit pass: the supertalls' floors lit by their window material (no glass skin), the kit's greens (no recolouring), no moon", async () => {
+  const s = readFileSync(new URL("../app/components/city3d/districts/towers.tsx", import.meta.url), "utf8");
+  assert.match(s, /windowMaterial\(\{ base: c\.base, glass: c\.glass, lit: c\.floors, warm: "#[0-9a-f]{6}" \}\)/);
+  assert.doesNotMatch(s, /"glass:warm"|setColorAt|children\.find\(\(o\) => o\.name === "glass"\)/);
+  assert.match(s, /buildStreetTrees\(seed, \[\.\.\.spots\], TREES\)/);
+  const { scenes } = await import("../app/components/city3d/scenes.ts");
+  assert.equal(scenes.towers.moon, false);
+});

@@ -68,8 +68,9 @@ const CONCRETE = "#c9c3b8";
 const STONE = "#d2c7b4";
 const ROOF = "#8d8a82";
 const FRAME = "#20232a";
-const LEAF = new THREE.Color("#a4b84a");
-const leaf = new THREE.Color();
+// The paintings' trees: a brighter, yellower green than the kit's sage,
+// leafy, lit warm from below after dark
+const TREES = { greens: ["#a4b84a", "#93ad45", "#b1c25a", "#86a83f"], underGlow: { tone: "#ffc070", strength: 0.75 }, leaves: 0.5 };
 
 // A curved face round the plaza's middle: radius r from azimuth a0 to a1
 // (degrees), y0 to y1. Facing the middle (`inward`) or away from it. Its
@@ -225,14 +226,16 @@ function build(quality: Quality): Built {
   const detail = mobile ? "far" : "near";
   type Maker = (d: "near" | "far", m: { body: THREE.Material; glass: THREE.Material; lit: THREE.Material }) => Landmark;
   const st = T.supertalls;
-  type Look = { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone; skin: string; warm: number };
+  // (`floors`: the least share of their windows lit after dark: the
+  // paintings light the landmarks' floors warm almost all the way up)
+  type Look = { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone; floors: number };
   const SUPERTALLS: [Maker, readonly [number, number], Look][] = [
-    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#86a3bf", glass: "#9ec2e2", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan", skin: "#a9c6e0", warm: 0.2 }],
-    [buildJinMao, st.jinMao, { body: surface({ color: "#9aa2ad" }), base: "#9ba6b3", glass: "#6e94bc", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold", skin: "#b9c4cf", warm: 0.3 }],
-    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#8eafcb", glass: "#a8cdea", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan", skin: "#b2cde2", warm: 0.28 }],
+    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#86a3bf", glass: "#9ec2e2", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan", floors: 0.55 }],
+    [buildJinMao, st.jinMao, { body: surface({ color: "#9aa2ad" }), base: "#9ba6b3", glass: "#6e94bc", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold", floors: 0.65 }],
+    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#8eafcb", glass: "#a8cdea", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan", floors: 0.6 }],
   ];
   for (const [builder, [x, z], c] of SUPERTALLS) {
-    const landmark = builder(detail, { body: c.body, glass: windowMaterial({ base: c.base, glass: c.glass }), lit: c.lit });
+    const landmark = builder(detail, { body: c.body, glass: windowMaterial({ base: c.base, glass: c.glass, lit: c.floors, warm: "#ffd08a" }), lit: c.lit });
     landmark.group.position.set(x, 0, z);
     // a little stouter than life, as the paintings draw them from below
     landmark.group.scale.set(1.2, 1, 1.2);
@@ -242,16 +245,6 @@ function build(quality: Quality): Built {
         o.castShadow = !mobile;
       }
     });
-    // After dark the paintings light their floors warm all the way up: a
-    // skin of the kit's glass over the tower's glass, clear by day, gold
-    // from inside at night, the window grid showing through it
-    const skin = landmark.group.children.find((o) => o.name === "glass") as THREE.Mesh | undefined;
-    if (skin) {
-      const over = new THREE.Mesh(skin.geometry, glassMaterial({ tint: c.skin, opacity: 0.12, sky: 0.6, glow: { tone: "#ffd08a", strength: c.warm } }));
-      over.name = "glass:warm";
-      over.scale.set(1.006, 1.0005, 1.006);
-      landmark.group.add(over);
-    }
     if (builder === buildShanghaiTower) {
       // its helix: one cyan line up the notch's edge, a full third of a turn
       const H = LANDMARK_HEIGHTS.shanghaiTower;
@@ -489,17 +482,11 @@ function build(quality: Quality): Built {
     [roofTrees, 107, P.height - 1.2],
     [deckTrees, 113, R.deck + 0.1],
   ] as const) {
-    const trees = buildStreetTrees(seed, [...spots]);
+    const trees = buildStreetTrees(seed, [...spots], TREES);
     for (const t of trees) {
       geometries.push(t.geometry);
       t.position.y = y;
       if (mobile) t.castShadow = false;
-      // the paintings' canopies are a brighter, yellower green than the
-      // kit's sage: lifted toward it, each tree keeping its own shade
-      if (t.instanceColor && t.name !== "trees:trunks") {
-        for (let i = 0; i < t.count; i++) t.setColorAt(i, t.getColorAt(i, leaf).lerp(LEAF, 0.45).multiplyScalar(1.12));
-        t.instanceColor.needsUpdate = true;
-      }
       add(t);
     }
   }
@@ -507,7 +494,8 @@ function build(quality: Quality): Built {
   // ---- The plaza's paving: the lights streak it in the rain
   // (granite slabs about 2 m, the kit's paving)
   const slabs = pavingTexture({ seed: 41, kind: "slabs", repeat: [140 / 0.8, 140 / 0.8] });
-  const paving = wetPaving({ w: 140, d: 140, x: 0, z: 0, y: 0, mode: "fake", color: PAVING, lights, map: slabs });
+  // (polished granite: the lights in it after dark, dry too)
+  const paving = wetPaving({ w: 140, d: 140, x: 0, z: 0, y: 0, mode: "fake", color: PAVING, lights, map: slabs, polish: 0.5 });
   disposers.push(() => slabs.dispose());
   add(paving.mesh);
   disposers.push(paving.dispose);

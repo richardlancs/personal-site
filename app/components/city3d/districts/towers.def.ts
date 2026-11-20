@@ -87,6 +87,10 @@ const towers: SceneDef = {
   // the city behind them to 150: the fog starts past the supertalls
   fog: { color: "#151c2a", near: 70, far: 300, keep: { near: 60, far: 240 } },
   background: "#151c2a",
+  // the paintings have no moon beside the supertalls
+  moon: false,
+  // by day the walkway's and the podiums' shaded sides lifted by the sky
+  bounce: { color: "#c8d8ea", strength: 0.2 },
 };
 
 export default towers;
