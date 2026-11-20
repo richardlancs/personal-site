@@ -10,6 +10,7 @@ import { parseSkyParam } from "../../lib/skyParam";
 import { listed, pageSections, section, type SectionId } from "../../sections/registry";
 import { anchors } from "./anchors";
 import { WorldLights } from "./common";
+import { disposeShared } from "./kit/materials";
 import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import Post from "./Post";
@@ -43,11 +44,6 @@ const WAIT_FOR_PLACE_MS = 1500;
 // Still view (app/lib/still.ts, store.ts): the camera cuts instead of
 // travelling, and nothing moves
 const holdingStill = () => world.get().still;
-
-// Nothing in the grey city moves on its own yet (no rain, boats or
-// trains), so the loop draws only when something changes, still view or
-// not. The scenes that bring motion turn this on.
-const LIVE = false;
 
 // On narrow screens the panel is a sheet over the lower part of the
 // screen, from --hero down (city-pages.css); the camera's subject is
@@ -430,99 +426,87 @@ function Director({
   return null;
 }
 
-// Whether a tag box is too close to another: less than 8px apart
+// The riverside's boards as links (Tags, below): each link is laid over
+// its board as the board's own hit area and focus ring, the board's painted
+// title its visible label. A link is the board's screen rectangle, grown to
+// 44×44 if the board is smaller; every link must keep 8px from the others
+// and stay in the view (under the bar, beside the panel, above a phone's
+// sheet). Where they can't all do that (a small phone, a phone on its
+// side), none is over the scene: the same links stand as a row of keys at
+// the top of the panel (CityPage.tsx: .city-keys; html[data-city-tags=
+// "row"]), and the boards don't answer a pointer (Riverside.tsx).
 const TAG_GAP = 8;
-const TAG_LIFT = 6; // the tag's foot above its sign's top edge
+const TAG_MIN = 44;
 type Box = { l: number; r: number; t: number; b: number };
 const clash = (a: Box, b: Box) => a.l < b.r + TAG_GAP && a.r > b.l - TAG_GAP && a.t < b.b + TAG_GAP && a.b > b.t - TAG_GAP;
 
-// Moves the riverside's tags to their signs: each just above its sign, or
-// just below it, or a row further, wherever it keeps 8px from the others
-// (left to right). If they can't all fit in the view that way (a small
-// phone, a phone on its side), they are hidden and the same links stand as
-// a row of keys at the top of the panel, under the scene (CityPage.tsx:
-// .city-keys; html[data-city-tags="row"]).
-const tagSize = new WeakMap<HTMLElement, [number, number]>();
+// The links, found once when the nav mounts (Tags), not every frame
+let tagLinks: HTMLElement[] = [];
 
 function TagProjector({ active }: { active: SceneId }) {
   const v = useMemo(() => new THREE.Vector3(), []);
   useFrame(({ camera, size }) => {
-    const nav = document.querySelector<HTMLElement>(".city-tags");
+    const nav = tagLinks[0]?.parentElement;
     if (!nav) return;
-    const els = [...nav.querySelectorAll<HTMLElement>("[data-anchor]")];
     const shown = active === RIVERSIDE && world.get().arrived;
     if (!shown) {
-      nav.setAttribute("data-hidden", "");
+      if (!nav.hasAttribute("data-hidden")) nav.setAttribute("data-hidden", "");
       return;
     }
     nav.removeAttribute("data-hidden");
     const narrow = isFlat();
     const ceiling = barBottom(size.width, size.height) + 4;
     const floor = narrow ? heroHeight(size.height) - SHEET_OVERLAP - 4 : size.height - 8;
-    const left = Math.max(12, panelRight(size.width, size.height) + 12);
-    const tags: { el: HTMLElement; x: number; top: number; foot: number; w: number; h: number }[] = [];
+    // (4px from the screen's edges: room for the focus ring)
+    const edge = panelRight(size.width, size.height);
+    const left = edge ? edge + 8 : 4;
     let fits = true;
-    const screenY = (p: THREE.Vector3) => {
+    const project = (p: THREE.Vector3 | undefined) => {
+      if (!p) {
+        fits = false;
+        return [0, 0];
+      }
       v.copy(p).project(camera);
       if (v.z > 1) fits = false;
-      return ((1 - v.y) / 2) * size.height;
+      return [((v.x + 1) / 2) * size.width, ((1 - v.y) / 2) * size.height];
     };
-    for (const el of els) {
-      const id = el.dataset.anchor!;
-      const p = anchors.get(id);
-      const f = anchors.get(`${id}:foot`);
-      if (!p || !f) {
-        fits = false;
-        continue;
-      }
-      const foot = screenY(f);
-      const top = screenY(p); // (leaves v at the sign's top)
-      // (their last size while shown: hidden in the row mode, they measure 0)
-      if (el.offsetWidth) tagSize.set(el, [el.offsetWidth, el.offsetHeight]);
-      const [w, h] = tagSize.get(el) ?? [0, 0];
-      const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, left + w / 2, size.width - w / 2 - 12);
-      tags.push({ el, x, top, foot, w, h });
-    }
-    // Each tag's places, in order: just above its sign, just below it, then
-    // a row higher or lower
-    const placed: Box[] = [];
     const boxes: Box[] = [];
-    for (const tag of [...tags].sort((a, b) => a.x - b.x)) {
-      const step = tag.h + TAG_GAP;
-      const tops = [tag.top - TAG_LIFT - tag.h, tag.foot + TAG_LIFT, tag.top - TAG_LIFT - tag.h - step, tag.foot + TAG_LIFT + step, tag.top - TAG_LIFT - tag.h - 2 * step];
-      let box: Box | null = null;
-      for (const t of tops) {
-        const candidate = { l: tag.x - tag.w / 2, r: tag.x + tag.w / 2, t, b: t + tag.h };
-        if (candidate.t < ceiling || candidate.b > floor || placed.some((o) => clash(candidate, o))) continue;
-        box = candidate;
-        break;
-      }
-      if (!box) {
-        fits = false;
-        break;
-      }
-      placed.push(box);
-      boxes[tags.indexOf(tag)] = box;
+    for (const el of tagLinks) {
+      const id = el.dataset.anchor!;
+      const [, top] = project(anchors.get(`${id}:top`));
+      const [, foot] = project(anchors.get(`${id}:foot`));
+      const [l] = project(anchors.get(`${id}:left`));
+      const [r] = project(anchors.get(`${id}:right`));
+      const cx = (l + r) / 2;
+      const cy = (top + foot) / 2;
+      const w = Math.max(TAG_MIN, Math.abs(r - l));
+      const h = Math.max(TAG_MIN, Math.abs(foot - top));
+      const box = { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 };
+      if (box.t < ceiling || box.b > floor || box.l < left || box.r > size.width - 4 || boxes.some((o) => clash(box, o))) fits = false;
+      boxes.push(box);
     }
-    // (html[data-city-tags]: "row" shows the panel's keys instead, CityPage.tsx)
     const html = document.documentElement;
     if (!fits) {
       if (html.dataset.cityTags !== "row") html.dataset.cityTags = "row";
       return;
     }
     if (html.dataset.cityTags !== "over") html.dataset.cityTags = "over";
-    tags.forEach(({ el }, i) => {
+    tagLinks.forEach((el, i) => {
       const b = boxes[i];
       el.style.transform = `translate3d(${Math.round(b.l)}px, ${Math.round(b.t)}px, 0)`;
+      el.style.width = `${Math.round(b.r - b.l)}px`;
+      el.style.height = `${Math.round(b.b - b.t)}px`;
     });
   });
   return null;
 }
 
-// The riverside's signs as links: the keyboard's and screen reader's way
-// to each section, and a second target for a pointer. Every listed section
-// but Home, named by its title from the registry.
-const tagged = listed.filter((s) => s.id !== "home");
+// The riverside's signs as links: one per board, laid over it (above), the
+// keyboard's and screen reader's way to each section and the pointer's
+// target. Every listed section but Home; each link's name is its section's
+// title from the registry (the board shows the same word, painted).
+// In the order they stand, left to right, so Tab goes along the river.
+const tagged = listed.filter((s) => s.id !== "home").sort((a, b) => scenes[a.district].sign!.bearing - scenes[b.district].sign!.bearing);
 
 function Tags({ show }: { show: boolean }) {
   useEffect(() => {
@@ -531,12 +515,15 @@ function Tags({ show }: { show: boolean }) {
       delete document.documentElement.dataset.cityTags;
     };
   }, [show]);
+  const found = useCallback((nav: HTMLElement | null) => {
+    tagLinks = nav ? [...nav.querySelectorAll<HTMLElement>("[data-anchor]")] : [];
+  }, []);
   if (!show) return null;
   return (
-    <nav aria-label="Sections in the city" className="city-tags" data-hidden="">
+    <nav aria-label="Signs" className="city-tags" data-hidden="" ref={found}>
       {tagged.map((s) => (
-        <Link key={s.id} className="glass city-tag" href={cityPath(s.id)} data-anchor={`sign:${s.id}`}>
-          {section(s.id).title}
+        <Link key={s.id} className="city-tag" href={cityPath(s.id)} data-anchor={`sign:${s.id}`}>
+          <span className="city-tag-name">{section(s.id).title}</span>
         </Link>
       ))}
     </nav>
@@ -670,9 +657,15 @@ function DevHandle({ tier, navigate }: { tier: Quality; navigate: (href: string)
       frameTimes: [],
     };
     handle.current = h;
-    (window as unknown as { __city?: CityHandle }).__city = h;
+    const w = window as unknown as { __city?: CityHandle };
+    w.__city = h;
     // ?sky=… in development: the preview's sky (nothing draws it yet)
     h.sky(new URLSearchParams(location.search).get("sky") ?? "");
+    return () => {
+      // (it would keep the renderer alive after the canvas goes)
+      if (w.__city === h) delete w.__city;
+      handle.current = null;
+    };
   }, [get, tier, navigate]);
   useFrame(() => {
     const h = handle.current;
@@ -723,7 +716,13 @@ export default function City3D({ tier }: { tier: Quality }) {
   const [handle] = useState(handleWanted);
   const iris = useRef<HTMLDivElement>(null);
   const arrived = useWorld((s) => s.arrived);
+  // Something is moving (common.tsx: useLive, useMovers): only then, and
+  // not in still view, does the loop draw every frame
+  const live = useWorld((s) => s.live > 0);
   useEffect(() => world.set({ quality: tier }), [tier]);
+  // The canvas is going away (leaving /city, a lost context): the kit's
+  // shared materials go with it (kit/materials.ts)
+  useEffect(() => () => disposeShared(), []);
 
   if (!mounted.includes(target)) setMounted([...mounted, target]);
 
@@ -833,7 +832,7 @@ export default function City3D({ tier }: { tier: Quality }) {
         className="city3d-canvas"
         shadows="percentage"
         dpr={t.dpr}
-        frameloop={!visible || !warm || covered ? "never" : still || !LIVE ? "demand" : "always"}
+        frameloop={!visible || !warm || covered ? "never" : still || !live ? "demand" : "always"}
         gl={{ antialias: t.canvasAntialias, powerPreference: "high-performance" }}
         camera={{ fov: scenes[target].fov, near: 0.1, far: 1200, position: [0, 2, 20] }}
         onCreated={({ gl }) => {
@@ -853,7 +852,7 @@ export default function City3D({ tier }: { tier: Quality }) {
           const Scene = modules[id]!;
           return (
             <group key={id} name={`scene:${id}`} position={scenes[id].offset} visible={id === active}>
-              <Scene active={active === id} quality={tier} navigate={navigate} />
+              <Scene active={active === id} quality={tier} navigate={navigate} still={still} />
             </group>
           );
         })}

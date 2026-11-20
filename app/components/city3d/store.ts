@@ -1,66 +1,67 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { SkyState } from "../../lib/sky";
-import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "../../lib/still";
+import type { SkyState } from "../../lib/sky.ts";
+import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "../../lib/still.ts";
+import type { Quality } from "./tiers.ts";
 
-// What the world and the pages share: which object the camera is looking
-// at, what's been chosen in each place, and what the visitor is pointing
-// at. Pages set these from their HTML controls; the 3D scenes set them
-// from clicks on objects. Both stay in step.
+// What the 3D city and its pages share (city3d/, app/city/): what the
+// camera is looking at in the current place, what's been chosen in each
+// place, what the visitor is pointing at, and what the world needs to know
+// about the time, the weather and still view. The pages' HTML controls and
+// the scenes' clicks both write here, so the two stay in step.
+//
+// The 2D page imports this file too (Still view), so it may import only
+// React and app/lib/ (tests/city3d-bundle.test.mjs).
 
-// How much the renderer does: brushwork and 4x antialiasing on a good
-// desktop GPU; no brushwork on weaker ones; and on phones a capped pixel
-// ratio, 2x antialiasing and small shadow maps
-export type Quality = "high" | "low" | "mobile";
+// The renderer's tier (tiers.ts decides it)
+export type { Quality };
 
 export type Selection = {
   project: number;
   shot: number;
   line: number;
   interest: number;
-  page: number;
 };
 
 export type WorldState = {
-  focus: string | null; // an object in the current place, e.g. "monitor-1"
-  hover: string | null;
-  phoneUp: boolean;
-  fountain: number; // when the fountain was last turned on (ms), 0 if never
-  doorOpen: boolean;
+  focus: string | null; // a focus pose in the current place, e.g. "screen-1" (districts/<id>.def.ts: focus)
+  hover: string | null; // the Hitbox under the pointer (common.tsx)
   arrived: boolean; // the camera has settled in the current place
-  quality: Quality; // the renderer's tier (World3D.tsx decides it)
-  still: boolean; // still view (still.ts): no decorative motion, the camera cuts
-  covered: boolean; // a dialog covers the world (the résumé): no frames are drawn
-  // Richmond Hill's weather and time of day, as the world should show
-  // them (lib/sky.ts). Set by the weather driver from the live reading
-  // and the clock, or by the development preview controls.
+  quality: Quality; // the renderer's tier (CityShell.tsx picks it)
+  still: boolean; // still view (lib/still.ts): nothing moves, the camera cuts
+  // Richmond Hill's weather and time of day, as the city should show them
+  // (lib/sky.ts). Set by the weather driver (weather/SkyDriver.tsx) from
+  // the live reading and the clock, or by the development preview.
   sky: SkyState;
+  // Richmond Hill's local hour, 0 up to 24 with the minutes as a fraction,
+  // from the same clock as the 2D page's time (SkyDriver.tsx); while the
+  // sky is a preview, the hour that preview stands for (lib/cityWindows.ts:
+  // previewHour). The lit windows follow it.
+  hour: number;
+  // How many things in the city are moving right now (common.tsx: useLive):
+  // the canvas draws every frame only while this is above 0 and still view
+  // is off; otherwise only when something changes
+  live: number;
   sel: Selection;
-  // The arcade machine (world3d/scenes/arcadeMachine.ts): the page's play
-  // button counts presses, the machine says how each turned out
+  // The arcade machine (arcade/arcadeMachine.ts): the page's play button
+  // counts presses, the machine says how each turned out
   arcadePress: number;
   arcadeStatus: string;
-  // The home page's intro has begun to reveal the park (components/intro):
-  // the camera's walk in, held under it, starts
-  introReveal: boolean;
 };
 
 let state: WorldState = {
   focus: null,
   hover: null,
-  phoneUp: false,
-  fountain: 0,
-  doorOpen: false,
   arrived: false,
   quality: "high",
   still: false,
-  covered: false,
   sky: { preset: "neutral", daylight: "day", progress: 0, source: "fallback" },
-  sel: { project: 0, shot: 0, line: 0, interest: 0, page: 0 },
+  hour: 12,
+  live: 0,
+  sel: { project: 0, shot: 0, line: 0, interest: 0 },
   arcadePress: 0,
   arcadeStatus: "",
-  introReveal: false,
 };
 
 const listeners = new Set<() => void>();
@@ -81,6 +82,19 @@ export const world = {
     return () => listeners.delete(listener);
   },
 };
+
+// Something has started moving (common.tsx: useLive): the canvas draws
+// every frame until every holder has let go. The returned release counts
+// once, however often it's called.
+export function holdLive(): () => void {
+  world.set({ live: state.live + 1 });
+  let held = true;
+  return () => {
+    if (!held) return;
+    held = false;
+    world.set({ live: Math.max(0, state.live - 1) });
+  };
+}
 
 export function useWorld<T>(pick: (s: WorldState) => T): T {
   return useSyncExternalStore(
@@ -132,11 +146,4 @@ if (typeof window !== "undefined") {
   window.addEventListener("storage", (event) => {
     if (event.key === STILL_KEY || event.key === null) applyStill(currentStill());
   });
-}
-
-// How long the fountain runs once turned on
-export const FOUNTAIN_MS = 7000;
-
-export function runFountain() {
-  world.set({ fountain: performance.now() });
 }

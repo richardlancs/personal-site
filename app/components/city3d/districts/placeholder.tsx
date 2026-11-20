@@ -3,13 +3,16 @@
 import { useMemo, type ComponentType } from "react";
 import * as THREE from "three";
 import type { SceneProps } from "../common";
+import { neonMaterial } from "../kit/neon";
+import { surface } from "../kit/surface";
 import { scenes, type SceneId } from "../scenes";
 
 // One grey stand-in for every section's place until its own scene is
 // built: a ground, three boxes, and a low strip in the place's threshold
 // colour, so a journey can be seen to arrive somewhere. Each place gets
 // its own component (standIn(id)), the same build with that place's
-// colour; the five loaders in sceneChunks.ts all come here for now.
+// colour; each districts/<id>.tsx is one of these until its scene is built.
+// Its materials come from the kit's factories (shared, disposed centrally).
 
 const GREYS = ["#5a606a", "#6f7680", "#4a4f58"] as const;
 
@@ -29,9 +32,9 @@ export function standIn(id: Exclude<SceneId, "lujiazui">): ComponentType<ScenePr
   const threshold = scenes[id].threshold;
   function StandIn() {
     const parts = useMemo(() => {
-      const ground = new THREE.MeshLambertMaterial({ color: "#2c3038" });
-      const greys = GREYS.map((color) => new THREE.MeshLambertMaterial({ color }));
-      const strip = new THREE.MeshBasicMaterial({ color: new THREE.Color(threshold).multiplyScalar(2.2) });
+      const ground = surface({ color: "#2c3038" });
+      const greys = GREYS.map((color) => surface({ color }));
+      const strip = neonMaterial(`#${new THREE.Color(threshold).multiplyScalar(2.2).getHexString()}`);
       return { ground, greys, strip };
     }, []);
     return (
@@ -54,4 +57,3 @@ export function standIn(id: Exclude<SceneId, "lujiazui">): ComponentType<ScenePr
   return StandIn;
 }
 
-export default standIn;

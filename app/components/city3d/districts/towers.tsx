@@ -1,0 +1,10 @@
+"use client";
+
+import { standIn } from "./placeholder";
+
+// Projects' place: for now the grey stand-in (placeholder.tsx) in its own
+// colour. Its own scene replaces this file (and only this file): a default
+// export taking SceneProps (common.tsx), its poses in ./towers.def.ts.
+const ProjectsScene = standIn("towers");
+
+export default ProjectsScene;

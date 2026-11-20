@@ -20,6 +20,7 @@ import towers from "./districts/towers.def.ts";
 export type SceneId = DistrictId;
 export type V3 = [number, number, number];
 export type Pose = { pos: V3; target: V3 };
+export type SignSpot = { bearing: number; distance: number; y: number };
 
 export type SceneDef = {
   offset: V3;
@@ -29,6 +30,12 @@ export type SceneDef = {
   enter: Pose;
   exit: Pose;
   focus: Record<string, Pose>;
+  // A section's place only: where its sign stands on the riverside, seen
+  // from the riverside's home view (lujiazui.def.ts: home.pos): degrees
+  // right of straight ahead, distance in units, and the board's middle
+  // height. The board is as wide as 0.135 of its distance, so every sign is
+  // about as wide on screen as the others.
+  sign?: SignSpot;
   // The lens at the home view (vertical degrees) on landscape screens
   fov: number;
   // The pose and lens that frame the place like its painting
@@ -68,15 +75,39 @@ export const scenes: Record<SceneId, SceneDef> = {
 // riverside first (every journey goes through it)
 export const sceneOrder: SceneId[] = ["lujiazui", "towers", "metro", "longtang", "nanjing-road", "bund"];
 
+// Where each section's sign stands on the riverside, in riverside
+// coordinates: its middle, its size and the way it faces (toward the home
+// view's eye). Read by Riverside.tsx (which builds the boards) and by the
+// routes below, from each place's def.
+export const RIVERSIDE_EYE: V3 = lujiazui.home.pos;
+export type SignPlace = { x: number; y: number; z: number; w: number; h: number; ry: number };
+export function signPlace(id: Exclude<SceneId, "lujiazui">): SignPlace {
+  const s = scenes[id].sign!;
+  const [ex, , ez] = RIVERSIDE_EYE;
+  const a = (s.bearing * Math.PI) / 180;
+  const x = ex + s.distance * Math.sin(a);
+  const z = ez - s.distance * Math.cos(a);
+  const w = 0.135 * s.distance;
+  return { x, y: s.y, z, w, h: w * 0.34, ry: Math.atan2(ex - x, ez - z) };
+}
+
 // The camera's route from the riverside's home view toward each section's
-// sign, in riverside coordinates, on a gentle arc, and where it looks at
-// the end. The threshold closes over its last part.
+// sign, in riverside coordinates, on a gentle arc (up a little, then down
+// to the board's height five units short of it), and where it looks at
+// the end: the board's middle. The threshold closes over its last part.
+const route = (id: Exclude<SceneId, "lujiazui">): { path: V3[]; look: V3 } => {
+  const p = signPlace(id);
+  const [ex, ey, ez] = RIVERSIDE_EYE;
+  const d = Math.hypot(p.x - ex, p.z - ez);
+  const at = (k: number, y: number): V3 => [+(ex + (p.x - ex) * k).toFixed(2), +y.toFixed(2), +(ez + (p.z - ez) * k).toFixed(2)];
+  return { path: [at(0.38, (ey + p.y) / 2 + 1.5), at((d - 5) / d, p.y - 0.3)], look: [+p.x.toFixed(2), p.y, +p.z.toFixed(2)] };
+};
 export const routesFromRiverside: Record<Exclude<SceneId, "lujiazui">, { path: V3[]; look: V3 }> = {
-  longtang: { path: [[-2.9, 4, 1], [-6.5, 3, -10]], look: [-8.03, 3.2, -14.73] },
-  metro: { path: [[-2.6, 4.9, -6.4], [-5.8, 5, -26.5]], look: [-6.57, 5.4, -31.48] },
-  towers: { path: [[0.5, 5.9, -16.5], [1, 7.2, -49]], look: [1.12, 7.6, -53.99] },
-  "nanjing-road": { path: [[2, 4.5, -2], [4.5, 4, -16.6]], look: [5.28, 4.4, -21.56] },
-  bund: { path: [[2.6, 5.1, 1.9], [5.9, 5.5, -8.1]], look: [7.42, 6.4, -12.83] },
+  longtang: route("longtang"),
+  towers: route("towers"),
+  metro: route("metro"),
+  "nanjing-road": route("nanjing-road"),
+  bund: route("bund"),
 };
 
 // Spot lights per place, fixed at build and the same by day and night

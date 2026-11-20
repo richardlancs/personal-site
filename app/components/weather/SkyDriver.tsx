@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+import { localHour, previewHour } from "../../lib/cityWindows";
 import type { SkyState } from "../../lib/sky";
+import { richmondHill } from "../../data/weather";
 import { useWorld, world } from "../city3d/store";
 import { useRichmondHill } from "./useRichmondHill";
 
@@ -13,7 +15,8 @@ import { useRichmondHill } from "./useRichmondHill";
 //
 // The development preview controls set `source: "preview"`; while they
 // do, this leaves the sky alone, and puts the live sky back as soon as
-// they set any other source. Renders nothing.
+// they set any other source. It also writes the local hour (`hour`), for
+// the city's lit windows. Renders nothing.
 export default function SkyDriver() {
   const { now, condition, daylight } = useRichmondHill();
   const previewing = useWorld((s) => s.sky.source === "preview");
@@ -32,6 +35,15 @@ export default function SkyDriver() {
     if (sky.preset === preset && sky.daylight === phase && sky.progress === progress && sky.source === source) return;
     world.set({ sky: { preset, daylight: phase, progress, source } });
   }, [now, previewing, preset, phase, progress, source]);
+
+  // The local hour (store: `hour`) from the same clock, to the minute;
+  // while the sky is a preview, the hour that preview stands for
+  const minute = now === 0 ? -1 : Math.floor(now / 60_000);
+  const sky = useWorld((s) => s.sky);
+  useEffect(() => {
+    const hour = sky.source === "preview" ? previewHour(sky) : minute < 0 ? null : localHour(minute * 60_000, richmondHill.timeZone);
+    if (hour !== null && world.get().hour !== hour) world.set({ hour });
+  }, [minute, sky]);
 
   return null;
 }

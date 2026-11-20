@@ -10,17 +10,17 @@ import type { SceneId } from "./scenes";
 // as a link to one is pointed at or focused. The riverside (Home) is built
 // in: every journey goes through it.
 //
-// Until the sections' own scenes exist, all five load the one grey
-// stand-in (districts/placeholder.tsx), each with its own colour.
+// One loader per section's place, each its own file (districts/<id>.tsx,
+// default export a SceneProps component), so each scene replaces its own
+// file and nothing here. Until then each file is the grey stand-in.
 type Loader = () => Promise<{ default: SceneComponent }>;
-const standIn = (id: Exclude<SceneId, "lujiazui">): Loader => () => import("./districts/placeholder").then((m) => ({ default: m.standIn(id) }));
 
 const loaders: Record<Exclude<SceneId, "lujiazui">, Loader> = {
-  longtang: standIn("longtang"),
-  towers: standIn("towers"),
-  metro: standIn("metro"),
-  "nanjing-road": standIn("nanjing-road"),
-  bund: standIn("bund"),
+  longtang: () => import("./districts/longtang"),
+  towers: () => import("./districts/towers"),
+  metro: () => import("./districts/metro"),
+  "nanjing-road": () => import("./districts/nanjing-road"),
+  bund: () => import("./districts/bund"),
 };
 
 export type SceneComponent = ComponentType<SceneProps>;

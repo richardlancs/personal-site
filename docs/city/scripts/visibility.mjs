@@ -1,8 +1,13 @@
 // How well each section's sign reads from the riverside (/city): for every
 // sign, at each screen size and sky, how much of it is on screen (below the
-// top bar, above a phone's sheet), not covered by the page (the panel, the
-// tags), not behind anything in the world, how much fog is on it, how wide
-// it is; and its tag's size and its distance to the nearest other tag.
+// top bar, above a phone's sheet), not covered by the page (the panel,
+// another sign's link), not behind anything in the world, how much fog is
+// on it, how wide it is; whether anything stands directly behind its word
+// (its clear zone: the board's own mount, the ground and the water aside);
+// and its link: laid over the board (its hit area, covering the board's
+// middle), at least 44×44, 8px or more from the nearest other link. Where
+// the links can't stand over the boards (html[data-city-tags="row"]), the
+// row of keys in the panel is measured instead.
 // (From docs/world/scripts/visibility.mjs, the park's.)
 //
 // Against `next dev` (the scene handle, window.__city, is development-only,
@@ -12,8 +17,9 @@
 //   SHOTS=dir …   also saves a screenshot of each view and sky
 //
 // Exits 1 if a sign is under 85% on screen and clear, carries more than
-// MAX_FOG of fog, is under 48 CSS px wide, or its tag is under 44×44 or
-// closer than 8px to another.
+// MAX_FOG of fog, is under 48 CSS px wide, has anything behind its word,
+// or its link is under 44×44, closer than 8px to another, or (over the
+// scene) not over its board.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { launch } from "../../audit/scripts/pw.mjs";
 
@@ -70,8 +76,12 @@ async function measure(page) {
     const narrow = matchMedia("(orientation: portrait), (max-width: 767px), (max-height: 480px)").matches;
     const ceiling = Math.max(cr.top, bar.bottom);
     const floor = Math.min(cr.bottom, window.innerHeight, narrow ? panel.top : Infinity);
-    const tags = [...document.querySelectorAll(".city-tag, .city-key")].filter(shown).map((el) => ({ id: el.dataset.anchor.slice(5), r: el.getBoundingClientRect() }));
-    const layers = [...(narrow ? [] : [{ name: "panel", r: panel }]), ...tags.map((t) => ({ name: `tag:${t.id}`, r: t.r }))];
+    const idOf = (el) => (el.dataset.anchor ? el.dataset.anchor.slice(5) : el.getAttribute("href").split("/").pop());
+    const tags = [...document.querySelectorAll(".city-tag, .city-key")].filter(shown).map((el) => ({ id: idOf(el), over: el.classList.contains("city-tag"), r: el.getBoundingClientRect() }));
+    const layers = [...(narrow ? [] : [{ name: "panel", r: panel }]), ...tags.map((t) => ({ id: t.id, name: `tag:${t.id}`, r: t.r }))];
+    // What may stand behind a board's word: its own mount, the ground and
+    // the water
+    const behindOk = (o, id) => o.name === `mount:${id}` || o.name === "ground" || o.name === "river";
     const gap = (a, b) => {
       const dx = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
       const dy = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
@@ -88,11 +98,28 @@ async function measure(page) {
       board.updateMatrixWorld();
       const { width, height } = board.geometry.parameters;
       const pts = [];
+      const word = [];
       const N = [7, 4];
       for (let i = 0; i < N[0]; i++)
         for (let j = 0; j < N[1]; j++)
           pts.push(new THREE.Vector3((i / (N[0] - 1) - 0.5) * width * 0.9, (j / (N[1] - 1) - 0.5) * height * 0.85, 0.02).applyMatrix4(board.matrixWorld));
-      let onScreen = 0, blocked = 0, covered = 0, fogSum = 0;
+      // The word: the middle 84% × 60% of the board
+      for (let i = 0; i < 9; i++)
+        for (let j = 0; j < 3; j++)
+          word.push(new THREE.Vector3((i / 8 - 0.5) * width * 0.84, (j / 2 - 0.5) * height * 0.6, -0.3).applyMatrix4(board.matrixWorld));
+      for (const p of word) {
+        const dir = p.clone().sub(camera.position).normalize();
+        ray.set(p, dir);
+        ray.far = fog ? fog.far : 1000;
+        const hit = ray.intersectObjects(solids, false).find((h) => !behindOk(h.object, id));
+        if (hit) {
+          behind++;
+          const name = hit.object.name || hit.object.material.type;
+          behinders[name] = (behinders[name] || 0) + 1;
+        }
+      }
+      let onScreen = 0, blocked = 0, covered = 0, fogSum = 0, behind = 0;
+      const behinders = {};
       const blockers = {}, coverers = {};
       let minX = Infinity, maxX = -Infinity;
       for (const p of pts) {
@@ -105,7 +132,7 @@ async function measure(page) {
         fogSum += fog ? smooth(fog.near, fog.far, depth) : 0;
         if (ndc.z > 1 || x < 0 || x > window.innerWidth || y < ceiling || y > floor) continue;
         onScreen++;
-        const over = layers.find((l) => x >= l.r.left && x <= l.r.right && y >= l.r.top && y <= l.r.bottom);
+        const over = layers.find((l) => l.id !== id && x >= l.r.left && x <= l.r.right && y >= l.r.top && y <= l.r.bottom);
         if (over) {
           covered++;
           coverers[over.name] = (coverers[over.name] || 0) + 1;
@@ -125,18 +152,25 @@ async function measure(page) {
       const n = pts.length;
       const tag = tags.find((t) => t.id === id);
       const others = tags.filter((t) => t.id !== id);
+      // Over the scene, the link is the board's hit area: it holds the
+      // board's middle
+      const mid = new THREE.Vector3(0, 0, 0.02).applyMatrix4(board.matrixWorld).project(camera);
+      const mx = cr.left + ((mid.x + 1) / 2) * size.width;
+      const my = cr.top + ((1 - mid.y) / 2) * size.height;
       out.push({
         id,
         screen: onScreen / n,
         clear: (onScreen - blocked - covered) / n,
         fog: fogSum / n,
         px: Math.round(Math.max(0, maxX - minX) / 0.9),
-        tag: tag ? { w: Math.round(tag.r.width), h: Math.round(tag.r.height), nearest: others.length ? Math.round(Math.min(...others.map((o) => gap(tag.r, o.r)))) : null } : null,
+        tag: tag ? { over: tag.over, onBoard: !tag.over || (mx >= tag.r.left && mx <= tag.r.right && my >= tag.r.top && my <= tag.r.bottom), w: Math.round(tag.r.width), h: Math.round(tag.r.height), nearest: others.length ? Math.round(Math.min(...others.map((o) => gap(tag.r, o.r)))) : null } : null,
+        behind: behind / word.length,
+        behinders,
         blockers,
         coverers,
       });
     }
-    return { fog: fog && { near: +fog.near.toFixed(1), far: +fog.far.toFixed(1) }, row: document.querySelector(".city-tags")?.hasAttribute("data-row"), targets: out };
+    return { fog: fog && { near: +fog.near.toFixed(1), far: +fog.far.toFixed(1) }, row: document.documentElement.dataset.cityTags === "row", targets: out };
   }, ids);
 }
 
@@ -160,14 +194,14 @@ for (const [view, opts] of Object.entries(views)) {
           failures++;
           return `  ✗ ${t.id} missing`;
         }
-        const bad = t.clear < 0.85 || t.fog > MAX_FOG || t.px < 48 || !t.tag || t.tag.w < 44 || t.tag.h < 44 || (t.tag.nearest !== null && t.tag.nearest < 8);
+        const bad = t.clear < 0.85 || t.fog > MAX_FOG || t.px < 48 || t.behind > 0 || !t.tag || !t.tag.onBoard || t.tag.w < 44 || t.tag.h < 44 || (t.tag.nearest !== null && t.tag.nearest < 8);
         if (bad) failures++;
-        const why = [...Object.entries(t.blockers), ...Object.entries(t.coverers)].map(([k, c]) => `${k}×${c}`).join(" ");
-        const tag = t.tag ? `tag ${t.tag.w}×${t.tag.h} gap ${t.tag.nearest}` : "no tag";
-        return `  ${bad ? "✗" : " "} ${t.id.padEnd(11)} screen ${pct(t.screen)} clear ${pct(t.clear)} fog ${pct(t.fog)} ${String(t.px).padStart(4)}px  ${tag} ${why}`;
+        const why = [...Object.entries(t.blockers), ...Object.entries(t.coverers), ...Object.entries(t.behinders).map(([k, c]) => [`behind:${k}`, c])].map(([k, c]) => `${k}×${c}`).join(" ");
+        const tag = t.tag ? `${t.tag.over ? "link" : "key"} ${t.tag.w}×${t.tag.h} gap ${t.tag.nearest}${t.tag.onBoard ? "" : " NOT ON BOARD"}` : "no link";
+        return `  ${bad ? "✗" : " "} ${t.id.padEnd(11)} screen ${pct(t.screen)} clear ${pct(t.clear)} fog ${pct(t.fog)} behind ${pct(t.behind)} ${String(t.px).padStart(4)}px  ${tag} ${why}`;
       })
       .join("\n");
-    console.log(`${view} ${sky} (fog ${m.fog?.near}–${m.fog?.far}${m.row ? ", tags in a row" : ""})\n${line}`);
+    console.log(`${view} ${sky} (fog ${m.fog?.near}–${m.fog?.far}${m.row ? ", keys in a row" : ", links over the boards"})\n${line}`);
     if (shots) await page.screenshot({ path: `${shots}/${view}-${sky}.jpg`, type: "jpeg", quality: 75 });
   }
   await ctx.close();
