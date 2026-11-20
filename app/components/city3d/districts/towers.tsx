@@ -9,7 +9,7 @@ import { useDisposeOnUnmount, useGlowPools, anchorKey, Hitbox, SceneLights, type
 import { glassMaterial } from "../kit/glass";
 import type { GlowPool } from "../kit/glow";
 import { box, merge } from "../kit/geometry";
-import { buildJinMao, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
+import { buildJinMao, buildShanghaiTower, buildWorldFinancialCenter, LANDMARK_HEIGHTS, SHANGHAI_TOWER_TWIST, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenArt, screenMaterial, type SceneTone } from "../kit/neon";
 import type { LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
@@ -17,7 +17,7 @@ import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { fit, fonts, fontsReady, pavingTexture, textureBytes } from "../kit/textures";
 import { buildTowers, layoutTowers, type TowerSpec } from "../kit/towers";
-import { buildStreetTrees } from "../kit/trees";
+import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
@@ -68,6 +68,8 @@ const CONCRETE = "#c9c3b8";
 const STONE = "#d2c7b4";
 const ROOF = "#8d8a82";
 const FRAME = "#20232a";
+const LEAF = new THREE.Color("#a4b84a");
+const leaf = new THREE.Color();
 
 // A curved face round the plaza's middle: radius r from azimuth a0 to a1
 // (degrees), y0 to y1. Facing the middle (`inward`) or away from it. Its
@@ -223,10 +225,11 @@ function build(quality: Quality): Built {
   const detail = mobile ? "far" : "near";
   type Maker = (d: "near" | "far", m: { body: THREE.Material; glass: THREE.Material; lit: THREE.Material }) => Landmark;
   const st = T.supertalls;
-  const SUPERTALLS: [Maker, readonly [number, number], { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone }][] = [
-    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#5f7a95", glass: "#86aacb", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
-    [buildJinMao, st.jinMao, { body: surface({ color: "#9aa2ad" }), base: "#7f8896", glass: "#4f6f93", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
-    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#6b88a4", glass: "#8db3d3", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan" }],
+  type Look = { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone; skin: string; warm: number };
+  const SUPERTALLS: [Maker, readonly [number, number], Look][] = [
+    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#86a3bf", glass: "#9ec2e2", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan", skin: "#a9c6e0", warm: 0.26 }],
+    [buildJinMao, st.jinMao, { body: surface({ color: "#9aa2ad" }), base: "#9ba6b3", glass: "#6e94bc", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold", skin: "#b9c4cf", warm: 0.3 }],
+    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#8eafcb", glass: "#a8cdea", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan", skin: "#b2cde2", warm: 0.36 }],
   ];
   for (const [builder, [x, z], c] of SUPERTALLS) {
     const landmark = builder(detail, { body: c.body, glass: windowMaterial({ base: c.base, glass: c.glass }), lit: c.lit });
@@ -239,6 +242,32 @@ function build(quality: Quality): Built {
         o.castShadow = !mobile;
       }
     });
+    // After dark the paintings light their floors warm all the way up: a
+    // skin of the kit's glass over the tower's glass, clear by day, gold
+    // from inside at night, the window grid showing through it
+    const skin = landmark.group.children.find((o) => o.name === "glass") as THREE.Mesh | undefined;
+    if (skin) {
+      const over = new THREE.Mesh(skin.geometry, glassMaterial({ tint: c.skin, opacity: 0.12, sky: 0.6, glow: { tone: "#ffd08a", strength: c.warm } }));
+      over.name = "glass:warm";
+      over.scale.set(1.006, 1.0005, 1.006);
+      landmark.group.add(over);
+    }
+    if (builder === buildShanghaiTower) {
+      // its helix: one cyan line up the notch's edge, a full third of a turn
+      const H = LANDMARK_HEIGHTS.shanghaiTower;
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i <= 96; i++) {
+        const y = 1.5 + (i / 96) * (H - 2.5);
+        const t = y / H;
+        const r = 4.0 * (1 - 0.45 * Math.pow(t, 1.15)) * 1.08;
+        const a = SHANGHAI_TOWER_TWIST * t + 0.2;
+        pts.push(new THREE.Vector3(r * Math.cos(a), y, r * Math.sin(a)));
+      }
+      const helix = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 192, 0.07, 5), neonMaterial(SCENE_TONES.cyan, { dayColor: "#dfe9ef" }));
+      helix.name = "helix";
+      geometries.push(helix.geometry);
+      landmark.group.add(helix);
+    }
     add(landmark.group);
     for (const m of landmark.lit) {
       m.geometry.computeBoundingSphere();
@@ -265,6 +294,22 @@ function build(quality: Quality): Built {
   }
   const cr = rng(89);
   for (const t of city) if (cr() < 0.35) lights.push({ x: t.x, z: t.z, w: Math.max(0.4, t.w * 0.3), color: "#ffc98a", height: t.h * 0.5 });
+  // Neon round the roofs of some of them, rose and cyan, as the paintings
+  // edge the city's tops after dark (a parapet of light on the roof's edge;
+  // each style's top is narrower: kit/towers.ts)
+  const TOP = [1, 0.78, 0.92, 0.6] as const;
+  const crowns: Record<"rose" | "cyan", THREE.BufferGeometry[]> = { rose: [], cyan: [] };
+  const nr = rng(131);
+  for (const t of city) {
+    if (t.h < 12 || nr() > 0.4) continue;
+    const a = t.w * TOP[t.style] + 0.04;
+    const b = t.d * TOP[t.style] + 0.04;
+    const e = 0.05;
+    const y = t.h + 0.04;
+    const edge = (w: number, d: number, x: number, z: number) => box(w, 0.12, d).translate(x, y, z).rotateY(t.ry).translate(t.x, 0, t.z);
+    crowns[nr() < 0.5 ? "rose" : "cyan"].push(edge(a, e, 0, b / 2), edge(a, e, 0, -b / 2), edge(e, b, a / 2, 0), edge(e, b, -a / 2, 0));
+  }
+  for (const tone of ["rose", "cyan"] as const) if (crowns[tone].length) mesh(merge(crowns[tone]), neonMaterial(SCENE_TONES[tone], { dayColor: "#9aa6b2" }), `crowns:${tone}`);
 
   // ---- The podiums round the plaza: glass walls in and out, a stone
   // cap and band, roofs with trees; one curved screen on each inner face
@@ -272,6 +317,7 @@ function build(quality: Quality): Built {
   const walls: THREE.BufferGeometry[] = [];
   const stone: THREE.BufferGeometry[] = [];
   const roofs: THREE.BufferGeometry[] = [];
+  const ribbons: THREE.BufferGeometry[] = [];
   const roofTrees: { x: number; z: number; s: number }[] = [];
   const tr = rng(97);
   const screens: Built["screens"] = [];
@@ -292,6 +338,14 @@ function build(quality: Quality): Built {
       arcFace(r0 - 0.02, a0, a1, h - 0.5, h, segs, true),
       arcFace(r1 + 0.02, a0, a1, h - 0.5, h, segs, false),
       arcFace(r0 - 0.03, a0, a1, 1.0, 1.25, segs, true),
+      // stone spandrels over every other floor of windows, so the inner
+      // face reads as the paintings' ribbons of glass between stone
+      // (a floor is 0.36: kit/uniforms.ts windowUniforms.uFloor)
+      ...Array.from({ length: Math.floor((h - 0.5 - 1.25) / 0.72) }, (_, k) => {
+        const f = 0.36 * (4 + 2 * k);
+        if (f + 1.03 < h - 0.5) ribbons.push(arcFace(r0 - 0.01, a0, a1, f + 0.792, f + 1.03, segs, true));
+        return arcFace(r0 - 0.015, a0, a1, f + 0.31, Math.min(h - 0.5, f + 0.792), segs, true);
+      }),
       // the ends
       box(0.3, h, P.depth).translate(0, h / 2, -(r0 + r1) / 2).rotateY(-rad(a0)),
       box(0.3, h, P.depth).translate(0, h / 2, -(r0 + r1) / 2).rotateY(-rad(a1)),
@@ -323,8 +377,12 @@ function build(quality: Quality): Built {
     lights.push({ x: mid.x * 0.97, z: mid.z * 0.97, w: S.w * 0.4, color: n % 2 ? SCENE_TONES.rose : SCENE_TONES.cyan, height: S.y });
   }
   mesh(merge(walls), windowMaterial({ base: STONE, glass: "#5d87b3" }), "podiums", !mobile);
-  mesh(merge(stone), surface({ color: STONE, grime: 0.25 }), "podium-stone", !mobile);
+  // floodlit after dark, warm, as the paintings light them
+  mesh(merge(stone), surface({ color: STONE, grime: 0.25, relief: { kind: "stone", bay: 1.2, floor: 0.72, strength: 0.4 }, glow: { tone: "#ffd9a8", strength: 0.07 } }), "podium-stone", !mobile);
   mesh(merge(roofs), surface({ color: ROOF, snow: true }), "podium-roofs");
+  // the ribbons lit warm from inside after dark (the kit's glass over the
+  // window grid, clear by day)
+  mesh(merge(ribbons), glassMaterial({ tint: "#9fb8cf", opacity: 0.1, sky: 0.4, glow: { tone: "#ffd08a", strength: 0.75 } }), "glass:ribbons");
 
   // ---- The walkway ring: deck, fascias, pillars (one mesh), a railing
   // along each edge, the gold strip along its sides, downlights under it
@@ -333,6 +391,7 @@ function build(quality: Quality): Built {
   const rout = R.r + R.width / 2;
   const top = R.deck;
   const under = R.deck - R.thick;
+  const deckTrees: { x: number; z: number; s: number }[] = [];
   const ringParts = [
     annulus(rin, rout, 0, 360, top, 96, true),
     annulus(rin, rout, 0, 360, under, 96, false),
@@ -342,22 +401,51 @@ function build(quality: Quality): Built {
   const downlights: THREE.BufferGeometry[] = [];
   for (let az = 0; az < 360; az += R.pillarStep) {
     const p = polar(R.r, az);
-    ringParts.push(new THREE.CylinderGeometry(0.1, 0.12, under, 10).translate(p.x, under / 2, p.z));
-    const d = polar(R.r, az + R.pillarStep / 2, under - 0.004);
-    downlights.push(new THREE.CircleGeometry(0.07, 10).rotateX(Math.PI / 2).translate(d.x, d.y, d.z));
-    glow.push({ pos: d, color: "#ffd49a", size: 0.5 });
+    // a round pillar with a wider capital under the deck
+    ringParts.push(
+      new THREE.CylinderGeometry(R.pillar, R.pillar * 1.06, under, 18).translate(p.x, under / 2, p.z),
+      new THREE.CylinderGeometry(R.pillar * 1.5, R.pillar, 0.12, 18).translate(p.x, under - 0.06, p.z),
+    );
+    // two downlights between each pair of pillars, one either side
+    for (const off of [-0.18, 0.18]) {
+      for (const rr of [R.r - R.width * 0.3, R.r + R.width * 0.3]) {
+        const d = polar(rr, az + R.pillarStep * (0.5 + off), under - 0.004);
+        downlights.push(new THREE.CircleGeometry(0.06, 10).rotateX(Math.PI / 2).translate(d.x, d.y, d.z));
+        glow.push({ pos: d, color: "#ffd49a", size: 0.45 });
+      }
+    }
   }
-  mesh(merge(ringParts), surface({ color: CONCRETE, grime: 0.2, snow: true }), "ring", !mobile);
+  mesh(merge(ringParts), surface({ color: CONCRETE, grime: 0.2, snow: true, relief: { kind: "stone", bay: 0.9, floor: 0.16, strength: 0.35 }, glow: { tone: "#ffd9a8", strength: 0.16 } }), "ring", !mobile);
   mesh(merge(downlights), glowMaterial({ day: "#d8d2c4", night: "#ffd49a" }), "ring-downlights");
-  const strip = merge([arcFace(rout + 0.006, 0, 360, top - 0.045, top - 0.015, 96, false), arcFace(rin - 0.006, 0, 360, top - 0.045, top - 0.015, 96, true)]);
+  // the gold strips along both sides: one at the railing's foot, one
+  // under the fascia's edge
+  const strip = merge([
+    arcFace(rout + 0.006, 0, 360, top - 0.05, top - 0.015, 96, false),
+    arcFace(rin - 0.006, 0, 360, top - 0.05, top - 0.015, 96, true),
+    arcFace(rout + 0.006, 0, 360, under + 0.01, under + 0.035, 96, false),
+    arcFace(rin - 0.006, 0, 360, under + 0.01, under + 0.035, 96, true),
+  ]);
   mesh(strip, neonMaterial(SCENE_TONES.gold, { dayColor: "#d9d2c4" }), "ring-strip");
-  const circle = (r: number) => Array.from({ length: 73 }, (_, i) => polar(r, i * 5, top));
+  const circle = (r: number) => Array.from({ length: 73 }, (_, i) => polar(r, i * 5, top + R.glass - 0.11));
   for (const r of [rin + 0.04, rout - 0.04]) {
     const rail = add(buildRailing(circle(r)));
     geometries.push(rail.geometry);
   }
   // glass panes along both railings (the kit's glass)
-  mesh(merge([arcFace(rin + 0.045, 0, 360, top, top + 0.1, 96, true), arcFace(rout - 0.045, 0, 360, top, top + 0.1, 96, false)]), glassMaterial({ tint: "#bcd6e6", opacity: 0.2, sky: 0.6, double: true }), "glass:railing");
+  mesh(merge([arcFace(rin + 0.045, 0, 360, top, top + R.glass, 96, true), arcFace(rout - 0.045, 0, 360, top, top + R.glass, 96, false)]), glassMaterial({ tint: "#bcd6e6", opacity: 0.22, sky: 0.7, glow: { tone: "#ffc98a", strength: 0.35 }, double: true }), "glass:railing");
+  // planters along the deck's outer edge, between the pillars, each with
+  // a small tree whose crown shows over the railing
+  const planterSpots = Array.from({ length: 360 / R.pillarStep }, (_, k) => {
+    const az = (k + 0.5) * R.pillarStep;
+    const p = polar(rout - 0.3, az);
+    return { x: p.x, z: p.z, w: 0.7, d: 0.26, h: 0.1, y: top, ry: -rad(az) };
+  });
+  for (const m of buildPlanters(109, planterSpots, { stone: CONCRETE })) {
+    geometries.push(m.geometry);
+    if (mobile) m.castShadow = false;
+    add(m);
+  }
+  deckTrees.push(...planterSpots.map((p) => ({ x: p.x, z: p.z, s: 1.0 })));
   for (let az = -150; az <= 150; az += 10) {
     const p = polar(R.r, az);
     lights.push({ x: p.x, z: p.z, w: 0.5, color: SCENE_TONES.gold, height: top });
@@ -374,27 +462,34 @@ function build(quality: Quality): Built {
   }
   for (let az = -60; az <= 60; az += 8) {
     const p = polar(tg.range(15, 22), az + tg.range(-3, 3));
-    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(1.6, 2.4) });
+    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(2.4, 3.2) });
   }
   // low trees inside the ring, under its deck from the eye
   for (let az = -84; az <= 84; az += 7) {
     const p = polar(tg.range(6.4, 7.4), az + tg.range(-2, 2));
-    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(0.8, 1.15) });
+    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(0.6, 0.85) });
   }
-  for (const az of [140, -140, 180]) {
+  for (const az of [140, -140]) {
     const p = polar(5.5, az);
     plazaTrees.push({ x: p.x, z: p.z, s: 1.2 });
   }
-  plazaTrees.push({ x: -4.4, z: 2.9, s: 3.0 });
+  plazaTrees.push({ x: -6.4, z: 3.4, s: 3.4 });
   for (const [spots, seed, y] of [
     [plazaTrees, 103, 0],
-    [roofTrees, 107, null],
+    [roofTrees, 107, P.height - 1.2],
+    [deckTrees, 113, R.deck + 0.1],
   ] as const) {
     const trees = buildStreetTrees(seed, [...spots]);
     for (const t of trees) {
       geometries.push(t.geometry);
-      if (y === null) t.position.y = P.height - 1.2;
+      t.position.y = y;
       if (mobile) t.castShadow = false;
+      // the paintings' canopies are a brighter, yellower green than the
+      // kit's sage: lifted toward it, each tree keeping its own shade
+      if (t.instanceColor && t.name !== "trees:trunks") {
+        for (let i = 0; i < t.count; i++) t.setColorAt(i, t.getColorAt(i, leaf).lerp(LEAF, 0.45).multiplyScalar(1.12));
+        t.instanceColor.needsUpdate = true;
+      }
       add(t);
     }
   }
@@ -448,9 +543,10 @@ const POOLS: GlowPool[] = [
     const [x, , z] = screenMiddle(n);
     return { pos: [x * 0.9, 1.5, z * 0.9], reach: 7, color: n % 2 ? SCENE_TONES.rose : SCENE_TONES.cyan, strength: 0.45 };
   }),
-  ...[-37.5, -22.5, -7.5, 7.5, 22.5, 37.5, 52.5].map((az): GlowPool => {
-    const p = polar(T.ring.r, az, T.ring.deck - T.ring.thick - 0.1);
-    return { pos: [p.x, p.y, p.z], reach: 1.6, color: "#ffd49a", strength: 1.1 };
+  // under the far side's deck, midway between its pillars
+  ...[-3, -2, -1, 0, 1, 2].map((k): GlowPool => {
+    const p = polar(T.ring.r, (k + 0.5) * T.ring.pillarStep, T.ring.deck - T.ring.thick - 0.1);
+    return { pos: [p.x, p.y, p.z], reach: 2.6, color: "#ffc98a", strength: 2.0 };
   }),
 ];
 

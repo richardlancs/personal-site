@@ -24,8 +24,10 @@ export const TOWERS = {
   // The eye at the home view: street level, just inside the ring's south side
   eye: [0, 0.16, 5.0] as V3,
   // The elevated walkway: a full circle, its deck `deck` up, a pillar every
-  // `pillarStep` degrees
-  ring: { r: 8.5, width: 1.1, deck: 1.4, thick: 0.18, pillarStep: 15 },
+  // `pillarStep` degrees, each `pillar` round; glass along both edges
+  // `glass` tall (the paintings draw it heavy: a deep fascia, fat round
+  // pillars, a tall glass railing)
+  ring: { r: 8.5, width: 1.2, deck: 1.5, thick: 0.4, pillarStep: 20, pillar: 0.28, glass: 0.2 },
   // The podiums round the plaza: their inner face `r` from the middle,
   // `depth` deep and `height` tall, `span` degrees wide, one per screen;
   // none north of `open` degrees either side, where the supertalls stand
