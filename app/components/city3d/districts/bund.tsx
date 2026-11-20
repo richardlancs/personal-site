@@ -10,7 +10,7 @@ import { blob, box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { aircraftLights, buildBoat } from "../kit/movers";
 import { clockMaterial, glowSprites, litSurface, neonMaterial, SCENE_TONES, type SceneTone } from "../kit/neon";
-import { buildStreaks, reflectIn, type LightStrip } from "../kit/reflection";
+import { reflectIn, type LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
 import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
@@ -76,11 +76,16 @@ const pavingTiles = (w: number, d: number) => pavingTexture({ seed: 37, kind: "g
 // near the eye, and the kiosk's cyan on the stones round it (kit/glow.ts:
 // pools)
 const POOLS: GlowPool[] = [
-  ...Array.from({ length: 10 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.22), LAND + BUND.lamps.pier + 0.4, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.65, color: "#ffc98a", strength: 1.2 })),
+  ...Array.from({ length: 8 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.22), LAND + BUND.lamps.pier + 0.4, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.65, color: "#ffc98a", strength: 1.2 })),
+  // and on down the row, past the eighth lamp: one line pool
+  { from: [X(BUND.lamps.s - 0.22), LAND + BUND.lamps.pier + 0.4, Z(BUND.lamps.from + 8 * BUND.lamps.step)], to: [X(BUND.lamps.s - 0.22), LAND + BUND.lamps.pier + 0.4, Z(BUND.lamps.from + 30 * BUND.lamps.step)], reach: 1.4, color: "#ffc98a", strength: 0.7 },
   { pos: [X(BUND.kiosk.s), BUND.kiosk.h * 0.6, Z(BUND.kiosk.a)], reach: 0.6, color: SCENE_TONES.cyan, strength: 0.9 },
   { pos: [X(BUND.front + 0.6), 0.5, Z(BUND.clock.a)], reach: 1.6, color: "#ffd9a0", strength: 0.5 },
 ];
 
+
+// The plates' trees: bright yellow-green, leafy, lit warm from below
+const TREES = { greens: ["#9cbb48", "#87ad3e", "#a8c454", "#7aa23c"], underGlow: { tone: "#ffc070", strength: 0.75 }, leaves: 0.55 };
 
 // By day: the trees' dappled shade over the near promenade, as the day
 // plate paints it (kit/glow.ts: DayShade, no shadow map)
@@ -88,7 +93,6 @@ const SHADE: DayShade = { kind: "dapple", box: [X(BUND.promenade.s1), -16, X(BUN
 
 type Built = {
   group: THREE.Group;
-  sheen: THREE.Object3D;
   spots: V3[];
   movers: Mover[];
   dispose: () => void;
@@ -137,29 +141,27 @@ function build(quality: Quality): Built {
   const tiles = pavingTiles(P.s1 - P.s0, P.a1 - P.a0);
   disposers.push(() => tiles.dispose());
   const pavingPlace = { w: P.s1 - P.s0, d: P.a1 - P.a0, x: (X(P.s0) + X(P.s1)) / 2, z: (Z(P.a0) + Z(P.a1)) / 2 };
-  const paving = wetPaving({ ...pavingPlace, y: LAND, mode: "fake", color: PAVING, map: tiles, lights: [] });
   // the plate's promenade after dark: polished stone holding the night
-  // sky's blue-grey everywhere, the lamps' warmth in their pools (the kit's
-  // surface, its night glow; wetPaving's own is the same surface without it)
-  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, snow: true, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.075 } });
+  // sky's blue-grey everywhere (its night glow), the lamps' warmth in their
+  // pools, and the lamps and the kiosk long in it as fine strokes (the
+  // kit's polish: after dark only, never doubled in rain; one strip a lamp,
+  // the nearest sixteen)
+  const paving = wetPaving({
+    ...pavingPlace,
+    y: LAND,
+    mode: "fake",
+    color: PAVING,
+    map: tiles,
+    snow: true,
+    glow: { tone: "#7d93bd", strength: 0.075 },
+    polish: 1,
+    lights: [
+      ...lampAlong.slice(0, 16).map((a) => ({ x: X(B.lamps.s - 0.1), z: Z(a), w: 0.12, color: "#ffc98a", height: 0.8 })),
+      { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.1, color: SCENE_TONES.cyan, height: 0.3 },
+    ],
+  });
   add(paving.mesh);
   disposers.push(paving.dispose);
-  // ... and the lamps and the kiosk long in it, as the plate paints them in
-  // every weather (the kit's streaks of the river kind, which aren't gated
-  // on rain), laid on the paving
-  const sheen = buildStreaks(
-    [
-      ...lampAlong.slice(0, 26).flatMap((a) => [
-        { x: X(B.lamps.s - 0.1), z: Z(a), w: 0.16, color: "#ffc98a", height: 0.8 },
-        { x: X(B.lamps.s - 0.16), z: Z(a + 0.02), w: 0.1, color: "#ffd9a0", height: 0.7 },
-      ]),
-      { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.12, color: SCENE_TONES.cyan, height: 0.3 },
-    ],
-    { kind: "river", mode: "fake", ...pavingPlace },
-  );
-  sheen.position.y = LAND + 0.002;
-  add(sheen);
-  geometries.push(sheen.geometry);
   mesh(
     merge([
       slab(B.road.s0 - 4, B.road.s1, P.a0, P.a1, LAND - 0.3, LAND - 0.004),
@@ -226,7 +228,9 @@ function build(quality: Quality): Built {
   // (floodlit after dark; the kit's stone relief carves pilasters, a
   // cornice at every floor and a surround round each window, for the
   // floodlight and the sun to rake across)
-  const stone = surface({ color: STONE, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.7 }, glow: { tone: SCENE_TONES.gold, strength: 0.34 } });
+  // (floodlit from the foot, brightest over the ground floor, as the
+  // plates' facades are, not an even wash)
+  const stone = surface({ color: STONE, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.7 }, glow: { tone: SCENE_TONES.gold, strength: 0.42, base: LAND + 0.1, fade: 2.4 } });
   const paneTurn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2); // facing -x, the river
   for (const b of B.buildings) {
     const len = b.a1 - b.a0;
@@ -340,7 +344,9 @@ function build(quality: Quality): Built {
   const treeSpots: { x: number; z: number; s: number }[] = [];
   for (let a = T.from; a <= T.to; a += T.step) treeSpots.push({ x: X(T.s + tr.range(-0.1, 0.1)), z: Z(a + tr.range(-0.15, 0.15)), s: tr.range(0.8, 0.98) });
   treeSpots.push({ x: X(B.bigTree.s), z: Z(B.bigTree.a), s: B.bigTree.size });
-  const trees = buildStreetTrees(29, treeSpots);
+  // (the big one a plane tree against the sky; all the plates' bright
+  // yellow-green, leafy, lit from below after dark)
+  const trees = buildStreetTrees(29, [...treeSpots.slice(0, -1), { ...treeSpots[treeSpots.length - 1], kind: "plane" }], TREES);
   for (const t of trees) {
     geometries.push(t.geometry);
     add(t);
@@ -459,7 +465,7 @@ function build(quality: Quality): Built {
   const bankTreeSpots: { x: number; z: number; s: number }[] = [];
   const bt = rng(67);
   for (let a = -20; a <= 280; a += 2.2) bankTreeSpots.push({ x: X(B.bank + 1 + bt.range(0, 1.2)), z: Z(a + bt.range(-0.5, 0.5)), s: bt.range(0.9, 1.3) });
-  const bankTrees = buildStreetTrees(31, bankTreeSpots);
+  const bankTrees = buildStreetTrees(31, bankTreeSpots, { greens: TREES.greens });
   for (const t of bankTrees) {
     geometries.push(t.geometry);
     t.position.y = LAND + 0.05;
@@ -502,7 +508,6 @@ function build(quality: Quality): Built {
 
   return {
     group,
-    sheen,
     spots,
     movers: [boat],
     dispose: () => {
@@ -519,13 +524,6 @@ function ContactScene({ quality, active, still }: SceneProps) {
   useDisposeOnUnmount(built);
   useGlowPools("bund", POOLS, active);
   useDayShade("bund", SHADE, active);
-  // the lamps' long reflections on the paving: from dusk to dawn (by day the
-  // plate's paving holds none)
-  const daylight = useWorld((s) => s.sky.daylight);
-  useEffect(() => {
-    built.sheen.visible = daylight !== "day";
-    invalidate();
-  }, [daylight, built, invalidate]);
   // The clock follows Richmond Hill's hour, redrawn when the minute changes
   const hour = useWorld((s) => s.hour);
   useEffect(() => {

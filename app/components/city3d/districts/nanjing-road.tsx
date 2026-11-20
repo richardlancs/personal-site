@@ -106,7 +106,7 @@ const TRAM_CREAM = "#d6c9a2";
 // so the lit windows and the shops carry the warmth (the plates')
 const FLOODLIT = { tone: "#f2d6b4", strength: 0.2, base: 0.15, fade: 1.6 };
 // The plates' trees: bright yellow-green, leafy, lit warm from below
-const TREES = { greens: ["#9cbb48", "#87ad3e", "#b0c85a", "#7aa23c"], underGlow: { tone: "#ffc070", strength: 0.95 }, leaves: 0.8 };
+const TREES = { greens: ["#9cbb48", "#87ad3e", "#b0c85a", "#7aa23c"], underGlow: { tone: "#ffc070", strength: 0.8 }, leaves: 0.6 };
 
 // A tone at a fraction of its strength
 const dim = (tone: SceneTone, k: number) => `#${new THREE.Color(SCENE_TONES[tone]).multiplyScalar(k).getHexString()}`;

@@ -108,8 +108,12 @@ test("the kit's new pieces: glass kiosk, paving, stone relief on the floodlit st
   assert.match(src, /pavingTexture\(\{ seed: 37, kind: "grid"/);
   assert.match(src, /surface\(\{ color: STONE, relief: \{ kind: "stone"[^}]*\}, glow: \{ tone: SCENE_TONES\.gold/);
   assert.match(src, /useDayShade\("bund", SHADE, active\)/);
-  // the lamps' reflections on the paving in every weather after dark
-  assert.match(src, /buildStreaks\(/);
+  // the lamps' reflections on the paving after dark in every weather: the
+  // kit's polish, one fine stroke a lamp (I2), no river streaks, no switch
+  // at the day boundary (M1), the surface's glow and snow passed through (no swap)
+  assert.match(src, /wetPaving\(\{[\s\S]*?snow: true,[\s\S]*?glow: \{ tone: "#7d93bd"[\s\S]*?polish: [\d.]+,/);
+  assert.doesNotMatch(src, /buildStreaks\(|kind: "river"|\.visible = daylight|paving\.mesh\.material =/);
+  assert.match(src, /lampAlong\.slice\(0, 16\)\.map\(/);
   assert.match(src, /useGlowPools\("bund", POOLS, active\)/);
   assert.match(src, /useDisposeOnUnmount\(built\)/);
 });
