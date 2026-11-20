@@ -44,8 +44,46 @@ test("the band keeps its gradient when a plate fails, and has a no-script plate"
   assert.match(src, /alt=""/);
   assert.doesNotMatch(src, /alt="[^"]+"/, "every plate is decorative");
   assert.match(src, /platesNeeded\(/, "only the plates in use are mounted");
-  assert.match(src, /sizes="\(max-width: 767px\) 175vw, 100vw"/, "the phone crop asks for a wide enough plate");
-  assert.match(src, /placeholder="blur"/);
+  assert.match(src, /sizes=\{BAND_SIZES\}/);
+  assert.match(read("app/components/city2d/plates.ts"), /export const BAND_SIZES = "\(max-width: 767px\) 175vw, 100vw"/, "the phone crop asks for a wide enough plate");
+  // No blurred stand-in to snap out of: the plate fades in once loaded
+  assert.doesNotMatch(src, /placeholder="blur"/);
+  assert.match(src, /onLoad=/);
+  assert.match(src, /data-loaded=/);
+  const css = read("app/city.css");
+  assert.match(css, /\.band-plate img \{\s*opacity: 0;/);
+  assert.match(css, /\.band-plate\[data-loaded\] img \{\s*opacity: 1;/);
+  assert.match(css, /:root:not\(\[data-still="on"\]\) \.band-plate img \{\s*transition: opacity 0\.3s/);
+  // Below the first band the no-script plate is lazy too
+  assert.match(src, /loading=\{priority \? undefined : "lazy"\}/);
+});
+
+test("the bands wait on one shared observer, half a screen ahead", () => {
+  const near = read("app/components/city2d/useNear.ts");
+  assert.equal((near.match(/new IntersectionObserver\(/g) ?? []).length, 1, "one observer");
+  assert.match(near, /if \(!observer\) \{/, "made once, shared by every band");
+  assert.match(near, /addEventListener\("scroll", onFirstScroll, \{ once: true, passive: true \}\)/, "no look-ahead before the first scroll");
+  assert.match(near, /scrolled \|\| within\(entry\.target, 0\)/);
+  assert.match(near, /rootMargin: ROOT_MARGIN/);
+  assert.match(near, /const ROOT_MARGIN = "50% 0px"/);
+  assert.match(near, /unobserve\(/, "each band is let go once seen");
+  const band = read("app/components/city2d/DistrictBand.tsx");
+  assert.match(band, /useNear\(ref, priority\)/, "home skips the wait");
+  assert.match(band, /blend === null \|\| !near \? \[\]/, "no plate before the band is near");
+  assert.match(band, /fetchPriority=\{priority \? "high" : "low"\}/);
+});
+
+test("each district's crop keeps its subject, on both plates", () => {
+  const plates = read("app/components/city2d/plates.ts");
+  for (const d of ["lujiazui", "longtang", "towers", "metro", '"nanjing-road"', "bund"]) assert.match(plates, new RegExp(`\\n  ${d}: "\\d+% \\d+%"`), d);
+  assert.match(read("app/components/city2d/DistrictBand.tsx"), /"--focal": focal\[district\]/);
+  assert.match(read("app/city.css"), /object-position: var\(--focal, center\)/);
+});
+
+test("about, experience and contact sit on the lighter ground, and each band fades into its own", () => {
+  const css = read("app/city.css");
+  assert.match(css, /\.station:is\(#about, #experience, #contact\) \{\s*--ground: var\(--ink-2\);/);
+  assert.match(css, /\.band::before \{[^}]*var\(--ground/);
 });
 
 test("only the home band loads early; the others wait until they're near", () => {
@@ -114,4 +152,34 @@ test("the hero has the name, the headline, two actions and three links, and no p
   for (const s of ["githubUrl", "linkedinUrl"]) assert.ok(src.includes(`profile.${s}`), s);
   // The résumé goes through the viewer's link (it alone names resumeUrl)
   assert.match(src, /<ResumeLink[\s>]/);
+});
+
+test("the home plate's preload: the same sun as the site's clock, the band's own srcset, nothing near twilight", async () => {
+  const { SUN_JS, PRELOAD_MARGIN, platePreloadScript } = await import("../app/lib/platePreload.ts");
+  const { solarSun, addDays } = await import("../app/lib/time.ts");
+  const sun = new Function(`return ${SUN_JS}`)();
+  for (let date = "2026-01-01"; date < "2028-01-01"; date = addDays(date, 1)) {
+    const [y, m, d] = date.split("-").map(Number);
+    const { sunrise, sunset } = solarSun(date, 43.87111, -79.43725);
+    assert.deepEqual(sun(y, m, d, 43.87111, -79.43725), [sunrise, sunset], date);
+  }
+  assert.ok(PRELOAD_MARGIN > 40 * 60, "wider than the twilight crossing");
+  // Run it at noon, at midnight and at sunset in Richmond Hill
+  const place = { latitude: 43.87111, longitude: -79.43725, timeZone: "America/Toronto" };
+  const run = (iso) => {
+    const added = [];
+    const RealDate = Date;
+    const fixed = new RealDate(iso).getTime();
+    class FakeDate extends RealDate { constructor(...a) { super(...(a.length ? a : [fixed])); } static now() { return fixed; } }
+    const document = { createElement: () => ({ setAttribute(k, v) { this[k] = v; } }), head: { appendChild: (l) => added.push(l) } };
+    new Function("document", "Date", platePreloadScript(place, "DAY 1x", "NIGHT 1x", "100vw"))(document, FakeDate);
+    return added.map((l) => `${l.rel} ${l.as} ${l.imagesrcset} ${l.imagesizes} ${l.fetchpriority}`);
+  };
+  assert.deepEqual(run("2026-06-21T16:00:00Z"), ["preload image DAY 1x 100vw high"], "noon");
+  assert.deepEqual(run("2026-06-21T04:00:00Z"), ["preload image NIGHT 1x 100vw high"], "midnight");
+  const { sunset } = solarSun("2026-06-21", 43.87111, -79.43725);
+  assert.deepEqual(run(new Date(sunset * 1000).toISOString()), [], "sunset: nothing");
+  const layout = read("app/layout.tsx");
+  assert.match(layout, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: BAND_SIZES \}\)/, "the band's own srcset and sizes");
+  assert.match(layout, /__html: PLATE_PRELOAD/);
 });

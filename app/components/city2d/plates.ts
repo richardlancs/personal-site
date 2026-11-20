@@ -24,3 +24,22 @@ export const plates: Record<DistrictId, { day: StaticImageData; night: StaticIma
   "nanjing-road": { day: nanjingRoadDay, night: nanjingRoadNight },
   bund: { day: bundDay, night: bundNight },
 };
+
+// Where each painting's subject sits, as an object-position: on phones the
+// band is a 4:3 crop of the 21:9 plate (about 57% of its width), and this
+// keeps the subject in it. Both plates of a district share it (they line
+// up). Wide screens see the whole width, so only the crop uses it.
+export const focal: Record<DistrictId, string> = {
+  lujiazui: "65% 50%", // the Pearl Tower and Shanghai Tower
+  longtang: "45% 50%", // the lit window and the lane
+  towers: "50% 50%", // the three towers
+  metro: "25% 50%", // the train and the board
+  "nanjing-road": "60% 50%", // the vanishing point and the tram
+  bund: "45% 50%", // the clock tower and the kiosk
+};
+
+// How wide a band's plate is drawn, for next/image's srcset choice. Under
+// 768px the band is a 4:3 crop of a 21:9 plate, so the plate is drawn
+// about 1.75 times the screen's width. Shared by the band and the home
+// plate's preload (layout.tsx), so both pick the same file.
+export const BAND_SIZES = "(max-width: 767px) 175vw, 100vw";

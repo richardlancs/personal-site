@@ -1,11 +1,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { platesNeeded, type Plate } from "../../lib/cityLook";
 import type { DistrictId } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
-import { plates } from "./plates";
+import { BAND_SIZES, focal, plates } from "./plates";
+import { useNear } from "./useNear";
 
 // A station's band of painting: its district by day, by night, or one
 // fading into the other, as Richmond Hill's clock has it (CityDriver.tsx
@@ -14,38 +15,50 @@ import { plates } from "./plates";
 // station's header names the place in words.
 //
 // Before the driver has run (the server's HTML, the first paint) it is the
-// dark gradient alone, which already holds the band's height; then only
-// the plates in use are mounted. A plate that fails to load is dropped,
-// leaving the gradient. Only the home band asks for its plate early; the
-// others load as they come near the screen (next/image's lazy loading).
-// Without scripts, the night plate.
+// dark gradient alone, which already holds the band's height. Then only
+// the plates in use are mounted, and only once the band is near the screen
+// (useNear.ts: within half a screen); the home band (`priority`) mounts at
+// once and asks for its plate first. Each plate stays clear until it has
+// loaded, then fades in over the gradient (no blurred placeholder to snap
+// out of; no fade in still view). A plate that fails to load is dropped for
+// good, leaving the gradient: the band is decoration, so it isn't retried.
+// Without scripts, the night plate (lazy below the first band).
 export default function DistrictBand({ district, priority = false }: { district: DistrictId; priority?: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const near = useNear(ref, priority);
   const blend = useCityBlend();
   const [failed, setFailed] = useState<Plate[]>([]);
+  const [loaded, setLoaded] = useState<Plate[]>([]);
   const pair = plates[district];
-  const shown = blend === null ? [] : platesNeeded(blend).filter((p) => !failed.includes(p));
+  const shown = blend === null || !near ? [] : platesNeeded(blend).filter((p) => !failed.includes(p));
 
   return (
-    <div className="band" aria-hidden="true">
+    <div ref={ref} className="band" aria-hidden="true" style={{ "--focal": focal[district] } as CSSProperties}>
       {shown.map((plate) => (
-        <div key={plate} className={`band-plate band-${plate}`}>
+        <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
             src={pair[plate]}
             alt=""
             fill
-            // Under 768px the band is a 4:3 crop of a 21:9 plate: the plate
-            // is drawn about 1.75 times the screen's width
-            sizes="(max-width: 767px) 175vw, 100vw"
-            placeholder="blur"
+            sizes={BAND_SIZES}
             loading={priority ? "eager" : undefined}
-            fetchPriority={priority ? "high" : undefined}
+            fetchPriority={priority ? "high" : "low"}
+            onLoad={() => setLoaded((l) => (l.includes(plate) ? l : [...l, plate]))}
             onError={() => setFailed((f) => (f.includes(plate) ? f : [...f, plate]))}
           />
         </div>
       ))}
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
-        <img src={pair.night.src} alt="" width={pair.night.width} height={pair.night.height} className="band-noscript" />
+        <img
+          src={pair.night.src}
+          alt=""
+          width={pair.night.width}
+          height={pair.night.height}
+          loading={priority ? undefined : "lazy"}
+          decoding="async"
+          className="band-noscript"
+        />
       </noscript>
     </div>
   );

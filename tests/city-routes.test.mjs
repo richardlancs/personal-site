@@ -62,6 +62,15 @@ test("a station is a labelled section with its band, stop and heading", () => {
   assert.deepEqual(stations.map(stopNumber), ["01", "02", "03", "04", "05", "06"], "stop numbers are two digits, in page order");
 });
 
+test("home's stop and line are the band's caption, before the hero, with no h2", () => {
+  const src = read("app/components/city2d/Station.tsx");
+  const home = src.match(/\{heading \? \(([\s\S]*?)\) : \(/)?.[1];
+  assert.ok(home, "the home branch");
+  assert.ok(home.indexOf('className="station-caption"') < home.indexOf("{heading}"), "caption first");
+  assert.match(home, /section\.districtLine/);
+  assert.doesNotMatch(home, /<h2/);
+});
+
 test("the home page is the six stations, with the Skills anchor inside Projects", () => {
   const page = read("app/page.tsx");
   assert.match(page, /stations\.map|<Station /);

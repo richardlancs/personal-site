@@ -38,7 +38,9 @@
   /* Glass buttons (.glass, below): a little panel blue over whatever is
      behind, blurred; labels stay opaque --text */
   --glass-tint: rgb(23 37 63 / 0.6);
-  --glass-tint-strong: rgb(255 180 84 / 0.2); /* primary: amber */
+  /* primary: solid amber with an ink label (about 10:1) */
+  --glass-tint-strong: var(--amber);
+  --glass-primary-hover: #ffc677;
   --glass-hover: rgb(79 216 238 / 0.14);
   --glass-chosen: rgb(79 216 238 / 0.16);
   --glass-border: color-mix(in srgb, var(--line) 65%, var(--cyan));
@@ -524,6 +526,12 @@ a[data-resume][data-opening] {
   background: var(--ground);
 }
 
+/* The grounds alternate down the line: About, Experience and Contact sit
+   on the lighter ink, so each station reads as its own stop */
+.station:is(#about, #experience, #contact) {
+  --ground: var(--ink-2);
+}
+
 /* It takes focus only so the Sections menu can hand focus to it */
 .station:focus {
   outline: none;
@@ -543,7 +551,7 @@ a[data-resume][data-opening] {
   width: 100%;
   aspect-ratio: 21 / 9;
   max-height: 70vh;
-  background: linear-gradient(to bottom, var(--ink-2), var(--ink));
+  background: linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
 }
 
 @media (max-width: 767px) {
@@ -565,6 +573,15 @@ a[data-resume][data-opening] {
   height: 100%;
   object-fit: cover;
   object-position: center;
+}
+
+/* On phones the band crops the plate: keep its subject in frame
+   (plates.ts: focal, set on the band as --focal) */
+@media (max-width: 767px) {
+  .band-plate img,
+  .band-noscript {
+    object-position: var(--focal, center);
+  }
 }
 
 /* The night plate over the day plate; without the driver (no script),
@@ -596,20 +613,27 @@ a[data-resume][data-opening] {
   pointer-events: none;
 }
 
-/* A plate fades in as it arrives; day and night cross-fade slowly */
+/* A plate stays clear until it has loaded, then fades in over the
+   gradient (DistrictBand sets data-loaded), so there's no blurred stand-in
+   to snap out of */
+.band-plate img {
+  opacity: 0;
+}
+
+.band-plate[data-loaded] img {
+  opacity: 1;
+}
+
 :root:not([data-still="on"]) .band-plate img {
-  animation: band-in 0.3s ease-out;
+  transition: opacity 0.3s ease-out;
 }
 
-:root:not([data-still="on"]) .band-night,
-:root:not([data-still="on"]) .band::after {
+/* Day and night cross-fade slowly, once the sky has been set (CityDriver
+   sets data-sky-ready a frame after its first write, so the page doesn't
+   fade from the fallbacks into the sky it arrives at) */
+:root[data-sky-ready]:not([data-still="on"]) .band-night,
+:root[data-sky-ready]:not([data-still="on"]) .band::after {
   transition: opacity 3s ease;
-}
-
-@keyframes band-in {
-  from {
-    opacity: 0;
-  }
 }
 
 /* Still view and reduced motion: the sky changes, but nothing fades */
@@ -658,39 +682,65 @@ a[data-resume][data-opening] {
 }
 
 /* ---------- The hero (components/city2d/sections/Hero.tsx) ----------
-   The home station's opening: the name on its own dark backing, the
-   headline, the two ways in and the links. On wide screens the backing
-   rises over the foot of the band (the one place words sit on a
-   painting, and they sit on solid ink); on phones it all sits under it. */
+   The home station's opening: the band's caption (the stop and the line
+   naming the place, on the ground under the band, never on it), then the
+   name on its own near-solid backing, the headline, the two ways in and
+   the links. On wide screens the backing sits centred on the band's
+   bottom edge (the one place words meet a painting, and they sit on ink)
+   and the caption takes the right of the hero's row; on phones it is all
+   under the band, the caption a small line above the name. */
+
+/* On phones the caption sits close under the band's faded foot */
+.station-body-home {
+  padding-top: 1.25rem;
+}
+
+.station-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 1rem;
+  color: var(--muted);
+}
+
+.station-caption-line {
+  font-size: 1rem;
+  line-height: 1.45;
+}
 
 .hero {
   position: relative;
   z-index: 3;
-  margin-bottom: 2.5rem;
+  /* The name's size and the backing's padding, so the backing's height
+     (and half of it, below) can be worked out */
+  --name-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
+  --backing-pad: clamp(0.5rem, 1.2vw, 0.875rem);
 }
 
 .hero-backing {
   display: inline-block;
   max-width: 100%;
-  padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 3vw, 2rem);
-  border: 1px solid var(--line);
+  padding: var(--backing-pad) clamp(0.875rem, 2vw, 1.5rem);
+  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   border-radius: var(--radius-lg);
-  background: var(--ink);
+  background: rgb(12 21 38 / 0.94);
 }
 
 /* The name, the page's one h1 (capped so a long word never pushes past a
    phone's width) */
 .hero-name {
   color: var(--text);
-  font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
+  font-size: var(--name-size);
   font-weight: 700;
+  line-height: 1.1;
   letter-spacing: 0.02em;
   overflow-wrap: break-word;
   /* Decoration only: the words have their contrast without it */
   text-shadow: 0 0 28px rgb(79 216 238 / 0.35);
 }
 
-/* Display type at 24px and over, so it may be neon */
+/* Display type at 24px and over, so it may be neon. Keep it at 1.5rem or
+   more: under 24px it would have to be --text */
 .hero-headline {
   margin-top: 1.25rem;
   color: var(--cyan);
@@ -716,13 +766,31 @@ a[data-resume][data-opening] {
 }
 
 @media (min-width: 768px) {
-  /* The backing rises over the foot of the band, in its faded 30% */
-  .station:has(> .station-body > .hero) > .station-body {
+  /* The hero's row: the hero on the left, the caption at the right,
+     level with the links */
+  .station-body-home {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+    column-gap: 2.5rem;
     padding-top: 0;
   }
 
-  .hero {
-    margin-top: calc(-1 * clamp(4.5rem, 9vw, 8rem));
+  /* Just under the band's edge, so the first screen says where it is */
+  .station-body-home > .station-caption {
+    grid-row: 1;
+    grid-column: 2;
+    align-self: start;
+    margin-top: 1.25rem;
+    margin-bottom: 0;
+    text-align: right;
+  }
+
+  .station-body-home > .hero {
+    grid-row: 1;
+    grid-column: 1;
+    /* The backing centred on the band's bottom edge: half its height
+       (the name's line, its padding, its edge) above it */
+    margin-top: calc(-0.5 * (var(--name-size) * 1.1 + 2 * var(--backing-pad) + 2px));
   }
 }
 
@@ -834,9 +902,10 @@ a[data-resume][data-opening] {
   light along its top, and an opaque --text label.
 
   The states, the same on every control:
-  - secondary (.glass); primary (.glass-primary): amber glass, a heavier
-    label; .glass-icon, a square key for an icon
-  - hover: a little cyan
+  - secondary (.glass); primary (.glass-primary): solid amber, an ink
+    label (about 10:1), a heavier weight; .glass-icon, a square key for
+    an icon
+  - hover: a little cyan (primary: a lighter amber)
   - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
     open popover): a cyan edge, doubled inside, pressed in (a shade inside,
     no shadow lift; a faint glow instead), so it reads without colour too
@@ -886,8 +955,15 @@ a[data-resume][data-opening] {
 
 .glass-primary {
   --tint: var(--glass-tint-strong);
+  --glass-ink: var(--ink);
   border-color: var(--amber);
-  font-weight: 600;
+  font-weight: 700;
+}
+
+@media (hover: hover) {
+  .glass-primary:not(:disabled, [aria-disabled="true"]):hover {
+    background-color: var(--glass-primary-hover);
+  }
 }
 
 /* A square key for an icon */
@@ -903,6 +979,8 @@ a[data-resume][data-opening] {
 }
 
 .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+  /* A chosen primary loses its amber fill, so its label goes back to text */
+  --glass-ink: var(--text);
   --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
   --glass-lift: var(--glow-cyan);
   border-color: var(--cyan);
@@ -935,6 +1013,10 @@ a[data-resume][data-opening] {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass {
     background-color: var(--glass-fallback);
+  }
+
+  .glass-primary {
+    background-color: var(--tint);
   }
 }
 

@@ -37,7 +37,10 @@ export default function CityDriver() {
     html.dataset.weather = data.weather;
     for (const [name, value] of Object.entries(vars)) html.style.setProperty(name, value);
     setCityBlend(Number(vars["--city-night"]));
-  }, [now, preset, phase, progress]);
+    // From the next frame on, changes of sky cross-fade (city.css); the
+    // first one, from the fallbacks, doesn't
+    if (!("skyReady" in html.dataset)) requestAnimationFrame(() => (html.dataset.skyReady = ""));
+  },[now, preset, phase, progress]);
 
   return null;
 }
