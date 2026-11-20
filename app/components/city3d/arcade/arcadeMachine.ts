@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import type { Interest } from "../../../data/portfolio";
 import { fonts } from "../kit/textures";
-import { ACTIONS, BOARD, HUES, deal, handName, knightMoves, nextKnightSquare, rankLabel, shotGoesIn, type Card } from "./arcadeLogic";
+import { ACTIONS, BOARD, deal, handName, knightMoves, nextKnightSquare, rankLabel, shotGoesIn, type Card } from "./arcadeLogic";
 
 // The arcade's one machine (Arcade.tsx): every interest is a mode of it,
 // a small game on its screen, drawn live on a canvas while it's on.
@@ -14,6 +14,12 @@ import { ACTIONS, BOARD, HUES, deal, handName, knightMoves, nextKnightSquare, ra
 //
 // In still view nothing moves on its own: the boot is skipped, the screen
 // holds a frame, and a press jumps straight to how it turns out.
+//
+// Its colours are the city's: the screen and the marquee soft black (the
+// interface's ink), each mode drawn in one of the night street's three
+// neon tones (kit/neon.ts: SCENE_TONES, repeated here as plain colours so
+// this file stays free of the kit's materials), the words in the
+// interface's pale text colour. No scanlines.
 
 const W = 512;
 const H = 400;
@@ -21,6 +27,19 @@ const FLOOR = 336;
 const BOOT = 0.9;
 const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 const ease = (x: number) => 1 - (1 - x) * (1 - x);
+// The interface's soft blacks and pale text (app/city.css: --ink, --ink-2,
+// --panel, --text), and each mode's tone
+const INK = "#08090c";
+const INK_2 = "#101217";
+const PANEL = "#181b23";
+const TEXT = "#e6e9ee";
+const TONES: Record<Interest["scene"], [number, number, number]> = {
+  basketball: [255, 180, 84], // gold
+  badminton: [79, 216, 238], // cyan
+  chess: [79, 216, 238], // cyan
+  poker: [240, 98, 180], // rose
+};
+const rgba = ([r, g, b]: [number, number, number], a = 1) => `rgba(${r},${g},${b},${a})`;
 const square = ([c, r]: [number, number]) => `${"abcde"[c]}${r + 1}`;
 
 // The chess board's squares on the screen
@@ -57,17 +76,18 @@ export function createMachine(modes: Interest[]) {
   const cards = { deals: 0, at: -Infinity, hand: [] as Card[] };
 
   const scene = () => modes[mode].scene;
-  const ink = () => `hsl(${HUES[scene()]},75%,72%)`;
+  const tone = () => TONES[scene()];
+  const ink = () => rgba(tone());
 
   function drawMarquee() {
     const f = fonts();
-    const hue = HUES[scene()];
-    const gr = mg.createLinearGradient(0, 0, 0, 112);
-    gr.addColorStop(0, `hsl(${hue},45%,30%)`);
-    gr.addColorStop(1, `hsl(${hue},50%,18%)`);
-    mg.fillStyle = gr;
+    mg.fillStyle = INK_2;
     mg.fillRect(0, 0, 512, 112);
-    mg.fillStyle = "#fff1d6";
+    // a thin line of the mode's tone round the edge
+    mg.strokeStyle = rgba(tone(), 0.9);
+    mg.lineWidth = 4;
+    mg.strokeRect(6, 6, 500, 100);
+    mg.fillStyle = rgba(tone());
     mg.font = `700 60px ${f.display}`;
     mg.textAlign = "center";
     mg.textBaseline = "middle";
@@ -183,14 +203,14 @@ export function createMachine(modes: Interest[]) {
     const wScale = Math.abs(Math.cos(flip * Math.PI));
     const w = 64 * Math.max(0.06, wScale);
     const up = flip > 0.5;
-    g.fillStyle = up ? "#f6efdf" : "#3d5c8a";
+    g.fillStyle = up ? TEXT : PANEL;
     g.fillRect(x - w / 2, y - 48, w, 96);
-    g.strokeStyle = up ? "#c9bba0" : "#c9d8ee";
+    g.strokeStyle = up ? "#b9bec7" : rgba(TONES.poker, 0.8);
     g.lineWidth = 2;
     g.strokeRect(x - w / 2 + 3, y - 45, w - 6, 90);
     if (up && card && wScale > 0.5) {
       const red = card.suit === 1 || card.suit === 2;
-      const color = red ? "#c2493c" : "#22262a";
+      const color = red ? "#b8306f" : INK_2;
       text(rankLabel(card.rank), x, y - 6, 32, color);
       text(["♠", "♥", "♦", "♣"][card.suit], x, y + 32, 28, color);
     }
@@ -248,7 +268,7 @@ export function createMachine(modes: Interest[]) {
       g.stroke();
       text(`SCORE ${ball.score}`, 30, 44, 28, fg, "left");
       const since = t - ball.at;
-      if (ball.shots && (still || (since > 1 && since < 2.2))) text(ball.in ? "SWISH!" : "RIM OUT", W / 2, 110, 34, "#fff3d6");
+      if (ball.shots && (still || (since > 1 && since < 2.2))) text(ball.in ? "SWISH!" : "RIM OUT", W / 2, 110, 34, TEXT);
     } else if (s === "badminton") {
       // The net, two players with their rackets, the shuttle
       g.fillRect(W / 2 - 2, FLOOR - 90, 4, 90);
@@ -274,7 +294,7 @@ export function createMachine(modes: Interest[]) {
         g.ellipse(x + dir * 34, FLOOR - 136, 10, 14, dir * 0.4, 0, Math.PI * 2);
         g.stroke();
       }
-      g.fillStyle = "#fff3d6";
+      g.fillStyle = TEXT;
       g.beginPath();
       g.moveTo(sh.x, sh.y + 8);
       g.lineTo(sh.x - 10, sh.y - 10);
@@ -285,22 +305,22 @@ export function createMachine(modes: Interest[]) {
       g.arc(sh.x, sh.y + 8, 5, 0, Math.PI * 2);
       g.fill();
       text(`WON ${shuttle.rally}`, 30, 44, 28, fg, "left");
-      if (sh.smash > 0 || (still && shuttle.rally)) text("SMASH!", W / 2, 110, 34, "#fff3d6");
+      if (sh.smash > 0 || (still && shuttle.rally)) text("SMASH!", W / 2, 110, 34, TEXT);
     } else if (s === "chess") {
       // The board, the squares the knight has been to, where it can go
       const moves = knightMoves(knight.at);
       for (let c2 = 0; c2 < BOARD; c2++)
         for (let r = 0; r < BOARD; r++) {
           const [x, y] = cellAt([c2, r]);
-          g.fillStyle = (c2 + r) % 2 ? "rgba(255,255,255,0.08)" : `hsla(${HUES.chess},50%,60%,0.35)`;
+          g.fillStyle = (c2 + r) % 2 ? "rgba(255,255,255,0.06)" : rgba(TONES.chess, 0.22);
           g.fillRect(x - CELL / 2, y - CELL / 2, CELL, CELL);
           if (knight.visited.has(`${c2},${r}`)) {
-            g.fillStyle = `hsla(${HUES.chess},80%,70%,0.25)`;
+            g.fillStyle = rgba(TONES.chess, 0.3);
             g.fillRect(x - CELL / 2 + 4, y - CELL / 2 + 4, CELL - 8, CELL - 8);
           }
         }
       const pulse = still ? 1 : 0.65 + Math.sin(t * 4) * 0.35;
-      g.fillStyle = "#fff3d6";
+      g.fillStyle = TEXT;
       for (const sq of moves) {
         const [x, y] = cellAt(sq);
         g.globalAlpha = pulse;
@@ -314,7 +334,7 @@ export function createMachine(modes: Interest[]) {
       const [tx, ty] = cellAt(knight.at);
       const x = fx + (tx - fx) * ease(k);
       const y = fy + (ty - fy) * ease(k) - Math.sin(k * Math.PI) * 30;
-      g.fillStyle = "#fff3d6";
+      g.fillStyle = TEXT;
       g.beginPath();
       g.moveTo(x - 15, y + 20);
       g.lineTo(x + 15, y + 20);
@@ -350,10 +370,10 @@ export function createMachine(modes: Interest[]) {
           g.strokeRect(slot.x - 32, slot.y - 48, 64, 96);
           g.globalAlpha = 1;
         }
-      if (cards.hand.length && since > 1.1) text(handName(cards.hand).toUpperCase(), W / 2 + 40, 292, 34, "#fff3d6");
+      if (cards.hand.length && since > 1.1) text(handName(cards.hand).toUpperCase(), W / 2 + 40, 292, 34, TEXT);
       text(`HAND ${cards.deals}`, 30, 44, 28, fg, "left");
     }
-    text(modes[mode].name.toUpperCase(), W - 30, 44, 28, "#fff3d6", "right");
+    text(modes[mode].name.toUpperCase(), W - 30, 44, 28, TEXT, "right");
     g.globalAlpha = 0.75;
     // (right of middle: the stick stands in front of the screen's lower left)
     text(ACTIONS[s].hint, W / 2 + 60, H - 22, 24, fg, "center", 700);
@@ -362,13 +382,12 @@ export function createMachine(modes: Interest[]) {
 
   // The boot: dark, a line of light opening into the picture, the bar
   function drawBoot(k: number) {
-    const s = scene();
     const fg = ink();
     if (k < 0.15) return;
     if (k < 0.38) {
       const open = (k - 0.15) / 0.23;
       const h = Math.max(2, open * open * H);
-      g.fillStyle = `hsla(${HUES[s]},70%,85%,${1 - open * 0.6})`;
+      g.fillStyle = rgba(tone(), 1 - open * 0.6);
       g.fillRect(0, H / 2 - h / 2, W, h);
       return;
     }
@@ -382,22 +401,19 @@ export function createMachine(modes: Interest[]) {
       g.fillRect(130, 204, 252 * fill, 14);
       return;
     }
-    text(modes[mode].name.toUpperCase(), W / 2, 210, 54, "#fff3d6");
+    text(modes[mode].name.toUpperCase(), W / 2, 210, 54, TEXT);
   }
 
   function draw(t: number, on: boolean, still: boolean) {
-    g.fillStyle = on ? "#141a22" : "#0b0d0c";
+    g.fillStyle = on ? INK_2 : INK;
     g.fillRect(0, 0, W, H);
     if (on) {
       const boot = still ? 1 : (t - bootAt) / BOOT;
       if (boot >= 0 && boot < 1) drawBoot(boot);
       else drawGame(t, still);
       g.textAlign = "left";
-      // Scanlines
-      g.fillStyle = "rgba(0,0,0,0.18)";
-      for (let y = 0; y < H; y += 3) g.fillRect(0, y, W, 1);
     } else {
-      g.fillStyle = "rgba(160,190,170,0.06)";
+      g.fillStyle = "rgba(158,165,177,0.05)";
       g.fillRect(30, 30, W - 60, H - 60);
     }
     tex.needsUpdate = true;
@@ -405,5 +421,6 @@ export function createMachine(modes: Interest[]) {
 
   drawMarquee();
   draw(0, false, true);
-  return { tex, marquee, setMode, press, draw, mode: () => mode };
+  // (the canvases too, for a scene that paints them onto its own faces)
+  return { tex, marquee, canvas: c, marqueeCanvas: mc, setMode, press, draw, mode: () => mode };
 }
