@@ -28,8 +28,8 @@ const bund: SceneDef = {
   plateFrame: { fov: 50, pos: [0, 0.22, 0], target: [-0.26, 0.97, 10] },
   frame: "right",
   span: 25,
-  // (portrait: the middle turned back toward the clock tower)
-  portrait: { yaw: -7, half: 22 },
+  // (portrait: the middle a little toward the river, so the clock tower and the Pearl both show)
+  portrait: { yaw: 3, half: 27 },
   short: 3,
   threshold: "#0f1418",
   // The facades and lamps are within 90 units; the landmarks 130 to 230
