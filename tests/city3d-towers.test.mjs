@@ -21,8 +21,14 @@ test("the def has a plate frame and one focus pose per project, each looking at 
   for (let n = 0; n < projects.length; n++) {
     const pose = towers.focus[`screen-${n}`];
     assert.deepEqual(pose.target, screenMiddle(n));
-    // inside the plaza, below the ring's deck height plus a little
-    assert.ok(Math.hypot(pose.pos[0], pose.pos[2]) < TOWERS.ring.r, `screen-${n}: from inside the ring`);
+    // from inside the ring, high enough that the line to the screen's
+    // foot clears the deck's railing (its glass top at the inner edge)
+    const r = Math.hypot(pose.pos[0], pose.pos[2]);
+    assert.ok(r < TOWERS.ring.r - TOWERS.ring.width / 2, `screen-${n}: from inside the ring`);
+    const rail = TOWERS.ring.r - TOWERS.ring.width / 2;
+    const foot = TOWERS.screens.y - TOWERS.screens.h / 2;
+    const yAtRail = pose.pos[1] + ((foot - pose.pos[1]) * (rail - r)) / (TOWERS.podium.r - r);
+    assert.ok(yAtRail > TOWERS.ring.deck + TOWERS.ring.glass, `screen-${n}: sees over the railing`);
   }
   // the home eye stands inside the ring, under its deck
   const [x, y, z] = towers.home.pos;

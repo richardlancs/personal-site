@@ -58,12 +58,13 @@ export function screenMiddle(n: number): V3 {
   return [round(r * Math.sin(az)), TOWERS.screens.y, round(-r * Math.cos(az))];
 }
 
-// Looking at screen n from across the plaza, a little below its middle,
-// from 14 units off (above the ring's deck on that line)
+// Looking at screen n from across the plaza, 13 units off, from a little
+// over the walkway's railing (the line to the screen clears the deck, its
+// railing and the trees in its planters), a little below its middle
 function screenPose(n: number): Pose {
   const az = rad(TOWERS.screens.az[n]);
-  const back = TOWERS.podium.r - 14;
-  return { pos: [round(back * Math.sin(az)), 0.5, round(-back * Math.cos(az))], target: screenMiddle(n) };
+  const back = TOWERS.podium.r - 13;
+  return { pos: [round(back * Math.sin(az)), 2.1, round(-back * Math.cos(az))], target: screenMiddle(n) };
 }
 
 const towers: SceneDef = {

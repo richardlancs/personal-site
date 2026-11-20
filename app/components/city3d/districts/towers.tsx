@@ -435,11 +435,14 @@ function build(quality: Quality): Built {
   mesh(merge([arcFace(rin + 0.045, 0, 360, top, top + R.glass, 96, true), arcFace(rout - 0.045, 0, 360, top, top + R.glass, 96, false)]), glassMaterial({ tint: "#bcd6e6", opacity: 0.22, sky: 0.7, glow: { tone: "#ffc98a", strength: 0.35 }, double: true }), "glass:railing");
   // planters along the deck's outer edge, between the pillars, each with
   // a small tree whose crown shows over the railing
-  const planterSpots = Array.from({ length: 360 / R.pillarStep }, (_, k) => {
-    const az = (k + 0.5) * R.pillarStep;
-    const p = polar(rout - 0.3, az);
-    return { x: p.x, z: p.z, w: 0.7, d: 0.26, h: 0.1, y: top, ry: -rad(az) };
-  });
+  // (none on a line to a screen from its focus pose)
+  const clearOfScreens = (az: number, deg: number) => S.az.every((s) => Math.abs((((az - s) % 360) + 540) % 360 - 180) > deg);
+  const planterSpots = Array.from({ length: 360 / R.pillarStep }, (_, k) => (k + 0.5) * R.pillarStep)
+    .filter((az) => clearOfScreens(az, 12))
+    .map((az) => {
+      const p = polar(rout - 0.3, az);
+      return { x: p.x, z: p.z, w: 0.7, d: 0.26, h: 0.1, y: top, ry: -rad(az) };
+    });
   for (const m of buildPlanters(109, planterSpots, { stone: CONCRETE })) {
     geometries.push(m.geometry);
     if (mobile) m.castShadow = false;
@@ -452,13 +455,18 @@ function build(quality: Quality): Built {
   }
 
   // ---- Trees: round the ring's outside (hiding the supertalls' feet, as
-  // in the paintings), a few inside, one over the eye's left; and on the
+  // in the paintings), a few inside (the painting's big tree at the top left is left out: the
+  // kit's round masses read as a blot there, and it stood on the last
+  // screen's focus line); on the deck's planters and on the
   // podiums' roofs
   const tg = rng(101);
   const plazaTrees: { x: number; z: number; s: number }[] = [];
   for (let az = -170; az <= 170; az += 7) {
-    const p = polar(tg.range(9.8, 13.5), az + tg.range(-3, 3));
-    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(1.8, 2.6) });
+    const a = az + tg.range(-3, 3);
+    const p = polar(tg.range(9.8, 13.5), a);
+    const s = tg.range(1.8, 2.6);
+    // lower in front of a screen, so its focus pose sees all of it
+    plazaTrees.push({ x: p.x, z: p.z, s: clearOfScreens(a, 9) ? s : s * 0.6 });
   }
   for (let az = -60; az <= 60; az += 8) {
     const p = polar(tg.range(15, 22), az + tg.range(-3, 3));
@@ -473,7 +481,6 @@ function build(quality: Quality): Built {
     const p = polar(5.5, az);
     plazaTrees.push({ x: p.x, z: p.z, s: 1.2 });
   }
-  plazaTrees.push({ x: -6.4, z: 3.4, s: 3.4 });
   for (const [spots, seed, y] of [
     [plazaTrees, 103, 0],
     [roofTrees, 107, P.height - 1.2],
