@@ -11,6 +11,8 @@ import { richmondHill } from "./data/weather";
 import { platePreloadScript } from "./lib/platePreload";
 import { siteUrl } from "./sections/registry";
 import "./city.css";
+import "./motion.css";
+import "./reveal.css";
 
 // Headings and station names: Rajdhani, a squared, narrow sans with the
 // look of signage. Text: Nunito, a rounded sans, friendly and easy to read
