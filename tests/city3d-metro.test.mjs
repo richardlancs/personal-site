@@ -87,3 +87,10 @@ test("the kit's new pieces: a glazed canopy, square tiles, planters, the lamps' 
   assert.match(src, /kind: "stripes"/);
   assert.match(defSrc, /shelter: METRO\.shelter,/);
 });
+
+test("the train says when it rests (at its stop, and gone between trains), so the canvas can idle through the dwell", () => {
+  assert.match(src, /resting\(t\) \{\s*const s = \(\(t % o\.cycle\) \+ o\.cycle\) % o\.cycle;\s*return \(s >= o\.arrive && s < o\.arrive \+ o\.dwell\) \|\| s >= o\.arrive \+ o\.dwell \+ o\.leave;/);
+  const common = noComments(read("app/components/city3d/common.tsx"));
+  assert.match(common, /resting\?\(t: number\): boolean/);
+  assert.match(common, /if \(m\.resting\?\.\(t\)\) return false;/);
+});

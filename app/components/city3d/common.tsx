@@ -54,8 +54,10 @@ export type SceneProps = {
 
 // Something that moves on its own (a train, a boat, a light that blinks).
 // update(t) is never called in still view; park() puts it at its resting
-// state (a parked train, a light on and steady).
-export type Mover = { object: THREE.Object3D; update(t: number): void; park(): void };
+// state (a parked train, a light on and steady). `resting(t)`, if it has
+// one, says it isn't moving at time t (a train at its stop): the canvas
+// needn't draw for it then.
+export type Mover = { object: THREE.Object3D; update(t: number): void; park(): void; resting?(t: number): boolean };
 
 // The name of a scene's anchor ("<scene id>:<name>"); "sign:" is reserved
 // for the riverside's five signs
@@ -69,19 +71,21 @@ export function useLive(on: boolean): void {
 }
 
 // Runs a scene's movers: each frame while the place is showing, still
-// view is off and at least one of them is in view (holding the canvas
-// live meanwhile); parked otherwise. When none is in view the canvas stops
-// drawing: they are moved on, unseen, twice a second (no frame drawn), and
+// view is off and at least one of them is in view and not resting
+// (holding the canvas live meanwhile); parked otherwise. When none is in
+// view (or every one in view is resting) the canvas stops drawing: they are moved on, unseen, twice a second (no frame drawn), and
 // the loop starts again the moment one comes into view. Their clock is
 // the page's (performance.now), so a mover is where it would have been.
 const box = new THREE.Box3();
 const frustum = new THREE.Frustum();
 const viewProjection = new THREE.Matrix4();
 const seconds = () => performance.now() / 1000;
-function anyInView(movers: readonly Mover[], camera: THREE.Camera) {
+// Whether one of them is in view and moving (not resting) at time t
+function anyInView(movers: readonly Mover[], camera: THREE.Camera, t: number) {
   camera.updateMatrixWorld();
   frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
   return movers.some((m) => {
+    if (m.resting?.(t)) return false;
     m.object.updateWorldMatrix(true, true);
     return frustum.intersectsBox(box.setFromObject(m.object));
   });
@@ -98,18 +102,20 @@ export function useMovers(movers: readonly Mover[], { active, still }: { active:
   useEffect(() => {
     if (!wanted || seen) return;
     const id = window.setInterval(() => {
-      for (const m of movers) m.update(seconds());
-      if (anyInView(movers, camera)) setSeen(true);
+      const t = seconds();
+      for (const m of movers) m.update(t);
+      if (anyInView(movers, camera, t)) setSeen(true);
     }, 500);
     return () => window.clearInterval(id);
   }, [wanted, seen, movers, camera]);
   const frames = useRef(0);
   useFrame(({ camera: cam }) => {
     if (!wanted) return;
-    for (const m of movers) m.update(seconds());
+    const t = seconds();
+    for (const m of movers) m.update(t);
     // (every fifteenth frame, and on any frame drawn while they're out of view)
     if (!seen || ++frames.current % 15 === 0) {
-      const inView = anyInView(movers, cam);
+      const inView = anyInView(movers, cam, t);
       if (inView !== seen) setSeen(inView);
     }
   });

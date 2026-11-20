@@ -146,6 +146,12 @@ function stoppingTrain(): { mover: Mover; length: number } {
         train.update(kit);
       },
       park: () => train.park(),
+      // at its stop through the dwell, and gone from view between trains:
+      // the canvas needn't draw for it
+      resting(t) {
+        const s = ((t % o.cycle) + o.cycle) % o.cycle;
+        return (s >= o.arrive && s < o.arrive + o.dwell) || s >= o.arrive + o.dwell + o.leave;
+      },
     },
   };
 }
