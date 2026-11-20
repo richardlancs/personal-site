@@ -8,7 +8,6 @@ import { test } from "node:test";
 import { DAYLIGHTS, WEATHER_PRESETS } from "../app/lib/sky.ts";
 import {
   DAYLIGHT,
-  OUTDOORS,
   WEATHER,
   daylightLook,
   fogColor,
@@ -27,7 +26,6 @@ const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(root + path, "utf8");
 
 const finite01 = (c) => c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
-const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
 test("every weather and every time of day has a look", () => {
   assert.deepEqual([...PREVIEW_PRESETS].sort(), [...WEATHER_PRESETS].sort());
@@ -36,32 +34,29 @@ test("every weather and every time of day has a look", () => {
   for (const d of DAYLIGHTS) assert.ok(DAYLIGHT[d]?.start && DAYLIGHT[d]?.end, d);
 });
 
-test("all sixteen combinations compose to colours and numbers in range, in every place", () => {
-  const park = { sun: hexToRGB("#ffd09a"), fog: hexToRGB("#b3cbd8") };
+test("all twenty combinations compose to colours and numbers in range", () => {
+  const park = { sun: hexToRGB("#ffffff"), fog: hexToRGB("#141a24") };
   for (const p of WEATHER_PRESETS)
     for (const ph of DAYLIGHTS)
       for (const progress of [0, 0.5, 1]) {
         const d = daylightLook(newDaylight(), ph, progress);
         const w = weatherLook(newWeather(), p);
-        for (const indoor of [false, true]) {
-          assert.ok(finite01(lightColor([0, 0, 0], park.sun, d.sun, d.sunMix, w)), `${p}/${ph} sun`);
-          assert.ok(finite01(fogColor([0, 0, 0], park.fog, d, w, indoor)), `${p}/${ph} fog`);
-          const r = fogRange({ near: 0, far: 0 }, { near: 20, far: 135 }, d, w, indoor);
-          assert.ok(r.near > 0 && r.far > r.near, `${p}/${ph} fog range`);
-        }
+        assert.ok(finite01(lightColor([0, 0, 0], park.sun, d.sun, d.sunMix, w)), `${p}/${ph} sun`);
+        assert.ok(finite01(fogColor([0, 0, 0], park.fog, d, w)), `${p}/${ph} fog`);
+        const r = fogRange({ near: 0, far: 0 }, { near: 20, far: 135 }, d, w);
+        assert.ok(r.near > 0 && r.far > r.near, `${p}/${ph} fog range`);
         assert.ok(finite01(skyColor([0, 0, 0], d.top, w)) && finite01(skyColor([0, 0, 0], d.horizon, w)), `${p}/${ph} sky`);
         assert.ok(d.night >= 0 && d.night <= 1 && w.cover >= 0 && w.cover <= 1);
       }
 });
 
-test("only rain wets, only snow lies, and nothing falls indoors", () => {
+test("only rain wets, only snow lies", () => {
   for (const p of WEATHER_PRESETS) {
     const w = WEATHER[p];
     assert.equal(w.rain > 0, p === "rain", p);
     assert.equal(w.flakes > 0, p === "snow", p);
     assert.equal(w.snow > 0, p === "snow", p);
   }
-  assert.deepEqual([...OUTDOORS].sort(), ["booth", "park", "station"]);
 });
 
 test("night is night whatever the weather; dusk and dawn move with their progress", () => {
@@ -73,15 +68,6 @@ test("night is night whatever the weather; dusk and dawn move with their progres
   // A clock moving on by a minute doesn't change the target
   assert.equal(progressStep(0.501), progressStep(0.5));
   assert.equal(progressStep(NaN), 0);
-});
-
-test("indoors the weather reaches the room's air less than the sky outside", () => {
-  const d = daylightLook(newDaylight(), "day", 0.5);
-  const w = weatherLook(newWeather(), "rain");
-  const base = hexToRGB("#c1b19e"); // the workshop's air
-  const inside = fogColor([0, 0, 0], base, d, w, true);
-  const outside = fogColor([0, 0, 0], base, d, w, false);
-  assert.ok(dist(inside, base) < dist(outside, base));
 });
 
 test("the preview's address form", () => {

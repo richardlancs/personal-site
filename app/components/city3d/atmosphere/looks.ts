@@ -1,13 +1,19 @@
-// How the world looks for each time of day and each kind of weather: the
+// How the city looks for each time of day and each kind of weather: the
 // one table to tune (DAYLIGHT, WEATHER), and the arithmetic that turns a
 // place's own lighting into what it should be now. Plain numbers, no
 // three.js and no React, so the tests can run it.
 //
 // Daylight and weather are independent: a rainy night is the night's
-// light with the rain's muting on top. Each place keeps its own colours
-// (the workshop's warm fog, the park's blue one); the table says how far
-// to move them, so neutral weather by day is the park as it has always
-// been, the late-afternoon light of the painting.
+// light with the rain's muting on top. The colours are the plates'
+// (app/assets/city/lujiazui-day.webp and -night.webp, the dusk concept
+// docs/city/concepts/lujiazui.webp), sampled where the sky meets the
+// skyline: a clear blue day, a deep blue-black night whose light is the
+// city's own (windows, neon), a dusk that starts gold at the horizon and
+// ends violet. These are the scene's colours, not the interface's tokens.
+//
+// Everything lit stays under 1.0 (linear, before tone mapping) in every
+// look, so only the neon (kit/neon.ts: × NEON_HDR) crosses the bloom's
+// threshold: the world's two lights together never pass LIT_LIMIT (tested).
 //
 // Colours are sRGB, 0..1 (as written in hex); Atmosphere.tsx converts
 // them for three.js.
@@ -37,7 +43,10 @@ export type DaylightLook = {
   cloudLit: RGB; // cloud tops and undersides
   cloudShade: RGB;
   sunHeight: number; // how high the sun's disc sits, against the place's own
-  night: number; // 0 day .. 1 night: windows and lamps, the moon, stars
+  night: number; // 0 day .. 1 night: lamps, the moon, stars (envUniforms.uNight)
+  neon: number; // how bright the neon is (neonUniforms.uNeon): 0.3 by day .. 1 at night
+  cityGlow: number; // the city's own light on the sky low down: 0 by day .. 1 at night
+  windows: number; // the least share of windows lit, whatever the clock says (uLitShare)
 };
 
 // What the weather sets, on top of the daylight
@@ -53,13 +62,15 @@ export type WeatherLook = {
   fogLift: number;
   fogNear: number;
   fogFar: number;
-  cover: number; // cloud cover, 0 clear .. 1 overcast (0.5: the painting's sky)
+  cover: number; // cloud cover, 0 clear .. 1 overcast
   cloudDark: number; // heavier, darker cloud
   sunDisc: number; // how much of the sun's (moon's) glow shows through
   wet: number; // envUniforms.uWet
   snow: number; // envUniforms.uSnow
   rain: number; // falling rain, 0..1 of the full density
   flakes: number; // falling snow, 0..1
+  neon: number; // × the daylight's neon: wet air carries it further
+  cityGlow: number; // × the daylight's city glow: low cloud holds it
 };
 
 const hex = (h: string): RGB => {
@@ -71,65 +82,76 @@ type DaylightRow = { [K in keyof DaylightLook]: DaylightLook[K] extends RGB ? st
 
 // Each phase has a look at its start and at its end, and moves between
 // them with the phase's progress (lib/sky.ts: SkyState.progress): dusk
-// starts warm and ends cool, dawn starts lavender and ends gold. Day and
-// night hold one look.
-// The intro film's summer afternoon (docs/world/film-look.md): a deep
-// gouache blue overhead, still blue near the horizon, cream-gold cloud
-// tops with lavender-blue undersides, blue-green aerial haze
+// starts gold and ends violet, dawn starts violet and ends pale gold. Day
+// and night hold one look.
+//
+// The world's two lights (common.tsx: WorldLights) are built at 2.2 each;
+// sunScale and hemiScale move them from there. Their sum, after the
+// weather, stays under LIT_LIMIT, so a white surface in full sun stays
+// under 1.0.
+//
+// The day plate: a clear deep blue overhead (#307fdb) paling to #abd0f5
+// at the skyline, a blue haze on the water, white light
 const DAY: DaylightRow = {
-  sun: "#ffe3b0", sunMix: 0.3, sunScale: 1.08,
-  hemiSky: "#f3e8cc", hemiGround: "#5f6d3a", hemiMix: 0.25, hemiScale: 1.06,
-  fog: "#a9c6d6", fogMix: 0.3, fogNear: 1, fogFar: 1.05,
-  top: "#174a9e", horizon: "#9cc3e2", glow: "#ffe6c2",
-  cloudLit: "#ffeac2", cloudShade: "#b9b2c6", // the painting's (props.ts: buildSky)
-  sunHeight: 1.1, night: 0,
+  sun: "#fff4e2", sunMix: 0.7, sunScale: 0.75,
+  hemiSky: "#cfe2f6", hemiGround: "#4a5560", hemiMix: 0.8, hemiScale: 0.5,
+  fog: "#9cbfdf", fogMix: 1, fogNear: 1, fogFar: 1.1,
+  top: "#307fdb", horizon: "#abd0f5", glow: "#fff1d8",
+  cloudLit: "#f6f8fb", cloudShade: "#b9cade",
+  sunHeight: 1.1, night: 0, neon: 0.3, cityGlow: 0, windows: 0,
 };
 
+// The night plate: #0d2145 overhead, #394b8c to a violet #61578f behind
+// the skyline, the air a deep navy; the moon faint, the hemisphere low
 const NIGHT: DaylightRow = {
-  sun: "#8fa3dc", sunMix: 1, sunScale: 0.22,
-  hemiSky: "#5c6699", hemiGround: "#24242f", hemiMix: 0.9, hemiScale: 0.46,
-  fog: "#394068", fogMix: 0.92, fogNear: 0.8, fogFar: 0.85,
-  top: "#172048", horizon: "#3b4574", glow: "#cdd6f2",
-  cloudLit: "#6d74a0", cloudShade: "#3a3e66",
-  sunHeight: 1.5, night: 1,
+  sun: "#8fa6dc", sunMix: 1, sunScale: 0.12,
+  hemiSky: "#3a4a7a", hemiGround: "#1a1c26", hemiMix: 1, hemiScale: 0.32,
+  fog: "#16213d", fogMix: 0.95, fogNear: 0.85, fogFar: 0.8,
+  top: "#0d2145", horizon: "#394b8c", glow: "#cdd6f2",
+  cloudLit: "#2d3c66", cloudShade: "#151d36",
+  sunHeight: 1.5, night: 1, neon: 1, cityGlow: 1, windows: 0.3,
 };
 
 export const DAYLIGHT: Record<Daylight, { start: DaylightRow; end: DaylightRow }> = {
   dawn: {
     start: {
-      sun: "#e9b4a6", sunMix: 0.85, sunScale: 0.4,
-      hemiSky: "#b9bfdc", hemiGround: "#454a4e", hemiMix: 0.7, hemiScale: 0.62,
-      fog: "#c9cde0", fogMix: 0.8, fogNear: 0.55, fogFar: 0.7,
-      top: "#6a8fcb", horizon: "#f2cfc6", glow: "#ffd0b8",
-      cloudLit: "#f6dcd8", cloudShade: "#b5bad8",
-      sunHeight: 0.12, night: 0.5,
+      sun: "#c79ab0", sunMix: 0.95, sunScale: 0.2,
+      hemiSky: "#58608e", hemiGround: "#23232c", hemiMix: 0.95, hemiScale: 0.36,
+      fog: "#4f5579", fogMix: 0.95, fogNear: 0.8, fogFar: 0.8,
+      top: "#22396e", horizon: "#c9909a", glow: "#f2b8a6",
+      cloudLit: "#a88aa6", cloudShade: "#3e4470",
+      sunHeight: 0.1, night: 0.55, neon: 0.8, cityGlow: 0.5, windows: 0.25,
     },
     end: {
-      sun: "#ffd6a6", sunMix: 0.6, sunScale: 0.8,
-      hemiSky: "#eadfd0", hemiGround: "#5a5e48", hemiMix: 0.45, hemiScale: 0.9,
-      fog: "#e4e3e0", fogMix: 0.65, fogNear: 0.6, fogFar: 0.75,
-      top: "#4f8ed2", horizon: "#f6e2cb", glow: "#ffe2b8",
-      cloudLit: "#fff6ea", cloudShade: "#cfd5ec",
-      sunHeight: 0.35, night: 0.08,
+      sun: "#ffd9b0", sunMix: 0.8, sunScale: 0.6,
+      hemiSky: "#e4dcd6", hemiGround: "#4a4e52", hemiMix: 0.8, hemiScale: 0.45,
+      fog: "#b9c3d6", fogMix: 1, fogNear: 0.85, fogFar: 0.95,
+      top: "#4a86d0", horizon: "#f2d4b8", glow: "#ffe2bf",
+      cloudLit: "#fff1e4", cloudShade: "#c4c8dc",
+      sunHeight: 0.35, night: 0.08, neon: 0.35, cityGlow: 0.05, windows: 0.06,
     },
   },
   day: { start: DAY, end: DAY },
   dusk: {
+    // The sun low and gold: a warm horizon (#ffb454's family) under a
+    // still-blue zenith
     start: {
-      sun: "#ff9a4c", sunMix: 0.85, sunScale: 0.95,
-      hemiSky: "#f8c294", hemiGround: "#5e4e34", hemiMix: 0.55, hemiScale: 0.86,
-      fog: "#f0cdb0", fogMix: 0.6, fogNear: 0.95, fogFar: 1,
-      top: "#3d78c0", horizon: "#ffb27a", glow: "#ffac66",
-      cloudLit: "#ffe2c0", cloudShade: "#c6b6d4",
-      sunHeight: 0.45, night: 0.12,
+      sun: "#ffbe8a", sunMix: 0.9, sunScale: 0.45,
+      hemiSky: "#c8bfd2", hemiGround: "#3a3c4e", hemiMix: 0.9, hemiScale: 0.5,
+      fog: "#b99aa2", fogMix: 1, fogNear: 0.95, fogFar: 1,
+      top: "#3a6cc0", horizon: "#ffb477", glow: "#ffb25e",
+      cloudLit: "#ffd6a8", cloudShade: "#9c8fb4",
+      sunHeight: 0.4, night: 0.15, neon: 0.45, cityGlow: 0.15, windows: 0.12,
     },
+    // The concept frame: #1c2f5e overhead, the last warmth (#ac7578) low
+    // behind the skyline, the air violet
     end: {
-      sun: "#d9786a", sunMix: 0.9, sunScale: 0.4,
-      hemiSky: "#9c92ba", hemiGround: "#3e3a40", hemiMix: 0.75, hemiScale: 0.56,
-      fog: "#9e97b4", fogMix: 0.8, fogNear: 0.8, fogFar: 0.85,
-      top: "#34417f", horizon: "#d99098", glow: "#f29a7c",
-      cloudLit: "#e8b0ac", cloudShade: "#7e78a4",
-      sunHeight: 0.08, night: 0.65,
+      sun: "#b88a9c", sunMix: 1, sunScale: 0.12,
+      hemiSky: "#6a6a9a", hemiGround: "#24263a", hemiMix: 0.95, hemiScale: 0.36,
+      fog: "#3e4270", fogMix: 1, fogNear: 0.85, fogFar: 0.85,
+      top: "#1c2f5e", horizon: "#ac7578", glow: "#e89070",
+      cloudLit: "#9a7088", cloudShade: "#3a3c66",
+      sunHeight: 0.06, night: 0.7, neon: 0.9, cityGlow: 0.45, windows: 0.3,
     },
   },
   night: { start: NIGHT, end: NIGHT },
@@ -138,49 +160,56 @@ export const DAYLIGHT: Record<Daylight, { start: DaylightRow; end: DaylightRow }
 const SAME: RGB = [1, 1, 1];
 
 export const WEATHER: Record<WeatherPreset, WeatherLook> = {
-  // Unknown or no reading: the painting's own sky
+  // Unknown or no reading: the plates' own sky
   neutral: {
     sunScale: 1, hemiScale: 1, grey: 0, tint: SAME,
     skyGrey: 0, skyLift: 1, skyTint: SAME,
     fogGrey: 0, fogLift: 1, fogNear: 1, fogFar: 1,
-    cover: 0.5, cloudDark: 0, sunDisc: 1,
-    wet: 0, snow: 0, rain: 0, flakes: 0,
+    cover: 0.35, cloudDark: 0, sunDisc: 1,
+    wet: 0, snow: 0, rain: 0, flakes: 0, neon: 1, cityGlow: 1,
   },
-  // Warm sun, clearer air, fewer clouds, a little more gold
+  // Warm sun, clearer air, fewer clouds
   clear: {
-    sunScale: 1.12, hemiScale: 1, grey: 0, tint: [1.035, 1, 0.95],
+    sunScale: 1.12, hemiScale: 1, grey: 0, tint: [1.02, 1, 0.97],
     skyGrey: -0.08, skyLift: 1, skyTint: SAME,
     fogGrey: 0, fogLift: 1, fogNear: 1.15, fogFar: 1.3,
-    cover: 0.3, cloudDark: 0, sunDisc: 1,
-    wet: 0, snow: 0, rain: 0, flakes: 0,
+    cover: 0.15, cloudDark: 0, sunDisc: 1,
+    wet: 0, snow: 0, rain: 0, flakes: 0, neon: 1, cityGlow: 1,
   },
-  // Diffuse light, a muted sky, gentle haze: a soft warm grey, so it never
-  // reads as snow's cold one
+  // Diffuse light, a muted sky, gentle haze; low cloud holds the city's glow
   cloudy: {
     sunScale: 0.36, hemiScale: 1.1, grey: 0.45, tint: [1, 0.99, 0.98],
-    skyGrey: 0.7, skyLift: 0.98, skyTint: [1.03, 1, 0.95],
+    skyGrey: 0.7, skyLift: 0.98, skyTint: [1.02, 1, 0.97],
     fogGrey: 0.5, fogLift: 0.92, fogNear: 0.8, fogFar: 0.82,
     cover: 0.9, cloudDark: 0.12, sunDisc: 0.2,
-    wet: 0, snow: 0, rain: 0, flakes: 0,
+    wet: 0, snow: 0, rain: 0, flakes: 0, neon: 1, cityGlow: 1.3,
   },
-  // Cooler light, darker cloud, wet ground, a fine rain (never lightning)
+  // Cooler light, darker cloud, wet streets, a fine rain (never lightning);
+  // the wet air carries the neon further
   rain: {
     sunScale: 0.2, hemiScale: 0.84, grey: 0.55, tint: [0.9, 0.97, 1.1],
     skyGrey: 0.85, skyLift: 0.7, skyTint: [0.93, 0.98, 1.08],
     fogGrey: 0.7, fogLift: 0.62, fogNear: 0.55, fogFar: 0.8,
     cover: 1, cloudDark: 0.45, sunDisc: 0.04,
-    wet: 1, snow: 0, rain: 1, flakes: 0,
+    wet: 1, snow: 0, rain: 1, flakes: 0, neon: 1.15, cityGlow: 1.3,
   },
   // Cool diffuse light, a cold slate-blue sky the flakes show against,
-  // pale air low down, snow lying on what faces up
+  // snow lying on what faces up
   snow: {
     sunScale: 0.32, hemiScale: 1.0, grey: 0.6, tint: [0.94, 0.99, 1.09],
     skyGrey: 0.8, skyLift: 0.86, skyTint: [0.9, 0.98, 1.16],
     fogGrey: 0.7, fogLift: 1, fogNear: 0.72, fogFar: 0.82,
     cover: 0.95, cloudDark: 0.3, sunDisc: 0.12,
-    wet: 0, snow: 1, rain: 0, flakes: 1,
+    wet: 0, snow: 1, rain: 0, flakes: 1, neon: 1.15, cityGlow: 1,
   },
 };
+
+// The world's two lights as built (common.tsx: WorldLights), and the most
+// their sum may reach after the daylight and the weather: a surface lit by
+// both at once reflects at most albedo × LIT_LIMIT / π, under 1.0 for any
+// albedo up to 1, so nothing lit crosses the bloom's threshold
+export const WORLD_LIGHTS = { sun: 2.2, hemi: 2.2 } as const;
+export const LIT_LIMIT = 3;
 
 // ---------------------------------------------------------------------
 // Looks as flat records of numbers, so they can be blended in place
@@ -290,36 +319,57 @@ export function lightColor(out: RGB, base: RGB, toward: RGB, mix: number, w: Wea
   return out;
 }
 
-// Indoors the weather and the hour reach the room's air less than they
-// reach the sky outside its windows
-const INDOOR_FOG = 0.3;
-
-export function fogColor(out: RGB, base: RGB, d: DaylightLook, w: WeatherLook, indoor: boolean) {
-  const k = indoor ? INDOOR_FOG : 1;
-  mixInto(out, base, d.fog, d.fogMix * k);
-  return greyInto(out, out, w.fogGrey * k * nightHold(d.night), nightLift(w.fogLift, d.night), w.skyTint);
+export function fogColor(out: RGB, base: RGB, d: DaylightLook, w: WeatherLook) {
+  mixInto(out, base, d.fog, d.fogMix);
+  return greyInto(out, out, w.fogGrey * nightHold(d.night), nightLift(w.fogLift, d.night), w.skyTint);
 }
 
 // At night the weather greys the sky and the air less, and never darker
-// than the night itself: a rainy night stays blue-indigo, not near-black
-// (the corner controls and the words sit on it)
+// than the night itself: a rainy night stays deep blue, not near-black
 const nightHold = (night: number) => 1 - 0.5 * night;
 const nightLift = (lift: number, night: number) => lift + (Math.max(lift, 1) - lift) * night;
 
 // A place may keep its fog from closing in past a point in any weather
-// (`keep`): the park's, so its places stay readable from the steps at a
-// rainy dawn; the rain still shows in the air, the light and the far city.
+// (`keep`): the riverside's, so the five sections' signs stay readable
+// from Home at a rainy dawn (docs/city/scripts/visibility.mjs); the rain
+// still shows in the air, the light and the far skyline.
 export type FogBase = { near: number; far: number; keep?: { near: number; far: number } };
 
-export function fogRange(out: { near: number; far: number }, base: FogBase, d: DaylightLook, w: WeatherLook, indoor: boolean) {
-  const k = indoor ? INDOOR_FOG * 0.8 : 1;
-  out.near = base.near * (1 + (d.fogNear - 1) * k) * (1 + (w.fogNear - 1) * k);
-  out.far = base.far * (1 + (d.fogFar - 1) * k) * (1 + (w.fogFar - 1) * k);
+export function fogRange(out: { near: number; far: number }, base: FogBase, d: DaylightLook, w: WeatherLook) {
+  out.near = base.near * d.fogNear * w.fogNear;
+  out.far = base.far * d.fogFar * w.fogFar;
   if (base.keep) {
     out.near = Math.max(out.near, base.keep.near);
     out.far = Math.max(out.far, base.keep.far);
   }
+  // (never a fog that ends before it starts)
+  out.far = Math.max(out.far, out.near + 1);
   return out;
+}
+
+// The neon's brightness now (neonUniforms.uNeon)
+export const neonLevel = (d: DaylightLook, w: WeatherLook) => d.neon * w.neon;
+
+// The city's glow on the sky low down (the sky dome's uCityGlow)
+export const cityGlowLevel = (d: DaylightLook, w: WeatherLook) => d.cityGlow * w.cityGlow;
+
+// The share of windows lit (windowUniforms.uLitShare): the clock's
+// (lib/cityWindows.ts: litShare), and never fewer than the daylight's
+// least, so a winter evening already dark at five o'clock has its lit
+// windows; in steps of SHARE_STEP, so they change a few at a time
+export function litShareNow(clockShare: number, d: DaylightLook, step: number) {
+  const share = Math.max(clockShare, d.windows);
+  return Math.min(1, Math.round(share / step) * step);
+}
+
+// Bloom's strength (Post.tsx), from the neon's level: faint by day (only
+// neon crosses the threshold, and by day it hardly does), full at night.
+// The low tier's bloom is drawn at a quarter of the resolution, which
+// spreads it wider; a little less of it reads the same.
+export const BLOOM_STRENGTH = { high: 0.85, low: 0.7 } as const;
+export function bloomStrength(neon: number, tier: keyof typeof BLOOM_STRENGTH) {
+  const k = clamp01((neon - 0.3) / 0.7);
+  return BLOOM_STRENGTH[tier] * (0.25 + 0.75 * k);
 }
 
 export const hexToRGB = hex;
@@ -338,7 +388,3 @@ export function cloudColor(out: RGB, c: RGB, w: WeatherLook, night = 0) {
   out[2] *= k;
   return out;
 }
-
-// Which places are out of doors: rain falls and things get wet there.
-// Indoors, the day and the weather come in through the windows.
-export const OUTDOORS = new Set(["park", "station", "booth"]);
