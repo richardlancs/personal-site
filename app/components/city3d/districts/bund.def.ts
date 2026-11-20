@@ -58,7 +58,7 @@ export const BUND = {
   // `spots` on carry the place's four spot lights (scenes.ts:
   // DISTRICT_LIGHTS.bund), the first lamps ahead of the painting's eye,
   // and in the home view's foreground too
-  lamps: { s: 0.68, from: -6.34, step: 1.12, count: 41, pier: 0.16, spots: 7 },
+  lamps: { s: 0.68, from: -9.7, step: 1.12, count: 44, pier: 0.16, spots: 10 },
   // The glass kiosk, left of the middle near the eye (scenery)
   kiosk: { s: -0.62, a: 1.45, w: 0.15, d: 0.14, h: 0.34 },
   // The trees between the promenade and the road; the big one at the

@@ -75,7 +75,7 @@ const pavingTiles = (w: number, d: number) => pavingTexture({ seed: 37, kind: "g
 // near the eye, and the kiosk's cyan on the stones round it (kit/glow.ts:
 // pools)
 const POOLS: GlowPool[] = [
-  ...Array.from({ length: 10 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.25), LAND + BUND.lamps.pier + 0.5, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.35, color: "#ffc98a", strength: 1.3 })),
+  ...Array.from({ length: 10 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.22), LAND + BUND.lamps.pier + 0.4, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.65, color: "#ffc98a", strength: 1.2 })),
   { pos: [X(BUND.kiosk.s), BUND.kiosk.h * 0.6, Z(BUND.kiosk.a)], reach: 0.6, color: SCENE_TONES.cyan, strength: 0.9 },
   { pos: [X(BUND.front + 0.6), 0.5, Z(BUND.clock.a)], reach: 1.6, color: "#ffd9a0", strength: 0.5 },
 ];
@@ -140,7 +140,7 @@ function build(quality: Quality): Built {
   // the plate's promenade after dark: polished stone holding the night
   // sky's blue-grey everywhere, the lamps' warmth in their pools (the kit's
   // surface, its night glow; wetPaving's own is the same surface without it)
-  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.06 } });
+  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.075 } });
   add(paving.mesh);
   disposers.push(paving.dispose);
   // ... and the lamps and the kiosk long in it, as the plate paints them in
@@ -171,7 +171,7 @@ function build(quality: Quality): Built {
   );
   // The river wall down to the water, and the parapet the railing stands on
   const E = B.edge;
-  mesh(merge([slab(E.s - 0.02, E.s + 0.1, P.a0, P.a1, WATER_Y - 0.2, LAND + 0.06), slab(E.s + 0.1, E.s + 0.18, P.a0, P.a1, WATER_Y - 0.2, LAND - 0.02)]), surface({ color: PIER, grime: 0.6 }), "river-wall");
+  mesh(merge([slab(E.s - 0.02, E.s + 0.1, P.a0, P.a1, WATER_Y - 0.2, LAND + 0.06), slab(E.s + 0.1, E.s + 0.18, P.a0, P.a1, WATER_Y - 0.2, LAND - 0.02)]), surface({ color: PIER, grime: 0.6, glow: { tone: "#ffc98a", strength: 0.05 } }), "river-wall");
   const railing = add(buildRailing([new THREE.Vector3(X(E.s + 0.03), LAND + 0.06, Z(P.a0)), new THREE.Vector3(X(E.s + 0.03), LAND + 0.06, Z(P.a1))]));
   geometries.push(railing.geometry);
 
@@ -181,7 +181,7 @@ function build(quality: Quality): Built {
   const pierCap = box(0.13, 0.015, 0.13).translate(0, L.pier + 0.0075, 0);
   const one = new THREE.Vector3(1, 1, 1);
   const q = new THREE.Quaternion();
-  instanced(merge([pierGeo, pierCap]), surface({ color: PIER, grime: 0.4 }), lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND, Z(a)), q, one)), "piers");
+  instanced(merge([pierGeo, pierCap]), surface({ color: PIER, grime: 0.4, glow: { tone: "#ffc98a", strength: 0.16 } }), lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND, Z(a)), q, one)), "piers");
   // on each pier a lantern post as the plates paint them: a cast-iron post
   // on a fluted base, a collar, a six-sided glass lantern lit warm, a
   // hooded roof and a finial (two instanced meshes for all of them); the
@@ -432,7 +432,7 @@ function build(quality: Quality): Built {
       const sphere = m.geometry.boundingSphere!;
       glow.push({ pos: sphere.center.clone().add(landmark.group.position), color: SCENE_TONES[c.tone], size: Math.min(3, sphere.radius * 0.8) });
     }
-    waterLights.push({ x: X(s - 4), z: Z(a), w: 0.6, color: SCENE_TONES[c.tone], height: 14 });
+    waterLights.push({ x: X(s - 4), z: Z(a), w: 1.1, color: SCENE_TONES[c.tone], height: 14 });
   }
 
   // Neon on the skyline, as accents: lit crowns on some of the taller
@@ -447,10 +447,10 @@ function build(quality: Quality): Built {
       const y = t.h - band / 2 - 0.05;
       for (const p of [box(t.w + 0.04, band, 0.05).translate(0, 0, t.d / 2 + 0.02), box(t.w + 0.04, band, 0.05).translate(0, 0, -t.d / 2 - 0.02), box(0.05, band, t.d).translate(t.w / 2 + 0.02, 0, 0), box(0.05, band, t.d).translate(-t.w / 2 - 0.02, 0, 0)])
         crowns[tone].push(p.rotateY(t.ry).translate(t.x, y, t.z));
-      waterLights.push({ x: t.x + t.w / 2, z: t.z, w: t.w * 0.25, color: SCENE_TONES[tone], height: t.h * 0.5 });
+      waterLights.push({ x: t.x + t.w / 2, z: t.z, w: t.w * 0.4, color: SCENE_TONES[tone], height: t.h * 0.5 });
       glow.push({ pos: new THREE.Vector3(t.x, y, t.z), color: SCENE_TONES[tone], size: t.w * 0.7 });
-    } else if (accents() < 0.25) {
-      waterLights.push({ x: t.x + t.w / 2, z: t.z, w: Math.max(0.2, t.w * 0.15), color: accents() < 0.9 ? "#ffc98a" : "#bfe4ff", height: t.h * 0.3 });
+    } else if (accents() < 0.45) {
+      waterLights.push({ x: t.x + t.w / 2, z: t.z, w: Math.max(0.25, t.w * 0.2), color: accents() < 0.9 ? "#ffc98a" : "#bfe4ff", height: t.h * 0.3 });
     }
   }
   for (const tone of ["cyan", "rose", "gold"] as SceneTone[]) if (crowns[tone].length) mesh(merge(crowns[tone]), neonMaterial(dim(tone, 0.5), { dayColor: dim(tone, 0.7) }), `neon:${tone}`);
