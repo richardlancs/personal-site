@@ -45,21 +45,28 @@
 
 ## Task 1: Palette, and section names in place of district names (one subagent)
 
-**Decision pending from Richard:** the palette. This task is written for the judge's recommendation, **refined navy**; if he picks another, swap the token table for that paper's and add its fade changes.
+**Decided by Richard (20 November):** black is the main colour. The judge's navy pick is set aside. Two blacks were designed and rendered (`.superpowers/sdd/2d-round2/palette-black.md`, `palettes-black-day.png`, `palettes-black-night.png`, `black-sections.png`); this task is written for **soft black**, the recommendation. If he picks true black, use the second column.
 
-| Token | Now | Refined navy |
-|---|---|---|
-| `--ink` | `#0c1526` | `#0e1729` |
-| `--ink-2` | `#111c30` | `#142036` |
-| `--panel` | `#17253f` | `#1b2a44` |
-| `--line` | `#2b3d5e` | `#33476a` |
-| `--text` | `#eef2fb` | `#e8edf5` |
-| `--muted` | `#a9b4d0` | `#a3afc4` |
-| `--amber` → `--lantern` | `#ffb454` | `#f4b860` (primary fill, label `--ink`) |
-| `--magenta` | `#f062b4` | removed |
+| Token | Now | Soft black | True black |
+|---|---|---|---|
+| `--ink` | `#0c1526` | `#08090c` | `#000000` |
+| `--ink-2` | `#111c30` | `#101217` | `#080a0f` |
+| `--panel` | `#17253f` | `#181b23` | `#0f1218` |
+| `--line` | `#2b3d5e` | `#2d323d` | `#282d37` |
+| `--text` | `#eef2fb` | `#e6e9ee` | `#e3e6eb` |
+| `--muted` | `#a9b4d0` | `#9ea5b1` | `#9aa1ad` |
+| `--amber` → `--lantern` | `#ffb454` | `#f4b860` (primary fill, hover `#f8c97f`, label `--ink`) | same |
+| `--seam` (new; the fade's dark navy) | none | `#070c15` on `--ink`, `#0c121d` on `--ink-2` | `#060b14`, `#080d17` |
+| `--magenta` | `#f062b4` | removed | removed |
+
+`--cyan #4fd8ee` and `--focus #8fe9ff` do not change. Lowest text contrast: 6.94:1 (soft), 7.21:1 (true), both muted on panel.
+
+**The fade under each painting** (so navy sinks into black like shadow, with no plate re-grade): it covers the last 42% of the band: `transparent` at 58% → `--seam` at 14% opacity (20% of the way) → 40% (38%) → 72% (52%) → solid `--seam` (62%) → the station's ground (76%). Plus a 20px shade of the previous station's ground at the top of every band but the first.
+
+**Also retuned in this task, because they were mixed from the old navy ground:** the weather haze (mix against a fixed plate navy `#0e1d31`, not `--ink`, or it turns to grey smog over black); the résumé viewer's scrim, bar and page well (the well takes `--panel` so the white page glares less); the hero name's glow and the chosen-state tint (check against "no neon"); every literal listed under "Every place to change" in `palette-black.md`.
 
 **Files:**
-- Modify: `docs/city/style.md` (palette table, status line), `app/city.css` (tokens, every hard-coded rgb literal derived from the old grounds, the band fade shortened to the last 24% of the band), `app/layout.tsx` (`themeColor`), `app/lib/cityLook.ts` (`AMBER` constant), `app/sections/registry.ts`, `app/components/city2d/Station.tsx`, every component using `amber`/`magenta` utilities, `tests/city-theme.test.mjs`, `tests/city-routes.test.mjs`, `tests/smoke.test.mjs`
+- Modify: `docs/city/style.md` (palette table, status line), `app/city.css` (tokens, every hard-coded rgb literal derived from the old grounds, the band's new fade and top shade, the haze), `app/layout.tsx` (`themeColor`), `app/lib/cityLook.ts` (`AMBER` constant), `app/components/resume/resume.css`, `app/components/city2d/WeatherOverlay.tsx`, `app/sections/registry.ts`, `app/components/city2d/Station.tsx`, every component using `amber`/`magenta` utilities, `tests/city-theme.test.mjs`, `tests/city-routes.test.mjs`, `tests/smoke.test.mjs`
 - Delete: `app/components/city2d/StationIndex.tsx`, `StationHere.tsx`, `MetroLine.tsx` and their CSS (Task 2 replaces them); remove the hero's list of stops
 
 **Interfaces — Produces:**
@@ -70,8 +77,8 @@
 - [ ] **Step 1: Failing tests.** In `tests/city-theme.test.mjs`: every token in `style.md` matches `city.css`; `city.css` and `app/**/*.tsx` contain no `magenta` and no `amber`. In `tests/city-routes.test.mjs`: the registry source has no `station:` and no `districtLine:`; the page source renders no "Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road" or "The Bund" outside comments. In `tests/smoke.test.mjs`: `/` HTML does not contain "The skyline across the Huangpu".
 - [ ] **Step 2:** Run `npm test`; the new tests fail.
 - [ ] **Step 3:** Change the tokens and everything derived from them; rename the secondary; give the Interests edges a cyan / lantern alternation in one place; remove the district fields and every reader of them; delete the three components and the hero's list.
-- [ ] **Step 4:** `node docs/ui/scripts/palette-contrast.mjs` (update its token names) exits 0; lint, tests, `tsc` pass. In the browser at day and night, the seam under each of the six bands is invisible.
-- [ ] **Step 5:** Commit `feat: the refined palette; sections named as sections`.
+- [ ] **Step 4:** `node docs/ui/scripts/palette-contrast.mjs` (update its token names) exits 0; lint, tests, `tsc` pass. In the browser, under all six bands by day and by night and in rain, cloud and snow: each painting falls into black with no line and no grey band; the haze stays navy; the résumé viewer is comfortable to read.
+- [ ] **Step 5:** Commit `feat: black as the main colour; sections named as sections`.
 
 ## Task 2: The progress line (one subagent)
 
@@ -176,6 +183,31 @@ Open for Richard, not blocking: MarketLab has no `role`, and Scrollganizer has n
 - [ ] **Step 4:** Tests pass. In the browser: panels open and close by mouse, keyboard (Enter/Space) and with JavaScript off; with no photos there is no gap where a gallery would be; drop one test image into `public/interests/chess/`, confirm it appears, then remove it.
 - [ ] **Step 5:** Commit `feat: interests open to show their photos`.
 
+## Task 5a: Experience as plain rows (one subagent, parallel with 3–5)
+
+Three forum-led research reports (timeline, résumé-style rows, role cards) agree on almost everything: no card grid, no stat tiles, newest first, the role boldest, "current" marked by a word, education apart, every bullet visible. They also all found a bug: the entries are not in date order today (Oct 2026, 2024, 2026). The recommendation is the rows layout. A timeline was the runner-up and is left out because its line would compete with the page's new progress line, and three points make a thin timeline.
+
+**Files:** `app/components/city2d/sections/Experience.tsx`, `tests/city-experience.test.mjs`; `app/data/portfolio.ts` (type: `Experience` gains optional `kind?: "work" | "education"`, default work; data: the Waterloo entry gets `kind: "education"`; dates written one way, "Oct 2026" with no full stop); `app/lib/experience.ts` (pure, new)
+
+**Interfaces:**
+- `sortNewestFirst(entries: Experience[]): Experience[]` — by start date, newest first; an entry still running ("Present") sorts above a finished one that started the same year; uses the existing `machineDate` helper; stable for equal dates.
+- `groupByKind(entries): { work: Experience[]; education: Experience[] }`.
+
+**Layout:**
+- No card and no board. Two groups, each under a small label on a 1px `--line` rule: "Work", then "Education".
+- Wide screens: a 10rem date column, then the content (`grid-cols-[10rem_minmax(0,1fr)]`, 2.5rem gap). Phones: role, organisation, dates, bullets, in that order.
+- Dates: display face, tabular figures, `--muted`, in `<time>` (a lone year stands alone, no dash; "Present" is plain text). Under the dates of a role still running, the word "Current" with a 6px cyan dot.
+- Role: the boldest line (`h3`, display face, 1.5rem, 700). Organisation: 600, with location after a "·" in `--muted` when the data has one.
+- Highlights: every one visible, a real list, capped at 62ch. No tech tags, no warm tick, no `<details>`.
+- Ends with the "Résumé" link (the shared `ResumeLink`).
+- Nothing animates.
+
+- [ ] **Step 1: Failing tests:** `sortNewestFirst` on the real data returns FlyRank, Waterloo, FTC; a running entry sorts above a finished one of the same start year; `groupByKind` puts Waterloo under education and the other two under work; source-level: two group labels; `<time` on dates; "Current" rendered only when there is no end or the end is "Present"; no `rounded` panel class around the list; no `bg-lantern` or `bg-amber`.
+- [ ] **Step 2:** Run; they fail.
+- [ ] **Step 3:** Implement.
+- [ ] **Step 4:** Tests pass; at 1440, 390 and 320 the dates read straight down a column (wide) or sit under the organisation (narrow) and nothing overflows.
+- [ ] **Step 5:** Commit `feat: experience as dated rows, newest first; education apart`.
+
 ## Task 5b: Numbers, in bold (one subagent, after Tasks 3–5)
 
 Richard, 20 November: "Try to implement numbers and have them bolded when represented." Today only 5 of the 62 content points contain a figure (95 stocks, 100 puzzles across 15 repositories, 15 puzzles, 100,000 hands, a 3×3 board).
@@ -189,7 +221,7 @@ Richard, 20 November: "Try to implement numbers and have them bolded when repres
 - Modify: `app/data/portfolio.ts` (spelled-out quantities to digits only), every section component that prints content points (wrap the text in `<Figures>`), `app/city.css` (one rule)
 
 **Interfaces:**
-- `splitFigures(text: string): { text: string; figure: boolean }[]` — a figure is a number with what is attached to it: thousands separators, decimals, a leading `$`, a trailing `+`, `%`, `×`, `k`, `M`, a ratio (`54/60`), a dimension (`3×3`), and a range (`10–12`). Not a figure: a number inside a word or name (`YOLO11`, `CS135`, `Next.js 16`, `GPT-4`), a year (1900–2099), a date's day, a version (`v2.1`), an ordinal used as a name ("Line 2").
+- `splitFigures(text: string): { text: string; figure: boolean }[]` — a figure is a number with what is attached to it: thousands separators, decimals, a leading `$`, a trailing `+`, `%`, `×`, `k`, `M`, a ratio (`54/60`), a dimension (`3×3`), and a range (`10–12`). Never applied to the Experience date column or organisation line (dates would become a solid bold column, and "#20261" is a team number, not a result). Not a figure: a number inside a word or name (`YOLO11`, `CS135`, `Next.js 16`, `GPT-4`), a year (1900–2099), a date's day, a version (`v2.1`), an ordinal used as a name ("Line 2").
 - `<Figures>{text}</Figures>` renders the pieces, each figure in `<strong className="figure">`. `.figure` is weight 700 in `--text` (never an accent colour: figures sit in body text), with tabular numerals.
 
 - [ ] **Step 1: Failing tests** in `tests/city-figures.test.mjs`:
