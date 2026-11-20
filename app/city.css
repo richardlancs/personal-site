@@ -75,6 +75,8 @@
   --t-base: 200ms;
   --t-slow: 280ms;
   --stagger: 60ms;
+  /* Not interaction: the sky's slow day-and-night cross-fade */
+  --t-sky: 3s;
 
   /* The top bar's height and where the Sections menu opens: SectionsMenu
      measures the bar and writes both on <html> (a ResizeObserver), so they
@@ -189,7 +191,7 @@ h3,
   text-decoration-color: var(--cyan);
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
-  transition: text-decoration-color 0.2s ease;
+  transition: text-decoration-color var(--t-base) var(--ease-out);
 }
 
 /* Links that stand on their own (not in a sentence) take 44px to tap */
@@ -481,14 +483,35 @@ button.text-link,
   box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
 }
 
-.sections-menu:popover-open {
-  animation: menu-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes menu-in {
-  from {
+/* It grows out of its key (the top right corner, under the button) and
+   folds back into it: one transition between two states, so a second
+   press mid-way simply reverses it. Open over --t-base, closed faster
+   (--t-fast). Where @starting-style or discrete transitions aren't
+   supported it simply appears and goes; in still view and with reduced
+   motion, at once. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .sections-menu {
+    transform-origin: top right;
     opacity: 0;
-    translate: 0 -6px;
+    scale: 0.96;
+    transition:
+      opacity var(--t-fast) var(--ease-out),
+      scale var(--t-fast) var(--ease-out),
+      overlay var(--t-fast) allow-discrete,
+      display var(--t-fast) allow-discrete;
+  }
+
+  :root:not([data-still="on"]) .sections-menu:popover-open {
+    opacity: 1;
+    scale: 1;
+    transition-duration: var(--t-base);
+  }
+
+  @starting-style {
+    :root:not([data-still="on"]) .sections-menu:popover-open {
+      opacity: 0;
+      scale: 0.96;
+    }
   }
 }
 
@@ -558,7 +581,7 @@ button.text-link,
 a[data-resume][data-opening] {
   cursor: progress;
   opacity: 0.6;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--t-fast) var(--ease-out);
 }
 
 /* The menu button is chosen while its menu is open */
@@ -773,7 +796,7 @@ a[data-resume][data-opening] {
 }
 
 :root:not([data-still="on"]) .band-plate img {
-  transition: opacity 0.3s ease-out;
+  transition: opacity var(--t-slow) var(--ease-out);
 }
 
 /* Day and night cross-fade slowly, once the sky has been set (CityDriver
@@ -781,7 +804,7 @@ a[data-resume][data-opening] {
    fade from the fallbacks into the sky it arrives at) */
 :root[data-sky-ready]:not([data-still="on"]) .band-night,
 :root[data-sky-ready]:not([data-still="on"]) .band::after {
-  transition: opacity 3s ease;
+  transition: opacity var(--t-sky) var(--ease-in-out);
 }
 
 /* Still view and reduced motion: the sky changes, but nothing fades */
@@ -888,7 +911,7 @@ a[data-resume][data-opening] {
 /* The weather's static parts follow the sky with the band's 3 s fade;
    still view and reduced motion change them without fading */
 :root[data-sky-ready]:not([data-still="on"]) :is(.band-haze, .band-sheen, .band-wash) {
-  transition: opacity 3s ease;
+  transition: opacity var(--t-sky) var(--ease-in-out);
 }
 :root[data-still="on"] :is(.band-haze, .band-sheen, .band-wash) {
   transition: none;
@@ -1279,18 +1302,18 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   font-weight: 700;
 }
 
-/* The lock: the fill eases onto (or off) a point over 0.12s, only at that
+/* The lock: the fill eases onto (or off) a point over --t-fast, only at that
    moment (ProgressLine sets data-snap for it), and the point reached
-   pulses once, 1 to 1.35 to 1 over 0.18s. Only where motion is welcome:
+   pulses once, 1 to 1.35 to 1 over --t-base. Only where motion is welcome:
    in still view and with reduced motion the fill steps and nothing
    pulses. */
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .progress-line[data-snap] .progress-fill {
-    transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1);
+    transition: transform var(--t-fast) var(--ease-out);
   }
 
   :root:not([data-still="on"]) .progress-point[data-pulse] .progress-dot {
-    animation: progress-pulse 0.18s ease-out;
+    animation: progress-pulse var(--t-base) var(--ease-out);
   }
 }
 
@@ -1354,38 +1377,53 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   font-variant-numeric: tabular-nums;
 }
 
-/* A <details>' chevron (Projects, Interests) turns as it opens: at once
-   in still view and with reduced motion */
+/* A <details>' chevron (Projects, Interests) turns as its panel opens
+   (the one secondary action of opening it), and tips a little toward the
+   turn when its summary is hovered or focused: at once in still view and
+   with reduced motion */
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .chevron {
     transition:
-      rotate 0.2s ease,
-      color 0.2s ease;
+      rotate var(--t-base) var(--ease-out),
+      color var(--t-base) var(--ease-out);
+  }
+
+  :root:not([data-still="on"]) details:not([open]) > summary:focus-visible .chevron {
+    rotate: 15deg;
   }
 }
 
-/* An interest opens with a short unfold where the browser can animate a
-   <details>' content (::details-content); elsewhere, in still view and
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  :root:not([data-still="on"]) details:not([open]) > summary:hover .chevron {
+    rotate: 15deg;
+  }
+}
+
+/* An interest, or a project's "More of my part", unfolds down out of its
+   summary where the browser can animate a <details>' content to its own
+   height (::details-content and interpolate-size: Chrome and Edge); where
+   it can't (Safari and Firefox lack interpolate-size), in still view and
    with reduced motion, it opens at once. The clip leaves room for a focus
-   ring on a photo. */
-@supports selector(::details-content) {
+   ring on a photo. Each opening or closing is one transition, so a second
+   press mid-way turns it back. */
+@supports selector(::details-content) and (interpolate-size: allow-keywords) {
   @media (prefers-reduced-motion: no-preference) {
-    :root:not([data-still="on"]) .interests {
+    :root:not([data-still="on"]) :is(.interests, .project-more) {
       interpolate-size: allow-keywords;
     }
 
-    :root:not([data-still="on"]) .interests details::details-content {
+    :root:not([data-still="on"]) :is(.interests details, details.project-more)::details-content {
       block-size: 0;
       opacity: 0;
       overflow: clip;
       overflow-clip-margin: 0.5rem;
       transition:
-        block-size 0.22s ease,
-        opacity 0.22s ease,
-        content-visibility 0.22s allow-discrete;
+        block-size var(--t-slow) var(--ease-out),
+        opacity var(--t-base) var(--ease-out),
+        content-visibility var(--t-slow) allow-discrete;
     }
 
-    :root:not([data-still="on"]) .interests details[open]::details-content {
+    :root:not([data-still="on"]) :is(.interests details, details.project-more)[open]::details-content {
       block-size: auto;
       opacity: 1;
     }
@@ -1475,10 +1513,14 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   The base rule is in :where(), so a control's own class sets its size,
   type and layout without a fight; the states outweigh both.
 
-  The press (components/ui/GlassPress.tsx sets data-pressed and
-  --press-x/-y/-r): a 98% give, a ripple of light from the press point and
-  a sweep of light, settled in 0.42s; only scale, translate and opacity,
-  under the label. Still view and reduced motion: a brief tint instead.
+  The press (components/ui/GlassPress.tsx): on pointerdown, in the same
+  frame, data-held (the key gives, to 97%, over --t-fast) and data-pressed
+  (a ripple of light from the press point, --press-x/-y/-r, and a sweep of
+  light on a slight arc, over --t-slow). Let go, the key springs back with
+  a small overshoot (--ease-spring). The give is a transition, so a quick
+  second press simply turns it round; only scale, translate, rotate and
+  opacity, under the label. Still view and reduced motion: a brief tint
+  instead, nothing moves.
 */
 :where(.glass) {
   position: relative;
@@ -1503,8 +1545,8 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   backdrop-filter: var(--glass-blur);
   -webkit-tap-highlight-color: transparent;
   transition:
-    background-color 0.2s ease,
-    border-color 0.2s ease;
+    background-color var(--t-base) var(--ease-out),
+    border-color var(--t-base) var(--ease-out);
   overflow-wrap: break-word;
 }
 
@@ -1629,21 +1671,35 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   background: radial-gradient(70% 100% at 0 50%, transparent 55%, rgb(230 233 238 / 0.28) 68%, transparent 80%);
 }
 
-.glass[data-pressed] {
-  animation: glass-press 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
-}
+/* The give and the light, only where motion is welcome. The give's
+   duration is the state it goes to: in over --t-fast, back over --t-slow
+   on the spring. "Email me", the page's one big action, gives a little
+   more. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) :where(.glass) {
+    transition:
+      background-color var(--t-base) var(--ease-out),
+      border-color var(--t-base) var(--ease-out),
+      opacity var(--t-fast) var(--ease-out),
+      scale var(--t-slow) var(--ease-spring);
+  }
 
-.glass[data-pressed]::before {
-  animation: glass-ripple 0.42s linear;
-}
+  :root:not([data-still="on"]) .glass[data-held] {
+    scale: 0.97;
+    transition-duration: var(--t-base), var(--t-base), var(--t-fast), var(--t-fast);
+    transition-timing-function: var(--ease-out);
+  }
 
-.glass[data-pressed]::after {
-  animation: glass-sheen 0.36s cubic-bezier(0.4, 0, 0.3, 1) 0.04s;
-}
+  :root:not([data-still="on"]) .glass-lg[data-held] {
+    scale: 0.95;
+  }
 
-@keyframes glass-press {
-  25% {
-    scale: 0.98;
+  :root:not([data-still="on"]) .glass[data-pressed]::before {
+    animation: glass-ripple var(--t-slow) var(--ease-out);
+  }
+
+  :root:not([data-still="on"]) .glass[data-pressed]::after {
+    animation: glass-sheen var(--t-slow) var(--ease-in-out);
   }
 }
 
@@ -1651,7 +1707,6 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   from {
     opacity: 1;
     scale: 0.12;
-    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
   }
   45% {
     opacity: 0.75;
@@ -1662,14 +1717,17 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   }
 }
 
+/* The sweep travels on a slight arc: across, and tipping as it goes */
 @keyframes glass-sheen {
   from {
     opacity: 1;
     translate: -100% 0;
+    rotate: -8deg;
   }
   to {
     opacity: 0;
     translate: 240% 0;
+    rotate: 6deg;
   }
 }
 
@@ -1682,7 +1740,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 }
 
 :root[data-still="on"] .glass[data-pressed] {
-  animation: glass-tint 0.3s step-end;
+  animation: glass-tint var(--t-slow) step-end;
 }
 :root[data-still="on"] .glass::before,
 :root[data-still="on"] .glass::after {
@@ -1690,17 +1748,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 }
 @media (prefers-reduced-motion: reduce) {
   :root:not([data-still]) .glass[data-pressed] {
-    animation: glass-tint 0.3s step-end;
-  }
-}
-
-/* Nothing else moves in still view or with reduced motion */
-:root[data-still="on"] .sections-menu:popover-open {
-  animation: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) .sections-menu:popover-open {
-    animation: none;
+    animation: glass-tint var(--t-slow) step-end;
   }
 }
 

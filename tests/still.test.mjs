@@ -44,7 +44,8 @@ test("the page's motion keys on still view, and the toggle is in the top bar", (
   const css = sheets[0][1];
   for (const rule of [
     /:root\[data-still="on"\] \.glass\[data-pressed\] \{\s*animation: glass-tint/,
-    /:root\[data-still="on"\] \.sections-menu:popover-open \{\s*animation: none/,
+    // The menu's opening is a transition only where motion is welcome
+    /@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.sections-menu \{[^}]*transition:/,
   ])
     assert.match(css, rule);
   // Every reduced-motion rule goes through still view (or covers a page

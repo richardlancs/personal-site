@@ -22,6 +22,9 @@ test("the press is mounted once, for the whole page", () => {
 test("the press never delays the action, and never piles up", () => {
   assert.doesNotMatch(press, /preventDefault|stopPropagation|setTimeout|setInterval|requestAnimationFrame/);
   assert.match(press, /addEventListener\("pointerdown", onPointerDown, \{ capture: true, passive: true \}\)/);
+  // The give and the light start in the pointerdown itself (one frame)
+  assert.match(press, /el\.setAttribute\("data-pressed", ""\);\s*el\.setAttribute\("data-held", ""\);/);
+  assert.match(press, /addEventListener\("pointerup", letGo/, "the give lets go with the pointer");
   // A press again restarts the one animation instead of adding another
   assert.match(press, /removeAttribute\("data-pressed"\);\s*void el\.offsetWidth;/);
   assert.match(press, /"animationend"/);
@@ -29,16 +32,20 @@ test("the press never delays the action, and never piles up", () => {
   assert.match(press, /event\.detail !== 0/);
 });
 
-test("the press moves only scale, translate and opacity, and settles within 0.45s", () => {
-  for (const name of ["glass-press", "glass-ripple", "glass-sheen"]) {
+test("the press: a give that is a transition, springing back; light that moves only scale, translate, rotate and opacity, within --t-slow", () => {
+  // The give is a state, not a sequence: a second press turns it round
+  assert.match(css, /:root:not\(\[data-still="on"\]\) \.glass\[data-held\] \{\s*scale: 0\.97;/);
+  assert.match(css, /:root:not\(\[data-still="on"\]\) :where\(\.glass\) \{\s*transition:[^}]*scale var\(--t-slow\) var\(--ease-spring\)/);
+  assert.doesNotMatch(css, /@keyframes glass-press/, "no keyframed give");
+  for (const name of ["glass-ripple", "glass-sheen"]) {
     const body = keyframes(name);
     assert.ok(body, `@keyframes ${name}`);
     const props = [...body.matchAll(/([a-z-]+):/g)].map((m) => m[1]);
-    for (const prop of props) assert.ok(["scale", "translate", "opacity", "animation-timing-function"].includes(prop), `${name} animates ${prop}`);
+    for (const prop of props) assert.ok(["scale", "translate", "rotate", "opacity"].includes(prop), `${name} animates ${prop}`);
   }
-  const layers = [...css.matchAll(/animation: glass-(?:press|ripple|sheen) ([0-9.]+)s [^;]*?(?: ([0-9.]+)s)?;/g)];
-  assert.equal(layers.length, 3, "the button, its ripple and its sheen");
-  for (const [, seconds, delay = "0"] of layers) assert.ok(Number(seconds) + Number(delay) <= 0.45, `a press layer runs ${seconds}s + ${delay}s`);
+  const layers = [...css.matchAll(/animation: glass-(?:ripple|sheen) ([^;]*);/g)];
+  assert.equal(layers.length, 2, "the ripple and the sheen");
+  for (const [, value] of layers) assert.match(value, /^var\(--t-slow\) var\(--ease-[a-z-]+\)$/, "one --t-slow, no delay");
 });
 
 test("still view and reduced motion get a moment of tint, not movement", () => {

@@ -1,2 +1,74 @@
 /* Interaction motion: keys, menus, dialogs, panels, feedback (docs/ui/ux-motion-principles.md).
-   Tokens live in city.css. */
+   Tokens live in city.css. Every transition and animation here sits in the
+   one guard, so still view and reduced motion get the end state at once. */
+
+/* The copy's result (CopyButton.tsx). Copied: the key is chosen and says
+   so with a tick, and the address it copied takes a light-blue edge.
+   A state, not a motion: it shows in still view too. */
+.copy-tick {
+  flex-shrink: 0;
+  /* Drawn in full (an inset, so the reveal below has something to
+     interpolate to) */
+  clip-path: inset(-2px);
+}
+
+:has(> .contact-copy [data-copied]) > :is(.contact-address, a) {
+  border-radius: 4px;
+  box-shadow: 0 0 0 4px var(--ink-2), 0 0 0 5px var(--cyan);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The tick draws itself left to right, a beat after the key has given */
+  :root:not([data-still="on"]) .copy-tick {
+    transition: clip-path var(--t-slow) var(--ease-out) var(--t-fast);
+  }
+
+  @starting-style {
+    :root:not([data-still="on"]) .copy-tick {
+      clip-path: inset(-2px 100% -2px -2px);
+    }
+  }
+
+  /* A failed copy: one short shake of the key, three swings of about 6px
+     (the message stays); never on success */
+  :root:not([data-still="on"]) .glass[data-shake] {
+    animation: copy-shake var(--t-slow) var(--ease-in-out);
+  }
+
+  /* Hover or focus previews the action: the mail lifts toward sending,
+     the icons of links that leave the page lean up and right, the
+     résumé's page lifts */
+  :root:not([data-still="on"]) :is(.glass-lg, a[target="_blank"], a[data-resume]) > svg {
+    transition: translate var(--t-fast) var(--ease-out);
+  }
+
+  :root:not([data-still="on"]) :is(.glass-lg, a[data-resume]):focus-visible > svg {
+    translate: 0 -2px;
+  }
+
+  :root:not([data-still="on"]) a[target="_blank"]:focus-visible > svg {
+    translate: 1px -1px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  :root:not([data-still="on"]) :is(.glass-lg, a[data-resume]):hover > svg {
+    translate: 0 -2px;
+  }
+
+  :root:not([data-still="on"]) a[target="_blank"]:hover > svg {
+    translate: 1px -1px;
+  }
+}
+
+@keyframes copy-shake {
+  20% {
+    translate: -6px 0;
+  }
+  45% {
+    translate: 5px 0;
+  }
+  70% {
+    translate: -3px 0;
+  }
+}

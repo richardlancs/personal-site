@@ -7,10 +7,14 @@ import { useEffect, useRef, useState } from "react";
 // both seen and read out. "Copied" clears after 2.5 seconds; a failure,
 // which asks the visitor to do something, stays until the next press.
 // `data-copied` puts the key in the glass "chosen" state while "Copied"
-// shows.
+// shows, with a tick that draws itself and a light-blue edge on the
+// address (motion.css). A failure shakes the key once (data-shake, set
+// afresh on each failed press so a second failure shakes again; motion.css
+// keeps it to motion-welcome only).
 export default function CopyButton({ value }: { value: string }) {
   const [status, setStatus] = useState<{ text: string; failed?: boolean } | null>(null);
   const reset = useRef<number | undefined>(undefined);
+  const key = useRef<HTMLButtonElement>(null);
 
   // Leaving the page before then cancels the reset
   useEffect(() => () => window.clearTimeout(reset.current), []);
@@ -27,6 +31,12 @@ export default function CopyButton({ value }: { value: string }) {
       // Clipboard blocked: say so, and keep saying it; the address is
       // still there to select
       setStatus({ text: "Couldn't copy. Select the address to copy it by hand.", failed: true });
+      const el = key.current;
+      if (el) {
+        el.removeAttribute("data-shake");
+        void el.offsetWidth; // restart the shake
+        el.setAttribute("data-shake", "");
+      }
     }
   }
 
@@ -34,7 +44,19 @@ export default function CopyButton({ value }: { value: string }) {
 
   return (
     <div className="contact-copy flex flex-wrap items-center gap-x-4 gap-y-2">
-      <button type="button" className="glass" data-copied={copied || undefined} onClick={copy}>
+      <button
+        ref={key}
+        type="button"
+        className="glass"
+        data-copied={copied || undefined}
+        onClick={copy}
+        onAnimationEnd={(e) => e.animationName === "copy-shake" && e.currentTarget.removeAttribute("data-shake")}
+      >
+        {copied && (
+          <svg className="copy-tick" aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="m5 12.5 4.5 4.5L19 7.5" />
+          </svg>
+        )}
         {copied ? "Copied" : "Copy"}
         <span className="sr-only"> {value}</span>
       </button>

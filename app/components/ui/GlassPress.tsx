@@ -9,17 +9,28 @@ import { useEffect } from "react";
 // behind it, starts it from the middle. Nothing here waits or prevents
 // anything: the button's action happens as it always would.
 //
-// The press is a CSS animation keyed on data-pressed. Pressing again
-// restarts it (the attribute comes off, a reflow, and back on) rather
-// than stacking a second one, and it comes off when the animation ends.
-// Only one button is pressed at a time. No timers.
+// Two attributes, both set in the pointerdown itself, so the key answers
+// in the same frame (city.css): data-held, the give, a transition that
+// lasts while the pointer is down and springs back when it lets go (a
+// keyboard press holds until the light has passed); and data-pressed, the
+// light (a ripple and a sweep), a CSS animation. Pressing again restarts
+// the light (the attribute comes off, a reflow, and back on) rather than
+// stacking a second one, and it comes off when the light ends. Only one
+// button is pressed at a time. No timers.
 export default function GlassPress() {
   useEffect(() => {
     let current: HTMLElement | null = null;
+    let held: HTMLElement | null = null; // under a pointer that's still down
 
     const release = (el: HTMLElement) => {
       el.removeAttribute("data-pressed");
+      if (held !== el) el.removeAttribute("data-held");
       if (current === el) current = null;
+    };
+
+    const letGo = () => {
+      held?.removeAttribute("data-held");
+      held = null;
     };
 
     const press = (el: HTMLElement, x?: number, y?: number) => {
@@ -38,6 +49,7 @@ export default function GlassPress() {
         void el.offsetWidth; // restart the animation, not a second one
       }
       el.setAttribute("data-pressed", "");
+      el.setAttribute("data-held", "");
       current = el;
     };
 
@@ -46,12 +58,16 @@ export default function GlassPress() {
     const onPointerDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
       const el = glassFrom(event.target);
-      if (el) press(el, event.clientX, event.clientY);
+      if (!el) return;
+      letGo();
+      press(el, event.clientX, event.clientY);
+      if (el === current) held = el;
     };
 
     // A touch that turns into a scroll (or is otherwise taken over by the
     // browser) wasn't a press: let the button go at once
     const onPointerCancel = () => {
+      letGo();
       if (current) release(current);
     };
 
@@ -68,18 +84,20 @@ export default function GlassPress() {
       if (el) press(el);
     };
 
-    // The button's own animation is the longest; when it ends, or is
-    // cancelled (its page hidden), the press is over. A restart cancels
-    // the old one too, but then a new one is already running: keep it.
+    // The light (the ripple, or still view's tint) is the longest; when it
+    // ends, or is cancelled (its page hidden), the press is over. A restart
+    // cancels the old one too, but then a new one is already running: keep it.
+    const light = /^glass-(ripple|tint)$/;
     const onEnd = (event: AnimationEvent) => {
       const el = event.target;
-      if (event.pseudoElement || !(el instanceof HTMLElement) || !el.hasAttribute("data-pressed")) return;
-      if (event.type === "animationcancel" && el.getAnimations().length) return;
+      if (!light.test(event.animationName) || !(el instanceof HTMLElement) || !el.hasAttribute("data-pressed")) return;
+      if (event.type === "animationcancel" && el.getAnimations({ subtree: true }).some((a) => light.test((a as CSSAnimation).animationName))) return;
       release(el);
     };
 
     document.addEventListener("pointerdown", onPointerDown, { capture: true, passive: true });
     document.addEventListener("pointercancel", onPointerCancel, { capture: true, passive: true });
+    document.addEventListener("pointerup", letGo, { capture: true, passive: true });
     document.addEventListener("toggle", onToggle, { capture: true });
     document.addEventListener("click", onClick, { capture: true });
     document.addEventListener("animationend", onEnd);
@@ -87,6 +105,7 @@ export default function GlassPress() {
     return () => {
       document.removeEventListener("pointerdown", onPointerDown, { capture: true });
       document.removeEventListener("pointercancel", onPointerCancel, { capture: true });
+      document.removeEventListener("pointerup", letGo, { capture: true });
       document.removeEventListener("toggle", onToggle, { capture: true });
       document.removeEventListener("click", onClick, { capture: true });
       document.removeEventListener("animationend", onEnd);

@@ -158,8 +158,8 @@ test("the line's CSS: transforms only, the fill eased only when it locks, and no
   // The ease and the pulse sit under motion-welcome only
   const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.progress-line\[data-snap\] \.progress-fill \{[^}]*\}[\s\S]*?\n\}/)?.[0];
   assert.ok(block, "the motion block");
-  assert.match(block, /transition: transform 0?\.12s/);
-  assert.match(block, /animation: progress-pulse 0?\.18s/);
+  assert.match(block, /transition: transform var\(--t-fast\) var\(--ease-out\)/);
+  assert.match(block, /animation: progress-pulse var\(--t-base\)/);
   assert.match(css, /@keyframes progress-pulse \{[^}]*scale: 1\.35/);
   // Outside that block, no transition or animation on the line
   const outside = css.replace(block, "");
