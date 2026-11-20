@@ -40,6 +40,13 @@ export const focal: Record<DistrictId, string> = {
 
 // How wide a band's plate is drawn, for next/image's srcset choice. Under
 // 768px the band is a 4:3 crop of a 21:9 plate, so the plate is drawn
-// about 1.75 times the screen's width. Shared by the band and the home
-// plate's preload (layout.tsx), so both pick the same file.
-export const BAND_SIZES = "(max-width: 767px) 175vw, 100vw";
+// about 1.75 times the screen's width. Shared by the band's sizes and the
+// home plate's head script (layout.tsx, lib/platePreload.ts), which picks
+// its file from the same srcset by the same widths.
+export const BAND_WIDTH = { phoneMax: 767, phoneScale: 1.75 } as const;
+export const BAND_SIZES = `(max-width: ${BAND_WIDTH.phoneMax}px) ${BAND_WIDTH.phoneScale * 100}vw, 100vw`;
+
+// The home band's plate is the page's largest paint, so it is asked for a
+// little lighter: the head script's srcset (layout.tsx) and the band's own
+// <img> both use it (next.config.ts allows it)
+export const HOME_QUALITY = 60;

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { getImageProps } from "next/image";
 import CityDriver from "./components/city2d/CityDriver";
-import { BAND_SIZES, plates } from "./components/city2d/plates";
+import { BAND_SIZES, BAND_WIDTH, HOME_QUALITY, plates } from "./components/city2d/plates";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -59,10 +59,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// The home band's plate, day and night, as the band will ask for them
-// (the same srcset and sizes, so the preload is the file it uses)
-const bandSrcSet = (plate: (typeof plates)["lujiazui"]["day"]) => getImageProps({ src: plate, alt: "", fill: true, sizes: BAND_SIZES }).props.srcSet ?? "";
-const PLATE_PRELOAD = platePreloadScript(richmondHill, bandSrcSet(plates.lujiazui.day), bandSrcSet(plates.lujiazui.night), BAND_SIZES);
+// The home band's plate, day and night: the band's own srcset, from which
+// the head script picks one file to fetch and paint before hydration (the
+// band's <img> then uses that same file: homePlate.ts)
+const bandSrcSet = (plate: (typeof plates)["lujiazui"]["day"]) => getImageProps({ src: plate, alt: "", fill: true, sizes: BAND_SIZES, quality: HOME_QUALITY }).props.srcSet ?? "";
+const PLATE_PRELOAD = platePreloadScript(richmondHill, bandSrcSet(plates.lujiazui.day), bandSrcSet(plates.lujiazui.night), BAND_WIDTH);
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -77,8 +78,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* Still view, before the first paint: the visitor's saved choice,
             or the system's reduced-motion setting (world3d/still.ts) */}
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
-        {/* The home band's plate, by day or by night, while the HTML parses
-            (lib/platePreload.ts); nothing near sunrise or sunset */}
+        {/* The home band's plate, by day or by night, fetched and painted
+            while the HTML parses (lib/platePreload.ts); not on a deep link */}
         <script dangerouslySetInnerHTML={{ __html: PLATE_PRELOAD }} />
       </head>
       <body>

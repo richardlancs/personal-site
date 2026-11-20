@@ -12,7 +12,7 @@ import { useEffect, useState, type RefObject } from "react";
 // phone the next band starts just under the fold; looking ahead before
 // any scroll would fetch it alongside the home plate, the page's largest
 // paint. A band that is on the screen at once (a tall window) loads at
-// once.
+// once. On a deep link, nothing loads before the jump to it.
 //
 // One IntersectionObserver for the whole page, shared by every caller;
 // each element is let go once it has been seen. Where there's no
@@ -20,6 +20,7 @@ import { useEffect, useState, type RefObject } from "react";
 
 const AHEAD = 0.5; // of the screen's height
 const ROOT_MARGIN = "50% 0px";
+const JUMP_WAIT = 1500; // ms: the longest a deep link's smooth jump is waited for
 
 const waiting = new Map<Element, () => void>();
 let observer: IntersectionObserver | null = null;
@@ -48,18 +49,41 @@ function onFirstScroll() {
   for (const el of [...waiting.keys()]) if (within(el, AHEAD)) arrive(el);
 }
 
+// Opened on a deep link (/#projects, …): the browser's jump to it can come
+// after the observer's first report, while the page is still at the top,
+// so until that first scroll nothing counts as near (the jump is a scroll)
+function deepLink() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  return id !== "" && id !== "home" && document.getElementById(id) !== null;
+}
+
 function watch(el: Element, onNear: () => void) {
   if (typeof IntersectionObserver === "undefined") {
     queueMicrotask(onNear);
     return;
   }
   if (!observer) {
-    scrolled = window.scrollY > 0;
-    if (!scrolled) window.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
+    if (deepLink()) {
+      // A deep link's jump is a smooth scroll (city.css), which may already
+      // be under way: look once it ends, not at a step of it that still
+      // has the top of the page in view (or after a moment, if it has
+      // already ended or there's no scrollend)
+      scrolled = false;
+      const done = () => {
+        window.removeEventListener("scrollend", done);
+        clearTimeout(timer);
+        if (!scrolled) onFirstScroll();
+      };
+      const timer = setTimeout(done, JUMP_WAIT);
+      window.addEventListener("scrollend", done, { passive: true });
+    } else {
+      scrolled = window.scrollY > 0;
+      if (!scrolled) window.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
+    }
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting && (scrolled || within(entry.target, 0))) arrive(entry.target);
+          if (entry.isIntersecting && (scrolled || (!deepLink() && within(entry.target, 0)))) arrive(entry.target);
         }
       },
       { rootMargin: ROOT_MARGIN },

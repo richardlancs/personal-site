@@ -575,6 +575,25 @@ a[data-resume][data-opening] {
   }
 }
 
+/* The home band's plate, painted before hydration: the head script
+   (lib/platePreload.ts) fetched the file and set it as --home-plate, so
+   the page's largest paint doesn't wait for the scripts. Drawn as the
+   plate's <img> is (cover, centred; the focal point on phones), under the
+   plates, which then fade in over the same picture. Without it, the
+   gradient alone. */
+:root[data-home-plate] .band[data-home] {
+  background-image: var(--home-plate), linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
+  background-size: cover, auto;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 767px) {
+  :root[data-home-plate] .band[data-home] {
+    background-position: var(--focal, center), center;
+  }
+}
+
 .band-plate,
 .band-noscript {
   position: absolute;

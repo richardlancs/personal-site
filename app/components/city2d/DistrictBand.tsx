@@ -5,7 +5,8 @@ import { useRef, useState, type CSSProperties } from "react";
 import { platesNeeded, type Plate } from "../../lib/cityLook";
 import type { DistrictId } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
-import { BAND_SIZES, focal, plates } from "./plates";
+import { paintedHomePlate } from "./homePlate";
+import { BAND_SIZES, HOME_QUALITY, focal, plates } from "./plates";
 import { useNear } from "./useNear";
 import WeatherOverlay from "./WeatherOverlay";
 
@@ -19,30 +20,48 @@ import WeatherOverlay from "./WeatherOverlay";
 // dark gradient alone, which already holds the band's height. Then only
 // the plates in use are mounted, and only once the band is near the screen
 // (useNear.ts: within half a screen); the home band (`priority`) mounts at
-// once and asks for its plate first. Each plate stays clear until it has
+// once and asks for its plate first; its plate is usually already painted
+// as its background by the head script (lib/platePreload.ts), and its
+// <img> reuses that very file. Each plate stays clear until it has
 // loaded, then fades in over the gradient (no blurred placeholder to snap
 // out of; no fade in still view). A plate that fails to load is dropped for
 // good, leaving the gradient: the band is decoration, so it isn't retried.
 // Over the plates, the weather (WeatherOverlay.tsx). Without scripts, the
 // night plate (lazy below the first band).
+
+// Opened on a deep link (/#projects, …), which lands below the home band
+function deepLinked(): boolean {
+  if (typeof location === "undefined") return false;
+  const hash = location.hash;
+  return hash !== "" && hash !== "#" && hash !== "#home";
+}
+
 export default function DistrictBand({ district, priority = false }: { district: DistrictId; priority?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  const near = useNear(ref, priority);
+  // The home band loads at once, unless the page opened on a deep link
+  // (/#projects, …), which lands below it: then it waits to come near like
+  // the others (and the head script left it alone too: lib/platePreload.ts).
+  // Read during hydration, but nothing it decides is drawn until the sky
+  // is known, after hydration.
+  const near = useNear(ref, priority && !deepLinked());
   const blend = useCityBlend();
   const [failed, setFailed] = useState<Plate[]>([]);
   const [loaded, setLoaded] = useState<Plate[]>([]);
   const pair = plates[district];
   const shown = blend === null || !near ? [] : platesNeeded(blend).filter((p) => !failed.includes(p));
+  // The home plate the head script already fetched and painted as the
+  // band's background (city.css: .band[data-home]): the same file, so it
+  // comes from the cache. Read only once plates mount, after hydration.
+  const painted = priority && shown.length ? paintedHomePlate() : null;
 
   return (
-    <div ref={ref} className="band" aria-hidden="true" style={{ "--focal": focal[district] } as CSSProperties}>
+    <div ref={ref} className="band" data-home={priority ? "" : undefined} aria-hidden="true" style={{ "--focal": focal[district] } as CSSProperties}>
       {shown.map((plate) => (
         <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
-            src={pair[plate]}
+            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: pair[plate], sizes: BAND_SIZES, quality: priority ? HOME_QUALITY : undefined })}
             alt=""
             fill
-            sizes={BAND_SIZES}
             loading={priority ? "eager" : undefined}
             fetchPriority={priority ? "high" : "low"}
             onLoad={() => setLoaded((l) => (l.includes(plate) ? l : [...l, plate]))}

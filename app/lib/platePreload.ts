@@ -1,15 +1,24 @@
-// The home band's painting, asked for while the HTML is still parsing.
+// The home band's painting, fetched and shown while the HTML is still
+// parsing.
 //
 // The bands mount their plates only after hydration (DistrictBand.tsx),
 // because which plate shows depends on Richmond Hill's clock. That made
 // the home plate, the page's largest paint, wait for the scripts. This
-// tiny script, inline in <head> (layout.tsx), works out whether it is
-// plainly day or plainly night in Richmond Hill and preloads that plate
-// with the exact srcset and sizes the band's <img> will use, so the
-// browser picks the same file and the band finds it already there. Near
-// sunrise or sunset (within 45 minutes: the twilight crossing is 40, and
-// the live sun times can differ from these by a minute or two) it does
-// nothing, rather than risk fetching the wrong plate.
+// tiny script, inline in <head> (layout.tsx), works out whether it is day
+// or night in Richmond Hill (at twilight, the side of sunrise or sunset
+// it's on: the plate the blend is closer to), picks that plate's file from
+// the band's own srcset the way the browser would for the band's sizes
+// (the smallest candidate at least as wide as the band's drawn width in
+// device pixels, at most 1.5x on phones), preloads exactly that file, and sets it on <html> as
+// --home-plate (with data-home-plate="day|night"). city.css paints it as
+// the home band's background before any script of the page has run, and
+// the band's <img> for that plate later asks for the very same URL
+// (homePlate.ts), so it fades in over an identical picture from the cache.
+//
+// A deep link (/#projects, …) lands below the home band, so then it does
+// nothing. Its only inputs are the clock, the window's width, the device
+// pixel ratio and the address's hash, tested for presence: the URLs and
+// numbers in it are fixed at build time.
 
 // solarSun (lib/time.ts) as plain JS for the inline script: sunrise and
 // sunset, in seconds since the epoch, for a local date. tests/city-band
@@ -22,21 +31,29 @@ export const SUN_JS =
   "a=Math.acos(Math.min(1,Math.max(-1,Math.cos(90.833*R)/(Math.cos(lat*R)*Math.cos(c))-Math.tan(lat*R)*Math.tan(c))))/R;" +
   "return[Math.round(t+(720-4*(lon+a)-e)*60),Math.round(t+(720-4*(lon-a)-e)*60)]}";
 
-// How far from sunrise or sunset the script stays out of it, in seconds
-export const PRELOAD_MARGIN = 45 * 60;
+// On phones the first paint asks for a plate no denser than 1.5 device
+// pixels per CSS pixel: a painting at 1.5x is still sharp, and the file is
+// half the 1.75x one, which is what kept the largest paint over 2.5 s on a
+// slow phone. (Wider screens get the band's full density.)
+export const PHONE_MAX_DPR = 1.5;
 
 type Place = { latitude: number; longitude: number; timeZone: string };
 
-export function platePreloadScript(place: Place, day: string, night: string, sizes: string): string {
+/** The band's drawn width as a multiple of the window's, on phones and on wider screens (plates.ts) */
+export type BandWidth = { phoneMax: number; phoneScale: number };
+
+export function platePreloadScript(place: Place, day: string, night: string, band: BandWidth): string {
   const q = JSON.stringify;
   return (
-    `(function(){try{var sun=${SUN_JS};` +
+    `(function(){try{var h=location.hash;if(h&&h!=="#"&&h!=="#home")return;var sun=${SUN_JS};` +
     `var p=new Intl.DateTimeFormat("en-CA",{timeZone:${q(place.timeZone)},year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};` +
     `p.forEach(function(x){v[x.type]=+x.value});` +
-    `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,M=${PRELOAD_MARGIN},set=null;` +
-    `if(now>s[0]+M&&now<s[1]-M)set=${q(day)};else if(now<s[0]-M||now>s[1]+M)set=${q(night)};` +
-    `if(!set)return;var l=document.createElement("link");l.rel="preload";l.as="image";` +
-    `l.setAttribute("imagesrcset",set);l.setAttribute("imagesizes",${q(sizes)});l.setAttribute("fetchpriority","high");` +
-    `document.head.appendChild(l)}catch(e){}})()`
+    `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,` +
+    `plate=now>=s[0]&&now<s[1]?"day":"night",set=plate==="day"?${q(day)}:${q(night)},` +
+    `vw=window.innerWidth,ph=vw<=${band.phoneMax},dpr=window.devicePixelRatio||1,need=vw*(ph?${band.phoneScale}:1)*(ph?Math.min(dpr,${PHONE_MAX_DPR}):dpr),url=null,last=null;` +
+    `set.split(", ").forEach(function(c){var x=c.split(" "),w=parseInt(x[1],10);if(!url&&w>=need)url=x[0];if(w)last=x[0]});` +
+    `url=url||last;if(!url)return;` +
+    `var l=document.createElement("link");l.rel="preload";l.as="image";l.href=url;l.setAttribute("fetchpriority","high");document.head.appendChild(l);` +
+    `var r=document.documentElement;r.style.setProperty("--home-plate",'url("'+url+'")');r.setAttribute("data-home-plate",plate)}catch(e){}})()`
   );
 }
