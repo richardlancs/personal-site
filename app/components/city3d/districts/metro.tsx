@@ -14,7 +14,6 @@ import { buildTrain, trainLength } from "../kit/movers";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
 import type { LightStrip } from "../kit/reflection";
 import { buildMarkSign, disposeSign, glowPoints } from "../kit/signs";
-import { buildStreaks } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
 import { buildLampRow, buildRailing, buildViaduct } from "../kit/street";
 import { surface } from "../kit/surface";
@@ -300,7 +299,7 @@ function build(quality: Quality): Built {
   for (const x of [C.x0 + 0.03, C.x1 - 0.02]) ribs.push(box(0.05, 0.06, len).translate(x, D + C.spring, zc));
   ribs.push(box(0.03, 0.04, len).translate(C.x1 + 0.33, D + C.spring - 0.03, zc));
   // (after dark the lamps light them from below: a faint warm glow)
-  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: LAMP, strength: 0.016 } }), "canopy");
+  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: LAMP, strength: 0.03 } }), "canopy");
   mesh(merge(posts), surface({ color: CONCRETE, grime: 0.3, glow: { tone: LAMP, strength: 0.025 } }), "columns");
   mesh(merge(lampParts), neonMaterial(dim(LAMP, 0.42), { dayColor: "#d9dcdf" }), "neon:lamps");
   // the glazing over the arches: one curved sheet, the arch's profile run
@@ -446,16 +445,11 @@ function build(quality: Quality): Built {
   // ---- The paving, last of the platform, with every light that falls on it
   // (square tiles 1.2 m across, the kit's paving)
   const tiles = pavingTexture({ seed: 37, kind: "grid", joint: 2, repeat: [(P.x1 - P.x0) / 0.48, (P.z0 - P.z1) / 0.48] });
-  const paving = wetPaving({ w: P.x1 - P.x0, d: P.z0 - P.z1, x: (P.x0 + P.x1) / 2, z: (P.z0 + P.z1) / 2, y: D, mode: "fake", color: PAVING, lights, map: tiles });
+  // (the stone is polished: the lamps and the board shine in it dry as
+  // well, after dark only: the kit's polish)
+  const paving = wetPaving({ w: P.x1 - P.x0, d: P.z0 - P.z1, x: (P.x0 + P.x1) / 2, z: (P.z0 + P.z1) / 2, y: D, mode: "fake", color: PAVING, lights, map: tiles, polish: 0.75 });
   add(paving.mesh);
-  // the stone is polished: the lamps and the board shine in it dry as well
-  // (the kit's always-on streaks, in the paving's frame as wetPaving lays
-  // its own)
-  const shine = buildStreaks(lights, { kind: "river", mode: "fake", x: (P.x0 + P.x1) / 2, z: (P.z0 + P.z1) / 2, w: P.x1 - P.x0, d: P.z0 - P.z1 });
-  shine.rotation.x = Math.PI / 2;
-  shine.position.set(-(P.x0 + P.x1) / 2, (P.z0 + P.z1) / 2, 0);
-  paving.mesh.add(shine);
-  disposers.push(paving.dispose, () => tiles.dispose(), () => shine.geometry.dispose());
+  disposers.push(paving.dispose, () => tiles.dispose());
 
   // ---- The train, stopped at the platform (a mover), its headlamps lit
   // after dark
@@ -490,18 +484,24 @@ function build(quality: Quality): Built {
 // the board's light falls on the paving under it (kit/glow.ts: pools)
 const LAMP_LINE = 0.3;
 const POOLS: GlowPool[] = [
-  ...[0.9, -0.35, -1.6, -2.85, -4.1, -5.35, -6.6, -7.85, -9.1, -10.35, -11.6].map((z): GlowPool => ({ pos: [LAMP_LINE, METRO.deck + 0.14, z], reach: 0.6, color: "#ffd9a8", strength: 2.0 })),
+  // a pool under every lamp, right to the foreground: one line pool down
+  // the platform, and the nearest lamps' own pools on top of it
+  { from: [LAMP_LINE, METRO.deck + 0.16, 2.4], to: [LAMP_LINE, METRO.deck + 0.16, -12.4], reach: 0.6, color: "#ffd9a8", strength: 0.45 },
+  ...[2.15, 0.9, -0.35, -1.6, -2.85, -4.1, -5.35, -6.6, -7.85, -9.1].map((z): GlowPool => ({ pos: [LAMP_LINE, METRO.deck + 0.14, z], reach: 0.72, color: "#ffd9a8", strength: 1.1 })),
   { pos: [METRO.board.x, METRO.board.y - 0.2, METRO.board.z], reach: 0.6, color: "#ffc98a", strength: 0.6 },
 ];
 // By day the canopy's arches and purlins lay their stripes on the platform
+// (and the glazing between the purlins, a grid of sunlit panes, a little warm)
 const SHADE: DayShade = {
-  kind: "stripes",
+  kind: "lattice",
   box: [METRO.platform.x0, METRO.platform.z1, METRO.platform.x1, METRO.platform.z0],
   dir: [0.6, 1],
   period: METRO.canopy.step / 2,
-  duty: 0.42,
-  depth: 0.6,
+  period2: 0.24,
+  duty: 0.62,
+  depth: 0.5,
   top: METRO.deck + 0.05,
+  warm: "#fff3e0",
 };
 
 function choose(line: number) {

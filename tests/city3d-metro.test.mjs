@@ -84,7 +84,12 @@ test("the kit's new pieces: a glazed canopy, square tiles, planters, the lamps' 
   assert.match(src, /buildPlanters\(/);
   assert.match(src, /useGlowPools\("metro", POOLS, active\)/);
   assert.match(src, /useDayShade\("metro", SHADE, active\)/);
-  assert.match(src, /kind: "stripes"/);
+  assert.match(src, /kind: "lattice"/);
+  // the dry shine is the kit's polish on the paving (night only), no river streaks laid on it (I1)
+  assert.match(src, /wetPaving\(\{[^}]*polish: 0\.\d+ \}\)/);
+  assert.doesNotMatch(src, /buildStreaks\(|kind: "river"/);
+  // the lamps' warmth right to the foreground: a line pool down the platform
+  assert.match(src, /\{ from: \[LAMP_LINE, METRO\.deck \+ 0\.16, 2\.4\], to: \[LAMP_LINE, METRO\.deck \+ 0\.16, -12\.4\]/);
   assert.match(defSrc, /shelter: METRO\.shelter,/);
 });
 
