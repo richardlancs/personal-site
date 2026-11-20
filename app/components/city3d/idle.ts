@@ -1,5 +1,5 @@
 // Builds something and leaves a mark on the performance timeline
-// ("world:park" and so on), so the cost of each place shows in the
+// ("world:<name>"), so the cost of each place shows in the
 // browser's profiler and can be read back by a script
 export function timed<T>(name: string, build: () => T): T {
   const start = performance.now();
