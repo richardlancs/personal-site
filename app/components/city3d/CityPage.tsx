@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { twoDHref } from "../../lib/cityRoutes";
-import { section, type SectionId } from "../../sections/registry";
+import { cityPath } from "../../lib/cityRoutes";
+import { listed, section, type SectionId } from "../../sections/registry";
 import DistrictBand from "../city2d/DistrictBand";
 import About from "../city2d/sections/About";
 import Contact from "../city2d/sections/Contact";
@@ -43,6 +44,20 @@ export default function CityPage({ id }: { id: SectionId }) {
         <DistrictBand district={s.district} />
       </div>
       <div className="city-panel">
+        {id === "home" && (
+          // The riverside's signs as a row of keys, where the canvas can't
+          // fit their tags over the scene (City3D.tsx: TagProjector sets
+          // html[data-city-tags="row"]); hidden otherwise (city-pages.css)
+          <nav aria-label="Sections in the city" className="city-keys">
+            {listed
+              .filter((s) => s.id !== "home")
+              .map((s) => (
+                <Link key={s.id} href={cityPath(s.id)} className="glass city-key" data-anchor={`sign:${s.id}`}>
+                  {s.title}
+                </Link>
+              ))}
+          </nav>
+        )}
         {id !== "home" && (
           <h1 id={`${id}-title`} className="city-title">
             {s.title}

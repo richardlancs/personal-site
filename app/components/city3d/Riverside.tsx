@@ -15,7 +15,7 @@ import { rng } from "./rng";
 // stands at a railing at the back of a small bay (districts/lujiazui.def.ts:
 // home, at [0, 2, 10]) and looks across the river at the skyline; one unit
 // is ten metres. The five sections' signs stand at fixed bearings from the
-// camera, left to right, each as wide as 0.11 of its distance so it is
+// camera, left to right, each as wide as 0.135 of its distance so it is
 // about as wide on screen as the others:
 //
 //   About       -18°  26 units  near bank, left: a cluster of low lane roofs
@@ -51,8 +51,8 @@ const BOARD_TONES = { cyan: "#4fd8ee", rose: "#f062b4", gold: "#ffb454" } as con
 const spot = (s: SignSpec) => ({
   x: EYE.x + s.distance * Math.sin(deg(s.bearing)),
   z: EYE.z - s.distance * Math.cos(deg(s.bearing)),
-  w: 0.11 * s.distance,
-  h: 0.11 * s.distance * 0.34,
+  w: 0.135 * s.distance,
+  h: 0.135 * s.distance * 0.34,
 });
 
 // The greys: ground, water, and four tones for what stands

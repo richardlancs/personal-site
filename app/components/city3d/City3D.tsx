@@ -56,7 +56,7 @@ let hero = { key: "", px: 0 };
 const heroHeight = (height: number) => {
   const key = `${height}|${location.pathname}`;
   if (hero.key !== key) hero = { key, px: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0 };
-  return hero.px || height * (height <= 480 ? 0.38 : 0.46);
+  return hero.px || height * (height <= 480 ? 0.64 : 0.46);
 };
 // Where the sheet's rounded top edge starts (it comes up 2rem over the band)
 const SHEET_OVERLAP = 32;
@@ -108,10 +108,6 @@ type Swap = { kind: "swap"; scene: SceneId; pose: { pos: THREE.Vector3; target: 
 type Seg = Move | Swap;
 type Running = { seg: Move; t: number; pos: THREE.CatmullRomCurve3; look: THREE.CatmullRomCurve3; irisFrom: number };
 
-// How far the view's middle moves right on a wide screen for a place
-// framed on the right, as a share of the width: to the middle of the part
-// the panel leaves (the panel takes about the left half)
-const FRAME_SHIFT = 0.24;
 
 // The camera, and every journey it makes
 function Director({
@@ -382,16 +378,27 @@ function Director({
     // half; on narrow screens in the strip between the bar and the sheet
     const cam = camera as THREE.PerspectiveCamera;
     const narrow = isFlat();
-    const wide = !narrow && size.width >= 900;
     const def = scenes[s.active];
     const aspect = size.width / size.height;
+    const tan = (d: number) => Math.tan(THREE.MathUtils.degToRad(d));
+    const lens = (halfTan: number) => 2 * THREE.MathUtils.radToDeg(Math.atan(halfTan));
     // A portrait screen at a place's home view: a wider lens if needed to
     // show `half` degrees either side, the middle turned by `yaw`
     const portrait = narrow && aspect < 1 ? def.portrait : undefined;
     let fov = aspect < 1 ? def.fov * 1.2 : def.fov;
-    if (portrait) fov = Math.max(fov, 2 * THREE.MathUtils.radToDeg(Math.atan(Math.tan(THREE.MathUtils.degToRad(portrait.half)) / aspect)));
-    const across = 2 * Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect;
-    const want = wide && def.frame !== "center" ? (def.frame === "left" ? FRAME_SHIFT : -FRAME_SHIFT) : portrait ? Math.tan(THREE.MathUtils.degToRad(portrait.yaw)) / across : 0;
+    if (portrait) fov = Math.max(fov, lens(tan(portrait.half) / aspect));
+    let want = 0;
+    const edge = narrow ? 0 : panelRight(size.width, size.height);
+    if (!narrow && def.frame !== "center" && edge > 0) {
+      // A wide screen: the view's middle moves to the middle of the part
+      // the panel leaves, and the lens widens if it must to show `span`
+      // degrees either side of it there
+      const [l, r] = def.frame === "right" ? [edge + 12, size.width - 12] : [12, size.width - edge - 12];
+      want = 0.5 - (l + r) / 2 / size.width;
+      if (def.span) fov = Math.max(fov, lens(tan(def.span) / (((r - l) / size.width) * aspect)));
+    } else if (portrait) {
+      want = tan(portrait.yaw) / (2 * tan(fov / 2) * aspect);
+    }
     const ceiling = barBottom(size.width, size.height);
     let wantY = narrow ? narrowLift(size.height, ceiling) : 0;
     // A phone on its side: the place's fronts (`short`, degrees under the
@@ -429,11 +436,14 @@ const TAG_LIFT = 6; // the tag's foot above its sign's top edge
 type Box = { l: number; r: number; t: number; b: number };
 const clash = (a: Box, b: Box) => a.l < b.r + TAG_GAP && a.r > b.l - TAG_GAP && a.t < b.b + TAG_GAP && a.b > b.t - TAG_GAP;
 
-// Moves the riverside's tags to their signs: each above its sign; where
-// two would come closer than 8px, the later one (left to right) goes up a
-// row. If they can't all fit in the view that way (a narrow phone), they
-// stand as a row of keys at the foot of the view instead (city-pages.css:
-// .city-tags[data-row]).
+// Moves the riverside's tags to their signs: each just above its sign, or
+// just below it, or a row further, wherever it keeps 8px from the others
+// (left to right). If they can't all fit in the view that way (a small
+// phone, a phone on its side), they are hidden and the same links stand as
+// a row of keys at the top of the panel, under the scene (CityPage.tsx:
+// .city-keys; html[data-city-tags="row"]).
+const tagSize = new WeakMap<HTMLElement, [number, number]>();
+
 function TagProjector({ active }: { active: SceneId }) {
   const v = useMemo(() => new THREE.Vector3(), []);
   useFrame(({ camera, size }) => {
@@ -467,8 +477,9 @@ function TagProjector({ active }: { active: SceneId }) {
       }
       const foot = screenY(f);
       const top = screenY(p); // (leaves v at the sign's top)
-      const w = el.offsetWidth;
-      const h = el.offsetHeight;
+      // (their last size while shown: hidden in the row mode, they measure 0)
+      if (el.offsetWidth) tagSize.set(el, [el.offsetWidth, el.offsetHeight]);
+      const [w, h] = tagSize.get(el) ?? [0, 0];
       const x = THREE.MathUtils.clamp(((v.x + 1) / 2) * size.width, left + w / 2, size.width - w / 2 - 12);
       tags.push({ el, x, top, foot, w, h });
     }
@@ -493,12 +504,13 @@ function TagProjector({ active }: { active: SceneId }) {
       placed.push(box);
       boxes[tags.indexOf(tag)] = box;
     }
+    // (html[data-city-tags]: "row" shows the panel's keys instead, CityPage.tsx)
+    const html = document.documentElement;
     if (!fits) {
-      nav.setAttribute("data-row", "");
-      for (const { el } of tags) el.style.transform = "";
+      if (html.dataset.cityTags !== "row") html.dataset.cityTags = "row";
       return;
     }
-    nav.removeAttribute("data-row");
+    if (html.dataset.cityTags !== "over") html.dataset.cityTags = "over";
     tags.forEach(({ el }, i) => {
       const b = boxes[i];
       el.style.transform = `translate3d(${Math.round(b.l)}px, ${Math.round(b.t)}px, 0)`;
@@ -513,6 +525,12 @@ function TagProjector({ active }: { active: SceneId }) {
 const tagged = listed.filter((s) => s.id !== "home");
 
 function Tags({ show }: { show: boolean }) {
+  useEffect(() => {
+    if (!show) return;
+    return () => {
+      delete document.documentElement.dataset.cityTags;
+    };
+  }, [show]);
   if (!show) return null;
   return (
     <nav aria-label="Sections in the city" className="city-tags" data-hidden="">

@@ -37,6 +37,10 @@ export type SceneDef = {
   // Which side of a wide screen the place is framed on, so the panel has
   // the other side
   frame: "left" | "right" | "center";
+  // On a wide screen, at the home view: the lens widens if it must to show
+  // `span` degrees either side of the view's middle in the part the panel
+  // leaves
+  span?: number;
   // On a portrait screen, at the place's home view: the middle of the view
   // is `yaw` degrees right of where the camera looks, and the lens widens
   // if it must to show `half` degrees either side of that

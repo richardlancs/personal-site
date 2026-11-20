@@ -16,8 +16,9 @@ const lujiazui: SceneDef = {
   fov: 55,
   plateFrame: { fov: 55, pos: [0, 2, 10], target: [0, 14.3, -90] },
   frame: "right",
-  portrait: { yaw: 0, half: 25 },
-  short: 3,
+  span: 23,
+  portrait: { yaw: 0, half: 23 },
+  short: 0.5,
   threshold: "#0c1526",
   // The signs stand 24 to 64 units off; the fog starts past them and
   // never closes in nearer than `keep`. The skyline (110+) takes more.
