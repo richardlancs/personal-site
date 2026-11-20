@@ -1,51 +1,44 @@
 /* Page motion and depth: arrival on scroll, picture depth (docs/ui/ux-motion-principles.md).
    Tokens live in city.css. */
 
-/* ---------- Arrival (principles 3, 9, 11, 12) ----------
-   As a section scrolls in, its items arrive in order: the section's number
-   and heading (Station.tsx), then its blocks (About's groups, each project
-   row's header, picture and text, Experience's rows, the interests). Each
-   `.reveal` carries its place in its group as --i (Station.tsx: order(),
-   0 to 5, so later items share the last step).
+/* ---------- Arrival (principles 3, 9, 11, 18) ----------
+   As a section scrolls in, its items arrive in order, once: the section's
+   number and heading (Station.tsx), then its blocks (About's groups, each
+   project row's header, picture and text, Experience's rows, the
+   interests). Each `.reveal` carries its place in its group as --i
+   (Station.tsx: order(), 0 to 5).
 
-   CSS only, driven by the scroll (animation-timeline: view()), no script.
-   An item starts arriving as its top edge comes up over the foot of the
-   screen and has fully arrived by the time it is about halfway in, or 12
-   to 27vh of scrolling, whichever comes first: never later than the
-   moment it is wholly on the screen (entry 100%), so anything wholly in
-   view is at rest, even at the very foot of the page (/#contact), and
-   anything above the screen stays arrived. Later items in a group start
-   and finish a little later (--i). A scroll-driven animation has no
-   duration: the range is its timing, and --ease-out its curve.
+   One observer for the page (components/ui/arrive.ts) marks each item
+   data-arrived the first time its top edge comes a little way up over the
+   foot of the screen, then lets it go: "in" when it came up from below
+   (it rises 8px and fades in over --t-slow, --stagger apart), empty when
+   it was already on the screen, above it, or landed on (at rest at once).
+   It never goes back. The waiting state applies only once the script has
+   marked the page (html[data-arrive]), so with JavaScript off, in still
+   view, with reduced motion and in print nothing is ever hidden; focus
+   moving into an item, and the section a jump lands on (:target), show it
+   at once. */
 
-   Its resting state is the normal one: where scroll-driven animations
-   aren't supported, in still view and with reduced motion, nothing is
-   hidden or moved. Focus moving into an item (the keyboard, the find bar)
-   shows it at once, and print shows everything. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  :root[data-arrive]:not([data-still="on"]) .reveal:not([data-arrived], :focus-within, :target *) {
+    opacity: 0.001;
+    translate: 0 8px;
+  }
 
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    :root:not([data-still="on"]) .reveal {
-      transform-origin: 0 100%;
-      animation: arrive both var(--ease-out);
-      animation-timeline: view();
-      animation-range: entry calc(var(--i, 0) * 6%) entry min(calc(45% + var(--i, 0) * 10%), calc(12vh + var(--i, 0) * 3vh));
-    }
-
-    :root:not([data-still="on"]) .reveal:focus-within {
-      animation: none;
-    }
+  :root:not([data-still="on"]) .reveal[data-arrived="in"] {
+    transition:
+      opacity var(--t-slow) var(--ease-out),
+      translate var(--t-slow) var(--ease-out);
+    transition-delay: calc(var(--i, 0) * var(--stagger));
   }
 }
 
-/* A small rise on a soft arc: up from 12px below, turned a degree about
-   its lower left corner and a touch small, all three resolving together,
-   so its far edge swings in on a curve rather than sliding straight. From
-   nearly clear (--from: the hero's starts at 0.6) */
-@keyframes arrive {
+/* The hero's rise: from 8px below and nearly clear (--from: the hero's
+   starts at 0.6) */
+@keyframes reveal-arrive {
   from {
     opacity: var(--from, 0.001);
-    transform: translateY(12px) rotate(1deg) scale(0.985);
+    translate: 0 8px;
   }
 }
 
@@ -58,8 +51,7 @@
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .hero-arrive {
     --from: 0.6;
-    transform-origin: 0 100%;
-    animation: arrive var(--t-slow) var(--ease-out) calc(var(--i) * var(--stagger)) both;
+    animation: reveal-arrive var(--t-slow) var(--ease-out) calc(var(--i) * var(--stagger)) both;
   }
 }
 
@@ -93,7 +85,7 @@
    The project pictures and the interest photos (`.depth`, around each
    frame, with its frame's corner radius) lift toward a fine pointer: up
    3px, a soft shadow under them (its own layer, faded in, so only opacity
-   and transform move), tilted toward the pointer by at most 3° each way
+   and transform move), tilted toward the pointer by at most 1.5° each way
    (Tilt.tsx writes --tilt-x and --tilt-y, -0.5 to 0.5), and the picture
    inside eases to 1.015 a beat after the frame. Keyboard focus inside
    gets the lift, not the tilt. Flat on touch, in still view and with
@@ -119,7 +111,7 @@
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .depth,
   :root:not([data-still="on"]) .depth::after {
-    transition: transform var(--t-base) var(--ease-out), opacity var(--t-base);
+    transition: transform var(--t-base) var(--ease-out), opacity var(--t-base) var(--ease-out);
   }
 
   :root:not([data-still="on"]) .depth img {
@@ -136,7 +128,7 @@
 
   @media (hover: hover) and (pointer: fine) {
     :root:not([data-still="on"]) .depth:hover {
-      --lift: perspective(60rem) translateY(-3px) rotateX(calc(var(--tilt-y, 0) * -6deg)) rotateY(calc(var(--tilt-x, 0) * 6deg));
+      --lift: perspective(60rem) translateY(-3px) rotateX(calc(var(--tilt-y, 0) * -3deg)) rotateY(calc(var(--tilt-x, 0) * 3deg));
       --lit: 1;
     }
 
@@ -149,7 +141,6 @@
 /* ---------- Print: everything, at rest ---------- */
 
 @media print {
-  .reveal,
   .hero-arrive,
   .band-plate {
     animation: none !important;

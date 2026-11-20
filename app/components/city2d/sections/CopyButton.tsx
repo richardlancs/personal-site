@@ -7,10 +7,11 @@ import { useEffect, useRef, useState } from "react";
 // both seen and read out. "Copied" clears after 2.5 seconds; a failure,
 // which asks the visitor to do something, stays until the next press.
 // `data-copied` puts the key in the glass "chosen" state while "Copied"
-// shows, with a tick that draws itself and a light-blue edge on the
-// address (motion.css). A failure shakes the key once (data-shake, set
-// afresh on each failed press so a second failure shakes again; motion.css
-// keeps it to motion-welcome only).
+// shows in the status line, with a tick on the key that draws itself
+// (motion.css): one signal set, the word said once. A failure shakes the
+// key once (data-shake, set afresh on each failed press so a second failure
+// shakes again), only where motion is welcome, so a shake never waits in
+// still view to start when it's turned off.
 export default function CopyButton({ value }: { value: string }) {
   const [status, setStatus] = useState<{ text: string; failed?: boolean } | null>(null);
   const reset = useRef<number | undefined>(undefined);
@@ -32,7 +33,7 @@ export default function CopyButton({ value }: { value: string }) {
       // still there to select
       setStatus({ text: "Couldn't copy. Select the address to copy it by hand.", failed: true });
       const el = key.current;
-      if (el) {
+      if (el && matchMedia("(prefers-reduced-motion: no-preference)").matches && document.documentElement.dataset.still !== "on") {
         el.removeAttribute("data-shake");
         void el.offsetWidth; // restart the shake
         el.setAttribute("data-shake", "");
@@ -57,7 +58,7 @@ export default function CopyButton({ value }: { value: string }) {
             <path d="m5 12.5 4.5 4.5L19 7.5" />
           </svg>
         )}
-        {copied ? "Copied" : "Copy"}
+        Copy
         <span className="sr-only"> {value}</span>
       </button>
       <p

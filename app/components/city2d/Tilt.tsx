@@ -5,7 +5,7 @@ import { useEffect } from "react";
 // The pictures' tilt toward a fine pointer (reveal.css, "Depth"): one
 // passive pointermove listener for the whole page writes where the pointer
 // is over the hovered [data-tilt] element, as --tilt-x and --tilt-y (-0.5
-// to 0.5), at most once a frame. The CSS turns that into at most 3° each
+// to 0.5), at most once a frame. The CSS turns that into at most 1.5° each
 // way, and only while hovered, so a stale value never shows. Listens only
 // on a fine pointer that hovers, with motion welcome; does nothing in
 // still view. Mounted once (sections/Projects.tsx). Renders nothing.
@@ -25,7 +25,9 @@ export default function Tilt() {
     const reset = () => set(0, 0);
     const draw = () => {
       frame = 0;
-      const r = el?.getBoundingClientRect();
+      // Measured on its parent, which is the same box but never tilted, so
+      // the tilt doesn't feed back into itself
+      const r = el?.parentElement?.getBoundingClientRect();
       if (r) set((x - r.left) / r.width - 0.5, (y - r.top) / r.height - 0.5);
     };
     const move = (e: PointerEvent) => {

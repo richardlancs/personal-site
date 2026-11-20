@@ -2,19 +2,14 @@
    Tokens live in city.css. Every transition and animation here sits in the
    one guard, so still view and reduced motion get the end state at once. */
 
-/* The copy's result (CopyButton.tsx). Copied: the key is chosen and says
-   so with a tick, and the address it copied takes a light-blue edge.
-   A state, not a motion: it shows in still view too. */
+/* The copy's result (CopyButton.tsx). Copied: the key is chosen and
+   shows a tick, and the status line says "Copied". A state, not a
+   motion: it shows in still view too. */
 .copy-tick {
   flex-shrink: 0;
   /* Drawn in full (an inset, so the reveal below has something to
      interpolate to) */
   clip-path: inset(-2px);
-}
-
-:has(> .contact-copy [data-copied]) > :is(.contact-address, a) {
-  border-radius: 4px;
-  box-shadow: 0 0 0 4px var(--ink-2), 0 0 0 5px var(--cyan);
 }
 
 @media (prefers-reduced-motion: no-preference) {

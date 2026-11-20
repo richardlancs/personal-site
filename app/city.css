@@ -12,6 +12,17 @@
 @source not "../docs";
 @source not "../tests";
 @source not "../scripts";
+/* The notes at the root (their words read as utilities: container, table,
+   shadow, blur) and the 3D city, which ships its own few classes with its
+   own route: none of it may grow the home page's stylesheet */
+@source not "../*.md";
+@source not "./components/city3d";
+/* The stylesheets' own comments, and plain words in code (a "resize"
+   listener, a "visible" tab, "static" content) that no element uses as a
+   class: each would be a dead utility */
+@source not "./**/*.css";
+@source not "../package-lock.json";
+@source not inline("container visible static fixed absolute sticky inline table grow transform resize rounded ring outline shadow blur transition");
 
 /*
   The city: one dark theme (docs/city/style.md). Soft black grounds (a
@@ -1684,7 +1695,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
       scale var(--t-slow) var(--ease-spring);
   }
 
-  :root:not([data-still="on"]) .glass[data-held] {
+  :root:not([data-still="on"]) .glass[data-held]:not(:is(.top-bar, .sections-menu) *) {
     scale: 0.97;
     transition-duration: var(--t-base), var(--t-base), var(--t-fast), var(--t-fast);
     transition-timing-function: var(--ease-out);
@@ -1739,11 +1750,17 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   }
 }
 
-:root[data-still="on"] .glass[data-pressed] {
+/* The keys used fifty times a visit (the top bar's, the Sections menu's
+   rows) get the same tint at once, everywhere: no give, no light
+   (principle 18). The give and the light stay on the rarer actions. */
+:root[data-still="on"] .glass[data-pressed],
+:root :is(.top-bar, .sections-menu) .glass[data-pressed] {
   animation: glass-tint var(--t-slow) step-end;
 }
 :root[data-still="on"] .glass::before,
-:root[data-still="on"] .glass::after {
+:root[data-still="on"] .glass::after,
+:is(.top-bar, .sections-menu) .glass::before,
+:is(.top-bar, .sections-menu) .glass::after {
   display: none;
 }
 @media (prefers-reduced-motion: reduce) {

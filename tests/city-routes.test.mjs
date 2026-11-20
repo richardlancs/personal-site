@@ -87,8 +87,9 @@ test("a section is a labelled section with its band, its number and its heading,
   // The number sits beside the heading, before it
   const body = src.match(/<div className="station-body">([\s\S]*?)\{children\}/)?.[1] ?? "";
   assert.ok(body.indexOf("station-number") >= 0 && body.indexOf("station-number") < body.indexOf("{section.title}"), "number, then title");
-  assert.match(body, /className="station-number" aria-hidden="true"/, "the number is hidden from assistive technology");
-  assert.match(body, /<\/span>\s*\)\}\s*<h2 id=\{titleId\} className="station-title">\s*\{section\.title\}\s*<\/h2>/, "outside the h2: the heading is the title alone");
+  // (the number and the heading may carry other classes, such as the arrival's `reveal`)
+  assert.match(body, /<span className="station-number[^"]*" aria-hidden="true"/, "the number is hidden from assistive technology");
+  assert.match(body, /<\/span>\s*\)\}\s*<h2 id=\{titleId\} className="station-title[^"]*"[^>]*>\s*\{section\.title\}\s*<\/h2>/, "outside the h2: the heading is the title alone");
 });
 
 test("home is its band, then the hero: nothing between, and no h2", () => {

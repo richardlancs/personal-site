@@ -31,22 +31,22 @@ One place holds the numbers: the motion tokens in `app/city.css`
 |---|---|---|---|
 | 1 | Exaggeration | Push a reaction a little past real life so it reads. | A failed copy gives its button a short shake; a success gives a clear tick, not a faint tint. |
 | 2 | Origin awareness | Things grow out of what was pressed, not from nowhere. | The Sections menu opens from its key; the résumé dialog from the link that opened it; a `<details>` unfolds from its summary. Set `transform-origin` to the trigger. |
-| 3 | Staggering | Bring things in one after another, not all at once. | A section's items arrive in order as it scrolls into view (`--stagger` apart, a handful at most), once. |
-| 4 | Squash and stretch | A little give makes things feel soft, not stiff. | Keys compress slightly on press (the existing glass press) and settle back with a small overshoot. |
+| 3 | Staggering | Bring things in one after another, not all at once. | A section's items arrive in order as each first comes up over the foot of the screen (`--stagger` apart, six steps at most), once and never again: one observer (`components/ui/arrive.ts`) marks them, a short transition plays. Anything already on screen, landed on by a jump, found or focused is simply there. |
+| 4 | Squash and stretch | A little give makes things feel soft, not stiff. | The rarer keys ("View projects", "Live demo", "Code", "Email me", "Contact", Copy) compress slightly on press and settle back with a small overshoot. |
 | 5 | Rubber banding | Past the end it stretches, then springs back. | Leave the browser's own overscroll alone; menus and the photo grids use `overscroll-behavior` so the page behind does not move. Do not fake it. |
 | 6 | Doherty threshold | Answer within 400 ms or it feels like waiting. | Every press shows a response at once; paintings keep their gradient until loaded; nothing blocks on the network before reacting. |
 | 7 | Anticipation | A small wind-up says what is about to happen. | Hover and focus states preview the action (the arrow nudges, the chevron leans) before the click. |
 | 8 | Fitts's law | Bigger and closer is faster to hit. | Primary actions are the largest targets and sit where the eye already is: "Email me", "Live demo" and "Code" directly under each title; 44 px minimum everywhere. |
 | 9 | Slow in, slow out | Nothing real starts or stops instantly. | All movement eases (`--ease-out` to arrive, `--ease-in-out` to travel). No linear motion except the scroll-linked progress line. |
 | 10 | Hick's law | Fewer choices, faster picks. | Two actions in the hero, one primary action per group, six sections; fold the rest. Do not add options without removing one. |
-| 11 | Follow-through | Details keep moving a beat after the main thing stops. | The progress line's point pulses after the fill lands; a card's inner mark settles a moment after the card. |
-| 12 | Arcs | Real things move on curves. | Where something travels (the sheen on a pressed key, an item arriving), it combines a translate with a slight rotate or scale, not a straight slide alone. Use sparingly. |
+| 11 | Follow-through | Details keep moving a beat after the main thing stops. | The progress line's point pulses after the fill lands; the copy tick draws itself a beat after the key gives; a lifted picture settles a moment after its frame. |
+| 12 | Arcs | Real things move on curves. | Used very sparingly: the press sheen tips slightly as it crosses a key. Arrivals are a short straight rise (8 px), not an arc. |
 | 13 | Von Restorff effect | The one that looks different gets noticed. | Exactly one warm (lantern) action per view; the current section and the current role are the only things marked in light blue. Never two "special" things side by side. |
 | 14 | Timing | Too slow is laggy, too fast is jumpy: under 300 ms. | Interface transitions are `--t-fast` (120 ms) to `--t-base` (200 ms); only large surfaces (dialog, menu) use `--t-slow` (280 ms). |
 | 15 | Interruptible motion | Let people change their mind mid-animation. | Use CSS transitions, not keyframe sequences, for anything a second press can reverse (menu, details, hover); never lock input during a transition. |
-| 16 | Secondary action | A small extra motion backs up the main one. | The copy tick draws itself; the chevron turns as a panel opens; the "Email me" icon lifts on hover. One secondary action per interaction. |
-| 17 | Solid drawing | Give flat interface some depth. | Project pictures and interest photos lift and tilt very slightly toward a fine pointer (a few degrees at most), with a soft shadow; flat for touch, still view and reduced motion. |
-| 18 | Frequency of use | If people do it fifty times a day, skip the animation. | Jumping between sections, the top bar and the progress line respond at once; only rare, larger moments (opening the résumé, a section's first arrival) get a flourish. |
+| 16 | Secondary action | A small extra motion backs up the main one. | The copy tick draws itself (the status line says "Copied", once); the chevron turns as a panel opens; the "Email me" icon lifts on hover. One secondary action per interaction. |
+| 17 | Solid drawing | Give flat interface some depth. | Project pictures and interest photos lift 3 px with a soft shadow and tilt toward a fine pointer by at most 1.5° each way; flat for touch, still view and reduced motion. |
+| 18 | Frequency of use | If people do it fifty times a day, skip the animation. | Jumping between sections, the top bar's keys, the Sections menu's rows and the progress line respond at once (a tint, no give or light); only rare, larger moments (opening the résumé, a section's first arrival) get a flourish. |
 | 19 | Peak-end rule | People remember the best part and the ending. | The page ends on Contact with one clear action and a satisfying confirmation; the strongest project comes first. |
 
 ## When adding or changing interface

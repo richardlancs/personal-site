@@ -57,7 +57,9 @@ test("the band keeps its gradient when a plate fails, and has a no-script plate"
   const css = read("app/city.css");
   assert.match(css, /\.band-plate img \{\s*opacity: 0;/);
   assert.match(css, /\.band-plate\[data-loaded\] img \{\s*opacity: 1;/);
-  assert.match(css, /:root:not\(\[data-still="on"\]\) \.band-plate img \{\s*transition: opacity 0\.3s/);
+  // A short fade on the motion tokens (--t-slow, under 300 ms), never a long one
+  assert.match(css, /:root:not\(\[data-still="on"\]\) \.band-plate img \{\s*transition: opacity var\(--t-slow\)/);
+  assert.match(css, /--t-slow: 280ms;/);
   // Below the first band the no-script plate is lazy too
   assert.match(src, /loading=\{priority \? undefined : "lazy"\}/);
 });
@@ -125,7 +127,9 @@ test("the band's day/night cross-fade, grade and bottom fade, still in still vie
   assert.match(css, /var\(--city-night/);
   assert.match(css, /\.band::after\s*\{[^}]*background:\s*var\(--city-grade\)[^}]*opacity:\s*var\(--city-grade-mix[,)][^}]*mix-blend-mode:\s*soft-light/);
   assert.match(css, /var\(--ground/);
-  assert.match(css, /transition:\s*opacity 3s/);
+  // The sky's slow cross-fade: 3 s, on its own token (scenery, not interface)
+  assert.match(css, /--t-sky: 3s;/);
+  assert.match(css, /transition:\s*opacity var\(--t-sky\)/);
   // Guarded as the rest of city.css is: none of it moves in still view
   assert.match(css, /:root\[data-still="on"\][^{]*\.band/);
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\)[^{]*\.band/);

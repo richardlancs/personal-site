@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { watchArrivals } from "./arrive";
 
 // The press on every glass button (.glass in globals.css), from one pair
 // of listeners for the whole page, so any .glass element gets it, however
@@ -16,9 +17,14 @@ import { useEffect } from "react";
 // light (a ripple and a sweep), a CSS animation. Pressing again restarts
 // the light (the attribute comes off, a reflow, and back on) rather than
 // stacking a second one, and it comes off when the light ends. Only one
-// button is pressed at a time. No timers.
+// button is pressed at a time. No timers. A pointer let go outside the
+// window (it loses focus) lets go of the key too.
+//
+// The same effect starts the page's one-time arrival (arrive.ts), so it
+// needs no client component of its own.
 export default function GlassPress() {
   useEffect(() => {
+    const stopArrivals = watchArrivals();
     let current: HTMLElement | null = null;
     let held: HTMLElement | null = null; // under a pointer that's still down
 
@@ -102,7 +108,10 @@ export default function GlassPress() {
     document.addEventListener("click", onClick, { capture: true });
     document.addEventListener("animationend", onEnd);
     document.addEventListener("animationcancel", onEnd);
+    addEventListener("blur", letGo);
     return () => {
+      stopArrivals();
+      removeEventListener("blur", letGo);
       document.removeEventListener("pointerdown", onPointerDown, { capture: true });
       document.removeEventListener("pointercancel", onPointerCancel, { capture: true });
       document.removeEventListener("pointerup", letGo, { capture: true });

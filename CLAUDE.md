@@ -326,10 +326,13 @@ every label over every sky; `glass-states.mjs` checks and photographs
 every state.
 
 The press is `components/ui/GlassPress.tsx`, mounted once in the layout:
-one listener sets `data-pressed` and the press point on whichever `.glass`
-is pressed (the middle for the keyboard), and CSS does the rest: a 98%
-give, a ripple of light from the press point, a curved sheen, settled in
-0.42 s; only scale, translate and opacity, under the label. It never
+one listener sets `data-held` and `data-pressed` and the press point on
+whichever `.glass` is pressed (the middle for the keyboard), and CSS does
+the rest: a give to 97% while held (a transition, springing back), a
+ripple of light from the press point and a sheen, settled in `--t-slow`
+(280 ms); only scale, translate and opacity, under the label. The keys
+used most (the top bar's, the Sections menu's rows) get a tint at once
+instead, with no give or light. It never
 delays the action and never stacks. Still view and reduced motion get a
 brief tint instead. New buttons only need the class.
 
@@ -418,7 +421,7 @@ loads underneath. A clear-glass "Skip intro" key, Escape or a click ends
 it; it never plays in still view (so not with reduced motion), on the
 phone layout (hidden by CSS before any script runs; the film and its
 poster never fetched), on deep links, or on a client navigation back to `/`. Interface
-transitions are 150–300 ms; a glass button's press settles in 0.42 s. The
+transitions are 150–300 ms; a glass button's press settles in `--t-slow` (280 ms). The
 world stops drawing when the tab is hidden.
 
 Preferred:

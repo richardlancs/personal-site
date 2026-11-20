@@ -456,7 +456,7 @@ for (const view of Object.keys(views)) {
   await ctx.close();
 }
 
-// ---------- 5. Motion: a short fade and rise; reduced motion, a fade only ----------
+// ---------- 5. Motion: a short fade and rise; reduced motion, there at once ----------
 
 for (const motion of ["no-preference", "reduce"]) {
   const { ctx, page } = await newPage("desktop", { reducedMotion: motion });
@@ -467,8 +467,10 @@ for (const motion of ["no-preference", "reduce"]) {
     const s = getComputedStyle(document.querySelector("dialog.resume"));
     return { name: s.animationName, duration: parseFloat(s.animationDuration) };
   });
-  const ok = motion === "reduce" ? anim.name === "resume-fade" && anim.duration <= 0.1 : anim.name === "resume-in" && anim.duration <= 0.3;
-  check(ok, `motion ${motion}: ${motion === "reduce" ? "a brief fade only" : "a short fade in"}`, `${anim.name} ${anim.duration}s`);
+  // Reduced motion (still view, set by the still script): the animation runs
+  // for no time, so the dialog is there at once and still hears it end
+  const ok = motion === "reduce" ? anim.duration === 0 : anim.name === "resume-in" && anim.duration <= 0.3;
+  check(ok, `motion ${motion}: ${motion === "reduce" ? "there at once (0s)" : "a short fade in"}`, `${anim.name} ${anim.duration}s`);
   // Timed in the page, from the key to the dialog's close event, once the
   // page has been drawn (drawing would hold up the main thread)
   await waitDrawn(page);

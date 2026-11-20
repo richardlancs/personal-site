@@ -33,34 +33,55 @@ function blocks(source) {
 
 const all = blocks(css);
 const guarded = (b) =>
-  b.context.some((c) => /^@media \(prefers-reduced-motion: no-preference\)/.test(c)) &&
-  [b.prelude, ...b.context].some((c) => c.includes(':root:not([data-still="on"])'));
+  b.context.some((c) => /^@media (screen and )?\(prefers-reduced-motion: no-preference\)/.test(c)) &&
+  [b.prelude, ...b.context].some((c) => /:root(\[[a-z-]+\])?:not\(\[data-still="on"\]\)/.test(c));
 const inKeyframes = (b) => b.context.some((c) => c.startsWith("@keyframes"));
 
-test("every animation is behind the reduced-motion and still-view guard; scroll-driven ones behind @supports", () => {
+test("every animation is behind the reduced-motion and still-view guard; none is scroll-driven", () => {
   const animated = all.filter((b) => !inKeyframes(b) && /(^|;|\s)animation(-name)?\s*:/.test(b.body) && !/animation:\s*none/.test(b.body));
-  assert.ok(animated.length >= 3, "the arrival, the hero and the bands");
-  for (const b of animated) {
-    assert.ok(guarded(b), `unguarded animation: ${b.prelude}`);
-    if (b.prelude.includes(".hero-arrive")) continue; // the one-time load arrival
+  assert.ok(animated.length >= 2, "the hero and the bands");
+  for (const b of animated) assert.ok(guarded(b), `unguarded animation: ${b.prelude}`);
+  // Content arrives once, on a transition: never on a scroll-linked
+  // (reversible) timeline; only the band's settle is scroll-driven
+  for (const b of all.filter((b) => /animation-timeline:/.test(b.body))) {
+    assert.ok(b.prelude.includes(".band"), `scroll-driven: ${b.prelude}`);
     assert.ok(b.context.includes("@supports (animation-timeline: view())"), `not behind @supports: ${b.prelude}`);
-    assert.match(b.body, /animation-timeline:/, `scroll-driven: ${b.prelude}`);
   }
+  assert.doesNotMatch(css, /\.reveal[^{]*\{[^}]*animation/, "no animation on an arriving item");
 });
 
-test("the transitions and the lift are behind the guard too", () => {
-  for (const b of all.filter((b) => !inKeyframes(b) && /transition\s*:|--lift\s*:|transform:\s*scale/.test(b.body))) assert.ok(guarded(b), b.prelude);
+test("the waiting state, the transitions and the lift are behind the guard too", () => {
+  for (const b of all.filter((b) => !inKeyframes(b) && /transition\s*:|--lift\s*:|transform:\s*scale|opacity:\s*0\.001/.test(b.body))) assert.ok(guarded(b), b.prelude);
+  // At most 1.5° each way
+  assert.match(css, /rotateX\(calc\(var\(--tilt-y, 0\) \* -3deg\)\) rotateY\(calc\(var\(--tilt-x, 0\) \* 3deg\)\)/);
   // The pointer's tilt only on a fine pointer that hovers
   const hover = all.find((b) => b.prelude.includes(".depth:hover") && b.body.includes("rotateX"));
   assert.ok(hover.context.includes("@media (hover: hover) and (pointer: fine)"));
 });
 
-test("nothing loops; arrivals complete within the entry", () => {
+test("nothing loops; an item arrives once, and only once the script has marked the page", () => {
   assert.doesNotMatch(css, /infinite/);
-  const reveal = all.find((b) => b.prelude.endsWith(".reveal") && b.body.includes("animation-range"));
-  // Ends no later than entry 100%: whatever is wholly on screen is at rest
-  assert.match(reveal.body, /animation-range:\s*entry [^;]+ entry min\(calc\(45% \+ var\(--i, 0\) \* 10%\)/);
-  assert.match(css, /\.reveal:focus-within\s*\{\s*animation: none;/, "focus inside shows it at once");
+  const waiting = all.find((b) => /opacity:\s*0\.001/.test(b.body) && b.prelude.includes(".reveal"));
+  // Only under html[data-arrive] (set by arrive.ts), so with JavaScript off
+  // nothing waits; never in print; never once arrived, focused inside, or
+  // in the section a jump landed on
+  assert.ok(waiting.prelude.startsWith(":root[data-arrive]"), waiting.prelude);
+  assert.ok(waiting.context.includes("@media screen and (prefers-reduced-motion: no-preference)"), "screen only");
+  assert.match(waiting.prelude, /\.reveal:not\(\[data-arrived\], :focus-within, :target \*\)/);
+  assert.match(waiting.body, /translate: 0 8px/, "a short rise, no turn or scale");
+  // The arrival is a transition on the mark, within --t-slow, --stagger apart
+  const arriving = all.find((b) => b.prelude.includes('.reveal[data-arrived="in"]'));
+  assert.match(arriving.body, /opacity var\(--t-slow\) var\(--ease-out\)/);
+  assert.match(arriving.body, /transition-delay: calc\(var\(--i, 0\) \* var\(--stagger\)\)/);
+  // The observer: one for the page, each item let go once marked; what's
+  // on screen or above it when it starts is marked before the page is
+  const arrive = read("app/components/ui/arrive.ts");
+  assert.equal((arrive.match(/new IntersectionObserver\(/g) ?? []).length, 1);
+  assert.match(arrive, /io\.unobserve\(e\.target\)/);
+  assert.match(arrive, /rootMargin: "0px 0px -5% 0px"/, "a tall item arrives as soon as its top edge is a little way in");
+  assert.doesNotMatch(arrive, /threshold/, "never waits for a share of a tall item's height");
+  assert.ok(arrive.indexOf('setAttribute("data-arrived", "")') < arrive.indexOf('setAttribute("data-arrive", "")'), "in view first, then the page");
+  assert.match(read("app/components/ui/GlassPress.tsx"), /watchArrivals\(\)/, "started from an existing client component");
 });
 
 test("the resting state is visible: no opacity 0 outside a keyframe's start", () => {
@@ -68,25 +89,27 @@ test("the resting state is visible: no opacity 0 outside a keyframe's start", ()
     if (inKeyframes(b) && b.prelude === "from") continue;
     assert.doesNotMatch(b.body, /(^|;|\s)opacity:\s*0(\.0+)?\s*(;|$)/, `${b.prelude} rests hidden`);
   }
-  // The arrival's start is nearly clear, never quite 0; the hero's starts at 0.6
+  // The hero's start is nearly clear by default and at 0.6 for the hero
   assert.match(css, /opacity: var\(--from, 0\.001\)/);
   assert.match(css, /\.hero-arrive \{[^}]*--from: 0\.6;/);
 });
 
-test("keyframes move only transform and opacity", () => {
+test("keyframes and the arrival move only transforms and opacity", () => {
   const frames = all.filter(inKeyframes);
   assert.ok(frames.length >= 2);
   for (const b of frames) {
     for (const decl of b.body.split(";").map((d) => d.trim()).filter(Boolean)) {
-      assert.match(decl.split(":")[0].trim(), /^(transform|opacity)$/, `${b.context.at(-1)}: ${decl}`);
+      assert.match(decl.split(":")[0].trim(), /^(transform|translate|opacity)$/, `${b.context.at(-1)}: ${decl}`);
     }
   }
+  const arriving = all.find((b) => b.prelude.includes('.reveal[data-arrived="in"]'));
+  for (const [, prop] of arriving.body.matchAll(/(?:transition:|,)\s*([a-z-]+) var/g)) assert.ok(["opacity", "translate"].includes(prop), prop);
 });
 
 test("print shows everything at rest", () => {
   const print = all.find((b) => b.context.includes("@media print"));
   assert.ok(print, "a @media print block");
-  for (const sel of [".reveal", ".hero-arrive", ".band-plate"]) assert.ok(print.prelude.includes(sel), sel);
+  for (const sel of [".hero-arrive", ".band-plate"]) assert.ok(print.prelude.includes(sel), sel);
   assert.match(print.body, /animation: none !important/);
 });
 

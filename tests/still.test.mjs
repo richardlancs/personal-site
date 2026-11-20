@@ -43,7 +43,7 @@ test("the page's motion keys on still view, and the toggle is in the top bar", (
   const sheets = ["app/city.css", "app/components/resume/resume.css"].map((file) => [file, readFileSync(`${root}${file}`, "utf8")]);
   const css = sheets[0][1];
   for (const rule of [
-    /:root\[data-still="on"\] \.glass\[data-pressed\] \{\s*animation: glass-tint/,
+    /:root\[data-still="on"\] \.glass\[data-pressed\],[^{]*\{\s*animation: glass-tint/,
     // The menu's opening is a transition only where motion is welcome
     /@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.sections-menu \{[^}]*transition:/,
   ])

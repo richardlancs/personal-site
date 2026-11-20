@@ -65,6 +65,11 @@ for (const preset of presets) {
       const el = page.locator(t.sel).first();
       if (!(await el.count()) || !(await el.isVisible())) continue;
       await el.scrollIntoViewIfNeeded();
+      // An item that arrives on scroll (reveal.css): measure it at rest
+      if (await el.evaluate((n) => Boolean(n.closest(".reveal")))) {
+        await el.evaluate((n) => new Promise((done) => { const r = n.closest(".reveal"); const t = () => (r.hasAttribute("data-arrived") ? done() : requestAnimationFrame(t)); t(); }));
+        await page.waitForTimeout(700);
+      }
       const box = await el.boundingBox();
       const inset = t.inset ?? 4; // inside the edge and its highlight
       const clip = { x: box.x + inset, y: box.y + inset, width: box.width - 2 * inset, height: box.height - 2 * inset };

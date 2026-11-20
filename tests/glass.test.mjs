@@ -34,7 +34,7 @@ test("the press never delays the action, and never piles up", () => {
 
 test("the press: a give that is a transition, springing back; light that moves only scale, translate, rotate and opacity, within --t-slow", () => {
   // The give is a state, not a sequence: a second press turns it round
-  assert.match(css, /:root:not\(\[data-still="on"\]\) \.glass\[data-held\] \{\s*scale: 0\.97;/);
+  assert.match(css, /:root:not\(\[data-still="on"\]\) \.glass\[data-held\]:not\(:is\(\.top-bar, \.sections-menu\) \*\) \{\s*scale: 0\.97;/);
   assert.match(css, /:root:not\(\[data-still="on"\]\) :where\(\.glass\) \{\s*transition:[^}]*scale var\(--t-slow\) var\(--ease-spring\)/);
   assert.doesNotMatch(css, /@keyframes glass-press/, "no keyframed give");
   for (const name of ["glass-ripple", "glass-sheen"]) {
@@ -49,8 +49,15 @@ test("the press: a give that is a transition, springing back; light that moves o
 });
 
 test("still view and reduced motion get a moment of tint, not movement", () => {
-  assert.match(css, /:root\[data-still="on"\] \.glass\[data-pressed\] \{\s*animation: glass-tint [^;]*;/);
-  assert.match(css, /:root\[data-still="on"\] \.glass::before,\s*:root\[data-still="on"\] \.glass::after \{\s*display: none;/);
+  assert.match(css, /:root\[data-still="on"\] \.glass\[data-pressed\],\s*:root :is\(\.top-bar, \.sections-menu\) \.glass\[data-pressed\] \{\s*animation: glass-tint [^;]*;/);
+  assert.match(css, /:root\[data-still="on"\] \.glass::before,\s*:root\[data-still="on"\] \.glass::after,/);
+  assert.match(css, /\.glass::after,\s*:is\(\.top-bar, \.sections-menu\) \.glass::before,\s*:is\(\.top-bar, \.sections-menu\) \.glass::after \{\s*display: none;/);
+});
+
+test("the keys used most (the top bar's, the Sections menu's) get the tint at once: no give, no light", () => {
+  // Excluded from the give; the tint and no ripple or sheen, motion or not
+  assert.match(css, /\.glass\[data-held\]:not\(:is\(\.top-bar, \.sections-menu\) \*\)/);
+  assert.match(css, /:root :is\(\.top-bar, \.sections-menu\) \.glass\[data-pressed\] \{\s*animation: glass-tint/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\) \.glass\[data-pressed\] \{\s*animation: glass-tint/);
   assert.doesNotMatch(keyframes("glass-tint"), /scale|translate|transform/);
 });

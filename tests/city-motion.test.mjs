@@ -99,3 +99,12 @@ test("the résumé opens from its link", () => {
   assert.match(resume, /transform-origin: var\(--resume-from, 50% 50%\)/);
   assert.match(read("app/components/resume/ResumeViewer.tsx"), /setProperty\("--resume-from"/);
 });
+
+test("a copy's success is one signal set: the chosen key with its tick, and \"Copied\" said once, in the status line", () => {
+  const code = copy.replace(/^\s*\/\/.*$/gm, "");
+  assert.equal((code.match(/"Copied"/g) ?? []).length, 1, "the word once");
+  assert.doesNotMatch(copy, /\{copied \? "Copied"/, "the key keeps its label");
+  assert.doesNotMatch(motion, /contact-address|:has\(/, "no ring on the address");
+  // The shake is only set where it can play, so it never waits in still view
+  assert.match(copy, /matchMedia\("\(prefers-reduced-motion: no-preference\)"\)\.matches && document\.documentElement\.dataset\.still !== "on"/);
+});

@@ -103,6 +103,13 @@ test("every colour and size the résumé viewer uses is defined by the city's st
   const city = read("app/city.css");
   const own = new Set([...resume.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]));
   own.add("--total-scale-factor"); // set by pdf.js on the text layer
+  // Set at run time by the viewer itself, and only ever read with a fallback
+  // (the dialog's origin: the link that opened it, else its centre)
+  const viewer = read("app/components/resume/ResumeViewer.tsx");
+  for (const [, name] of viewer.matchAll(/setProperty\("(--[a-z0-9-]+)"/g)) {
+    assert.match(resume, new RegExp(`var\\(${name},`), `${name} is set by script, so it needs a fallback`);
+    own.add(name);
+  }
   const used = new Set([...resume.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]));
   for (const name of used) if (!own.has(name)) assert.match(city, new RegExp(`\\n\\s*${name}:`), `${name} isn't defined in city.css`);
   // The résumé link's "on its way" state (ResumeHost.tsx) is in city.css too
