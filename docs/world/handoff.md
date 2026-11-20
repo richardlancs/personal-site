@@ -84,7 +84,8 @@ and still the park.
 - Always `rm -rf .next` before starting a dev server or a build: `next dev`
   can serve a stale stylesheet (check the served CSS if a change doesn't show).
 
-**The audits** (all passing at the end of the finish pass)
+**The audits** (all passing at the end of round 2's finish pass; glass-states,
+glass-contrast and resume-viewer were rewritten for the city then)
 ```
 npm run lint && npm test && npx tsc --noEmit
 rm -rf .next && npm run build && npx next start -p 3100
@@ -99,10 +100,13 @@ CHROME_PATH=… node docs/audit/scripts/lighthouse.mjs http://localhost:3100/ <o
 
 **What is left**
 - Simulated mobile LCP (Lighthouse 13.6, slow 4G, 4x CPU) is about 3.0 s
-  (2944 / 3020 / 3017 ms) against the 2.5 s target, though the plate now
-  paints before hydration (observed LCP 84 to 134 ms; CLS 0; first view
-  422 KB). What remains is Lantern counting the page's scripts and fonts
-  that load alongside the plate; see `finish-report.md`, group 2.
+  against the 2.5 s target: round 2 measured 3016 / 3021 / 3062 ms (CLS 0,
+  first view 330,666 B); the black palette and the progress line didn't
+  move it (round 1: 2944 to 3034 ms). What remains is Lantern counting the
+  page's scripts and fonts that load alongside the plate.
+- Budgets after round 2: home JS 198,574 / 200,848; total JS 204,209 /
+  214,000; CSS 10,290 / 10,760 (`docs/audit/scripts/budget.mjs`).
+- Figures Richard could add: `docs/city/figures-to-add.md` (questions).
 - Richard reviews the 2D site in the worktree (the plan's checkpoint).
 - Then Plan B: the 3D city under `/city`
   (`docs/superpowers/plans/2026-11-19-shanghai-3d.md`), reusing or
