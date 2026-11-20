@@ -27,7 +27,12 @@ test("the shell probes WebGL2, handles a lost context, waits for Save-Data, and 
   assert.match(shell, /webglcontextrestored/);
   assert.match(shell, /saveData/);
   assert.match(shell, /Load the 3D city/);
-  assert.match(shell, /dynamic\(\s*\(\)\s*=>\s*import\("\.\/City3D"\),\s*\{[^}]*ssr:\s*false/);
+  // Client-only: lazy() rendered only once an effect has set the mode (never
+  // on the server), so next/dynamic's server machinery stays out of /city's
+  // first load
+  assert.match(shell, /const City3D = lazy\(\(\) => import\("\.\/City3D"\)\);/);
+  assert.match(shell, /useState<Mode \| null>\(null\)/);
+  assert.match(shell, /<Suspense fallback=\{null\}>\s*<City3D tier=\{tier\} \/>/);
   // The modes the CSS keys on
   for (const mode of ["on", "fallback", "saving", "lost"]) assert.match(shell, new RegExp(`"${mode}"`));
   assert.match(shell, /data-city3d/);
@@ -68,14 +73,17 @@ test("the mobile tier tone-maps on the renderer; the desktop tiers through Post"
   assert.match(city, /antialias: t\.canvasAntialias/);
 });
 
-test("Post: nothing on mobile, only EffectComposer, Bloom and ToneMapping, neutral", () => {
+test("Post: nothing on mobile; only a composer, bloom and neutral tone mapping, from postprocessing itself", () => {
   assert.match(post, /if \(tier === "mobile"[^)]*\) return null;/);
-  const imported = post.match(/import \{([^}]*)\} from "@react-three\/postprocessing"/)[1].split(",").map((s) => s.trim()).sort();
-  assert.deepEqual(imported, ["Bloom", "EffectComposer", "ToneMapping"]);
-  assert.equal((post.match(/from "@react-three\/postprocessing"/g) ?? []).length, 1);
+  const imported = post.match(/import \{([^}]*)\} from "postprocessing"/)[1].split(",").map((s) => s.trim()).sort();
+  assert.deepEqual(imported, ["BloomEffect", "EffectComposer", "EffectPass", "RenderPass", "ToneMappingEffect", "ToneMappingMode"]);
+  // Not the React wrapper: it brings n8ao and maath into the 3D chunk
+  for (const f of walk("app/components/city3d")) assert.doesNotMatch(noComments(read(f)), /@react-three\/postprocessing|from "n8ao"|from "maath"/, f);
   assert.match(post, /ToneMappingMode\.NEUTRAL/);
   assert.match(post, /prefers-contrast: more/);
   assert.match(post, /HalfFloatType/);
+  assert.match(post, /gl\.toneMapping = NoToneMapping;/);
+  assert.match(post, /\}, 1\);\s*return null;/, "draws in a priority-1 frame callback");
 });
 
 test("nothing under city3d imports drei or names magenta or amber", () => {

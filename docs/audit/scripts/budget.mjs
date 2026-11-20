@@ -19,6 +19,12 @@
 // - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS,
 //   loaded only when the résumé is opened: on its own budget, so it can't
 //   hide growth in what every visit downloads
+// - the 3D city (/city/*, opt-in): what its pages load that `/` never can
+//   (city3dJs: the canvas, three.js, the scenes), taken out of totalJs so
+//   totalJs keeps meaning the 2D site; within it the chunks that hold the
+//   renderer (city3dChunk: three.js, R3F, the composer, City3D and the
+//   riverside) and the largest section's scene (districtChunk); and
+//   /city's own first load (cityInitialJs: the scripts its HTML loads)
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
@@ -50,8 +56,27 @@ const CITY_CSS_LIMIT = 2_000;
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;
 
+// The 3D city's (docs/superpowers/plans/2026-11-19-shanghai-3d.md,
+// "Bundle budgets"), first measured on 20 November 2026 (wave 1 fix
+// report: .superpowers/sdd/2026-11-19-shanghai-3d/wave1-fix-report.md)
+// with the grey stand-ins, so the room above each reading is what the
+// kit and the five scenes may add:
+// - /city's first load, no more than the home page's
+const CITY_INITIAL_JS_LIMIT = 200_848;
+// - the renderer's chunks: the park's world chunk was 304,203 with three
+//   and R3F; the plan's cap
+const CITY3D_CHUNK_LIMIT = 330_000;
+// - one section's scene, the largest
+const DISTRICT_CHUNK_LIMIT = 32_000;
+// - everything only /city loads
+const CITY3D_JS_LIMIT = 480_000;
+
 const budgets = {
   homeInitialJs: HOME_JS_LIMIT,
+  cityInitialJs: CITY_INITIAL_JS_LIMIT,
+  city3dChunk: CITY3D_CHUNK_LIMIT,
+  districtChunk: DISTRICT_CHUNK_LIMIT,
+  city3dJs: CITY3D_JS_LIMIT,
   totalJs: TOTAL_JS_LIMIT,
   totalCss: TOTAL_CSS_LIMIT,
   cityCss: CITY_CSS_LIMIT,
@@ -106,27 +131,62 @@ const fromManifest = existsSync(manifest) ? [...readFileSync(manifest, "utf8").m
 if (!existsSync(manifest)) console.log(`note: no ${manifest}; checking only the HTML's scripts and what they name`);
 
 // Follow every chunk a loaded chunk names, until there are no new ones
-const reached = new Map(); // path -> how it's reached
-const queue = [];
-const add = (ref, how) => {
-  const p = chunkPath(ref);
-  if (reached.has(p) || !existsSync(p)) return;
-  reached.set(p, how);
-  queue.push(p);
-};
-for (const ref of initial) add(ref, "initial");
-for (const ref of [...preloaded, ...fromManifest]) add(ref, "page");
-while (queue.length) {
-  const p = queue.shift();
-  for (const m of readFileSync(p, "utf8").matchAll(/static\/chunks\/[\w.-]+\.js/g)) add(m[0], "on demand");
+function reach(initialRefs, pageRefs) {
+  const out = new Map(); // path -> how it's reached
+  const queue = [];
+  const add = (ref, how) => {
+    const p = chunkPath(ref);
+    if (out.has(p) || !existsSync(p)) return;
+    out.set(p, how);
+    queue.push(p);
+  };
+  for (const ref of initialRefs) add(ref, "initial");
+  for (const ref of pageRefs) add(ref, "page");
+  while (queue.length) {
+    const p = queue.shift();
+    for (const m of readFileSync(p, "utf8").matchAll(/static\/chunks\/[\w.-]+\.js/g)) add(m[0], "on demand");
+  }
+  return out;
 }
+const scriptsOf = (page) => [...new Set([...page.matchAll(/<script[^>]*\ssrc="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]))];
+const preloadsOf = (page) => [...page.matchAll(/<link[^>]*rel="preload"[^>]*as="script"[^>]*href="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]);
+const manifestChunks = (file) => (existsSync(file) ? [...readFileSync(file, "utf8").matchAll(/"\/?(?:_next\/)?(static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]) : []);
+const reached = reach(initial, [...preloaded, ...fromManifest]);
+
+// ---------- What the 3D city's pages load ----------
+
+const cityPages = ["city", ...(existsSync(`${dir}/server/app/city`) ? readdirSync(`${dir}/server/app/city`).filter((f) => f.endsWith(".html")).map((f) => `city/${f.slice(0, -5)}`) : [])];
+if (!existsSync(`${dir}/server/app/city.html`)) die(`no prerendered ${dir}/server/app/city.html: is /city still static?`);
+const cityHtml = readFileSync(`${dir}/server/app/city.html`, "utf8");
+const cityInitial = scriptsOf(cityHtml);
+const cityReached = new Map();
+for (const page of cityPages) {
+  const h = readFileSync(`${dir}/server/app/${page}.html`, "utf8");
+  for (const [p, how] of reach(scriptsOf(h), [...preloadsOf(h), ...manifestChunks(`${dir}/server/app/${page}/page_client-reference-manifest.js`)])) if (!cityReached.has(p)) cityReached.set(p, how);
+}
+// Only the city's: what no 2D page can load
+const cityOnly = [...cityReached.keys()].filter((p) => !reached.has(p) && !isResume(p));
+const cityOnlySet = new Set(cityOnly);
+const holdsRenderer = (p) => /WebGLRenderer/.test(readFileSync(p, "utf8"));
+const rendererChunks = cityOnly.filter(holdsRenderer);
+// A section's scene: a chunk that the canvas's own chunks (the ones loaded
+// together with the renderer's, by the same import()) load on demand
+// (sceneChunks.ts: one import() per place)
+const names = (p) => new Set([...readFileSync(p, "utf8").matchAll(/static\/chunks\/[\w.-]+\.js/g)].map((m) => chunkPath(m[0])));
+const canvasGroup = new Set(cityOnly.filter((p) => [...names(p)].some((n) => rendererChunks.includes(n))).flatMap((p) => [...names(p)]));
+const districtChunks = cityOnly.filter((p) => !canvasGroup.has(p) && [...canvasGroup].some((g) => names(g).has(p)));
 
 const THREE = /WebGLRenderer/; // also isWebGLRenderer, which minifying keeps
 const withThree = [...reached].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
 
+const sumGz = (paths) => paths.reduce((sum, p) => sum + gz(p), 0);
 const measured = {
   homeInitialJs: initial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
-  totalJs: js.reduce((a, b) => a + b.gz, 0),
+  cityInitialJs: cityInitial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
+  city3dChunk: sumGz(rendererChunks),
+  districtChunk: Math.max(0, ...districtChunks.map(gz)),
+  city3dJs: sumGz(cityOnly),
+  totalJs: js.filter((c) => !cityOnlySet.has(c.f)).reduce((a, b) => a + b.gz, 0),
   totalCss: css.filter((c) => homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
   cityCss: css.filter((c) => !homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
   resumeJs: allJs.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
@@ -148,4 +208,5 @@ failed ||= !noThree;
 console.log(`${noThree ? "ok  " : "FAIL"} ${"no three.js on /".padEnd(18)} ${String(withThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${reached.size} that / can load`);
 for (const [p, how] of withThree) console.log(`       ${p.slice(dir.length + 1)} (${how})`);
 console.log(`/ loads ${initial.length} scripts at first, ${reached.size - initial.length} more with its components or on demand`);
+console.log(`/city loads ${cityInitial.length} scripts at first; only the city loads ${cityOnly.length} chunks (${measured.city3dJs} B): the renderer's ${rendererChunks.length} (${rendererChunks.map((p) => `${p.slice(dir.length + 1)} ${gz(p)}`).join(", ")}), ${districtChunks.length} loaded by it (the scenes': ${districtChunks.map((p) => gz(p)).join(", ")})`);
 process.exit(failed ? 1 : 0);

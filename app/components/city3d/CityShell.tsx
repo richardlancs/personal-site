@@ -1,9 +1,8 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Component, useEffect, useState, type ReactNode } from "react";
+import { Component, Suspense, lazy, useEffect, useState, type ReactNode } from "react";
 import { twoDHref } from "../../lib/cityRoutes";
 import { isFlat } from "./flat";
 import { onIdle } from "./idle";
@@ -21,7 +20,13 @@ import { SAVE_DATA_MB, pickTier, readTierInput, type Quality } from "./tiers";
 //   "fallback"  no WebGL2, or the canvas failed, or lost its context twice
 //   "saving"    Save-Data is on: "Load the 3D city" waits for a press
 //   "lost"      the GPU dropped the context: "Restart the 3D city"
-const City3D = dynamic(() => import("./City3D"), { ssr: false, loading: () => null });
+//
+// The canvas's chunk comes through React's own lazy(), not next/dynamic:
+// it is only ever rendered on the client, after the probe (mode is null on
+// the server and until an effect sets it), so it needs none of
+// next/dynamic's server-side machinery, which would otherwise be in
+// /city's first load (cityInitialJs, docs/audit/scripts/budget.mjs).
+const City3D = lazy(() => import("./City3D"));
 
 type Mode = "on" | "fallback" | "saving" | "lost";
 
@@ -150,7 +155,9 @@ export default function CityShell() {
     <>
       {showing && inCity && (mode === "on" || mode === "lost") && (
         <Guard key={generation} onError={() => setMode("fallback")}>
-          <City3D tier={tier} />
+          <Suspense fallback={null}>
+            <City3D tier={tier} />
+          </Suspense>
         </Guard>
       )}
       {mode === "fallback" && (

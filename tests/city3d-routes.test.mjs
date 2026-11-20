@@ -71,7 +71,11 @@ test("a /city page is the band, one panel with its h1, the 2D link and the credi
   const src = read("app/components/city3d/CityPage.tsx");
   for (const re of [/city-band/, /city-panel/, /<h1/, /where="3d"/, /twoDHref/, /<Colophon \/>/]) assert.match(src, re);
   assert.doesNotMatch(src, /id="home"/);
-  // The canvas shell is in the city's layout only
-  assert.match(read("app/city/layout.tsx"), /<CityShell \/>/);
-  assert.doesNotMatch(read("app/layout.tsx"), /CityShell/);
+  // The canvas shell is in the city's layout only, loaded after the page
+  // is up (CityLoader.tsx), with the sky driver
+  assert.match(read("app/city/layout.tsx"), /<CityLoader \/>/);
+  const loader = read("app/components/city3d/CityLoader.tsx");
+  assert.match(loader, /lazy\(\(\) => import\("\.\/CityShell"\)\)/);
+  assert.match(loader, /lazy\(\(\) => import\("\.\.\/weather\/SkyDriver"\)\)/);
+  assert.doesNotMatch(read("app/layout.tsx"), /CityShell|CityLoader/);
 });

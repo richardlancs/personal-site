@@ -161,5 +161,10 @@ export function stepDown(current: Quality, p90Ms: number): Quality {
 }
 
 // What the Save-Data key says the 3D city costs, in MB ("Load the 3D city
-// (about N MB)"). A placeholder until the budget run measures it.
-export const SAVE_DATA_MB = 2;
+// (about N MB)"): what the press downloads, gzipped, rounded up to a tenth.
+// Measured 20 November 2026 (docs/audit/scripts/budget.mjs: city3dChunk
+// 271,970 bytes, three.js, R3F, the composer, the canvas and the
+// riverside; and the five grey stand-ins, about 650 bytes each); every
+// texture is drawn in code, so nothing else is fetched. Re-measure when
+// the kit and the scenes land.
+export const SAVE_DATA_MB = 0.3;
