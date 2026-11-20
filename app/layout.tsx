@@ -1,30 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
-import SkyDriver from "./components/weather/SkyDriver";
 import { STILL_SCRIPT } from "./components/world3d/still";
-import WorldShell from "./components/world3d/WorldShell";
-import WorldControls from "./components/world/WorldControls";
 import { siteUrl } from "./sections/registry";
-import "./globals.css";
+import "./city.css";
 
-// Headings: Fraunces, a soft, slightly wonky old-style serif, with some
-// of the warmth of a storybook. Text: Nunito, a rounded sans, friendly
-// and easy to read at small sizes.
+// Headings and station names: Rajdhani, a squared, narrow sans with the
+// look of signage. Text: Nunito, a rounded sans, friendly and easy to read
+// at small sizes (docs/city/style.md, "Type").
 //
-// Both are variable fonts kept in app/fonts/ (downloaded from Google
-// Fonts; SIL Open Font License, alongside), Latin only. Fraunces is cut to
-// what the site uses: weights 500 to 700, its optical size fixed at 72
-// (display), and its "soft" and "wonky" axes set on (36 KB rather than
-// 121 KB for every axis). Nunito covers 400 to 700.
+// Both are kept in app/fonts/ (downloaded from Google Fonts; SIL Open Font
+// License, alongside), Latin only. Rajdhani has no variable cut, so its
+// three weights are three files; Nunito is variable, 400 to 700.
 const display = localFont({
-  src: "./fonts/fraunces-latin-soft-500-700.woff2",
-  weight: "500 700",
-  style: "normal",
-  variable: "--font-fraunces",
+  src: [
+    { path: "./fonts/rajdhani-latin-500.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/rajdhani-latin-600.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/rajdhani-latin-700.woff2", weight: "700", style: "normal" },
+  ],
+  variable: "--font-rajdhani",
   display: "swap",
-  adjustFontFallback: "Times New Roman",
+  adjustFontFallback: "Arial",
 });
 const text = localFont({
   src: "./fonts/nunito-latin-400-700.woff2",
@@ -46,11 +44,11 @@ export const metadata: Metadata = {
     "Portfolio of Richard Lan, a Computer Science student at the University of Waterloo seeking software engineering internship and co-op roles.",
 };
 
-// One theme, always (globals.css): the browser is told so too, so form
-// controls and scrollbars never switch to a dark style on their own
+// One dark theme, always (city.css): the browser is told so too, so form
+// controls and scrollbars are dark whatever the system appearance
 export const viewport: Viewport = {
-  colorScheme: "light",
-  themeColor: "#fff9f2",
+  colorScheme: "dark",
+  themeColor: "#0c1526",
   // The page may run under a phone's notch and home bar; the layout pads
   // for them with env(safe-area-inset-*)
   viewportFit: "cover",
@@ -74,18 +72,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <a href="#content" className="skip-link glass">
           Skip to the page
         </a>
-        <WorldControls />
-        {/* The world stays on screen across pages; each page moves its
-            camera to a place (components/world3d/World3D.tsx) */}
-        <WorldShell />
-        {/* Richmond Hill's weather and daylight, into the world's sky */}
-        <SkyDriver />
+        <TopBar />
         <div id="content" tabIndex={-1} className="outline-none">
           {children}
         </div>
         {/* The résumé, read in the page: opened by any résumé link */}
         <ResumeHost />
-        {/* The press on every glass button (globals.css, .glass) */}
+        {/* The press on every glass button (city.css, .glass) */}
         <GlassPress />
       </body>
     </html>

@@ -98,16 +98,6 @@ test("the résumé is served as a PDF", { skip }, async () => {
   assert.match(res.headers.get("content-type") ?? "", /^application\/pdf/);
 });
 
-test("the home page introduces me and leads to the projects and contact on both layouts (audit I1)", { skip }, async () => {
-  const { body } = await get("/");
-  assert.match(body, /<p class="park-headline">cs@uwaterloo<\/p>/, "home: the subtitle");
-  assert.doesNotMatch(body, /park-about|I build practical software/, "home: no paragraph under the subtitle");
-  // Not kept to one layout: the introduction and both actions are on every screen
-  assert.match(body, /<div class="park-actions">/, "home: actions are on both layouts");
-  assert.match(body, /href="\/projects"[^>]*>View projects</, "home: View projects");
-  assert.match(body, /href="\/contact"[^>]*>Contact</, "home: Contact");
-});
-
 test("the corner menu is called Sections on every layout (audit I1)", { skip }, async () => {
   for (const s of listed) {
     const { body } = await get(s.href);
@@ -116,15 +106,6 @@ test("the corner menu is called Sections on every layout (audit I1)", { skip }, 
     assert.equal(button[1].replace(/<[^>]+>/g, "").trim(), "Sections", `${s.href}: menu button label`);
     assert.match(body, /<nav id="places-menu"[^>]*aria-label="Sections"/, `${s.href}: menu name`);
   }
-});
-
-test("the arcade's card panel is a tab stop after the chosen cabinet (audit F5)", { skip }, async () => {
-  const { body } = await get("/interests");
-  const panel = body.match(/<div[^>]*id="cabinet-card"[^>]*>/)?.[0];
-  assert.ok(panel, "interests: the card panel");
-  assert.match(panel, /role="tabpanel"/);
-  assert.match(panel, /tabindex="0"/i, "interests: the panel takes focus");
-  assert.match(panel, /aria-live="polite"/, "interests: the new card is still announced");
 });
 
 test("copy and music feedback are live regions drawn on screen, not screen-reader-only", { skip }, async () => {

@@ -88,20 +88,18 @@ test("the display is something to read, not a control, and announces nothing on 
   assert.doesNotMatch(clock, /<button|popover|onClick|tabIndex|className="glass|aria-label/);
   assert.match(clock, /<p className="rh"/);
   assert.match(clock, /<time className="rh-time" dateTime=/);
-  assert.match(read("app/components/world/WorldControls.tsx"), /<WeatherClock \/>/);
+  assert.match(read("app/components/city2d/TopBar.tsx"), /<WeatherClock \/>/);
   // The data's credit is in every page's footer instead
   const colophon = read("app/components/ui/Colophon.tsx");
   assert.match(colophon, /weatherProvider\.url/);
   assert.match(colophon, /weatherProvider\.licenceUrl/);
   assert.match(read("app/components/world/Location.tsx"), /<Colophon \/>/);
   assert.match(read("app/page.tsx"), /<Colophon \/>/);
-  // The narrow layout's row is inside the flat layout's query; the glass
-  // is clear (a few percent of tint, a light blur) and selectable
-  const css = read("app/globals.css");
-  assert.match(css, /@media \(orientation: portrait\), \(max-width: 767px\), \(max-height: 480px\) \{\s*@media \(max-width: 719px\) \{\s*(\/\*[\s\S]*?\*\/\s*)?\.world-controls \{\s*display: grid/);
+  // On narrow screens it takes a row of its own under the bar; it stays
+  // selectable text
+  const css = read("app/city.css");
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.top-bar \.rh \{\s*grid-row: 2;/);
   const rh = css.match(/\n\.rh \{([^}]*)\}/)[1];
-  assert.match(rh, /background: rgb\(234 245 255 \/ 0\.0[5-9]\)/);
-  assert.match(rh, /backdrop-filter: blur\([4-8]px\)/);
   assert.match(rh, /user-select: text/);
   assert.doesNotMatch(rh, /cursor: pointer/);
 });

@@ -144,19 +144,6 @@ export const sections: Section[] = [
     map: { x: 85, y: 60.5 },
     metadata: { title: "Contact", description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé." },
   },
-  {
-    id: "map",
-    href: "/map",
-    title: "Map",
-    place: "The notice board",
-    summary: "Every section on one sheet, drawn in ink.",
-    glyph: "board",
-    listed: true,
-    side: "middle",
-    scene: { id: "park", focus: "board" },
-    anchor: "board",
-    metadata: { title: "Map of the park", description: "A map of the park and every place in it: about, projects, experience, interests and contact." },
-  },
 ];
 
 export const section = (id: SectionId): Section => sections.find((s) => s.id === id)!;

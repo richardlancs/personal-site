@@ -1,0 +1,641 @@
+@import "tailwindcss";
+/* Untracked folders that can sit in a working copy (agents' worktrees, a
+   separate project): never scanned, so a local build matches Vercel's */
+@source not "../.claude";
+@source not "../garage-poker";
+
+/*
+  The city: one dark theme (docs/city/style.md). Deep ink-navy grounds,
+  pale text, and restrained neon (cyan, magenta, amber) only for edges,
+  chosen states and display type of 24px or larger, never body text.
+  There is no light theme and no toggle; nothing here is keyed on the
+  system's appearance. Glow (text-shadow and box-shadow glows) is never
+  what gives words their contrast, and it goes under prefers-contrast.
+*/
+:root {
+  color-scheme: dark;
+
+  /* The palette (docs/city/style.md, verbatim) */
+  --ink: #0c1526;
+  --ink-2: #111c30;
+  --panel: #17253f;
+  --line: #2b3d5e;
+  --text: #eef2fb;
+  --muted: #a9b4d0;
+  --cyan: #4fd8ee;
+  --magenta: #f062b4;
+  --amber: #ffb454;
+  --focus: #8fe9ff;
+
+  /* One family of soft corners */
+  --radius: 10px;
+  --radius-lg: 16px;
+
+  /* Set in layout.tsx with next/font */
+  --font-display: var(--font-rajdhani), "Arial Narrow", Arial, sans-serif;
+  --font-text: var(--font-nunito), "Helvetica Neue", Arial, sans-serif;
+
+  /* Glass buttons (.glass, below): a little panel blue over whatever is
+     behind, blurred; labels stay opaque --text */
+  --glass-tint: rgb(23 37 63 / 0.6);
+  --glass-tint-strong: rgb(255 180 84 / 0.2); /* primary: amber */
+  --glass-hover: rgb(79 216 238 / 0.14);
+  --glass-chosen: rgb(79 216 238 / 0.16);
+  --glass-border: color-mix(in srgb, var(--line) 65%, var(--cyan));
+  --glass-hi: rgb(238 242 251 / 0.12); /* the light line along the top */
+  --glass-blur: blur(12px) saturate(1.2);
+  --glass-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.6);
+  --glass-fallback: rgb(23 37 63 / 0.94); /* no backdrop-filter */
+  /* Behind a focus ring, so it shows on any painting */
+  --focus-halo: 0 0 0 6px rgb(12 21 38 / 0.9);
+  /* Glow: decoration only, never counted toward contrast */
+  --glow-cyan: 0 0 14px -2px rgb(79 216 238 / 0.55);
+  --glow-text: 0 0 18px rgb(79 216 238 / 0.35);
+
+  /* The top bar's height (two rows on narrow screens), for scroll padding */
+  --bar-h: 4.25rem;
+
+  /* Reading: lines of at most about 65 characters */
+  --measure: 65ch;
+}
+
+/* Makes the tokens usable as Tailwind classes, e.g. bg-ink, text-muted,
+   border-line */
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-panel: var(--panel);
+  --color-line: var(--line);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-cyan: var(--cyan);
+  --color-magenta: var(--magenta);
+  --color-amber: var(--amber);
+  --color-focus: var(--focus);
+
+  --font-sans: var(--font-text);
+  --font-display: var(--font-display);
+}
+
+/* ---------- Base ---------- */
+
+html {
+  background: var(--ink);
+  /* A jump to part of the page stops below the sticky bar (WCAG 2.4.11) */
+  scroll-padding-top: calc(var(--bar-h) + env(safe-area-inset-top) + 0.5rem);
+}
+
+body {
+  min-height: 100svh;
+  background: var(--ink);
+  color: var(--text);
+  font-family: var(--font-text);
+  font-size: 1rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+}
+
+::selection {
+  background: rgb(79 216 238 / 0.35);
+  color: var(--text);
+}
+
+/* Clear, consistent keyboard focus ring for every link and button */
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---------- Text links ---------- */
+
+.text-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--cyan);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  transition: text-decoration-color 0.2s ease;
+}
+
+/* Links that stand on their own (not in a sentence) take 44px to tap */
+button.text-link,
+.text-link-solo {
+  display: inline-flex;
+  align-items: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+}
+
+/* Hover only where there's a pointer that hovers */
+@media (hover: hover) {
+  .text-link:hover {
+    text-decoration-thickness: 2px;
+  }
+}
+
+/* ---------- The skip link ---------- */
+
+.skip-link {
+  position: fixed;
+  top: max(0.75rem, env(safe-area-inset-top));
+  left: 50%;
+  z-index: 60;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transform: translate(-50%, -200%);
+  --tint: var(--glass-fallback);
+}
+
+.skip-link:focus-visible {
+  transform: translate(-50%, 0);
+}
+
+/* ---------- The top bar (components/city2d/TopBar.tsx) ---------- */
+
+.top-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  min-height: var(--bar-h);
+  /* Clear of a notch, a status bar and rounded corners (viewportFit:
+     "cover" in layout.tsx lets the page run under them) */
+  padding: max(0.75rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) 0.75rem max(1.25rem, env(safe-area-inset-left));
+  border-bottom: 1px solid var(--line);
+  background: rgb(12 21 38 / 0.86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.top-bar-name {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-right: auto;
+  color: var(--text);
+  white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+}
+
+.top-bar-end {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.top-bar .glass {
+  font-size: 0.875rem;
+}
+
+/* Richmond Hill's time and weather (weather/WeatherClock.tsx): only
+   something to read, quiet words on the bar */
+.rh {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 0.6rem;
+  row-gap: 0.1rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  user-select: text;
+}
+
+.rh-place {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rh-region {
+  display: none;
+}
+
+@media (min-width: 1100px) {
+  .rh-region {
+    display: inline;
+  }
+}
+
+.rh-time {
+  display: inline-block;
+  min-width: 3.4em;
+  text-align: end;
+  font-weight: 500;
+}
+
+.rh-meridiem {
+  font-size: max(0.78em, 12px);
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.rh-weather {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.rh-icon {
+  flex: none;
+}
+
+.rh-temp {
+  display: inline-block;
+  min-width: 2.9em;
+  font-weight: 500;
+}
+
+.rh-unit {
+  margin-left: 0.14em;
+}
+
+.rh-degree {
+  margin-right: -0.2em;
+}
+
+.rh-condition,
+.rh-asof {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.rh-asof {
+  font-size: 0.8125rem;
+}
+
+.rh[data-status="stale"] .rh-condition {
+  display: none;
+}
+
+/* Not known yet: blanks the size of what will come, never a guess */
+.rh-blank {
+  display: inline-block;
+  flex: none;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgb(238 242 251 / 0.14);
+}
+
+.rh-blank-time {
+  width: 3.4em;
+}
+
+.rh-blank-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+.rh-blank-temp {
+  width: 2.4em;
+  margin-right: 0.7em;
+}
+
+.rh-blank-condition {
+  width: 3.8em;
+}
+
+/* Narrow: the name and the controls on the first row, the time and
+   weather on a row of its own under them */
+@media (max-width: 719px) {
+  :root {
+    --bar-h: 8.5rem;
+  }
+
+  .top-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    column-gap: 0.5rem;
+    padding-right: max(1rem, env(safe-area-inset-right));
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+
+  .top-bar .rh {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+
+  .top-bar-name {
+    font-size: 1.25rem;
+  }
+}
+
+/* ---------- The Sections menu ---------- */
+
+.sections-menu {
+  /* Just under the Sections button (the bar's first row), whatever is
+     on the rows below it */
+  --menu-top: calc(4.25rem + env(safe-area-inset-top));
+  position: fixed;
+  inset: var(--menu-top) max(1.25rem, env(safe-area-inset-right)) auto auto;
+  margin: 0;
+  width: min(18rem, calc(100vw - 2rem));
+  /* Never past the bottom of the screen: it scrolls inside, and the page
+     behind stays put */
+  max-height: calc(100svh - var(--menu-top) - max(0.75rem, env(safe-area-inset-bottom)));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
+}
+
+.sections-menu:popover-open {
+  animation: menu-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+
+.sections-menu ul {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sections-menu .glass {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 3rem;
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* The menu button is chosen while its menu is open */
+.top-bar:has(#places-menu:popover-open) [popovertarget="places-menu"] {
+  --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
+  --glass-lift: var(--glow-cyan);
+  border-color: var(--cyan);
+  background-color: var(--glass-chosen);
+}
+
+/*
+  ---------- Glass ----------
+  Every button and button-like control (tertiary actions stay text
+  links). A rounded rectangle as wide as its words, 44px tall, a little
+  panel blue over whatever is behind (blurred), a thin edge, a faint
+  light along its top, and an opaque --text label.
+
+  The states, the same on every control:
+  - secondary (.glass); primary (.glass-primary): amber glass, a heavier
+    label; .glass-icon, a square key for an icon
+  - hover: a little cyan
+  - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
+    open popover): a cyan edge, doubled inside, pressed in (a shade inside,
+    no lift) and a faint glow, so it reads without colour too
+  - disabled (:disabled, aria-disabled="true"): no glass, a dashed edge,
+    a muted label (still 4.5:1); no hover, no press, no pointer
+  - focus: the focus ring on a dark halo, over any painting
+
+  The base rule is in :where(), so a control's own class sets its size,
+  type and layout without a fight; the states outweigh both.
+
+  The press (components/ui/GlassPress.tsx sets data-pressed and
+  --press-x/-y/-r): a 98% give, a ripple of light from the press point and
+  a sweep of light, settled in 0.42s; only scale, translate and opacity,
+  under the label. Still view and reduced motion: a brief tint instead.
+*/
+:where(.glass) {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  justify-content: safe center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--tint, var(--glass-tint));
+  color: var(--glass-ink, var(--text));
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: var(--glass-in, inset 0 1px 0 var(--glass-hi)), var(--glass-out, var(--glass-lift, var(--glass-shadow)));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+  overflow-wrap: break-word;
+}
+
+:where(.glass) > svg {
+  flex-shrink: 0;
+}
+
+.glass-primary {
+  --tint: var(--glass-tint-strong);
+  border-color: var(--amber);
+  font-weight: 600;
+}
+
+/* A square key for an icon */
+.glass-icon {
+  width: 44px;
+  padding: 0;
+}
+
+@media (hover: hover) {
+  :where(.glass:not(:disabled, [aria-disabled="true"])):hover {
+    background-color: color-mix(in srgb, var(--tint, var(--glass-tint)), var(--cyan) 14%);
+  }
+}
+
+.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+  --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
+  --glass-lift: var(--glow-cyan);
+  border-color: var(--cyan);
+  background-color: var(--glass-chosen);
+}
+
+.glass:is(:disabled, [aria-disabled="true"]) {
+  --glass-in: 0 0 #0000;
+  --glass-lift: 0 0 #0000;
+  border-style: dashed;
+  background: none;
+  color: var(--muted);
+  cursor: default;
+}
+
+/* Forced colours drop the fill and the shade: a heavier edge says chosen */
+@media (forced-colors: active) {
+  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+    border-width: 3px;
+  }
+}
+
+.glass:focus-visible {
+  --glass-out: var(--focus-halo);
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* Without a blur, near-opaque glass so the words still have a ground */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background-color: var(--glass-fallback);
+  }
+}
+
+/* The press: a ripple (::before) and a sweep of light (::after) */
+.glass::before,
+.glass::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.glass::before {
+  left: calc(var(--press-x, 50%) - var(--press-r, 4rem));
+  top: calc(var(--press-y, 50%) - var(--press-r, 4rem));
+  width: calc(2 * var(--press-r, 4rem));
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(143 233 255 / 0.22), rgb(79 216 238 / 0.12) 62%, rgb(143 233 255 / 0.4) 71%, rgb(143 233 255 / 0) 77%);
+}
+
+.glass::after {
+  top: -30%;
+  bottom: -30%;
+  left: 0;
+  width: 60%;
+  background: radial-gradient(70% 100% at 0 50%, transparent 55%, rgb(238 242 251 / 0.28) 68%, transparent 80%);
+}
+
+.glass[data-pressed] {
+  animation: glass-press 0.42s cubic-bezier(0.3, 0.7, 0.4, 1);
+}
+
+.glass[data-pressed]::before {
+  animation: glass-ripple 0.42s linear;
+}
+
+.glass[data-pressed]::after {
+  animation: glass-sheen 0.36s cubic-bezier(0.4, 0, 0.3, 1) 0.04s;
+}
+
+@keyframes glass-press {
+  25% {
+    scale: 0.98;
+  }
+}
+
+@keyframes glass-ripple {
+  from {
+    opacity: 1;
+    scale: 0.12;
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+  45% {
+    opacity: 0.75;
+  }
+  to {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+@keyframes glass-sheen {
+  from {
+    opacity: 1;
+    translate: -100% 0;
+  }
+  to {
+    opacity: 0;
+    translate: 240% 0;
+  }
+}
+
+/* Still view and reduced motion: no ripple, no give; a moment of tint */
+@keyframes glass-tint {
+  from {
+    border-color: var(--cyan);
+    background-color: var(--glass-chosen);
+  }
+}
+
+:root[data-still="on"] .glass[data-pressed] {
+  animation: glass-tint 0.3s step-end;
+}
+:root[data-still="on"] .glass::before,
+:root[data-still="on"] .glass::after {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .glass[data-pressed] {
+    animation: glass-tint 0.3s step-end;
+  }
+}
+
+/* Nothing else moves in still view or with reduced motion */
+:root[data-still="on"] .sections-menu:popover-open {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sections-menu:popover-open {
+    animation: none;
+  }
+}
+
+/* More contrast asked for: no glow anywhere, plain solid edges */
+@media (prefers-contrast: more) {
+  :root {
+    --glow-cyan: 0 0 #0000;
+    --glow-text: 0 0 #0000;
+    --glass-border: var(--muted);
+  }
+
+  *,
+  *::before,
+  *::after {
+    text-shadow: none !important;
+  }
+}

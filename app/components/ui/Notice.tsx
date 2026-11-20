@@ -29,9 +29,6 @@ export default function Notice({
           <Link href="/" className="glass">
             Back to the park
           </Link>
-          <Link href="/map" className="text-link">
-            Open the map
-          </Link>
         </p>
       </div>
     </main>

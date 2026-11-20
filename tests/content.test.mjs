@@ -3,9 +3,8 @@
 // TypeScript data files directly).
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { FLAT_QUERY, WORLD_QUERY } from "../app/components/world/flat.ts";
 import { about, experience, interests, profile, projects, skillGroups } from "../app/data/portfolio.ts";
 import { places, sectionForAnchor, sectionForPath, sections, siteUrl } from "../app/sections/registry.ts";
 import { glyphs } from "../app/components/world/glyphs.ts";
@@ -41,13 +40,6 @@ test("every screenshot is a file in public/, with alt text", () => {
       assert.ok(shot.alt.length > 10, `${shot.src}: alt text`);
     }
   }
-});
-
-test("every project has a monitor in the workshop, and a camera spot by it", () => {
-  const workshop = readFileSync(`${root}app/components/world3d/scenes/Workshop.tsx`, "utf8");
-  const spots = workshop.match(/export const monitorSpots = \[([\s\S]*?)\] as const/)?.[1].match(/\[[^\]]*\]/g) ?? [];
-  assert.ok(projects.length <= spots.length, `${projects.length} projects but ${spots.length} monitors (monitorSpots in world3d/scenes/Workshop.tsx)`);
-  for (let i = 0; i < projects.length; i++) assert.ok(`monitor-${i}` in scenes.workshop.focus, `scenes.ts: workshop has no "monitor-${i}" camera spot`);
 });
 
 test("experience entries have 2 to 4 points", () => {
@@ -95,60 +87,6 @@ test("every section in the registry is complete and has a page", () => {
   for (const s of sections) assert.equal(sectionForPath(s.href).id, s.id);
   assert.equal(sectionForPath("/nowhere").id, "home");
   for (const s of sections) if (s.anchor) assert.equal(sectionForAnchor(s.anchor)?.id, s.id);
-});
-
-test("the theme is fixed: no dark theme, no toggle, no saved preference", () => {
-  const css = readFileSync(`${root}app/globals.css`, "utf8");
-  assert.doesNotMatch(css, /data-theme|prefers-color-scheme|theme-transition/, "globals.css has no second theme");
-  assert.match(css, /--background: var\(--cream\)/, "the background is the palette's cream");
-  for (const hex of ["#fff9f2", "#55c6f0", "#e5ddd4", "#1d1e1e", "#fb5745", "#b8dcfa", "#9bcbf1", "#eaf5ff", "#f7fbff", "#c6dff0", "#203245", "#326e9f"]) assert.ok(css.includes(hex), `palette colour ${hex} is defined`);
-  // The interface moved from indigo to baby blue: none of it is left
-  assert.doesNotMatch(css, /#1e107a|--indigo|rgb\(30 16 122/, "no indigo in the interface");
-  // Nor in the world's own copies of interface things (the station's
-  // timetable is the slate enamel of its HTML twin, --surface-deep)
-  for (const file of readdirSync(`${root}app/components/world3d`, { recursive: true }).filter((f) => /\.tsx?$/.test(f))) {
-    assert.doesNotMatch(readFileSync(`${root}app/components/world3d/${file}`, "utf8"), /#1e107a|#15105a/i, `no indigo in world3d/${file}`);
-  }
-  assert.ok(!existsSync(`${root}app/components/ThemeToggle.tsx`), "the toggle is gone");
-  const layout = readFileSync(`${root}app/layout.tsx`, "utf8");
-  assert.doesNotMatch(layout, /data-theme|localStorage\.getItem\("theme"\)/, "nothing reads a saved theme");
-  const walk = (dir, out = []) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = `${dir}/${entry.name}`;
-      if (entry.isDirectory()) walk(path, out);
-      else if (/\.tsx?$/.test(entry.name)) out.push(path);
-    }
-    return out;
-  };
-  for (const file of walk(`${root}app`)) assert.doesNotMatch(readFileSync(file, "utf8"), /localStorage\.setItem\("theme"/, `${file} saves a theme`);
-});
-
-test("the flat and world layouts use the same media queries in CSS and in code", () => {
-  const css = readFileSync(`${root}app/globals.css`, "utf8");
-  const queries = [...css.matchAll(/@media ([^{]+) \{/g)].map((match) => match[1]);
-  assert.ok(queries.includes(FLAT_QUERY), "globals.css has the flat layout's query");
-  assert.ok(queries.includes(WORLD_QUERY), "globals.css has the world layout's query");
-  // Any other query about orientation would be a third layout nobody meant
-  for (const query of queries) {
-    if (query.includes("orientation")) assert.ok(query === FLAT_QUERY || query === WORLD_QUERY, `unexpected layout query: ${query}`);
-  }
-});
-
-test("the world's signs and notices are in English", () => {
-  // Every sign, notice and label drawn in the world is English, in the
-  // site's own Latin fonts (app/fonts/): no Chinese or Japanese characters
-  // anywhere in app/, so no CJK font is needed
-  const cjk = /[　-ヿ一-鿿＀-￯]/g;
-  const found = [];
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      const path = `${dir}/${entry.name}`;
-      if (entry.isDirectory()) walk(path);
-      else if (/\.tsx?$/.test(entry.name)) for (const ch of readFileSync(path, "utf8").match(cjk) ?? []) found.push(`${path.slice(root.length)}: ${ch}`);
-    }
-  };
-  walk(`${root}app`);
-  assert.deepEqual(found, [], "non-English characters on a sign");
 });
 
 test("the section starter is a template in docs, not a public page", () => {
