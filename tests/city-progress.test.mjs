@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { DEAD_ZONE, progressAt, reached, shown } from "../app/lib/progress.ts";
+import { DEAD_ZONE, FAST, SNAP, lockedAt, progressAt, reached, shown } from "../app/lib/progress.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
@@ -61,15 +61,22 @@ test("reached: arriving needs the point itself, leaving needs the dead zone; a f
   assert.equal(reached(4.95, 5), 5);
 });
 
-test("shown: the fill locks onto a reached point through its dead zone, and is the scroll anywhere else", () => {
-  // Just reached from below: on the point
-  assert.equal(shown(1.995, 2), 2);
-  // Scrolling back up a little: the fill holds on the point
-  assert.equal(shown(1.93, 2), 2);
-  // Past the point: the fill follows
-  assert.equal(shown(2.4, 2), 2.4);
-  // Between two points, not yet reached: the fill follows
-  assert.equal(shown(1.5, 1), 1.5);
+test("shown: the fill runs with the scroll, and locks onto a point within a few percent of it, either side", () => {
+  assert.equal(SNAP, 0.04);
+  // Coming down onto a point: the last bit is the point
+  assert.equal(shown(1.97), 2);
+  assert.equal(shown(1.995), 2);
+  // Just past it, or coming back up onto it: still the point
+  assert.equal(shown(2.03), 2);
+  // Anywhere else: exactly the scroll, so it never lags
+  assert.equal(shown(1.93), 1.93);
+  assert.equal(shown(2.4), 2.4);
+  assert.equal(shown(1.5), 1.5);
+  assert.equal(lockedAt(1.5), null);
+  assert.equal(lockedAt(4.99), 5);
+  assert.equal(lockedAt(0), 0);
+  // A frame-to-frame move past this is a fast scroll: never eased
+  assert.ok(FAST > 2 * SNAP && FAST < 0.5);
 });
 
 test("ProgressLine: one passive scroll listener, frames through requestAnimationFrame, no layout reads while scrolling", () => {
@@ -91,7 +98,7 @@ test("ProgressLine: one passive scroll listener, frames through requestAnimation
   // One CSS variable, on its own element
   assert.match(src, /style\.setProperty\("--progress"/);
   // In still view (or with reduced motion) only the reached integer is written
-  assert.match(src, /const value = step \? now : shown\(p, now\);/);
+  assert.match(src, /const value = step \? now : shown\(p\);/);
   // Nothing in it moves the page
   assert.doesNotMatch(src, /scrollTo|scrollBy|scrollIntoView|preventDefault|"wheel"|"touchmove"/);
   const css = read("app/city.css");
@@ -100,8 +107,12 @@ test("ProgressLine: one passive scroll listener, frames through requestAnimation
 
 test("the line names the sections by title, marks where you are, and its points are links only where they're labelled", () => {
   const src = read("app/components/city2d/ProgressLine.tsx");
-  assert.match(src, /aria-label="Sections on this page"/);
-  assert.match(src, /pageSections\.map\(/);
+  assert.match(src, /aria-label="Page progress"/, "not a second landmark starting \"Sections\"");
+  assert.match(src, /const points = listed;/, "only the sections that are listed");
+  assert.match(src, /points\.map\(/);
+  // Home is a jump to the top in place, not a reload of "/"
+  assert.match(src, /href=\{jumpHref\(s\.href\)\}/);
+  assert.match(read("app/components/city2d/jump.ts"), /href === "\/" \? "\/#home" : href/);
   assert.match(src, /\{s\.title\}/);
   assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
   // "03 / 06 · Projects" in the top bar, hidden from assistive technology
@@ -124,11 +135,26 @@ test("one source of where you are: useSection, written by the line and read by t
   for (const f of ["SectionsMenu.tsx", "ProgressLine.tsx"]) assert.match(read(`app/components/city2d/${f}`), /useSection\(\)/, f);
 });
 
+test("the snap: eased only on arriving at a point in a slow scroll, never armed in a fast one; nothing pulses before the page has landed", () => {
+  const src = read("app/components/city2d/ProgressLine.tsx");
+  const frame = src.match(/const frame = \(\) => \{([\s\S]*?)\n {4}\};/)?.[1] ?? "";
+  assert.match(frame, /const fast = lastP >= 0 && Math\.abs\(p - lastP\) > FAST;/);
+  assert.match(frame, /if \(!fast\) \{\s*line\.dataset\.snap = "";/);
+  assert.match(frame, /else if \(lock === null \|\| fast\) \{[\s\S]*?delete line\.dataset\.snap;/);
+  assert.match(src, /html\.setAttribute\("data-landed", ""\);\s*settled = true;/);
+  assert.doesNotMatch(src, /setTimeout\(\(\) => \(settled = true\)/);
+  // Re-measured when the bar stops being sticky (where a jump lands moves)
+  assert.match(src, /attributeFilter: \["data-still", "data-bar-tall"\]/);
+  // Not on a page without the sections
+  assert.match(src, /!document\.getElementById\("home"\)\) return;/);
+  assert.match(read("app/city.css"), /body:not\(:has\(#home\)\) :is\(\.progress-line, \.top-bar-here\) \{\s*display: none;/);
+});
+
 test("the line's CSS: transforms only, the fill eased only when it locks, and nothing moves in still view", () => {
   const css = read("app/city.css");
   // The fill's length is a transform of --progress
-  assert.match(css, /\.progress-fill \{[^}]*transform: scaleX\(calc\(var\(--progress, 0\) \/ 5\)\)/);
-  assert.match(css, /\.progress-fill \{[^}]*transform: scaleY\(calc\(var\(--progress, 0\) \/ 5\)\)/);
+  assert.match(css, /\.progress-fill \{[^}]*transform: scaleX\(calc\(var\(--progress, 0\) \/ var\(--last, 5\)\)\)/);
+  assert.match(css, /\.progress-fill \{[^}]*transform: scaleY\(calc\(var\(--progress, 0\) \/ var\(--last, 5\)\)\)/);
   // The ease and the pulse sit under motion-welcome only
   const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.progress-line\[data-snap\] \.progress-fill \{[^}]*\}[\s\S]*?\n\}/)?.[0];
   assert.ok(block, "the motion block");

@@ -181,7 +181,7 @@ test("home is the band and the hero: no caption, no place names, no h2", { skip 
   assert.doesNotMatch(home, /<h2[\s>]/);
   const { body } = await get("/");
   assert.ok(!body.includes("The skyline across the Huangpu"), "the home caption is gone");
-  for (const name of ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"]) assert.ok(!body.includes(`>${name}<`), `the page shows "${name}"`);
+  for (const name of ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"]) assert.ok(!body.includes(name), `the page names "${name}"`);
   // Old links still land: every section's anchor is there, labelled
   for (const s of pageSections) assert.ok(body.includes(`aria-labelledby="${anchorOf(s)}-title"`), `${s.id}: labelled`);
 });

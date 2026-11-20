@@ -71,7 +71,7 @@ test("the Sections menu's entries and the top bar's keys are glass", () => {
   // marked chosen by the address; where you are comes from the scroll
   assert.doesNotMatch(menu, /aria-current="page"/);
   assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/);
-  assert.equal((menu.match(/onClick=\{go\((s|sub)\.href\)\}/g) ?? []).length, 2, "every entry jumps and hands focus on");
+  assert.equal((menu.match(/onClick=\{go\((s\.href|jumpHref\(s\.href\)|sub\.href)\)\}/g) ?? []).length, 2, "every entry jumps and hands focus on");
   const bar = readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8");
   assert.match(bar, /<button type="button" popoverTarget="places-menu" className="glass top-bar-sections">/);
 });

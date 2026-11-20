@@ -45,7 +45,19 @@ export function reached(progress: number, previous: number): number {
   return base;
 }
 
-/** Where the fill's end is drawn: on the reached point while the scroll is within its dead zone (it has locked on), the scroll itself anywhere else. */
-export function shown(progress: number, reachedIndex: number): number {
-  return progress < reachedIndex && progress > reachedIndex - DEAD_ZONE ? reachedIndex : progress;
+/** How close to a point, either side, the fill locks onto it: a few percent of a segment. */
+export const SNAP = 0.04;
+
+/** The point the fill is locked onto (within SNAP of it, either side), or null while it runs between points. */
+export function lockedAt(progress: number): number | null {
+  const k = Math.round(progress);
+  return Math.abs(progress - k) < SNAP ? k : null;
 }
+
+/** Where the fill's end is drawn: on a point while the scroll is within SNAP of it (it has locked on), the scroll itself anywhere else. */
+export function shown(progress: number): number {
+  return lockedAt(progress) ?? progress;
+}
+
+/** A move between two frames this large is a fast scroll: the fill jumps with it, never eased, so it never trails. */
+export const FAST = 0.15;

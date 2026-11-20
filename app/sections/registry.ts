@@ -112,11 +112,13 @@ export const sections = pageSections;
 
 export const section = (id: SectionId): Section => pageSections.find((s) => s.id === id)!;
 
-// A section's number, "01" to "06", in page order
-export const sectionNumber = (s: Section): string => String(pageSections.indexOf(s) + 1).padStart(2, "0");
-
-// The sections that are pointed at: in the menu and the lists
+// The sections that are pointed at: in the menu, the progress line and
+// the numbering; an unlisted one is still on the page, unnumbered
 export const listed = pageSections.filter((s) => s.listed);
+
+// A section's number, "01" to "06", in page order among the listed ones
+// ("" for one that isn't listed)
+export const sectionNumber = (s: Section): string => (s.listed ? String(listed.indexOf(s) + 1).padStart(2, "0") : "");
 
 // Where the site is published. Canonical addresses, the sitemap, robots.txt
 // and the share cards are all made absolute from this (layout.tsx sets it

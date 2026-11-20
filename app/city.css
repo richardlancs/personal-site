@@ -45,7 +45,6 @@
   /* primary: solid lantern with an ink label (11.3:1; 12.9:1 on hover) */
   --glass-tint-strong: var(--lantern);
   --glass-primary-hover: #f8c97f;
-  --glass-hover: rgb(79 216 238 / 0.14);
   --glass-chosen: rgb(79 216 238 / 0.16);
   --glass-border: color-mix(in srgb, var(--line) 65%, var(--cyan));
   --glass-hi: rgb(230 233 238 / 0.11); /* the light line along the top */
@@ -696,18 +695,24 @@ a[data-resume][data-opening] {
    header starts there, below: words on the ground, never on the
    painting). docs/city/style.md, "The seam". */
 .band::before {
+  /* By day the plate's foot is bright paving and water, which a quick
+     fade cuts off: in daylight (and through dawn and dusk, as much as the
+     day plate shows: --day, from --city-night) the fade starts a little
+     higher and its middle runs longer, so the brightness falls away
+     gradually. The night stops are the ones above, as specified. */
+  --day: calc(1 - var(--city-night, 1));
   content: "";
   position: absolute;
-  inset: 58% 0 0;
+  inset: calc(58% - 4% * var(--day)) 0 0;
   z-index: 2;
   background: linear-gradient(
     to bottom,
     transparent,
     color-mix(in srgb, var(--seam) 14%, transparent) 20%,
-    color-mix(in srgb, var(--seam) 40%, transparent) 38%,
-    color-mix(in srgb, var(--seam) 72%, transparent) 52%,
-    var(--seam) 62%,
-    var(--ground, var(--ink)) 76%
+    color-mix(in srgb, var(--seam) 40%, transparent) calc(38% + 4% * var(--day)),
+    color-mix(in srgb, var(--seam) 72%, transparent) calc(52% + 16% * var(--day)),
+    var(--seam) calc(62% + 18% * var(--day)),
+    var(--ground, var(--ink)) calc(76% + 12% * var(--day))
   );
   pointer-events: none;
 }
@@ -877,7 +882,15 @@ a[data-resume][data-opening] {
   padding-top: 0.25rem;
 }
 
+/* The section's number and its heading, on one baseline */
+.station-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
 .station-title {
+  min-width: 0;
   color: var(--text);
   /* Capped at 13vw so a long title stays whole on one line at 320px with
      large text, as the name is */
@@ -885,20 +898,17 @@ a[data-resume][data-opening] {
   font-weight: 700;
 }
 
-/* The section's number ("02"), small and quiet beside its title, level
-   with the tops of its capitals: a numeral, never a place name (hidden
-   from assistive technology; the heading's name is the title alone) */
+/* The section's number ("02"), quiet beside its title on the same
+   baseline: a numeral, never a place name, outside the heading and hidden
+   from assistive technology (the heading's name is the title alone) */
 .station-number {
-  display: inline-block;
-  margin-right: 0.75rem;
-  vertical-align: top;
-  padding-top: 0.45em;
+  flex: none;
   color: var(--muted);
-  font-size: 1rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
 }
 
 /* ---------- The hero (components/city2d/sections/Hero.tsx) ----------
@@ -982,10 +992,18 @@ a[data-resume][data-opening] {
     padding-top: 0;
   }
 
+  .station-body-home {
+    padding-bottom: clamp(2rem, 4vw, 3rem);
+  }
+
   .station-body-home > .hero {
-    /* The backing centred on the band's bottom edge: half its height
-       (the name's line, its padding, its edge) above it */
-    margin-top: calc(-0.5 * (var(--name-size) * 1.1 + 2 * var(--backing-pad) + 2px));
+    /* The backing centred on the painting's bottom edge, where it sinks
+       into the black (about a fifth of the band up from its foot, which
+       is solid ground): half the backing's height (the name's line, its
+       padding, its edge) above that line. The home band is 21:9 up to
+       70% of the screen. */
+    --home-band-h: min(calc(100vw * 9 / 21), 70vh);
+    margin-top: calc(-0.5 * (var(--name-size) * 1.1 + 2 * var(--backing-pad) + 2px) - 0.19 * var(--home-band-h));
   }
 }
 
@@ -1026,7 +1044,7 @@ a[data-resume][data-opening] {
   inset: 0;
   background: var(--cyan);
   transform-origin: left center;
-  transform: scaleX(calc(var(--progress, 0) / 5));
+  transform: scaleX(calc(var(--progress, 0) / var(--last, 5)));
   will-change: transform;
 }
 
@@ -1043,7 +1061,7 @@ a[data-resume][data-opening] {
 .progress-points > li {
   position: absolute;
   bottom: 0;
-  left: calc((100% - 3px) * var(--i) / 5);
+  left: calc((100% - 3px) * var(--i) / var(--last, 5));
 }
 
 .progress-point {
@@ -1068,8 +1086,23 @@ a[data-resume][data-opening] {
 }
 
 /* Where you are: a taller tick (its shape as well as its colour) */
-.progress-point[aria-current="location"] .progress-dot {
-  height: 13px;
+@media (max-width: 96.99rem) {
+  .progress-point[aria-current="location"] .progress-dot {
+    height: 13px;
+  }
+}
+
+/* Until the line has run (the page has loaded; never without JavaScript)
+   the bar doesn't name a section and the fill isn't drawn: they'd only
+   say Home */
+:root:not([data-landed]) :is(.top-bar-here, .progress-fill) {
+  visibility: hidden;
+}
+
+/* A page without the sections (not found, an error): no line, and no
+   section named in the bar */
+body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
+  display: none;
 }
 
 /* The section you're at in words, beside the name, on screens whose
@@ -1144,7 +1177,7 @@ a[data-resume][data-opening] {
 
   .progress-fill {
     transform-origin: center top;
-    transform: scaleY(calc(var(--progress, 0) / 5));
+    transform: scaleY(calc(var(--progress, 0) / var(--last, 5)));
   }
 
   .progress-points {
@@ -1179,8 +1212,7 @@ a[data-resume][data-opening] {
 
   /* A ring on the line; lit once reached, filled and ringed again where
      you are */
-  .progress-dot,
-  .progress-point[aria-current="location"] .progress-dot {
+  .progress-dot {
     flex: none;
     width: 12px;
     height: 12px;

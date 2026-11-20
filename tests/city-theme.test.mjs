@@ -130,9 +130,13 @@ test("black is the ground and the warm secondary is the lantern: no magenta, no 
   for (const utility of ["lantern"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
   // The fade under each painting passes through the dark navy seam
   const fade = css.match(/\.band::before \{([^}]*)\}/)?.[1] ?? "";
-  assert.match(fade, /inset: 58% 0 0;/);
-  assert.match(fade, /var\(--seam\) 62%/);
-  assert.match(fade, /var\(--ground, var\(--ink\)\) 76%/);
+  // At night the stops as specified; by day (--day, from --city-night) it
+  // starts higher and its middle runs longer
+  assert.match(fade, /--day: calc\(1 - var\(--city-night, 1\)\);/);
+  assert.match(fade, /inset: calc\(58% - \d+% \* var\(--day\)\) 0 0;/);
+  assert.match(fade, /color-mix\(in srgb, var\(--seam\) 14%, transparent\) 20%/);
+  assert.match(fade, /var\(--seam\) calc\(62% \+ \d+% \* var\(--day\)\)/);
+  assert.match(fade, /var\(--ground, var\(--ink\)\) calc\(76% \+ \d+% \* var\(--day\)\)/);
   // The haze is mixed against the plates' navy, not the black ground
   const haze = css.match(/\.band-haze \{([^}]*)\}/)?.[1] ?? "";
   assert.match(haze, /#0e1d31/);

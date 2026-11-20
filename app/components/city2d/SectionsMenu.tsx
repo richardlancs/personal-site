@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, type MouseEvent } from "react";
 import { listed } from "../../sections/registry";
-import { focusAnchor, isPlainClick } from "./jump";
+import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { useSection } from "./useSection";
 
 // The Sections menu under its button in the top bar (TopBar.tsx): every
@@ -54,7 +54,7 @@ export default function SectionsMenu() {
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(bar);
+    observer.observe(bar, { box: "border-box" });
     // The screen's height matters too (a phone turned, the toolbar)
     window.addEventListener("resize", measure);
     return () => {
@@ -68,7 +68,7 @@ export default function SectionsMenu() {
       <ul>
         {listed.map((s) => (
           <li key={s.id}>
-            <Link href={s.href} onClick={go(s.href)} className="glass" aria-current={s.id === here ? "location" : undefined}>
+            <Link href={jumpHref(s.href)} onClick={go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? "location" : undefined}>
               {s.title}
               {s.id === here && <span className="sections-menu-here" aria-hidden="true" />}
             </Link>

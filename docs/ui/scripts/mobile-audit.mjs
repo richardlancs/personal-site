@@ -1,6 +1,6 @@
 // The mobile audit: the one-page city (`/`) and each of its anchors (/#about,
 // /#projects, /#skills, /#experience, /#interests, /#contact), the Sections
-// menu, the weather display, the metro line and the résumé dialog, at
+// menu, the weather display, the progress line and the résumé dialog, at
 // phone, tablet, desktop and phone-landscape sizes, against a production
 // build. Headless Chrome with touch emulation and
 // emulated safe-area insets (CDP Emulation.setSafeAreaInsetsOverride, so
@@ -27,20 +27,22 @@
 // - tiny-text: visible text under 12px
 // - unsafe: a control or text (fixed ones anywhere, the rest sideways)
 //   under an emulated safe-area inset, or out of the viewport (the top
-//   bar and the metro line are checked again at the foot of the page)
+//   bar and the progress line are checked again at the foot of the page)
 // - fit: an open menu, slip or dialog taller or wider than the safe
 //   viewport, or one with more content than room that can't scroll
 // - chain: an open menu or slip that scrolls but lets the scroll run on to
 //   the page behind it (touch scroll gesture, CDP)
 // - clipped: a button's label cut off by its own box (200% text)
-// - covers: the metro line (fixed in the margin, from 97rem) lying
-//   over the page's words or controls, at the top, middle and foot
+// - covers: the progress line (fixed in the margin, from 97rem) lying
+//   over the page's words or controls, at the top, middle and foot; and,
+//   in the top bar (below 97rem), the section's name ("03 / 06 ·
+//   Projects") running into the bar's name, time and weather or keys
 // - tap: a tap on a main action that didn't do its job
 // Warnings (listed, not failures): body text under 16px on phones, :hover
 // rules outside @media (hover: hover), and backdrop-filtered elements on
 // screen during a scroll on a phone (a number, for comparing).
 import { mkdirSync, writeFileSync } from "node:fs";
-import { stations } from "../../../app/sections/registry.ts";
+import { pageSections } from "../../../app/sections/registry.ts";
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3202", out = "mobile-audit-out"] = process.argv.slice(2);
@@ -51,7 +53,7 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 // ROUTES=/,/#contact and ONLY=320,844x390 narrow a run while working on something
 // `/` and every anchor on it, the stations' and their subsections' (Skills)
-const routes = [...new Set(stations.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]))].filter(
+const routes = [...new Set(pageSections.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]))].filter(
   (r) => !process.env.ROUTES || process.env.ROUTES.split(",").includes(r),
 );
 if (!routes.includes("/") || routes.length < 2) console.log(`note: auditing ${routes.join(", ") || "nothing"}`);
@@ -73,6 +75,8 @@ const profiles = [
   { name: "1024p", width: 1024, height: 1366, touch: true, insets: PAD },
   { name: "1024l", width: 1024, height: 768, touch: true, insets: PAD },
   { name: "1440", width: 1440, height: 900, touch: false, insets: NONE },
+  // The progress line in the margin (from 97rem): its labelled points
+  { name: "1600", width: 1600, height: 1000, touch: false, insets: NONE },
   { name: "844x390", width: 844, height: 390, touch: true, phone: true, insets: PHONE_LAND },
   { name: "667x375", width: 667, height: 375, touch: true, phone: true, insets: NONE },
   // 200% text: the root font doubled (the site sizes its text in rem), so
@@ -84,7 +88,7 @@ const profiles = [
 const SHOT_SIZES = new Set(["320", "390", "844x390", "768"]);
 const SHOT_PAGES = new Set(["/", "/#projects", "/#contact"]);
 // The fixed things checked again at the foot of the page
-const FIXED = [".top-bar", ".metro-line"];
+const FIXED = [".top-bar", ".progress-line"];
 
 const findings = [];
 const warnings = [];
@@ -111,7 +115,7 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   const vh = height;
   const root = scope ? document.querySelector(scope) : document;
   const empty = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
-  // A scope that isn't on this screen (the metro line is hidden on phones)
+  // A scope that isn't on this screen (the margin's line shows from 97rem)
   if (!root || (scope && !root.checkVisibility())) return empty;
   const describe = (el) => {
     const id = el.id ? `#${el.id}` : "";
@@ -330,18 +334,24 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   return out;
 };
 
-// The metro line over the page: any word or control of the page (not the
-// line's own, nor the top bar's) under the line's box. It shows only
-// where the right margin holds it (from 97rem), so it must never lie over
-// the column.
+// The progress line over the page: any word or control of the page (not
+// the line's own, nor the top bar's) under the line's box, where it is
+// fixed in the right margin (from 97rem); it must never lie over the
+// column. Below 97rem it is part of the top bar (a 3px line along its
+// foot): then the bar's section name must not run into the bar's other
+// parts.
 const covers = () => {
-  const line = document.querySelector(".metro-line");
-  if (!line || !line.checkVisibility()) return [];
+  const out = [];
+  const box = (el) => el && el.checkVisibility() && el.getBoundingClientRect();
+  const meets = (a, b) => a && b && a.width > 0 && b.width > 0 && a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
+  const here = box(document.querySelector(".top-bar-here"));
+  if (here) for (const sel of [".top-bar-name", ".top-bar .rh", ".top-bar-end"]) if (meets(here, box(document.querySelector(sel)))) out.push(`the bar's section name runs into ${sel}`);
+  const line = document.querySelector(".progress-line");
+  if (!line || !line.checkVisibility() || getComputedStyle(line).position !== "fixed") return out;
   const parts = [line, ...line.querySelectorAll("*")].filter((e) => e.checkVisibility({ opacityProperty: true, visibilityProperty: true })).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);
   const hit = (r) => parts.some((q) => r.left < q.right - 0.5 && r.right > q.left + 0.5 && r.top < q.bottom - 0.5 && r.bottom > q.top + 0.5);
-  const out = [];
   const label = (el) => `${el.tagName.toLowerCase()}${[...el.classList].slice(0, 2).map((c) => `.${c}`).join("")} "${(el.innerText || el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 24)}"`;
-  const skip = (el) => el.closest(".metro-line, .top-bar, [popover]:not(:popover-open), script, style, noscript, .sr-only") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+  const skip = (el) => el.closest(".progress-line, .top-bar, [popover]:not(:popover-open), script, style, noscript, .sr-only") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
   for (const el of document.body.querySelectorAll("a[href], button, input, select, summary")) {
     if (skip(el)) continue;
     if (hit(el.getBoundingClientRect())) out.push(`control ${label(el)}`);
@@ -450,13 +460,13 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
     try {
     await visit(page, route);
     file(profile, route, "", await page.evaluate(measure, { insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
-    // The metro line over the page, where this anchor lands
-    for (const d of await page.evaluate(covers)) report("covers", where, `the metro line lies over ${d}`);
+    // The progress line over the page, where this anchor lands
+    for (const d of await page.evaluate(covers)) report("covers", where, d.startsWith("the bar") ? d : `the progress line lies over ${d}`);
     // Fixed things again at the foot of the page
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await page.waitForTimeout(300);
     for (const scope of FIXED) file(profile, route, `scrolled ${scope}`, await page.evaluate(measure, { scope, insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
-    for (const d of await page.evaluate(covers)) report("covers", `${where} [foot]`, `the metro line lies over ${d}`);
+    for (const d of await page.evaluate(covers)) report("covers", `${where} [foot]`, d.startsWith("the bar") ? d : `the progress line lies over ${d}`);
     if (SHOTS && !profile.text && SHOT_SIZES.has(profile.name) && SHOT_PAGES.has(route)) {
       await page.evaluate(() => scrollTo(0, 0));
       await page.waitForTimeout(400);
@@ -587,7 +597,7 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
 
   // Taps on the main actions (phones and tablets): each is a jump down the
   // one page, so each must land on its anchor with the station on screen
-  if (profile.touch && !profile.text) {
+  if ((profile.touch || profile.name === "1600") && !profile.text) {
     const where = `${profile.name} taps`;
     const landed = async (hash, what) => {
       await page.waitForFunction((h) => location.hash === h, hash, { timeout: 5000 }).catch(() => {});
@@ -623,23 +633,12 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       await press(profile, page.locator("#places-menu").getByRole("link", { name: /Experience/ }).first());
       await landed("#experience", "the menu's Experience");
       if (await page.evaluate(() => !!document.querySelector("#places-menu:popover-open"))) report("tap", where, "the menu stayed open after choosing a section");
-      // The hero's list of stations: its last stop
+      // The progress line (labelled links from 97rem): a point takes you there
       await visit(page, "/");
-      const index = page.locator(".station-index a.glass").last();
-      if (await index.isVisible()) {
-        const href = await index.getAttribute("href");
-        await index.scrollIntoViewIfNeeded();
-        await press(profile, index);
-        await landed(href.slice(href.indexOf("#")), `the list of stations' ${href}`);
-      }
-      // The metro line (shown from 97rem, always open): a stop takes you there
-      const stop = page.locator(".metro-line a.metro-stop").first();
-      if (await page.locator(".metro-line").isVisible()) {
-        if (!(await stop.isVisible())) report("tap", where, "the metro line's stops didn't show");
-        else {
-          await press(profile, page.locator(".metro-line").getByRole("link", { name: /Contact/ }));
-          await landed("#contact", "the metro line's Contact");
-        }
+      const point = page.locator(".progress-line a.progress-point").first();
+      if (await page.locator(".progress-line").isVisible() && (await point.isVisible())) {
+        await press(profile, page.locator(".progress-line").getByRole("link", { name: /Contact/ }));
+        await landed("#contact", "the progress line's Contact");
       }
     } catch (e) {
       report("tap", where, String(e.message).split("\n")[0]);

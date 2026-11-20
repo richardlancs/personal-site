@@ -14,3 +14,10 @@ export function focusAnchor(href: string) {
   const hash = href.split("#")[1];
   document.getElementById(hash || "home")?.focus({ preventScroll: Boolean(hash) });
 }
+
+// Where a list's link to a section points: home is the top of the page, so
+// "/#home", a jump in place rather than a fresh load of "/" (and still a
+// plain link with JavaScript off); every other section its own anchor
+export function jumpHref(href: string) {
+  return href === "/" ? "/#home" : href;
+}
