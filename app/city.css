@@ -303,7 +303,9 @@ button.text-link,
 
 .rh-time {
   display: inline-block;
-  min-width: 3.4em;
+  /* As wide as the widest time with its AM/PM ("10:00 AM", 4.27em), and
+     its blank the same, so nothing after it moves when the clock arrives */
+  min-width: 4.3em;
   text-align: end;
   font-weight: 500;
 }
@@ -363,7 +365,7 @@ button.text-link,
 }
 
 .rh-blank-time {
-  width: 3.4em;
+  width: 4.3em;
 }
 
 .rh-blank-icon {
@@ -372,9 +374,10 @@ button.text-link,
   border-radius: 50%;
 }
 
+/* The temperature's own width (.rh-temp's min-width), so the condition
+   after it doesn't move when the reading arrives */
 .rh-blank-temp {
-  width: 2.4em;
-  margin-right: 0.7em;
+  width: 2.9em;
 }
 
 .rh-blank-condition {
@@ -871,7 +874,9 @@ a[data-resume][data-opening] {
 .station-title {
   margin-top: 0.5rem;
   color: var(--text);
-  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  /* Capped at 13vw so a long title stays whole on one line at 320px with
+     large text, as the name is */
+  font-size: min(clamp(2.25rem, 6vw, 3.75rem), 13vw);
   font-weight: 700;
 }
 
@@ -939,7 +944,9 @@ a[data-resume][data-opening] {
   margin-top: 1.25rem;
   color: var(--cyan);
   font-family: var(--font-display);
-  font-size: 1.5rem;
+  /* 1.5rem, capped at 9vw so it fits a 320px screen at 200% text; 9vw is
+     still 24px or more from 267px wide */
+  font-size: min(1.5rem, 9vw);
   font-weight: 600;
   letter-spacing: 0.06em;
 }
