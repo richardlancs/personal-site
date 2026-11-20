@@ -2,7 +2,7 @@
 // over every daylight and weather (4 x 5 = 20 skies), wide and on a phone.
 // The ?sky= preview is `next dev` only (CityDriver.tsx), so run it there:
 //   npx next dev -p 3101
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3101] [skies=rain-night,…] [sizes=1440x900,390x844]
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3101] [skies=rain-night,…] [sizes=1440x900,1600x900,390x844]  (positional: base, then skies, then sizes; "" for the default skies)
 //
 // The method is panel-contrast.mjs's: two photographs of each screen, every
 // word see-through, then magenta. The pixels that differ are the letters;
@@ -33,7 +33,8 @@ const WEATHERS = ["clear", "cloudy", "rain", "snow", "neutral"];
 const DAYLIGHTS = ["dawn", "day", "dusk", "night"];
 // Dawn and dusk at their middle, where the grade is strongest
 const skies = skyArg ? skyArg.split(",") : WEATHERS.flatMap((w) => DAYLIGHTS.map((d) => `${w}-${d}-0.5`));
-const sizes = (sizeArg || "1440x900,390x844").split(",").map((s) => {
+// 1600 wide too: the metro line shows only from 97rem (1552px)
+const sizes = (sizeArg || "1440x900,1600x900,390x844").split(",").map((s) => {
   const [width, height] = s.split("x").map(Number);
   return { name: s, width, height };
 });

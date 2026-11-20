@@ -33,7 +33,7 @@
 // - chain: an open menu or slip that scrolls but lets the scroll run on to
 //   the page behind it (touch scroll gesture, CDP)
 // - clipped: a button's label cut off by its own box (200% text)
-// - covers: the metro line (fixed, folded or open in the margin) lying
+// - covers: the metro line (fixed in the margin, from 97rem) lying
 //   over the page's words or controls, at the top, middle and foot
 // - tap: a tap on a main action that didn't do its job
 // Warnings (listed, not failures): body text under 16px on phones, :hover
@@ -133,12 +133,16 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     }
     return false;
   };
-  // Fixed, or in the top layer (an open popover or dialog): measured
-  // against the screen, not the page
+  // Fixed, the sticky top bar (it stays at the top while the page scrolls
+  // under it), or in the top layer (an open popover or dialog): measured
+  // against the screen, not the page, and only against its own layer (the
+  // page's words scrolled under the bar aren't the bar's neighbours).
+  // Other sticky things (a project's screenshot column) stay in the page.
   const layerOf = (el) => {
     for (let e = el; e; e = e.parentElement) {
       if (e.matches(":popover-open, dialog[open]")) return e;
-      if (getComputedStyle(e).position === "fixed") return e;
+      const position = getComputedStyle(e).position;
+      if (position === "fixed" || (position === "sticky" && e.matches(".top-bar"))) return e;
     }
     return null;
   };
@@ -327,9 +331,9 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
 };
 
 // The metro line over the page: any word or control of the page (not the
-// line's own, nor the top bar's) under the line's box. It sits in the
-// right margin when there's room and folds to a pill when there isn't, so
-// it must never lie over the column. Closed, as a visitor first sees it.
+// line's own, nor the top bar's) under the line's box. It shows only
+// where the right margin holds it (from 97rem), so it must never lie over
+// the column.
 const covers = () => {
   const line = document.querySelector(".metro-line");
   if (!line || !line.checkVisibility()) return [];
@@ -587,7 +591,14 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
     const where = `${profile.name} taps`;
     const landed = async (hash, what) => {
       await page.waitForFunction((h) => location.hash === h, hash, { timeout: 5000 }).catch(() => {});
-      await page.waitForTimeout(900); // a smooth scroll's glide
+      // A smooth scroll's glide: down the whole one-page site it takes about
+      // 1.5 s, so wait until the page has stopped moving (up to 4 s)
+      for (let i = 0, last = -1, still = 0; i < 40 && still < 3; i++) {
+        await page.waitForTimeout(100);
+        const y = await page.evaluate(() => scrollY);
+        still = y === last ? still + 1 : 0;
+        last = y;
+      }
       const at = await page.evaluate((h) => {
         const el = document.getElementById(h.slice(1));
         if (!el) return null;
@@ -621,12 +632,7 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
         await press(profile, index);
         await landed(href.slice(href.indexOf("#")), `the list of stations' ${href}`);
       }
-      // The metro line: folded to its pill, it opens, then a stop takes you there
-      const pill = page.locator(".metro-line .metro-pill");
-      if (await pill.isVisible()) {
-        await press(profile, pill);
-        await page.waitForTimeout(300);
-      }
+      // The metro line (shown from 97rem, always open): a stop takes you there
       const stop = page.locator(".metro-line a.metro-stop").first();
       if (await page.locator(".metro-line").isVisible()) {
         if (!(await stop.isVisible())) report("tap", where, "the metro line's stops didn't show");

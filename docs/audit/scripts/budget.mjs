@@ -23,17 +23,18 @@ const dir = process.argv[2] || ".next";
 
 // ---------- The limits ----------
 
-// PROVISIONAL: the old site's largest per-page initial-JS budget (the
-// park's pages, before the one-page city; its last reading was 201,103 on
-// /projects). The lead tightens it to about 5% over a real measurement of
-// the city's `/`.
-const HOME_JS_LIMIT = 210_000;
-// PROVISIONAL: the old site's total-CSS budget (last reading 16,788), to
-// be tightened the same way.
-const TOTAL_CSS_LIMIT = 18_000;
-// PROVISIONAL: the old site's total-JS budget (last reading 531,993, the
-// 3D world included); it is the whole build's, not only what `/` loads.
-const TOTAL_JS_LIMIT = 558_000;
+// The home page's initial JS may be no larger than the park site's home
+// was (the plan's rule): 200,848, measured 19 November 2026 by building
+// 63d31e1 (the last park commit) with the same dependencies and this
+// file's predecessor (initial JS of index.html). The city's `/` measured
+// 198,092 then (finish pass), so this is about 1.4% headroom: growth past
+// the old home is a decision, not an accident.
+const HOME_JS_LIMIT = 200_848;
+// About 5% over the city's measurement (9,646, finish pass, 19 November 2026)
+const TOTAL_CSS_LIMIT = 10_100;
+// About 5% over the city's measurement (203,727, the whole build's JS
+// except the résumé viewer's, finish pass, 19 November 2026)
+const TOTAL_JS_LIMIT = 214_000;
 
 const budgets = {
   homeInitialJs: HOME_JS_LIMIT,
