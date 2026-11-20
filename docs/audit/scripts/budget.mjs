@@ -1,44 +1,59 @@
 // Performance budgets for a production build (run `npm run build` first).
 // Fails (exit 1) when the built site grows past them, so growth is a
-// decision rather than an accident. The numbers are bytes, gzip -9 unless
-// marked raw; the baseline they were set from is in docs/audit/performance.md.
+// decision rather than an accident. The numbers are bytes, gzip -9; the
+// baseline they were set from is in docs/audit/performance.md.
 //
 //   node docs/audit/scripts/budget.mjs [.next]
 //
-// - initial JS of each page: the scripts its HTML loads before anything
-//   else (the 3D world is not among them: it loads after the page)
-// - the largest chunk (the 3D world: three.js, React Three Fiber, scenes)
+// The site is one page, `/` (the Shanghai city: six stations, painted
+// bands, no 3D). What's checked:
+// - no three.js in anything `/` loads: its HTML's scripts, the chunks its
+//   client components need (the route's client reference manifest), and
+//   every chunk those name for loading later (followed until there are no
+//   more). three.js is found by its renderer's name, `WebGLRenderer`.
+// - initial JS of `/`: the scripts its HTML loads before anything else
 // - all JS and all CSS in the build, except the résumé viewer's
-// - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS, loaded only
-//   when the résumé is opened: on its own budget, so it can't hide growth
-//   in what every visit downloads (and the world stays the largest chunk)
-import { readdirSync, readFileSync, statSync } from "node:fs";
+// - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS,
+//   loaded only when the résumé is opened: on its own budget, so it can't
+//   hide growth in what every visit downloads
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
 const dir = process.argv[2] || ".next";
+
+// ---------- The limits ----------
+
+// PROVISIONAL: the old site's largest per-page initial-JS budget (the
+// park's pages, before the one-page city; its last reading was 201,103 on
+// /projects). The lead tightens it to about 5% over a real measurement of
+// the city's `/`.
+const HOME_JS_LIMIT = 210_000;
+// PROVISIONAL: the old site's total-CSS budget (last reading 16,788), to
+// be tightened the same way.
+const TOTAL_CSS_LIMIT = 18_000;
+// PROVISIONAL: the old site's total-JS budget (last reading 531,993, the
+// 3D world included); it is the whole build's, not only what `/` loads.
+const TOTAL_JS_LIMIT = 558_000;
+
 const budgets = {
-  // Baselines: 436854f (before the audit's motion and scene work) / the
-  // audit's commit 7 / feature/richmond-hill-weather (Richmond Hill weather
-  // and daylight, rain and snow, the remodelled vegetation's shaders, the
-  // corner display: about 12 KB gzip of the world chunk, 6 KB of page JS).
-  // Limits keep about 5% headroom over the last. Loading rain and snow on
-  // demand was tried: their own code is 2.5 KB and the split cost every
-  // visit 1.8 KB, so they stay in the world chunk.
-  // Then (phase-scene-chunks) each place but the park became its own chunk
-  // (world3d/sceneChunks.ts): the world chunk, with the park, went from
-  // 308,149 to 270,844; all JS from 520,935 to 531,993, the five chunks'
-  // own runtime and what they now hold apart. The largest-chunk limits
-  // drop to keep that saving; the total keeps 5% for the places' dressing.
-  pageInitialJs: 210_000, // 193,785 / 194,150 / 199,980 / 201,103 (projects, the largest)
-  largestChunkGzip: 285_000, // 287,831 / 288,428 / 300,650 / 270,844
-  largestChunkRaw: 1_055_000, // 1,056,413 / 1,058,023 / 1,090,438 / 1,004,949
-  totalJs: 558_000, // 492,642 / 492,141 / 510,283 / 531,993
-  totalCss: 18_000, // 11,654 / 15,552 / 16,788
+  homeInitialJs: HOME_JS_LIMIT,
+  totalJs: TOTAL_JS_LIMIT,
+  totalCss: TOTAL_CSS_LIMIT,
   // feature/baby-blue-glass-resume: pdfjs-dist 5.4.624's legacy build
   // (141,641), its worker (301,558) and the viewer (4,726)
   resumeJs: 470_000, // 447,925
   resumeCss: 2_500, // 1,915
 };
+
+// ---------- The build ----------
+
+const die = (message) => {
+  console.error(`budget: ${message}`);
+  process.exit(2);
+};
+if (!existsSync(`${dir}/static`)) die(`no ${dir}/static: run \`npm run build\` first (or pass the build folder)`);
+const homeHtml = `${dir}/server/app/index.html`;
+if (!existsSync(homeHtml)) die(`no prerendered home page at ${homeHtml}: is \`/\` still static, and was the build a production build?`);
 
 const gz = (file) => gzipSync(readFileSync(file), { level: 9 }).length;
 const walk = (d, out = []) => {
@@ -53,37 +68,64 @@ const walk = (d, out = []) => {
 const files = walk(`${dir}/static`);
 // pdf.js and its worker name these; so does the viewer that drives them
 const isResume = (f) => /WorkerMessageHandler|PDFWorker/.test(readFileSync(f, "utf8"));
-const allJs = files.filter((f) => f.endsWith(".js")).map((f) => ({ f, raw: statSync(f).size, gz: gz(f), resume: isResume(f) }));
+const allJs = files.filter((f) => f.endsWith(".js")).map((f) => ({ f, gz: gz(f), resume: isResume(f) }));
 const js = allJs.filter((c) => !c.resume);
 const allCss = files.filter((f) => f.endsWith(".css")).map((f) => ({ f, gz: gz(f), resume: readFileSync(f, "utf8").includes(".resume-lock") }));
 const css = allCss.filter((c) => !c.resume);
-const largest = js.reduce((a, b) => (b.raw > a.raw ? b : a));
+
+// ---------- What `/` loads ----------
+
+// A chunk's path under the build folder, from however it's written
+// ("/_next/static/chunks/a.js", "static/chunks/a.js")
+const chunkPath = (ref) => `${dir}/${ref.replace(/^\/?_next\//, "").replace(/^\//, "")}`;
+const html = readFileSync(homeHtml, "utf8");
+const initial = [...new Set([...html.matchAll(/<script[^>]*\ssrc="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]))];
+if (!initial.length) die(`${homeHtml} loads no /_next/static scripts: has the HTML's form changed? (this script reads <script src="/_next/static/…">)`);
+const preloaded = [...html.matchAll(/<link[^>]*rel="preload"[^>]*as="script"[^>]*href="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]);
+const manifest = `${dir}/server/app/page_client-reference-manifest.js`;
+const fromManifest = existsSync(manifest) ? [...readFileSync(manifest, "utf8").matchAll(/"\/?(?:_next\/)?(static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]) : [];
+if (!existsSync(manifest)) console.log(`note: no ${manifest}; checking only the HTML's scripts and what they name`);
+
+// Follow every chunk a loaded chunk names, until there are no new ones
+const reached = new Map(); // path -> how it's reached
+const queue = [];
+const add = (ref, how) => {
+  const p = chunkPath(ref);
+  if (reached.has(p) || !existsSync(p)) return;
+  reached.set(p, how);
+  queue.push(p);
+};
+for (const ref of initial) add(ref, "initial");
+for (const ref of [...preloaded, ...fromManifest]) add(ref, "page");
+while (queue.length) {
+  const p = queue.shift();
+  for (const m of readFileSync(p, "utf8").matchAll(/static\/chunks\/[\w.-]+\.js/g)) add(m[0], "on demand");
+}
+
+const THREE = /WebGLRenderer/; // also isWebGLRenderer, which minifying keeps
+const withThree = [...reached].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
+
 const measured = {
-  largestChunkGzip: largest.gz,
-  largestChunkRaw: largest.raw,
+  homeInitialJs: initial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
   totalJs: js.reduce((a, b) => a + b.gz, 0),
   totalCss: css.reduce((a, b) => a + b.gz, 0),
   resumeJs: allJs.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
   resumeCss: allCss.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
 };
 
-// Each prerendered page's own scripts
-const pages = walk(`${dir}/server/app`).filter((f) => f.endsWith(".html") && !/_global-error|_not-found/.test(f));
-const perPage = {};
-for (const page of pages) {
-  const html = readFileSync(page, "utf8");
-  const srcs = [...new Set([...html.matchAll(/<script src="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]))];
-  perPage[page.slice(`${dir}/server/app/`.length)] = srcs.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0);
-}
-measured.pageInitialJs = Math.max(...Object.values(perPage));
+// ---------- The table ----------
 
 let failed = false;
+console.log(`${"".padEnd(4)} ${"budget".padEnd(18)} ${"gzip bytes".padStart(10)}   limit`);
 for (const [key, limit] of Object.entries(budgets)) {
   const value = measured[key];
   const ok = value <= limit;
   failed ||= !ok;
-  console.log(`${ok ? "ok  " : "OVER"} ${key.padEnd(18)} ${String(value).padStart(9)} / ${limit}`);
+  console.log(`${ok ? "ok  " : "OVER"} ${key.padEnd(18)} ${String(value).padStart(10)} / ${limit}`);
 }
-console.log("initial JS per page (gzip):", JSON.stringify(perPage));
-console.log("largest chunk:", largest.f.split("/").pop());
+const noThree = withThree.length === 0;
+failed ||= !noThree;
+console.log(`${noThree ? "ok  " : "FAIL"} ${"no three.js on /".padEnd(18)} ${String(withThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${reached.size} that / can load`);
+for (const [p, how] of withThree) console.log(`       ${p.slice(dir.length + 1)} (${how})`);
+console.log(`/ loads ${initial.length} scripts at first, ${reached.size - initial.length} more with its components or on demand`);
 process.exit(failed ? 1 : 0);
