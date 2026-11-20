@@ -110,7 +110,7 @@ test("a scene's lights are exactly its DISTRICT_LIGHTS spot lights, through Scen
   assert.match(common, /const count = DISTRICT_LIGHTS\[id\];\s*if \(spots\.length !== count\) throw/);
   // The scene contract
   assert.match(common, /export type SceneProps = \{[^}]*still: boolean;[^}]*\}/);
-  assert.match(common, /export type Mover = \{ object: THREE\.Object3D; update\(t: number\): void; park\(\): void \};/);
+  assert.match(common, /export type Mover = \{ object: THREE\.Object3D; update\(t: number\): void; park\(\): void; resting\?\(t: number\): boolean \};/);
   assert.match(read(`${city}/City3D.tsx`), /<Scene active=\{active === id\} quality=\{tier\} navigate=\{navigate\} still=\{still\} \/>/);
 });
 
