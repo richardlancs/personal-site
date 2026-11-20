@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, type MouseEvent } from "react";
 import { listed } from "../../sections/registry";
 import { focusAnchor, isPlainClick } from "./jump";
-import { useStation } from "./useStation";
+import { useSection } from "./useSection";
 
 // The Sections menu under its button in the top bar (TopBar.tsx): every
 // listed section from the registry, by its title, with a section's parts
@@ -12,8 +12,8 @@ import { useStation } from "./useStation";
 // an entry is a jump to its anchor: choosing one closes the menu and moves
 // focus to that section (each can take focus, tabIndex -1), so the
 // keyboard carries on from there (jump.ts). A click with a modifier key
-// or the middle button is left to the browser. The station you're at
-// (useStation.ts) is marked: aria-current="location", and a filled dot as
+// or the middle button is left to the browser. The section you're at
+// (useSection.ts, from the progress line) is marked: aria-current="location", and a filled dot as
 // well as the chosen glass, so not by colour alone.
 //
 // It also measures the bar it sits in: the bar's real height (--bar-h,
@@ -29,7 +29,7 @@ import { useStation } from "./useStation";
 // flip it back and forth mid-scroll.
 export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
-  const here = useStation();
+  const here = useSection();
   // Close, then hand focus to the section
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;

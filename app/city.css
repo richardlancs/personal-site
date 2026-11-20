@@ -93,9 +93,13 @@ html {
 }
 
 /* Jumps down the page glide, unless still view is on or motion isn't
-   welcome (the still script sets data-still before the first paint) */
+   welcome (the still script sets data-still before the first paint).
+   Not the landing: a deep link (/#experience) opens at its section at
+   once, rather than gliding there from the top, so the page and its
+   progress line arrive together (ProgressLine.tsx sets data-landed once
+   the page has loaded) */
 @media (prefers-reduced-motion: no-preference) {
-  :root[data-still="off"] {
+  :root[data-still="off"][data-landed] {
     scroll-behavior: smooth;
   }
 }
@@ -199,9 +203,20 @@ button.text-link,
      "cover" in layout.tsx lets the page run under them) */
   padding: max(0.75rem, env(safe-area-inset-top)) max(1.25rem, env(safe-area-inset-right)) 0.75rem max(1.25rem, env(safe-area-inset-left));
   border-bottom: 1px solid var(--line);
+}
+
+/* The bar's frosted ground, on a layer of its own under its contents: a
+   backdrop-filter on the bar itself would make it the containing block
+   of the progress line, which is fixed in the margin on wide screens */
+.top-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgb(8 9 12 / 0.86);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+  pointer-events: none;
 }
 
 .top-bar-name {
@@ -516,7 +531,8 @@ a[data-resume][data-opening] {
 
 /* Very large text on a phone: a bar taller than a quarter of the screen
    (SectionsMenu.tsx sets data-bar-tall) stops being sticky and scrolls
-   away with the top of the page, so it never covers what you're reading.
+   away with the top of the page, so it never covers what you're reading
+   (and the progress line along its foot goes with it).
    Jumps then stop at the very top, and the menu opens under its button
    where the button is on the page. */
 :root[data-bar-tall] {
@@ -524,7 +540,7 @@ a[data-resume][data-opening] {
 }
 
 :root[data-bar-tall] .top-bar {
-  position: static;
+  position: relative;
 }
 
 :root[data-bar-tall] .sections-menu {
@@ -960,6 +976,253 @@ a[data-resume][data-opening] {
     /* The backing centred on the band's bottom edge: half its height
        (the name's line, its padding, its edge) above it */
     margin-top: calc(-0.5 * (var(--name-size) * 1.1 + 2 * var(--backing-pad) + 2px));
+  }
+}
+
+/* ---------- The progress line (components/city2d/ProgressLine.tsx) ----------
+   One line with a point per section. Its fill is one transform of
+   --progress (0 to 5, written on .progress-line from the scroll), so the
+   line never asks for layout as the page moves. Below 97rem it is a 3px
+   line along the foot of the top bar, full width, with six small ticks:
+   the links and their labels are hidden (visibility, so they can't be
+   focused), only the track and the ticks drawn. From 97rem it stands in
+   the right margin where the screen holds it whole, on its own near-solid
+   ground with a hairline, so its labels never sit on a painting; there
+   each point is a 44px link. */
+
+.progress-line {
+  position: absolute;
+  inset: auto 0 -1px;
+  height: 3px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.progress-rail {
+  position: absolute;
+  inset: 0;
+}
+
+.progress-track {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  visibility: visible;
+  background: var(--line);
+}
+
+.progress-fill {
+  position: absolute;
+  inset: 0;
+  background: var(--cyan);
+  transform-origin: left center;
+  transform: scaleX(calc(var(--progress, 0) / 5));
+  will-change: transform;
+}
+
+.progress-points {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A tick at each section's place along the bar: the first flush with the
+   left edge, the last with the right */
+.progress-points > li {
+  position: absolute;
+  bottom: 0;
+  left: calc((100% - 3px) * var(--i) / 5);
+}
+
+.progress-point {
+  display: block;
+}
+
+.progress-label {
+  display: none;
+}
+
+.progress-dot {
+  display: block;
+  width: 3px;
+  height: 9px;
+  border-radius: 1px;
+  visibility: visible;
+  background: var(--muted);
+}
+
+.progress-point[data-lit] .progress-dot {
+  background: var(--cyan);
+}
+
+/* Where you are: a taller tick (its shape as well as its colour) */
+.progress-point[aria-current="location"] .progress-dot {
+  height: 13px;
+}
+
+/* The section you're at in words, beside the name, on screens whose
+   margin can't hold the labelled line. The bar is full on one row up to
+   about 52rem (the name, the time and weather, three keys), so it starts
+   at 53rem, as its number alone until 64rem. Quiet words, not a
+   control. */
+.top-bar-here {
+  display: none;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.top-bar-here-number {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 53rem) and (max-width: 96.99rem) {
+  .top-bar-name {
+    margin-right: 0;
+  }
+
+  .top-bar-here {
+    display: block;
+    margin-right: auto;
+  }
+}
+
+/* Where the bar is short of room, the number alone */
+@media (min-width: 53rem) and (max-width: 63.99rem) {
+  .top-bar-here-name {
+    display: none;
+  }
+}
+
+/* From 97rem (the 72rem column plus two margins of 12.5rem; the line is
+   at most 10.5rem with its gap to the edge): the labelled line, fixed at
+   the bottom right, clear of a home bar and rounded corners */
+@media (min-width: 97rem) {
+  .progress-line {
+    position: fixed;
+    inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
+    z-index: 30;
+    height: auto;
+    max-width: 10.5rem;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .progress-rail {
+    position: relative;
+    inset: auto;
+    max-height: calc(100svh - var(--bar-h) - 2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.5rem 0.75rem 0.5rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: rgb(8 9 12 / 0.94);
+  }
+
+  /* The line runs through the middle of the rings, from the first to the
+     last: 22px into the first and last 44px rows */
+  .progress-track {
+    inset: calc(0.5rem + 22px) auto calc(0.5rem + 22px) calc(0.5rem + 0.5rem + 5px);
+    width: 2px;
+  }
+
+  .progress-fill {
+    transform-origin: center top;
+    transform: scaleY(calc(var(--progress, 0) / 5));
+  }
+
+  .progress-points {
+    position: relative;
+    inset: auto;
+    display: grid;
+  }
+
+  .progress-points > li {
+    position: static;
+  }
+
+  .progress-point {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 44px;
+    padding: 0 0.5rem;
+    color: var(--muted);
+    text-decoration: none;
+  }
+
+  .progress-label {
+    display: inline;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  /* A ring on the line; lit once reached, filled and ringed again where
+     you are */
+  .progress-dot,
+  .progress-point[aria-current="location"] .progress-dot {
+    flex: none;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--muted);
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  .progress-point[data-lit] .progress-dot {
+    border-color: var(--cyan);
+    background: var(--ink);
+  }
+
+  .progress-point[aria-current="location"] .progress-dot {
+    border-color: var(--cyan);
+    background: var(--cyan);
+    box-shadow:
+      0 0 0 3px var(--ink),
+      0 0 0 4px var(--cyan);
+  }
+}
+
+@media (min-width: 97rem) and (hover: hover) {
+  .progress-point:hover .progress-label {
+    color: var(--text);
+  }
+}
+
+/* Where you are: a bolder, brighter label (not by colour alone) */
+.progress-point[aria-current="location"] .progress-label {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* The lock: the fill eases onto (or off) a point over 0.12s, only at that
+   moment (ProgressLine sets data-snap for it), and the point reached
+   pulses once, 1 to 1.35 to 1 over 0.18s. Only where motion is welcome:
+   in still view and with reduced motion the fill steps and nothing
+   pulses. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .progress-line[data-snap] .progress-fill {
+    transition: transform 0.12s cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  :root:not([data-still="on"]) .progress-point[data-pulse] .progress-dot {
+    animation: progress-pulse 0.18s ease-out;
+  }
+}
+
+@keyframes progress-pulse {
+  50% {
+    scale: 1.35;
   }
 }
 

@@ -139,7 +139,7 @@ test("a tall top bar stops being sticky, and jumps still clear it", () => {
   assert.match(menu, /data-bar-tall/);
   assert.match(menu, /innerHeight \* 0\.25/);
   const css = read("app/city.css");
-  assert.match(css, /:root\[data-bar-tall\] \.top-bar \{[^}]*position: static/);
+  assert.match(css, /:root\[data-bar-tall\] \.top-bar \{[^}]*position: relative/, "not sticky (relative: the progress line rides its foot)");
   assert.match(css, /:root\[data-bar-tall\] \{[^}]*--scroll-offset:/);
   // A jump stops below the bar while it's sticky, and at the top once it isn't
   assert.match(css, /\nhtml \{[^}]*scroll-padding-top: var\(--scroll-offset\)/);
@@ -150,8 +150,10 @@ test("smooth scrolling only where motion is welcome", () => {
   const css = read("app/city.css");
   const smooth = [...css.matchAll(/([^{}]+)\{[^{}]*scroll-behavior: smooth/g)];
   assert.equal(smooth.length, 1, "one smooth-scrolling rule");
-  assert.match(smooth[0][1], /:root\[data-still="off"\]/);
-  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root\[data-still="off"\] \{\s*scroll-behavior: smooth/);
+  assert.match(smooth[0][1], /:root\[data-still="off"\]\[data-landed\]/);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root\[data-still="off"\]\[data-landed\] \{\s*scroll-behavior: smooth/);
+  // Landing on a deep link is a jump, not a glide: smooth only once loaded
+  assert.match(read("app/components/city2d/ProgressLine.tsx"), /setAttribute\("data-landed", ""\)/);
 });
 
 test("the 404 and error notice points back to the start, in the city's style", () => {

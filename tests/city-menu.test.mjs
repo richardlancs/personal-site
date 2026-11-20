@@ -7,15 +7,6 @@ import { test } from "node:test";
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 
-test("useStation: one IntersectionObserver for the page, disconnected when no one reads it", () => {
-  const src = read("app/components/city2d/useStation.ts");
-  assert.equal((src.match(/new IntersectionObserver\(/g) ?? []).length, 1);
-  assert.match(src, /\.disconnect\(\)/);
-  assert.match(src, /useSyncExternalStore\(/);
-  assert.match(src, /getServerSnapshot = \(\): SectionId => "home"/);
-  assert.match(read("app/components/city2d/SectionsMenu.tsx"), /useStation\(\)/);
-});
-
 test("the Sections menu marks where you are and leaves modified clicks to the browser", () => {
   const src = read("app/components/city2d/SectionsMenu.tsx");
   assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
