@@ -4,14 +4,15 @@ import CopyButton from "./CopyButton";
 
 const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
-// The last station, the riverside promenade: one wide panel, calm and open.
-// The addresses are its strong element, each written large as a mailto link
+// The last station, the riverside promenade: one panel, calm and open, at
+// most 44rem wide (the width of what it holds, not the whole column). The
+// addresses are its strong element, each written large as a mailto link
 // with its own Copy key (CopyButton.tsx, the one client piece); the GitHub,
 // LinkedIn and résumé links sit beneath. A cyan edge along the top is the
 // only mark. The page's colophon is at its foot, not here.
 export default function Contact() {
   return (
-    <div className="contact mt-10 rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-5 py-8 sm:px-10 sm:py-10">
+    <div className="contact mt-10 max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-5 py-8 sm:px-10 sm:py-10">
       <ul aria-label="Email" className="flex flex-col gap-10">
         {profile.emails.map((email) => (
           <li key={email.address} className="flex flex-col gap-3">

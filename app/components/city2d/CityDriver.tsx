@@ -42,7 +42,7 @@ export default function CityDriver() {
     // first values and data-sky-ready can land in the same style pass, and
     // the haze faded in from nothing on every load
     if (!("skyReady" in html.dataset)) requestAnimationFrame(() => requestAnimationFrame(() => (html.dataset.skyReady = "")));
-  },[now, preset, phase, progress]);
+  }, [now, preset, phase, progress]);
 
   return null;
 }

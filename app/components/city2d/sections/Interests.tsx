@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 
 // The interests station, on the neon shopping street: one card per
@@ -7,10 +7,12 @@ import { interests, type Interest } from "../../../data/portfolio";
 // cyan, magenta and amber like the street's signs, and a small line mark
 // for its sport or game in the same colour. The marks are decoration only.
 
-const edges = [
-  { edge: "border-t-cyan", mark: "text-cyan" },
-  { edge: "border-t-magenta", mark: "text-magenta" },
-  { edge: "border-t-amber", mark: "text-amber" },
+// The one list of accents, in order: the edge, the mark and the edge's
+// glow (city.css, .interest-card, from --card-accent) all come from it
+const accents = [
+  { colour: "cyan", edge: "border-t-cyan", mark: "text-cyan" },
+  { colour: "magenta", edge: "border-t-magenta", mark: "text-magenta" },
+  { colour: "amber", edge: "border-t-amber", mark: "text-amber" },
 ];
 
 // Line marks on a 24-unit grid, drawn in the card's accent (currentColor)
@@ -49,11 +51,12 @@ export default function Interests() {
   return (
     <ul role="list" className="interests mt-10 grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-4">
       {interests.map((interest, i) => {
-        const { edge, mark } = edges[i % edges.length];
+        const { colour, edge, mark } = accents[i % accents.length];
         return (
           <li
             key={interest.scene}
             className={`interest-card flex flex-col gap-3 rounded-[var(--radius-lg)] border border-line border-t-2 ${edge} bg-panel p-6`}
+            style={{ "--card-accent": `var(--${colour})` } as CSSProperties}
           >
             <svg
               aria-hidden="true"

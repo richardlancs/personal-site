@@ -4,13 +4,15 @@ import { useEffect, useRef, useState } from "react";
 
 // One address's Copy key and what it last did. The status line is always in
 // the page and drawn on screen (not screen-reader-only), so the result is
-// both seen and read out; it clears after two seconds. `data-copied` puts
-// the key in the glass "chosen" state while "Copied" shows.
+// both seen and read out. "Copied" clears after 2.5 seconds; a failure,
+// which asks the visitor to do something, stays until the next press.
+// `data-copied` puts the key in the glass "chosen" state while "Copied"
+// shows.
 export default function CopyButton({ value }: { value: string }) {
   const [status, setStatus] = useState<{ text: string; failed?: boolean } | null>(null);
   const reset = useRef<number | undefined>(undefined);
 
-  // Leaving the page within the two seconds cancels the reset
+  // Leaving the page before then cancels the reset
   useEffect(() => () => window.clearTimeout(reset.current), []);
 
   async function copy() {
@@ -20,11 +22,12 @@ export default function CopyButton({ value }: { value: string }) {
       if (!navigator.clipboard?.writeText) throw new Error("No clipboard");
       await navigator.clipboard.writeText(value);
       setStatus({ text: "Copied" });
+      reset.current = window.setTimeout(() => setStatus(null), 2500);
     } catch {
-      // Clipboard blocked: say so; the address is still there to select
+      // Clipboard blocked: say so, and keep saying it; the address is
+      // still there to select
       setStatus({ text: "Couldn't copy. Select the address to copy it by hand.", failed: true });
     }
-    reset.current = window.setTimeout(() => setStatus(null), 2500);
   }
 
   const copied = status !== null && !status.failed;

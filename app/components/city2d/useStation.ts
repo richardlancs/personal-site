@@ -26,7 +26,8 @@ function start() {
     const el = document.getElementById(anchor(s.id));
     if (el) byElement.set(el, s.id);
   }
-  // A band one pixel tall, a third of the way down the screen
+  // A line (no height: the edges count as crossing it) a third of the way
+  // down the screen
   observer = new IntersectionObserver(
     (entries) => {
       for (const entry of entries) {

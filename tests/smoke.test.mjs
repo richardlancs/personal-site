@@ -8,7 +8,7 @@
 // Without SMOKE_URL these tests are skipped, so `npm test` stays offline.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { profile, projects, experience, interests } from "../app/data/portfolio.ts";
+import { about, profile, projects, experience, interests, skillGroups } from "../app/data/portfolio.ts";
 import { listed, siteUrl, stations } from "../app/sections/registry.ts";
 
 const base = process.env.SMOKE_URL?.replace(/\/$/, "");
@@ -22,8 +22,9 @@ async function get(path) {
   }
   return cache.get(path);
 }
-// The HTML escapes apostrophes and ampersands; compare like with like
-const html = (text) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;");
+// The HTML escapes apostrophes, ampersands, quotes and angle brackets;
+// compare like with like
+const html = (text) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 // One station's HTML on `/`: from its <section id> to the next station's
 // (or the foot of the page)
@@ -125,6 +126,38 @@ test("every contact address and the résumé are in the contact station", { skip
   const body = await station("contact");
   for (const email of profile.emails) assert.ok(body.includes(`mailto:${email.address}`), `contact: ${email.address}`);
   assert.ok(body.includes(`href="${profile.resumeUrl}"`), "contact: résumé");
+});
+
+test("every station's content is in its own station's HTML, not just its titles (review m-11)", { skip }, async () => {
+  const where = { about: await station("about"), projects: await station("projects"), experience: await station("experience"), interests: await station("interests"), contact: await station("contact") };
+  const has = (id, text, what) => assert.ok(where[id].includes(html(text)), `${id}: ${what}: ${text}`);
+  for (const entry of about) {
+    has("about", entry.heading, "heading");
+    for (const point of entry.points) has("about", point, "point");
+  }
+  for (const project of projects) {
+    has("projects", project.summary, `${project.title} summary`);
+    if (project.role) has("projects", project.role, `${project.title} role`);
+    for (const feature of project.features) has("projects", feature, `${project.title} feature`);
+    for (const contribution of project.contributions ?? []) has("projects", contribution, `${project.title} contribution`);
+    has("projects", project.technologies.join(", "), `${project.title} technologies`);
+    for (const shot of project.screenshots ?? []) has("projects", shot.alt, `${project.title} screenshot`);
+    assert.ok(where.projects.includes(`href="${project.githubUrl}"`), `projects: ${project.title} code`);
+    if (project.liveUrl) assert.ok(where.projects.includes(`href="${project.liveUrl}"`), `projects: ${project.title} demo`);
+  }
+  for (const group of skillGroups) {
+    has("projects", group.category, "skill group");
+    for (const skill of group.skills) has("projects", skill, `${group.category} skill`);
+  }
+  for (const stop of experience) {
+    has("experience", stop.organization, `${stop.role} organization`);
+    for (const highlight of stop.highlights) has("experience", highlight, `${stop.role} highlight`);
+  }
+  for (const interest of interests) has("interests", interest.description, `${interest.name} description`);
+  for (const email of profile.emails) {
+    has("contact", email.label, "email label");
+    has("contact", email.address, "email address");
+  }
 });
 
 test("the copy feedback is a live region drawn on screen, not screen-reader-only", { skip }, async () => {

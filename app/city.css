@@ -572,7 +572,15 @@ a[data-resume][data-opening] {
   position: relative;
   /* The ground the band fades into at its foot */
   --ground: var(--ink);
+  /* A station's band's height (below): its aspect, capped */
+  --band-h: min(calc(100vw * 9 / 21), 52vh);
   background: var(--ground);
+}
+
+@media (max-width: 767px) {
+  .station {
+    --band-h: min(75vw, 52vh);
+  }
 }
 
 /* The grounds alternate down the line: About, Experience and Contact sit
@@ -611,6 +619,12 @@ a[data-resume][data-opening] {
   .band {
     aspect-ratio: 4 / 3;
   }
+}
+
+/* Below the first station the painting is a header, not an interruption:
+   at most about half the screen (the home band keeps its 70vh) */
+.band:not([data-home]) {
+  max-height: 52vh;
 }
 
 /* The home band's plate, painted before hydration: the head script
@@ -675,13 +689,15 @@ a[data-resume][data-opening] {
   pointer-events: none;
 }
 
-/* The foot of the band fades into the ground the station's words sit on */
+/* The foot of the band fades into the ground the station's words sit on,
+   solid for its last tenth or so (the station's header starts there,
+   below: words on the ground, never on the painting) */
 .band::before {
   content: "";
   position: absolute;
   inset: 70% 0 0;
   z-index: 2;
-  background: linear-gradient(to bottom, transparent, var(--ground, var(--ink)));
+  background: linear-gradient(to bottom, transparent, var(--ground, var(--ink)) 62%);
   pointer-events: none;
 }
 
@@ -770,11 +786,14 @@ a[data-resume][data-opening] {
 .band-precip {
   width: 100%;
   height: 100%;
+  /* Rain and snow thin out before the solid foot, where words begin */
+  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 88%);
+  mask-image: linear-gradient(to bottom, #000 78%, transparent 88%);
 }
 
-/* Rain: a soft band of light along the foot (the lowest fifth) */
+/* Rain: a soft band of light along the foot, above its solid ground */
 .band-sheen {
-  inset: 80% 0 0;
+  inset: 76% 0 12%;
   z-index: 2;
   background: linear-gradient(
     to bottom,
@@ -819,9 +838,18 @@ a[data-resume][data-opening] {
 }
 
 .station-body {
+  position: relative;
   width: min(72rem, 100%);
   margin-inline: auto;
-  padding: clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-right)) clamp(4rem, 10vw, 7.5rem) max(1.25rem, env(safe-area-inset-left));
+  padding: clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-right)) clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-left));
+}
+
+/* A station's header starts in its band's foot, on the solid part of the
+   fade (the last 11% or so of the band; this rises 8% of it), so the
+   painting heads the station without a stretch of empty ground under it */
+.station-body:not(.station-body-home) {
+  margin-top: calc(-0.08 * var(--band-h));
+  padding-top: 0.25rem;
 }
 
 /* The stop: its number and name, small signage type (muted: accents only
@@ -977,6 +1005,15 @@ a[data-resume][data-opening] {
   margin-top: 2.25rem;
 }
 
+/* Phones: the Sections menu, at the top of every screen, lists the same
+   stops and marks where you are; the hero's two actions cover the first
+   steps. Here the list would be ten keys before any content. */
+@media (max-width: 479px) {
+  .station-index {
+    display: none;
+  }
+}
+
 .station-index ol {
   display: flex;
   flex-wrap: wrap;
@@ -1093,6 +1130,7 @@ ol.metro-stops::before {
 
 /* Short points, each with an amber dash in the margin (About) */
 .points {
+  max-width: 65ch;
   list-style: none;
   padding: 0;
 }
@@ -1118,24 +1156,22 @@ ol.metro-stops::before {
   top: calc(1.375rem - 1px);
 }
 
-/* Interests: a faint glow along each card's accent edge (decoration only;
-   gone under prefers-contrast, below) */
-.interest-card:nth-child(3n + 1) {
-  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--cyan) 60%, transparent);
+/* Interests: a faint glow along each card's accent edge, in the card's
+   own accent (--card-accent, set from Interests.tsx's one list;
+   decoration only; gone under prefers-contrast, below) */
+.interest-card {
+  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--card-accent, var(--cyan)) 60%, transparent);
 }
 
-.interest-card:nth-child(3n + 2) {
-  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--magenta) 60%, transparent);
-}
-
-.interest-card:nth-child(3n + 3) {
-  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--amber) 60%, transparent);
-}
-
-/* The foot of the page: the colophon */
+/* The foot of the page: the colophon, on Contact's ground carried across
+   the full width (the background reaches past the 72rem column; the clip
+   keeps it from widening the page), so no seam runs under the last station */
 .page-foot {
   width: min(72rem, 100%);
   margin-inline: auto;
+  background: var(--ink-2);
+  box-shadow: 0 0 0 100vmax var(--ink-2);
+  clip-path: inset(0 -100vmax);
   padding: 2rem max(1.25rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
   border-top: 1px solid var(--line);
   color: var(--muted);

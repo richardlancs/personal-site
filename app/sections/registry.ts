@@ -102,7 +102,7 @@ export const stations: Section[] = [
     listed: true,
     district: "nanjing-road",
     station: "Nanjing Road",
-    districtLine: "The shopping street after dark.",
+    districtLine: "The shopping street, signs and all.",
     scene: { id: "arcade", focus: "cabinet" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
