@@ -227,9 +227,9 @@ function build(quality: Quality): Built {
   const st = T.supertalls;
   type Look = { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone; skin: string; warm: number };
   const SUPERTALLS: [Maker, readonly [number, number], Look][] = [
-    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#86a3bf", glass: "#9ec2e2", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan", skin: "#a9c6e0", warm: 0.26 }],
+    [buildWorldFinancialCenter, st.worldFinancialCenter, { body: surface({ color: "#7a93ad" }), base: "#86a3bf", glass: "#9ec2e2", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan", skin: "#a9c6e0", warm: 0.2 }],
     [buildJinMao, st.jinMao, { body: surface({ color: "#9aa2ad" }), base: "#9ba6b3", glass: "#6e94bc", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold", skin: "#b9c4cf", warm: 0.3 }],
-    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#8eafcb", glass: "#a8cdea", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan", skin: "#b2cde2", warm: 0.36 }],
+    [buildShanghaiTower, st.shanghaiTower, { body: surface({ color: "#86a0b8" }), base: "#8eafcb", glass: "#a8cdea", lit: litSurface({ color: "#a9c0d4", tone: "cyan", strength: 1.0 }), tone: "cyan", skin: "#b2cde2", warm: 0.28 }],
   ];
   for (const [builder, [x, z], c] of SUPERTALLS) {
     const landmark = builder(detail, { body: c.body, glass: windowMaterial({ base: c.base, glass: c.glass }), lit: c.lit });
@@ -378,7 +378,7 @@ function build(quality: Quality): Built {
   }
   mesh(merge(walls), windowMaterial({ base: STONE, glass: "#5d87b3" }), "podiums", !mobile);
   // floodlit after dark, warm, as the paintings light them
-  mesh(merge(stone), surface({ color: STONE, grime: 0.25, relief: { kind: "stone", bay: 1.2, floor: 0.72, strength: 0.4 }, glow: { tone: "#ffd9a8", strength: 0.07 } }), "podium-stone", !mobile);
+  mesh(merge(stone), surface({ color: STONE, grime: 0.25, relief: { kind: "stone", bay: 1.2, floor: 0.72, strength: 0.4 }, glow: { tone: "#ffd9a8", strength: 0.1 } }), "podium-stone", !mobile);
   mesh(merge(roofs), surface({ color: ROOF, snow: true }), "podium-roofs");
   // the ribbons lit warm from inside after dark (the kit's glass over the
   // window grid, clear by day)
@@ -465,12 +465,15 @@ function build(quality: Quality): Built {
     const a = az + tg.range(-3, 3);
     const p = polar(tg.range(9.8, 13.5), a);
     const s = tg.range(1.8, 2.6);
-    // lower in front of a screen, so its focus pose sees all of it
-    plazaTrees.push({ x: p.x, z: p.z, s: clearOfScreens(a, 9) ? s : s * 0.6 });
+    // none in front of a screen, so it shows whole from the eye and from
+    // its focus pose
+    if (clearOfScreens(a, 10)) plazaTrees.push({ x: p.x, z: p.z, s });
   }
   for (let az = -60; az <= 60; az += 8) {
-    const p = polar(tg.range(15, 22), az + tg.range(-3, 3));
-    plazaTrees.push({ x: p.x, z: p.z, s: tg.range(2.4, 3.2) });
+    const a = az + tg.range(-3, 3);
+    const p = polar(tg.range(15, 22), a);
+    const s = tg.range(2.4, 3.2);
+    if (clearOfScreens(a, 12)) plazaTrees.push({ x: p.x, z: p.z, s });
   }
   // low trees inside the ring, under its deck from the eye
   for (let az = -84; az <= 84; az += 7) {
