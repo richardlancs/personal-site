@@ -52,6 +52,8 @@ const BACK_LIP = 0.08; // how far the back stands out round the face
 const BACK_DEPTH = 0.12;
 const FACE_Z = 0.07;
 const EDGE_NIGHT = 0.45; // the edge's brightness at night, of the full neon's
+const PANEL_NIGHT = 0.5; // a plain panel's, of the full neon's
+const PANEL_DAY = "#e6e4de"; // a plain panel by day: pale, unlit
 
 // The face's canvas: its long side 1024 px (512 on mobile)
 function canvasSize(w: number, h: number): [number, number] {
@@ -103,11 +105,11 @@ function faceGeometry(w: number, h: number, kind: MarkKind): THREE.BufferGeometr
 
 // What holds the board: its back, and the arms (blade) or legs and rail
 // (roof); a panel's, a thin rim between its faces and the blade's arms
-function frameGeometry(w: number, h: number, kind: MarkKind): THREE.BufferGeometry {
+function frameGeometry(w: number, h: number, kind: MarkKind, arms = true): THREE.BufferGeometry {
   const lip = Math.min(0.02, Math.min(w, h) * 0.04);
   const list: [number, number, number, number, number, number][] = [kind === "panel" ? [w + lip * 2, h + lip * 2, FACE_Z * 1.4, 0, 0, 0] : [w + BACK_LIP * 2, h + BACK_LIP * 2, BACK_DEPTH, 0, 0, 0]];
   const bar = Math.max(0.04, Math.min(w, h) * 0.05);
-  if (kind === "panel") {
+  if (kind === "panel" && arms) {
     const reach = 0.3;
     for (const y of [h * 0.35, -h * 0.35]) list.push([reach, bar * 0.6, bar * 0.6, -(w / 2 + lip + reach / 2), y, 0]);
   }
@@ -151,9 +153,9 @@ function glowAlong(w: number, h: number, color: string, strength: number) {
   return out;
 }
 
-function assemble(w: number, h: number, kind: MarkKind, tone: Tone, face: THREE.Material, glow: number | null) {
+function assemble(w: number, h: number, kind: MarkKind, tone: Tone, face: THREE.Material, glow: number | null, arms = true) {
   const group = new THREE.Group();
-  const frame = new THREE.Mesh(frameGeometry(w, h, kind), surface({ color: FRAME }));
+  const frame = new THREE.Mesh(frameGeometry(w, h, kind, arms), surface({ color: FRAME }));
   frame.name = "sign-frame";
   const faceMesh = new THREE.Mesh(faceGeometry(w, h, kind), face);
   faceMesh.name = "sign-face";
@@ -270,35 +272,13 @@ function paintMarks(seed: number, tone: string, vertical: boolean) {
   };
 }
 
-// A panel's face: its tone, brightest (near white) in a soft band down its
-// middle, a little deeper at its ends: a lit box seen from the street
-function paintPanel(tone: string, vertical: boolean) {
-  return (g: CanvasRenderingContext2D, w: number, h: number) => {
-    const c = new THREE.Color(tone);
-    const css = (k: number) => `rgb(${Math.round(Math.min(1, c.r * k) * 255)},${Math.round(Math.min(1, c.g * k) * 255)},${Math.round(Math.min(1, c.b * k) * 255)})`;
-    const across = vertical ? g.createLinearGradient(0, 0, w, 0) : g.createLinearGradient(0, 0, 0, h);
-    across.addColorStop(0, css(0.82));
-    across.addColorStop(0.5, css(1.12));
-    across.addColorStop(1, css(0.82));
-    g.fillStyle = across;
-    g.fillRect(0, 0, w, h);
-    const along = vertical ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
-    along.addColorStop(0, "rgba(0,0,0,0.12)");
-    along.addColorStop(0.2, "rgba(255,255,255,0.08)");
-    along.addColorStop(0.8, "rgba(255,255,255,0.08)");
-    along.addColorStop(1, "rgba(0,0,0,0.12)");
-    g.fillStyle = along;
-    g.fillRect(0, 0, w, h);
-  };
-}
-
-export function buildMarkSign(o: { seed: number; tone: Tone; w: number; h: number; kind: MarkKind }): THREE.Group {
+// `arms` (a panel's; true by default): false for a panel flat on a wall
+export function buildMarkSign(o: { seed: number; tone: Tone; w: number; h: number; kind: MarkKind; arms?: boolean }): THREE.Group {
   if (o.kind === "panel") {
-    // no detail at all: a small canvas does
-    const vertical = o.h > o.w;
-    const [pw, ph] = vertical ? [16, 64] : [64, 16];
-    const face = screenMaterial(paintPanel(SCENE_TONES[o.tone], vertical), { w: pw, h: ph, key: `panel:${o.tone}:${vertical ? "v" : "h"}`, glow: 1.6 });
-    const { group } = assemble(o.w, o.h, "panel", o.tone, face, 2.2);
+    // no picture at all: the neon itself, half strength (a broad panel
+    // blooms softly, not white), pale by day as the day plates paint them
+    const face = neonMaterial(`#${new THREE.Color(SCENE_TONES[o.tone]).multiplyScalar(PANEL_NIGHT).getHexString()}`, { dayColor: PANEL_DAY });
+    const { group } = assemble(o.w, o.h, "panel", o.tone, face, 2.2, o.arms ?? true);
     group.name = `panel:${o.seed}`;
     return group;
   }

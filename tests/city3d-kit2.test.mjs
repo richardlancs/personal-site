@@ -171,7 +171,7 @@ test("polished paving: dry shine at night only, as long fine strokes, never doub
   assert.equal(polished.material.fragmentShader, wet.material.fragmentShader, "one program");
   const frag = polished.material.fragmentShader;
   assert.match(frag, /max\(uStrength \* mix\(0\.35, 1\.0, uNight\) \* mix\(1\.0, uWet, uGate\), uPolish \* uNight\)/);
-  assert.match(polished.material.vertexShader, /max\(D - 1\.0, 0\.25 \* D\)/);
+  assert.match(polished.material.vertexShader, /max\(D - mix\(1\.0, 0\.35, uFine\), 0\.25 \* D\)/);
   const paving = wetPaving({ w: 4, d: 8, mode: "fake", lights, polish: 0.8, glow: { tone: "#ffc98a", strength: 0.1 }, snow: true });
   assert.equal(paving.mesh.material, surface({ color: "#4b4f57", wet: 1, grime: 0.3, glow: { tone: "#ffc98a", strength: 0.1 }, snow: true }));
   const streaks = paving.mesh.children.find((c) => c.name === "streaks:paving");
@@ -218,11 +218,9 @@ test("lattice day shade: two periods and a warm sunlit share; cleared by its own
   assert.match(noComments(read(`${kit}/surface.ts`)), /sh = max\(a1, a2\);/);
 });
 
-test("the plain panel: a glowing rectangle, both faces, no edge, no bars, a tiny canvas", () => {
+test("the plain panel: the neon itself (no picture, no bars), both faces, no edge, pale by day", () => {
   const src = noComments(read(`${kit}/signs.ts`));
   assert.match(src, /export type MarkKind = SignKind \| "panel";/);
-  assert.match(src, /if \(o\.kind === "panel"\)[\s\S]*paintPanel\(/);
+  assert.match(src, /if \(o\.kind === "panel"\) \{\s*const face = neonMaterial\([^;]*\{ dayColor: PANEL_DAY \}\);/);
   assert.match(src, /if \(kind !== "panel"\) group\.add\(edge\);/);
-  const panel = src.slice(src.indexOf("function paintPanel"), src.indexOf("export function buildMarkSign"));
-  assert.doesNotMatch(panel, /fillText|strokeRect|arc\(/);
 });

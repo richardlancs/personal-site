@@ -42,6 +42,8 @@ const nanjingRoad: SceneDef = {
   // the day plate's sun: high, from the right and a little behind the
   // eye, so the old stone on the left is sunlit and the glass in shade
   sun: [60, 75, 30],
+  // and the glass side in the shade, lit a little by the sky and the stone
+  bounce: { color: "#c9d8e8", strength: 0.22 },
 };
 
 export default nanjingRoad;

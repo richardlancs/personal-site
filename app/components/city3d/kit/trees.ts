@@ -26,7 +26,7 @@ const PLANE_BARK = "#8a7e6c";
 // program, "tree:canopy", whatever the options):
 // - `underGlow`: that light's tone and strength (#ffb867 × 0.55 by default)
 // - `leaves` (0 by default .. 1): the masses broken into leaf clusters, a
-//   light tip and a dark gap each, in world space (about 0.6 m), fading
+//   light tip and a dark gap each, in world space (about 0.4 m), fading
 //   out where they'd be finer than a pixel: a leafier tree, no triangles
 export type CanopyOptions = { underGlow?: { tone: string; strength: number }; leaves?: number };
 function canopyMaterial(o: CanopyOptions = {}) {
@@ -53,9 +53,9 @@ function canopyMaterial(o: CanopyOptions = {}) {
           `#include <color_fragment>
 float kitLeaf = 0.0;
 if (uLeaves > 0.0) {
-  // leaf clusters: cells about 0.06 across, each a lit dome round a seeded
-  // point, dark between
-  vec3 q = vKitWorld / 0.06;
+  // leaf clusters: cells about 0.04 across, each a lit dome round a seeded
+  // point, darker between
+  vec3 q = vKitWorld / 0.04;
   vec3 i = floor(q);
   vec3 f = fract(q);
   float best = 9.0;
@@ -65,8 +65,8 @@ if (uLeaves > 0.0) {
     best = min(best, length(f - c));
   }
   float fade = 1.0 - smoothstep(0.25, 0.8, length(fwidth(q)));
-  kitLeaf = (smoothstep(0.75, 0.2, best) - 0.45) * uLeaves * fade;
-  diffuseColor.rgb *= 1.0 + kitLeaf * 0.55;
+  kitLeaf = (smoothstep(0.8, 0.15, best) - 0.5) * uLeaves * fade;
+  diffuseColor.rgb *= 1.0 + kitLeaf * 0.4;
 }`,
         )
         .replace(

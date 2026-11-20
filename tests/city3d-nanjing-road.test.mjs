@@ -99,9 +99,16 @@ test("the tuning: carved, floodlit stone facades with windows lit by floors, gla
   assert.match(src, /relief: \{ kind: "stone", bay: BAY, floor: FLOOR/);
   assert.match(src, /"windows:lit"/);
   assert.doesNotMatch(src, /buildTowers\(\[\.\.\.left/);
-  // the shopfronts: kit glass over a lit room, their light spilling onto the paving
+  // the shopfronts: kit glass over a lit room, their light on the polished
+  // paving (the kit's polish and line pools, no flat glass laid on it)
   assert.match(src, /glassMaterial\(\{ tint: "#55697a"/);
-  assert.match(src, /"shops:sheen"/);
+  assert.doesNotMatch(src, /"shops:sheen"/);
+  assert.match(src, /polish: 0\.\d+/);
+  assert.match(src, /\{ from: \[XL \+ 0\.25, 0\.16, l1\], to: \[XL \+ 0\.25, 0\.16, l0\]/);
+  // the floodlight from the foot, softer up the walls; plain glowing panels
+  assert.match(src, /const FLOODLIT = \{ tone: "#[0-9a-f]{6}", strength: 0\.\d+, base: [\d.]+, fade: [\d.]+ \};/);
+  assert.match(src, /kind: "panel"/);
+  assert.doesNotMatch(src, /kind: "blade"|kind: "board"/);
   assert.match(src, /useDayShade\("nanjing-road", SHADE, active\)/);
   const { scenes } = await import("../app/components/city3d/scenes.ts");
   assert.ok(scenes["nanjing-road"].sun[0] > 0, "the sun from the right, as the day plate");

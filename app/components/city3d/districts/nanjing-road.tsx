@@ -93,14 +93,20 @@ const SPOT_R = 6; // z 3.4
 const LAMPS_R = Array.from({ length: 40 }, (_, i) => 13.6 - i * 1.7).filter((z) => z > FAR_Z + 2);
 
 // The colours, from the plates
-const PAVING = "#c2b6a4";
-const STONE = "#cdbb9c";
+const PAVING = "#cdc4b6";
+const STONE = "#d8ccb6";
 const FRAME = "#2a2d33";
 const BODY = "#14161c"; // the cabinet: the interface's soft black, a little lifted
-const FLOOD = "#ffb873";
-const STEEL = "#8c99a6"; // the right side's frames and spandrels // the warm light on the old stone after dark
+const FLOOD = "#ffb873"; // the warm light on the old stone after dark, from the foot
+const STEEL = "#8c99a6"; // the right side's frames and spandrels
 const TRAM_GREEN = "#2f5a40";
 const TRAM_CREAM = "#d6c9a2";
+
+// The old stone after dark: floodlit from the foot, softer up the walls,
+// so the lit windows and the shops carry the warmth (the plates')
+const FLOODLIT = { tone: "#f2d6b4", strength: 0.2, base: 0.15, fade: 1.6 };
+// The plates' trees: bright yellow-green, leafy, lit warm from below
+const TREES = { greens: ["#9cbb48", "#87ad3e", "#b0c85a", "#7aa23c"], underGlow: { tone: "#ffc070", strength: 0.95 }, leaves: 0.8 };
 
 // A tone at a fraction of its strength
 const dim = (tone: SceneTone, k: number) => `#${new THREE.Color(SCENE_TONES[tone]).multiplyScalar(k).getHexString()}`;
@@ -281,13 +287,13 @@ function build(quality: Quality): Built {
         new THREE.CylinderGeometry(0.08, 0.09, 0.22, 10).translate(0, 1.98, 0),
         new THREE.ConeGeometry(0.07, 0.2, 10).translate(0, 2.19, 0),
       ]).scale(k, k, k).translate(cx, y, cz),
-      surface({ color: STONE, grime: 0.15, glow: { tone: FLOOD, strength: 0.55 } }),
+      surface({ color: STONE, grime: 0.15, glow: { tone: FLOOD, strength: 0.4 } }),
       "dome",
     );
   }
   // (the stone and the steel, carved and floodlit; the panes)
-  mesh(merge(stoneParts), surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.8 }, glow: { tone: FLOOD, strength: 0.34 } }), "facades:stone");
-  mesh(merge(steelParts), surface({ color: STEEL, grime: 0.1, glow: { tone: FLOOD, strength: 0.12 } }), "facades:glass");
+  mesh(merge(stoneParts), surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.8 }, glow: FLOODLIT }), "facades:stone");
+  mesh(merge(steelParts), surface({ color: STEEL, grime: 0.1, glow: { tone: "#e8d2b8", strength: 0.08, base: 0.15, fade: 1.6 } }), "facades:glass");
   mesh(merge(litPanes), glowMaterial({ day: "#3d5266", night: "#f1b866" }), "windows:lit");
   mesh(merge(darkPanes), glowMaterial({ day: "#3d5266", night: "#3a3029" }), "windows:dark");
   mesh(merge(ribbonLit), glowMaterial({ day: "#8eaecb", night: "#f4c27a" }), "ribbons:lit");
@@ -309,7 +315,7 @@ function build(quality: Quality): Built {
     ]),
     // (floodlit after dark, warm, as the plates' old fronts; carved: piers,
     // a cornice, window surrounds, in the kit's relief)
-    surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: 0.34, floor: 0.28, strength: 0.75 }, glow: { tone: FLOOD, strength: 0.32 } }),
+    surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: 0.34, floor: 0.28, strength: 0.75 }, glow: FLOODLIT }),
     "arcade:front",
   );
   mesh(merge([slab(XL - A.depth, XL - 0.01, 0, 0.004, A.open0, A.open1)]), surface({ color: "#6a5f52" }), "arcade:floor");
@@ -440,23 +446,6 @@ function build(quality: Quality): Built {
     shopFront(1, z0, z1, GROUND - 0.03);
     lights.push({ x: XR - 0.03, z: (z0 + z1) / 2, w: 0.45, color: "#ffd9a0", height: 0.24 });
   }
-  // the shops' light on the polished paving before them: kit glass laid
-  // flat in three widening layers (a soft edge), catching the sky by day
-  // and holding the shops' warmth after dark
-  const sheen: THREE.BufferGeometry[] = [];
-  for (const [side, shops] of [[-1, [...shopsL, [ARCADE.open0 + 0.2, ARCADE.open1 - 0.2]]], [1, shopsR]] as const) {
-    const x0 = side < 0 ? XL : XR;
-    for (const [z0, z1] of shops) {
-      if (z0 < -24) continue;
-      // (each layer narrower along the street too, so no edge is hard)
-      [0.16, 0.3, 0.46, 0.64, 0.85].forEach((reach, i) => {
-        const x1 = x0 - side * reach;
-        const inset = Math.min(0.04 + i * 0.07, (z1 - z0) * 0.3);
-        sheen.push(new THREE.PlaneGeometry(Math.abs(x1 - x0), z1 - z0 + 0.16 - inset * 2).rotateX(-Math.PI / 2).translate((x0 + x1) / 2, 0.002 + i * 0.0005, (z0 + z1) / 2));
-      });
-    }
-  }
-  mesh(merge(sheen), glassMaterial({ tint: "#b9ae9d", opacity: 0.03, sky: 0.12, glow: { tone: "#ffb45e", strength: 0.75 } }), "shops:sheen");
   mesh(merge(rooms), glowMaterial({ day: "#38424a", night: "#f0b062" }), "shops");
   mesh(merge(counters), glowMaterial({ day: "#2a3036", night: "#a8693a" }), "shops:counters");
   mesh(merge(glazing), glassMaterial({ tint: "#55697a", opacity: 0.32, sky: 0.6, glow: { tone: "#ffb45e", strength: 0.18 } }), "shops:glass");
@@ -465,7 +454,7 @@ function build(quality: Quality): Built {
   // ---- Neon: blades out from the walls and boards flat on them, abstract
   // (bars and dots, no words), in the plates' pink, cyan and gold
   const blade = (seed: number, tone: SceneTone, side: -1 | 1, z: number, y: number, w: number, h: number) => {
-    const s = buildMarkSign({ seed, tone, w, h, kind: "blade" });
+    const s = buildMarkSign({ seed, tone, w, h, kind: "panel" });
     // the arms reach -x: toward the left wall as built, turned for the right
     const out = 0.08 + 0.3 + w / 2;
     s.position.set(side < 0 ? XL + out : XR - out, y, z);
@@ -475,7 +464,7 @@ function build(quality: Quality): Built {
     lights.push({ x: side < 0 ? XL + out : XR - out, z, w: w * 0.8, color: SCENE_TONES[tone], height: y });
   };
   const board = (seed: number, tone: SceneTone, side: -1 | 1, z: number, y: number, w: number, h: number) => {
-    const s = buildMarkSign({ seed, tone, w, h, kind: "board" });
+    const s = buildMarkSign({ seed, tone, w, h, kind: "panel", arms: false });
     s.position.set(side < 0 ? XL + 0.07 : XR - 0.07, y, z);
     s.rotation.y = side < 0 ? Math.PI / 2 : -Math.PI / 2;
     add(s);
@@ -514,6 +503,8 @@ function build(quality: Quality): Built {
     color: PAVING,
     lights: [...lights, ...LAMPS_L.map((z) => ({ x: LAMP_L + 0.1, z, w: 0.14, color: "#ffc98a", height: 0.6 })), ...LAMPS_R.map((z) => ({ x: LAMP_R - 0.1, z, w: 0.14, color: "#ffc98a", height: 0.6 }))],
     size: TIERS[quality].reflectionSize || undefined,
+    // polished stone: it carries the shops, the signs and the lamps dry, after dark
+    polish: 0.95,
   });
   add(paving.mesh);
   disposers.push(paving.dispose);
@@ -548,7 +539,7 @@ function build(quality: Quality): Built {
 
   // ---- Trees in planters between the lamps
   const treeSpots = [...LAMPS_L.map((z) => ({ x: TREE_L, z: z - 0.85, s: 0.95 })).filter((t) => t.z < CLEAR_L.trees[0] || t.z > CLEAR_L.trees[1]), ...LAMPS_R.map((z) => ({ x: TREE_R, z: z - 0.85, s: 1.0 }))].filter((t) => t.z > FAR_Z + 1);
-  const trees = buildStreetTrees(1531, treeSpots);
+  const trees = buildStreetTrees(1531, treeSpots, TREES);
   for (const t of trees) {
     geometries.push(t.geometry);
     add(t);
@@ -685,16 +676,26 @@ function build(quality: Quality): Built {
 // light their own), the arcade's cyan board on its stone, and the shops'
 // warm light spilling out over the paving
 function poolsFor(shopsL: [number, number][], shopsR: [number, number][]): GlowPool[] {
-  const near = (shops: [number, number][], z0: number, z1: number) => shops.map(([a, b]) => (a + b) / 2).filter((z) => z < z1 && z > z0);
+  const span = (shops: [number, number][], z0: number, z1: number): [number, number] => {
+    const zs = shops.flatMap(([a, b]) => [a, b]).filter((z) => z < z1 && z > z0);
+    return [Math.min(...zs), Math.max(...zs)];
+  };
+  const [l0, l1] = span(shopsL, -26, 2.6);
+  const [r0, r1] = span(shopsR, -26, 9);
   return [
-    ...LAMPS_L.filter((z, i) => z < 2 && z > -1.5 && i !== SPOT_L && i !== SPOT_L + 1).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
-    ...LAMPS_R.filter((z, i) => z < 6 && z > 1 && i !== SPOT_R).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
-    { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 } as GlowPool,
-    // (the arcade's warm room, out over the paving in front of it)
-    { pos: [XL + 0.35, 0.12, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.3, color: "#ffb866", strength: 0.9 } as GlowPool,
-    ...near(shopsL, -4.5, 2.4).map((z): GlowPool => ({ pos: [XL + 0.25, 0.18, z], reach: 0.95, color: "#ffb866", strength: 1.8 })),
-    ...near(shopsR, -4, 8).map((z): GlowPool => ({ pos: [XR - 0.25, 0.18, z], reach: 0.95, color: "#ffc47a", strength: 1.8 })),
-  ].slice(0, 12);
+    // the lamps all the way down each side: one line pool a side
+    { from: [LAMP_L + 0.1, 0.6, 2.2], to: [LAMP_L + 0.1, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
+    { from: [LAMP_R - 0.1, 0.6, 6.5], to: [LAMP_R - 0.1, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
+    // the shops' warm light out over the paving before them, down each side
+    { from: [XL + 0.25, 0.16, l1], to: [XL + 0.25, 0.16, l0], reach: 0.95, color: "#ffb866", strength: 1.5 },
+    { from: [XR - 0.25, 0.16, r1], to: [XR - 0.25, 0.16, r0], reach: 0.95, color: "#ffc47a", strength: 1.5 },
+    // the arcade's cyan board, and its warm room out over the paving
+    { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 },
+    { pos: [XL + 0.35, 0.12, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.3, color: "#ffb866", strength: 0.9 },
+    // the near lamps without a spot of their own, a little stronger
+    ...LAMPS_L.filter((z, i) => z < 2 && z > -1.5 && i !== SPOT_L && i !== SPOT_L + 1).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
+    ...LAMPS_R.filter((z, i) => z < 6 && z > 1 && i !== SPOT_R).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
+  ].slice(0, 12) as GlowPool[];
 }
 
 // By day: the trees' dappled shade over the paving, as the day plate paints it

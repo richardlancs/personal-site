@@ -83,6 +83,7 @@ attribute vec2 aStrip; // width, height above the water
 attribute vec3 aColor;
 attribute vec4 aClip;  // the surface: x0, z0, x1, z1 in the parent frame
 uniform float uStretch;
+uniform float uFine;
 varying vec2 vUv;
 varying vec3 vColor;
 varying float vLen;
@@ -100,9 +101,11 @@ void main() {
   vec2 side = vec2(-dir.y, dir.x);
   float e = max(cameraPosition.y - foot.y, 0.05);
   float h = aStrip.y;
-  // a light near the eye still streaks (at least a quarter of the way)
-  float len = clamp(D * h / (e + h) * uStretch, 0.0, max(D - 1.0, 0.25 * D));
-  float w = aStrip.x * 0.5 * (1.0 + position.y * 0.5);
+  // a light near the eye still streaks (at least a quarter of the way);
+  // polished stone's strokes run on nearer the feet
+  float len = clamp(D * h / (e + h) * uStretch, 0.0, max(D - mix(1.0, 0.35, uFine), 0.25 * D));
+  // (polished stone: a narrower stroke, hardly widening toward the eye)
+  float w = aStrip.x * 0.5 * mix(1.0 + position.y * 0.5, 0.55 + position.y * 0.1, uFine);
   vec2 xz = foot.xz + dir * (position.y * len) + side * (position.x * w);
   vec4 mvPosition = viewMatrix * vec4(xz.x, foot.y, xz.y, 1.0);
   gl_Position = projectionMatrix * mvPosition;
@@ -142,12 +145,12 @@ void main() {
   float r2 = sHash(id * 39.346 + vSeed * 11.135);
   float r3 = sHash(id * 73.156 + vSeed * 52.235);
   // each ripple a short horizontal dash, shifted and sized at random
-  float x = abs(vUv.x - (r1 - 0.5) * 0.7 * (1.0 - uFine)) / mix(mix(0.3, 1.0, r2), 0.45 + 0.2 * r2, uFine);
-  float across = 1.0 - smoothstep(0.5, 1.0, x);
-  // polished: a stroke with short breaks and a bright core down its middle
-  float dash = mix(smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(0.35, 0.6, f)), 1.0 - 0.6 * smoothstep(0.75, 0.95, f), uFine);
-  across = mix(across, across * (0.55 + 0.45 * (1.0 - smoothstep(0.0, 0.35, abs(vUv.x)))), uFine);
-  float along = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(mix(0.3, 0.45, uFine), 1.0, vUv.y));
+  // (polished stone: many fine ripples, hardly shifted, longer, so they
+  // stack into one stroke with a bright core)
+  float x = abs(vUv.x - (r1 - 0.5) * mix(0.7, 0.25, uFine)) / mix(mix(0.3, 1.0, r2), 0.55 + 0.45 * r2, uFine);
+  float across = 1.0 - smoothstep(mix(0.5, 0.2, uFine), 1.0, x);
+  float dash = smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(mix(0.35, 0.55, uFine), mix(0.6, 0.85, uFine), f));
+  float along = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(mix(0.3, 0.4, uFine), 1.0, vUv.y));
   float a = across * dash * along * mix(0.4, 1.0, r3);
   // wet: by day pale and soft, at night the lights' colours; dry polish:
   // at night only (so no switch at dusk), never doubled in rain, and as
@@ -178,10 +181,11 @@ function streakMaterial(kind: StreakKind, mode: ReflectionMode, polish = 0) {
     const m = new THREE.ShaderMaterial({
       uniforms: {
         ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
-        uStretch: { value: kind === "river" ? 1.6 : 1.1 },
+        // (polished stone holds the lights longer than wet paving's puddles)
+        uStretch: { value: kind === "river" ? 1.6 : polish > 0 ? 1.7 : 1.1 },
         uStrength: { value: mode === "planar" ? 0.45 : 1 },
         uGate: { value: kind === "river" ? 0 : 1 },
-        uDash: { value: kind === "river" ? 1.5 : polish > 0 ? 2.2 : 4 },
+        uDash: { value: kind === "river" ? 1.5 : polish > 0 ? 9 : 4 },
         uPolish: { value: polish },
         uFine: { value: polish > 0 ? 1 : 0 },
       },
