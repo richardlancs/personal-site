@@ -1982,7 +1982,8 @@ html {
   the time and weather: the scene behind shows through, blurred, so the
   panels belong to the light of the place instead of sitting on top of
   it. Soft corners, a thin bright edge, a light line along the top. (The
-  park's name tags stay cream: they're scenery, read over anything.)
+  park's name tags are clearer still, haloed words: the clear-glass block
+  at the end.)
 */
 .paper,
 .location-header,
@@ -3418,6 +3419,38 @@ a[data-resume][data-opening] {
     & .rh {
       background: rgb(14 26 40 / 0.3);
     }
+  }
+}
+
+/* The park's name tags: clear glass on every layout, as clear as the time
+   and weather's, the words carrying their own halo (slate on cream by day,
+   cream on dark after dark and at an overcast dusk) */
+.world-label {
+  border-color: rgb(255 255 255 / 0.5);
+  background-color: rgb(234 245 255 / 0.16);
+  backdrop-filter: blur(6px) saturate(1.1);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset;
+  color: var(--slate);
+  /* The time's halo, a little denser: the tags' small second line sits
+     over the darkest trees */
+  text-shadow: 0 0 1px rgb(255 249 242), 0 0 3px rgb(255 249 242 / 0.95), 0 0 6px rgb(255 249 242 / 0.85), 0 0 12px rgb(255 249 242 / 0.6);
+}
+
+.world-label .world-label-section {
+  color: var(--slate);
+}
+
+:root:has(.world3d[data-sky-daylight="night"]),
+:root:has(.world3d[data-sky-daylight="dusk"]:is([data-sky-preset="cloudy"], [data-sky-preset="rain"], [data-sky-preset="snow"])) {
+  & .world-label {
+    border-color: rgb(255 255 255 / 0.3);
+    background-color: rgb(14 26 40 / 0.24);
+    color: var(--cream);
+    text-shadow: 0 0 1px rgb(12 24 38), 0 0 3px rgb(12 24 38 / 0.9), 0 0 6px rgb(12 24 38 / 0.8), 0 0 12px rgb(12 24 38 / 0.55);
+  }
+
+  & .world-label .world-label-section {
+    color: #dbe6f1;
   }
 }
 
