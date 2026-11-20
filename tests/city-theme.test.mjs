@@ -41,11 +41,16 @@ test("every palette token in docs/city/style.md is defined in city.css with the 
 });
 
 test("glow is dropped for prefers-contrast: more", () => {
-  assert.match(read("app/city.css"), /@media \(prefers-contrast: more\)[^}]*\{[\s\S]*text-shadow:\s*none/);
+  // Within that block (it runs to the next line that closes a top-level rule)
+  const block = read("app/city.css").match(/@media \(prefers-contrast: more\) \{[\s\S]*?\n\}/)?.[0] ?? "";
+  assert.match(block, /text-shadow:\s*none/);
+  assert.match(block, /--glow-cyan: 0 0 #0000/);
 });
 
 test("no Chinese or Japanese characters in app/ source", () => {
-  const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}]/gu;
+  // The scripts, and the punctuation and fullwidth forms they bring
+  // (U+3000-303F, U+FF00-FFEF), which Unicode files under Common
+  const cjk = /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\u3000-\u303f\uff00-\uffef]/gu;
   const found = [];
   const walk = (dir) => {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -56,4 +61,47 @@ test("no Chinese or Japanese characters in app/ source", () => {
   };
   walk(`${root}app`);
   assert.deepEqual(found, []);
+});
+
+test("no theme toggle and no saved theme anywhere the site loads", () => {
+  // The park's unloaded files (globals.css, world3d, world, locations) are
+  // left out; a later task removes them
+  const skip = ["app/globals.css", "app/components/world3d", "app/components/world", "app/components/locations"];
+  const files = [];
+  const walk = (dir) => {
+    for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (skip.includes(path)) continue;
+      if (entry.isDirectory()) walk(path);
+      else if (/\.(tsx?|css)$/.test(entry.name)) files.push(path);
+    }
+  };
+  walk("app");
+  assert.ok(files.includes("app/city.css") && files.includes("app/layout.tsx"), "the walk reached the shell");
+  for (const file of files) {
+    assert.ok(!/ThemeToggle/.test(file), `${file} is a theme toggle`);
+    const text = read(file);
+    assert.doesNotMatch(text, /prefers-color-scheme|light-dark\(|data-theme/, file);
+    assert.doesNotMatch(text, /localStorage\.(get|set)Item\("theme"/, file);
+  }
+});
+
+test("the home page has one h1: the name", () => {
+  const page = read("app/page.tsx");
+  assert.equal((page.match(/<h1[\s>]/g) ?? []).length, 1);
+  assert.match(page, /<h1[^>]*>\{profile\.name\}<\/h1>/);
+});
+
+test("every colour and size the résumé viewer uses is defined by the city's stylesheet", () => {
+  // resume.css loads with the viewer, over city.css: a token only the old
+  // globals.css defined would leave the dialog without a surface or a
+  // focus ring
+  const resume = read("app/components/resume/resume.css");
+  const city = read("app/city.css");
+  const own = new Set([...resume.matchAll(/(--[a-z0-9-]+)\s*:/g)].map((m) => m[1]));
+  own.add("--total-scale-factor"); // set by pdf.js on the text layer
+  const used = new Set([...resume.matchAll(/var\((--[a-z0-9-]+)/g)].map((m) => m[1]));
+  for (const name of used) if (!own.has(name)) assert.match(city, new RegExp(`\\n\\s*${name}:`), `${name} isn't defined in city.css`);
+  // The résumé link's "on its way" state (ResumeHost.tsx) is in city.css too
+  assert.match(city, /a\[data-resume\]\[data-opening\] \{[^}]*cursor: progress/);
 });

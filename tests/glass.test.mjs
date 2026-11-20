@@ -64,11 +64,12 @@ test("glass is 44px tall, with labels in opaque --text, and a fallback without b
 
 // Every button-like control is glass, so it shares the states and the press
 test("the Sections menu's entries and the top bar's keys are glass", () => {
-  const menu = readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8").match(/<nav id="places-menu"[\s\S]*?<\/nav>/)[0];
+  const menu = readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8").match(/<nav [^>]*id="places-menu"[\s\S]*?<\/nav>/)[0];
   assert.equal((menu.match(/<Link [^>]*className="glass"/g) ?? []).length, 1, "one glass entry per listed section");
+  assert.equal((menu.match(/<Link [^>]*className="glass sections-menu-sub"/g) ?? []).length, 1, "and one per section's part (Skills)");
   assert.match(menu, /aria-current=\{pathname === s\.href \? "page" : undefined\}/, "where you are is the chosen state");
   const bar = readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8");
-  assert.match(bar, /<button type="button" popoverTarget="places-menu" className="glass">/);
+  assert.match(bar, /<button type="button" popoverTarget="places-menu" className="glass top-bar-sections">/);
 });
 
 test("the states: chosen, disabled and focus, the same on every glass control", () => {

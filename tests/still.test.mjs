@@ -38,14 +38,26 @@ test("storage that throws falls back to the system setting", () => {
   assert.equal(run({ stored: "on", reduce: false, storageThrows: true }), "off");
 });
 
-test("the page's motion keys on still view, and the toggle is in the corner", () => {
-  const css = readFileSync(`${root}app/globals.css`, "utf8");
-  for (const rule of [/:root\[data-still="on"\][^{]*\.arrive[^{]*\{\s*animation: none/, /:root\[data-still="on"\][^{]*\.world-label[^{]*\{\s*transition: none/]) assert.match(css, rule);
+test("the page's motion keys on still view, and the toggle is in the top bar", () => {
+  // The stylesheets the layout loads: city.css, and the résumé viewer's
+  const sheets = ["app/city.css", "app/components/resume/resume.css"].map((file) => [file, readFileSync(`${root}${file}`, "utf8")]);
+  const css = sheets[0][1];
+  for (const rule of [
+    /:root\[data-still="on"\] \.glass\[data-pressed\] \{\s*animation: glass-tint/,
+    /:root\[data-still="on"\] \.sections-menu:popover-open \{\s*animation: none/,
+  ])
+    assert.match(css, rule);
   // Every reduced-motion rule goes through still view (or covers a page
   // whose script didn't run), so the visitor's choice is never overruled
-  for (const block of css.split("@media (prefers-reduced-motion: reduce)").slice(1)) assert.match(block.slice(0, 200), /:root:not\(\[data-still\]\)/);
+  for (const [file, text] of sheets) {
+    const blocks = text.split("@media (prefers-reduced-motion: reduce)").slice(1);
+    assert.ok(blocks.length > 0, `${file} has reduced-motion rules`);
+    for (const block of blocks) assert.match(block.slice(0, 200), /:root:not\(\[data-still\]\)/, file);
+  }
   assert.match(readFileSync(`${root}app/layout.tsx`, "utf8"), /STILL_SCRIPT/);
-  assert.match(readFileSync(`${root}app/components/world/WorldControls.tsx`, "utf8"), /<StillViewToggle \/>/);
+  assert.match(readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8"), /<StillViewToggle \/>/);
+  // The menu's own motion is CSS only: nothing in it asks the media query
+  assert.doesNotMatch(readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8"), /prefers-reduced-motion|matchMedia/);
   // One source of truth: nothing in the world asks the media query itself
   for (const file of ["world3d/World3D.tsx", "world3d/scenes/Park.tsx", "world3d/scenes/ShakeableTrees.tsx", "locations/Notebook.tsx"])
     assert.doesNotMatch(readFileSync(`${root}app/components/${file}`, "utf8"), /prefers-reduced-motion/, file);

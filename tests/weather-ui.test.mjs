@@ -98,7 +98,7 @@ test("the display is something to read, not a control, and announces nothing on 
   // On narrow screens it takes a row of its own under the bar; it stays
   // selectable text
   const css = read("app/city.css");
-  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.top-bar \.rh \{\s*grid-row: 2;/);
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.top-bar::after \{\s*content: \"\";\s*order: 2;\s*flex-basis: 100%;[\s\S]*?\.top-bar \.rh \{\s*order: 3;/);
   const rh = css.match(/\n\.rh \{([^}]*)\}/)[1];
   assert.match(rh, /user-select: text/);
   assert.doesNotMatch(rh, /cursor: pointer/);
