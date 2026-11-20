@@ -589,8 +589,9 @@ function build(quality: Quality): Built {
       o.name = name;
       tram.add(o);
     };
-    tramMesh(green, surface({ color: TRAM_GREEN, grime: 0.25 }), "tram:body");
-    tramMesh(cream, surface({ color: TRAM_CREAM }), "tram:band");
+    // (after dark, lit by the lamps and shops either side, as painted)
+    tramMesh(green, surface({ color: TRAM_GREEN, grime: 0.25, glow: { tone: "#5f8a5c", strength: 0.32 } }), "tram:body");
+    tramMesh(cream, surface({ color: TRAM_CREAM, glow: { tone: "#c9a76a", strength: 0.35 } }), "tram:band");
     tramMesh(roof, surface({ color: "#2b2f33" }), "tram:roof");
     tramMesh(panes, glowMaterial({ day: "#26343a", night: "#f2c27a" }), "tram:windows");
     tramMesh([new THREE.CylinderGeometry(0.025, 0.025, 0.01, 12).rotateX(Math.PI / 2).translate(0, 0.12, 0.006)], neonMaterial(dim("gold", 0.6), { dayColor: "#e9dcb0" }), "tram:lamp");
