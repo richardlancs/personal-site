@@ -514,12 +514,14 @@ a[data-resume][data-opening] {
 
 /* ---------- Stations (components/city2d/Station.tsx) ----------
    The page is six stations down the line. Each opens with its district's
-   band across the full width (a dark gradient until its painting is
-   wired in), then a centred column: the stop, the heading, a line naming
-   the place, and the section. */
+   band of painting across the full width, then a centred column: the
+   stop, the heading, a line naming the place, and the section. */
 
 .station {
   position: relative;
+  /* The ground the band fades into at its foot */
+  --ground: var(--ink);
+  background: var(--ground);
 }
 
 /* It takes focus only so the Sections menu can hand focus to it */
@@ -527,15 +529,102 @@ a[data-resume][data-opening] {
   outline: none;
 }
 
+/* ---------- The band (components/city2d/DistrictBand.tsx) ----------
+   The district's day plate, its night plate over it at --city-night
+   (CityDriver.tsx writes the --city-* variables on <html>), a twilight
+   grade over both, and the lowest 30% fading into the station's ground.
+   Its height is held by aspect-ratio before any image arrives (and capped,
+   so a very wide window still shows what comes under it); the gradient
+   is what shows before the plates, and if one fails. No words on it. */
+
 .band {
+  position: relative;
+  overflow: hidden;
   width: 100%;
   aspect-ratio: 21 / 9;
+  max-height: 70vh;
   background: linear-gradient(to bottom, var(--ink-2), var(--ink));
 }
 
 @media (max-width: 767px) {
   .band {
     aspect-ratio: 4 / 3;
+  }
+}
+
+.band-plate,
+.band-noscript {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.band-plate img,
+.band-noscript {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* The night plate over the day plate; without the driver (no script),
+   the night plate alone */
+.band-night,
+.band-noscript {
+  opacity: var(--city-night, 1);
+}
+
+/* Dawn and dusk's warm grade (and none by full day or night) */
+.band::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--city-grade);
+  opacity: var(--city-grade-mix, 0);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+/* The foot of the band fades into the ground the station's words sit on */
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 70% 0 0;
+  z-index: 2;
+  background: linear-gradient(to bottom, transparent, var(--ground, var(--ink)));
+  pointer-events: none;
+}
+
+/* A plate fades in as it arrives; day and night cross-fade slowly */
+:root:not([data-still="on"]) .band-plate img {
+  animation: band-in 0.3s ease-out;
+}
+
+:root:not([data-still="on"]) .band-night,
+:root:not([data-still="on"]) .band::after {
+  transition: opacity 3s ease;
+}
+
+@keyframes band-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Still view and reduced motion: the sky changes, but nothing fades */
+:root[data-still="on"] .band-plate img,
+:root[data-still="on"] .band-night,
+:root[data-still="on"] .band::after {
+  animation: none;
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .band-plate img,
+  :root:not([data-still]) .band-night,
+  :root:not([data-still]) .band::after {
+    animation: none;
+    transition: none;
   }
 }
 
@@ -568,14 +657,73 @@ a[data-resume][data-opening] {
   font-weight: 700;
 }
 
-/* The name, the page's one h1, in the home station (capped so a long
-   word never pushes past a phone's width) */
-.station-name {
-  margin-top: 0.5rem;
+/* ---------- The hero (components/city2d/sections/Hero.tsx) ----------
+   The home station's opening: the name on its own dark backing, the
+   headline, the two ways in and the links. On wide screens the backing
+   rises over the foot of the band (the one place words sit on a
+   painting, and they sit on solid ink); on phones it all sits under it. */
+
+.hero {
+  position: relative;
+  z-index: 3;
+  margin-bottom: 2.5rem;
+}
+
+.hero-backing {
+  display: inline-block;
+  max-width: 100%;
+  padding: clamp(0.75rem, 2vw, 1.25rem) clamp(1rem, 3vw, 2rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--ink);
+}
+
+/* The name, the page's one h1 (capped so a long word never pushes past a
+   phone's width) */
+.hero-name {
   color: var(--text);
   font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
   font-weight: 700;
+  letter-spacing: 0.02em;
   overflow-wrap: break-word;
+  /* Decoration only: the words have their contrast without it */
+  text-shadow: 0 0 28px rgb(79 216 238 / 0.35);
+}
+
+/* Display type at 24px and over, so it may be neon */
+.hero-headline {
+  margin-top: 1.25rem;
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+}
+
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: 1.5rem;
+  row-gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  /* The backing rises over the foot of the band, in its faded 30% */
+  .station:has(> .station-body > .hero) > .station-body {
+    padding-top: 0;
+  }
+
+  .hero {
+    margin-top: calc(-1 * clamp(4.5rem, 9vw, 8rem));
+  }
 }
 
 .station-line {

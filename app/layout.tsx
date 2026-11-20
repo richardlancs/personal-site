@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import CityDriver from "./components/city2d/CityDriver";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -78,6 +79,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         {/* The résumé, read in the page: opened by any résumé link */}
         <ResumeHost />
+        {/* The sky over the bands, from Richmond Hill's clock (on <html>) */}
+        <CityDriver />
         {/* The press on every glass button (city.css, .glass) */}
         <GlassPress />
       </body>

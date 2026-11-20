@@ -86,10 +86,13 @@ test("no theme toggle and no saved theme anywhere the site loads", () => {
   }
 });
 
-test("the home page has one h1: the name", () => {
+test("the home page has one h1: the name, in the hero", () => {
   const page = read("app/page.tsx");
-  assert.equal((page.match(/<h1[\s>]/g) ?? []).length, 1);
-  assert.match(page, /<h1[^>]*>\{profile\.name\}<\/h1>/);
+  const hero = read("app/components/city2d/sections/Hero.tsx");
+  assert.equal((page.match(/<h1[\s>]/g) ?? []).length, 0, "the page's h1 is the hero's");
+  assert.equal((page.match(/<Hero \/>/g) ?? []).length, 1, "the page renders the hero once");
+  assert.equal((hero.match(/<h1[\s>]/g) ?? []).length, 1);
+  assert.match(hero, /<h1[^>]*>\{profile\.name\}<\/h1>/);
 });
 
 test("every colour and size the résumé viewer uses is defined by the city's stylesheet", () => {

@@ -54,7 +54,7 @@ test("a station is a labelled section with its band, stop and heading", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.ok(!src.includes('"use client"'), "Station is a server component");
   assert.match(src, /<section[^>]*id=\{id\}[^>]*aria-labelledby=\{titleId\}[^>]*tabIndex=\{-1\}/);
-  assert.match(src, /<div className="band" aria-hidden="true" \/>/);
+  assert.match(src, /<DistrictBand district=\{section\.district\}/);
   assert.match(src, /section\.station/);
   assert.match(src, /section\.districtLine/);
   assert.match(src, /<h2 id=\{titleId\}/);
