@@ -395,6 +395,19 @@ Avoid:
 
 ## Motion
 
+**Apply the nineteen UX and motion principles in
+`docs/ui/ux-motion-principles.md` to any interface you add or change**
+(exaggeration, origin awareness, staggering, squash and stretch, rubber
+banding, the Doherty threshold, anticipation, Fitts's law, slow in and
+slow out, Hick's law, follow-through, arcs, the Von Restorff effect,
+timing, interruptible motion, secondary action, solid drawing, frequency
+of use, the peak-end rule). Richard asked for this on 20 November 2026.
+Read the file before interface work: it says what each one means on this
+site. Implement every one that honestly fits, and say which you applied.
+They work inside the rules below, which win when they disagree: still view
+and reduced motion show the end state with nothing moving; nothing loops;
+content never waits on an animation; the size budgets hold.
+
 Animations should be subtle. Words never wait for the world: a page's
 content comes in within about 0.1 s of arriving (`--arrive-delay`) while
 the camera's journey, a second or so, plays behind it. The one deliberate
