@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 import { watchArrivals } from "./arrive";
 
@@ -20,11 +21,15 @@ import { watchArrivals } from "./arrive";
 // button is pressed at a time. No timers. A pointer let go outside the
 // window (it loses focus) lets go of the key too.
 //
-// The same effect starts the page's one-time arrival (arrive.ts), so it
-// needs no client component of its own.
+// The same component starts the page's one-time arrival (arrive.ts), so it
+// needs no client component of its own: again on every route, since a
+// client-side navigation (the 3D city's pages) brings new content without
+// a load; the previous route's observer is let go first.
 export default function GlassPress() {
+  const pathname = usePathname();
+  useEffect(() => watchArrivals(), [pathname]);
+
   useEffect(() => {
-    const stopArrivals = watchArrivals();
     let current: HTMLElement | null = null;
     let held: HTMLElement | null = null; // under a pointer that's still down
 
@@ -110,7 +115,6 @@ export default function GlassPress() {
     document.addEventListener("animationcancel", onEnd);
     addEventListener("blur", letGo);
     return () => {
-      stopArrivals();
       removeEventListener("blur", letGo);
       document.removeEventListener("pointerdown", onPointerDown, { capture: true });
       document.removeEventListener("pointercancel", onPointerCancel, { capture: true });

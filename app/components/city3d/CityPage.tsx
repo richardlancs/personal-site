@@ -19,17 +19,20 @@ import Colophon from "../ui/Colophon";
 // the way back to the same place on the 2D page, and the credit. On wide
 // screens the plate fills the window behind the panel; on phones and
 // portrait screens it is a band at the top and the panel a sheet under it
-// (city.css, "The 3D city's pages").
+// (app/city/city-pages.css). Where the 3D city can be drawn, the canvas
+// (CityShell.tsx) covers the band once it has drawn.
 //
 // Home's h1 is the hero's (the name); every other page's is its section's
-// title. The sections' own headings start at h3 (Task 3 moves them to h2).
+// title, and the section, told where="3d", starts its own headings at h2
+// (city2d/Heading.tsx), so each page's outline runs h1, h2, h3 with
+// nothing skipped.
 const content: Record<SectionId, ReactNode> = {
   home: <Hero where="3d" />,
-  about: <About />,
-  projects: <Projects />,
-  experience: <Experience />,
+  about: <About where="3d" />,
+  projects: <Projects where="3d" />,
+  experience: <Experience where="3d" />,
   interests: <Interests where="3d" />,
-  contact: <Contact />,
+  contact: <Contact where="3d" />,
 };
 
 export default function CityPage({ id }: { id: SectionId }) {
