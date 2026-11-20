@@ -224,3 +224,17 @@ test("the plain panel: the neon itself (no picture, no bars), both faces, no edg
   assert.match(src, /if \(o\.kind === "panel"\) \{\s*const face = neonMaterial\([^;]*\{ dayColor: PANEL_DAY \}\);/);
   assert.match(src, /if \(kind !== "panel"\) group\.add\(edge\);/);
 });
+
+test("lamp rows: a lantern post head, its light in the lantern on the post; the arm by default", async () => {
+  disposeShared();
+  const { buildLampRow } = await import(`../${kit}/street.ts`);
+  const arm = buildLampRow([{ x: 1, z: 2 }]);
+  const lantern = buildLampRow([{ x: 1, z: 2 }], { head: "lantern", light: "spot" });
+  assert.deepEqual(arm.heads[0].toArray().map((v) => +v.toFixed(3)), [1.1, 0.61, 2]);
+  assert.deepEqual(lantern.heads[0].toArray().map((v) => +v.toFixed(3)), [1, 0.58, 2]);
+  assert.equal(arm.meshes.length, 3);
+  assert.equal(lantern.meshes.length, 2, "a spot lamp has no pool disc");
+  arm.dispose();
+  lantern.dispose();
+  disposeShared();
+});

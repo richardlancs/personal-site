@@ -63,6 +63,41 @@ function poolMaterial() {
 
 const POLE_H = 0.6;
 const HEAD = new THREE.Vector3(0.1, POLE_H + 0.01, 0);
+// A lantern post's: the light in the lantern, on top of the post
+const LANTERN = new THREE.Vector3(0, POLE_H - 0.02, 0);
+
+export type LampHead = "arm" | "lantern";
+
+// A lantern post as the plates' streets have them: a cast-iron post on a
+// fluted base, a collar, a six-sided lantern lit warm, a cap and a finial
+function lanternParts() {
+  const pole = merge([
+    new THREE.CylinderGeometry(0.02, 0.026, 0.06, 8).translate(0, 0.03, 0),
+    new THREE.CylinderGeometry(0.008, 0.012, POLE_H - 0.1, 6).translate(0, 0.06 + (POLE_H - 0.1) / 2, 0),
+    new THREE.CylinderGeometry(0.016, 0.012, 0.016, 8).translate(0, POLE_H - 0.04 + 0.008, 0),
+    new THREE.ConeGeometry(0.036, 0.026, 6).translate(0, LANTERN.y + 0.032 + 0.013, 0),
+    new THREE.SphereGeometry(0.008, 6, 4).translate(0, LANTERN.y + 0.032 + 0.034, 0),
+  ]);
+  const head = new THREE.CylinderGeometry(0.026, 0.018, 0.064, 6).translate(0, LANTERN.y, 0);
+  const pool = poolDisc(0);
+  return { pole, head, pool };
+}
+
+// The pool of light on the ground round `x` (the head's), its vertex
+// colours fading to its rim
+function poolDisc(x: number) {
+  const pool = new THREE.CircleGeometry(0.34, 20).rotateX(-Math.PI / 2).translate(x, 0.004, 0);
+  const n = pool.attributes.position.count;
+  const colors = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    const dx = pool.attributes.position.getX(i) - x;
+    const dz = pool.attributes.position.getZ(i);
+    const k = 1 - Math.min(1, Math.hypot(dx, dz) / 0.34);
+    colors.set([k * k, k * k, k * k], i * 3);
+  }
+  pool.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  return pool;
+}
 
 function lampParts() {
   const pole = merge([
@@ -74,17 +109,7 @@ function lampParts() {
   ]);
   // the lit underside of the head
   const head = new THREE.CylinderGeometry(0.03, 0.03, 0.008, 8).translate(HEAD.x, HEAD.y, 0);
-  const pool = new THREE.CircleGeometry(0.34, 20).rotateX(-Math.PI / 2).translate(HEAD.x, 0.004, 0);
-  const n = pool.attributes.position.count;
-  const colors = new Float32Array(n * 3);
-  for (let i = 0; i < n; i++) {
-    const dx = pool.attributes.position.getX(i) - HEAD.x;
-    const dz = pool.attributes.position.getZ(i);
-    const k = 1 - Math.min(1, Math.hypot(dx, dz) / 0.34);
-    colors.set([k * k, k * k, k * k], i * 3);
-  }
-  pool.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-  return { pole, head, pool };
+  return { pole, head, pool: poolDisc(HEAD.x) };
 }
 
 /**
@@ -118,14 +143,18 @@ export function buildLamp(o?: { light: "spot" | "none" }): { group: THREE.Group;
 /**
  * A row of lamps at `spots` (feet; `ry` turns each), instanced: 3 draw
  * calls whatever their number. `heads` are where each one's light comes
- * from, in the same frame as the spots.
+ * from, in the same frame as the spots. `head`: "arm" (the promenade lamp,
+ * its head out over +x; the default) or "lantern" (a lantern post, its
+ * light in the lantern on top of the post).
  */
-export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: number }[], o?: { light: "spot" | "none" }) {
+export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: number }[], o?: { light?: "spot" | "none"; head?: LampHead }) {
   const spot = o?.light === "spot";
-  const { pole, head, pool } = lampParts();
+  const lantern = o?.head === "lantern";
+  const { pole, head, pool } = lantern ? lanternParts() : lampParts();
+  const HEAD_AT = lantern ? LANTERN : HEAD;
   const parts: [THREE.BufferGeometry, THREE.Material][] = [
     [pole, surface({ color: METAL })],
-    [head, glowMaterial({ day: LAMP_DAY, night: LAMP_NIGHT })],
+    [head, glowMaterial({ day: lantern ? "#e4ddcc" : LAMP_DAY, night: LAMP_NIGHT })],
   ];
   if (!spot) parts.push([pool, poolMaterial()]);
   const m = new THREE.Matrix4();
@@ -138,7 +167,7 @@ export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: num
     return mesh;
   });
   meshes[0].castShadow = true;
-  const heads = spots.map((s) => HEAD.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry ?? 0).add(new THREE.Vector3(s.x, s.y ?? 0, s.z)));
+  const heads = spots.map((s) => HEAD_AT.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry ?? 0).add(new THREE.Vector3(s.x, s.y ?? 0, s.z)));
   return {
     meshes,
     heads,

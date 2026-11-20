@@ -501,7 +501,7 @@ function build(quality: Quality): Built {
     y: 0,
     mode: TIERS[quality].reflection,
     color: PAVING,
-    lights: [...lights, ...LAMPS_L.map((z) => ({ x: LAMP_L + 0.1, z, w: 0.14, color: "#ffc98a", height: 0.6 })), ...LAMPS_R.map((z) => ({ x: LAMP_R - 0.1, z, w: 0.14, color: "#ffc98a", height: 0.6 }))],
+    lights: [...lights, ...LAMPS_L.map((z) => ({ x: LAMP_L, z, w: 0.14, color: "#ffc98a", height: 0.6 })), ...LAMPS_R.map((z) => ({ x: LAMP_R, z, w: 0.14, color: "#ffc98a", height: 0.6 }))],
     size: TIERS[quality].reflectionSize || undefined,
     // polished stone: it carries the shops, the signs and the lamps dry, after dark
     polish: 0.95,
@@ -524,12 +524,13 @@ function build(quality: Quality): Built {
       { x: LAMP_L, z: LAMPS_L[SPOT_L + 1] },
       { x: LAMP_R, z: LAMPS_R[SPOT_R], ry: Math.PI },
     ],
-    { light: "spot" },
+    { light: "spot", head: "lantern" },
   );
+  // (lantern posts, as the plates' street has them)
   const lamps = buildLampRow([
     ...LAMPS_L.filter((_, i) => i !== SPOT_L && i !== SPOT_L + 1 && i !== CLEAR_L.lamp).map((z) => ({ x: LAMP_L, z })),
     ...LAMPS_R.filter((_, i) => i !== SPOT_R).map((z) => ({ x: LAMP_R, z, ry: Math.PI })),
-  ]);
+  ], { head: "lantern" });
   for (const row of [spotLamps, lamps]) {
     row.meshes.forEach((m) => add(m));
     disposers.push(row.dispose);
@@ -684,8 +685,8 @@ function poolsFor(shopsL: [number, number][], shopsR: [number, number][]): GlowP
   const [r0, r1] = span(shopsR, -26, 9);
   return [
     // the lamps all the way down each side: one line pool a side
-    { from: [LAMP_L + 0.1, 0.6, 2.2], to: [LAMP_L + 0.1, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
-    { from: [LAMP_R - 0.1, 0.6, 6.5], to: [LAMP_R - 0.1, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
+    { from: [LAMP_L, 0.6, 2.2], to: [LAMP_L, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
+    { from: [LAMP_R, 0.6, 6.5], to: [LAMP_R, 0.6, -26], reach: 1.0, color: "#ffc98a", strength: 0.55 },
     // the shops' warm light out over the paving before them, down each side
     { from: [XL + 0.25, 0.16, l1], to: [XL + 0.25, 0.16, l0], reach: 0.95, color: "#ffb866", strength: 1.5 },
     { from: [XR - 0.25, 0.16, r1], to: [XR - 0.25, 0.16, r0], reach: 0.95, color: "#ffc47a", strength: 1.5 },
@@ -693,8 +694,8 @@ function poolsFor(shopsL: [number, number][], shopsR: [number, number][]): GlowP
     { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 },
     { pos: [XL + 0.35, 0.12, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.3, color: "#ffb866", strength: 0.9 },
     // the near lamps without a spot of their own, a little stronger
-    ...LAMPS_L.filter((z, i) => z < 2 && z > -1.5 && i !== SPOT_L && i !== SPOT_L + 1).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
-    ...LAMPS_R.filter((z, i) => z < 6 && z > 1 && i !== SPOT_R).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
+    ...LAMPS_L.filter((z, i) => z < 2 && z > -1.5 && i !== SPOT_L && i !== SPOT_L + 1).map((z): GlowPool => ({ pos: [LAMP_L, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
+    ...LAMPS_R.filter((z, i) => z < 6 && z > 1 && i !== SPOT_R).map((z): GlowPool => ({ pos: [LAMP_R, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.6 })),
   ].slice(0, 12) as GlowPool[];
 }
 
