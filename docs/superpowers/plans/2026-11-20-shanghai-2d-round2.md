@@ -222,7 +222,15 @@ test("every figure in the real data is found, and nothing else", () => { /* snap
 
 ## Task 6: Whole-branch review fixes, audits, and Richard's look (lead, then one subagent)
 
-- [ ] **Step 1:** Fold in every Critical and Important finding from the whole-branch review of Plan A (`.superpowers/sdd/2026-11-19-shanghai-2d/final-review.md`) that Tasks 1–5 did not already remove.
+- [ ] **Step 1:** Fold in every Critical and Important finding from the whole-branch review of Plan A (`.superpowers/sdd/2026-11-19-shanghai-2d/final-review.md`) that Tasks 1–5 did not already remove. The review found nothing Critical. To do here:
+  - delete dead `app/components/ui/Points.tsx`; rewrite the README (it describes a theme toggle that does not exist);
+  - one shared `ProfileLinks` component for GitHub / LinkedIn / Résumé, used by Hero, About and Contact, with one résumé label;
+  - `listed` honoured everywhere a section list is drawn, or removed from the registry;
+  - `ResumeViewer` stops writing to the park's store; `tests/atmosphere.test.mjs` drops the removed intro's assertions;
+  - non-home bands request phone-sized plates on phones (`sizes`), and a blue tint at blue hour (the grade is warm-only now);
+  - a runtime test that makes a plate fail and checks the band keeps its gradient;
+  - update Plan B's stale numbers (`homeInitialJs` 200,848; `totalJs` 214,000; 2,756 B of headroom; the top bar is full at 768–830px).
+  Not here: the share card and icons still show the park (Richard's decision, recorded in Plan B); `CLAUDE.md` is rewritten only at merge; the branch is squash-merged because three intermediate commits are red.
 - [ ] **Step 2:** Run the full audit set on a fresh production build and a fresh dev server: lint, tests, `tsc`, smoke tests with a server, `city-contrast.mjs` (20 skies, three widths), `mobile-audit.mjs`, `budget.mjs`, the keyboard walk, JavaScript off, Lighthouse mobile. Fix what fails. Report every number as measured, including the largest-paint figure against its 2.5 s target.
 - [ ] **Step 3:** Independent review of the round's diff (Opus), then a fix round for anything Critical or Important.
 - [ ] **Step 4:** Full-page screenshots at 1440 and 390, day and night, plus a short screen recording or frame sequence of the progress line snapping.
