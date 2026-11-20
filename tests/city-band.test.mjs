@@ -150,9 +150,8 @@ test("the hero has the name, the headline, two actions and three links, and no p
   assert.match(src, /<p className="[^"]*headline[^"]*">\{profile\.headline\}<\/p>/);
   assert.match(src, /href="#projects" className="glass glass-primary"/);
   assert.match(src, /href="#contact" className="glass"/);
-  for (const s of ["githubUrl", "linkedinUrl"]) assert.ok(src.includes(`profile.${s}`), s);
-  // The résumé goes through the viewer's link (it alone names resumeUrl)
-  assert.match(src, /<ResumeLink[\s>]/);
+  // GitHub, LinkedIn and the résumé: the shared links, as text links
+  assert.match(src, /<ProfileLinks variant="text" \/>/);
 });
 
 test("the home plate's head script: the same sun as the site's clock, a file from the band's own srcset, painted before hydration", async () => {

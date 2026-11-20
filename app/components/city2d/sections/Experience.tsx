@@ -36,7 +36,7 @@ function Row({ entry }: { entry: Entry }) {
           )}
         </p>
         {isCurrent(entry) && (
-          <p className="mt-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-text">
+          <p className="mt-1.5 flex items-center gap-2 text-[0.8125rem] font-semibold uppercase tracking-[0.14em] text-text">
             <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-cyan" />
             Current
           </p>
@@ -44,7 +44,7 @@ function Row({ entry }: { entry: Entry }) {
       </div>
       <ul
         role="list"
-        className="mt-4 list-disc space-y-2 pl-5 text-[1.0625rem] leading-relaxed text-text marker:text-muted sm:col-start-2 sm:row-start-3"
+        className="points mt-4 space-y-2 text-[1.0625rem] leading-relaxed text-text sm:col-start-2 sm:row-start-3"
       >
         {entry.highlights.map((highlight) => (
           <li key={highlight} className="max-w-[62ch] break-words">

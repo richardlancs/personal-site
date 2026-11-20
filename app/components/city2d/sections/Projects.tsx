@@ -1,7 +1,6 @@
 import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
-
-const newTab = <span className="sr-only"> (opens in a new tab)</span>;
+import { newTab } from "../ProfileLinks";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -14,10 +13,14 @@ const tall = (shot: Screenshot) => shot.height > shot.width;
 const plural = (n: number) => `${n} more screenshot${n === 1 ? "" : "s"}`;
 
 // How wide a picture is drawn: the full column (the station's 72rem less
-// its gutters) under 1024px; from 1024px the right 7 of 12 columns. A
-// portrait pair takes half of that each.
-const coverSizes = "(min-width: 1024px) min(40rem, 55vw), calc(100vw - 2.5rem)";
-const pairSizes = "(min-width: 1024px) min(20rem, 28vw), calc(50vw - 1.5rem)";
+// its gutters) under 1024px; the right 7 of 12 columns from 1024px, and
+// the right half from 1280px. A portrait pair takes half of that each.
+const coverSizes = "(min-width: 1280px) min(33rem, 46vw), (min-width: 1024px) 55vw, calc(100vw - 2.5rem)";
+const pairSizes = "(min-width: 1280px) min(16.5rem, 23vw), (min-width: 1024px) 28vw, calc(50vw - 1.5rem)";
+
+// "My part" shows its first four points; the rest wait in the row's
+// <details>, under "More of my part", so nothing is dropped
+const SHOWN_PART = 4;
 
 // A project's keys: "Live demo" is the primary key when there is one and
 // "Code" the secondary; "Code" alone is primary. Each is named for its
@@ -76,36 +79,42 @@ function Picture({ shots }: { shots: Screenshot[] }) {
 }
 
 const h4 = "font-display text-xl font-semibold text-text";
+// A heading inside the fold: smaller, the fold's summary is above it
+const h5 = "font-display text-lg font-semibold text-text";
 
 // The projects section (the site's most important content), then Skills.
 // First an index of the projects, each a link to its row. Then one row
 // per project, hairlines between them and no panels: from 1024px its text
-// in the left 5 of 12 columns and its picture in the right 7, the picture
+// in the left 5 of 12 columns and its picture in the right 7 (from 1280px
+// half and half, so the text runs wider and the row shorter), the picture
 // staying in view while the text goes by; under 1024px title, summary,
 // role, picture, then the rest. The text: the keys first, then what I did
-// ("My part", under a cyan rule) or, when the data has no contributions,
-// what it does; then the stack on one line. The team's features (when my
-// part took their place) and the other screenshots fold into a <details>.
+// ("My part", under a cyan rule, its first four points) or, when the data
+// has no contributions, what it does; then the stack on one line. The rest
+// of my part, the team's features (when my part took their place) and the
+// other screenshots fold into a <details>.
 // Then Skills, on its own edged panel. Everything is in the HTML.
 export default function Projects() {
   return (
     <div className="mt-10">
       <nav aria-label="Projects">
-        <ol className="grid border-t border-line md:grid-cols-2 md:gap-x-10">
+        <ol className="grid grid-cols-1 border-t border-line md:grid-cols-2 md:gap-x-10">
           {projects.map((project, index) => (
-            <li key={project.title} className="border-b border-line">
+            <li key={project.title} className="min-w-0 border-b border-line">
               <a
                 href={`#${slug(project.title)}`}
-                className="group flex min-h-11 items-baseline gap-3 py-3 break-words"
+                className="group flex min-h-11 items-baseline gap-3 py-3"
               >
                 <span aria-hidden="true" className="text-sm text-muted tabular-nums">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                <span className="min-w-0">
-                  <span className="font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
+                {/* One line each: a long gloss ends in an ellipsis (the
+                    whole summary is in the row) */}
+                <span className="flex min-w-0 items-baseline gap-2">
+                  <span className="shrink-0 font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
                     {project.title}
                   </span>
-                  <span className="text-muted"> {gloss(project.summary)}</span>
+                  <span className="min-w-0 truncate text-muted"> {gloss(project.summary)}</span>
                 </span>
               </a>
             </li>
@@ -123,20 +132,29 @@ export default function Projects() {
           const pair = cover && tall(cover) && next && tall(next);
           const shown = cover ? (pair ? [cover, next] : [cover]) : [];
           const extra = shots.filter((shot) => !shown.includes(shot));
-          const foldedFeatures = Boolean(project.contributions);
+          const part = project.contributions ?? [];
+          const morePart = part.slice(SHOWN_PART);
+          const foldedFeatures = part.length > 0;
           const folded = foldedFeatures || extra.length > 0;
-          const summaryText = foldedFeatures
-            ? `What it does${extra.length > 0 ? ` · ${plural(extra.length)}` : ""}`
-            : plural(extra.length);
+          // What the fold holds, in the order it holds it
+          const summaryText = [
+            morePart.length > 0 && "More of my part",
+            foldedFeatures && "What it does",
+            extra.length > 0 && plural(extra.length),
+          ]
+            .filter(Boolean)
+            .join(" · ");
+          // Headings inside the fold, when it holds more than one kind of list
+          const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
           return (
             <article
               key={project.title}
               id={slug(project.title)}
               aria-labelledby={titleId}
-              className="py-10 sm:py-14 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-12"
+              className="py-10 sm:py-14 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-12 xl:gap-x-10"
             >
-              <header className="min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-1">
+              <header className="min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-6">
                 <h3 id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
@@ -148,19 +166,19 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className="mt-6 min-w-0 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)] lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start">
+                <div className="mt-6 min-w-0 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)] lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start xl:col-span-6 xl:col-start-7">
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className="mt-6 min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-2">
+              <div className="mt-6 min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-6">
                 <Keys project={project} />
 
-                {project.contributions ? (
+                {part.length > 0 ? (
                   <section className="mt-6 border-l-2 border-cyan pl-5">
                     <h4 className={h4}>My part</h4>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
-                      {project.contributions.map((contribution) => (
+                      {part.slice(0, SHOWN_PART).map((contribution) => (
                         <li key={contribution}>{contribution}</li>
                       ))}
                     </ul>
@@ -186,7 +204,7 @@ export default function Projects() {
                       <svg
                         aria-hidden="true"
                         viewBox="0 0 16 16"
-                        className="project-chevron size-4 shrink-0 text-cyan group-open:rotate-180"
+                        className="chevron size-4 shrink-0 text-cyan group-open:rotate-180"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -195,12 +213,25 @@ export default function Projects() {
                       </svg>
                       {summaryText}
                     </summary>
+                    {morePart.length > 0 && (
+                      <section className="mt-3 border-l-2 border-cyan pl-5">
+                        <h4 className={h5}>More of my part</h4>
+                        <ul role="list" className="points mt-2 space-y-2 text-text">
+                          {morePart.map((contribution) => (
+                            <li key={contribution}>{contribution}</li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
                     {foldedFeatures && (
-                      <ul role="list" className="points mt-3 space-y-2 text-text">
-                        {project.features.map((feature) => (
-                          <li key={feature}>{feature}</li>
-                        ))}
-                      </ul>
+                      <section className={subheads ? "mt-6" : undefined}>
+                        {subheads && <h4 className={h5}>What it does</h4>}
+                        <ul role="list" className={`points space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
+                          {project.features.map((feature) => (
+                            <li key={feature}>{feature}</li>
+                          ))}
+                        </ul>
+                      </section>
                     )}
                     {extra.length > 0 && (
                       <ul aria-label={`More ${project.title} screenshots`} className="mt-4 flex flex-wrap gap-3 pb-2">

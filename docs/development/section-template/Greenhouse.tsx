@@ -20,7 +20,7 @@ export default function Greenhouse() {
     <div className="mt-10 grid gap-x-12 gap-y-10 md:grid-cols-2">
       <section className="border-t border-line pt-6">
         <h3 className="font-display text-2xl font-semibold text-text">A heading from the data</h3>
-        {/* Short points with an amber dash, at most 65 characters a line */}
+        {/* Short points with a muted dash, at most 65 characters a line */}
         <ul role="list" className="points mt-4 space-y-2 break-words text-text">
           <li>Placeholder: a point from app/data/portfolio.ts.</li>
           <li>Placeholder: another point.</li>

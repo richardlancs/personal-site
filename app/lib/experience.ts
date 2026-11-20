@@ -3,7 +3,7 @@
 // them on the real data. Dates are read with machineDate ("Oct 2026" is
 // "2026-10", "2024" is "2024", "Present" is nothing).
 import type { Experience } from "../data/portfolio";
-import { machineDate } from "./machineDate";
+import { machineDate } from "./machineDate.ts";
 
 // Still running: only an end that says "Present". An entry with no end at
 // all is a single date, not a running one.

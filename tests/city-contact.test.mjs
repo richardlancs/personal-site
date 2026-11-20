@@ -26,7 +26,8 @@ test("the first interactive element is the 'Email me' button to the first addres
   assert.match(first, /^<a\b/, "an <a>");
   assert.match(first, /href=\{`mailto:\$\{primary\.address\}`\}/, "mailto: the primary address");
   assert.match(first, /className="glass glass-primary\b[^"]*"/, "glass glass-primary");
-  assert.match(first, /\bmin-h-14\b/, "56px tall");
+  assert.match(first, /\bglass-lg\b/, "the large key (56px tall)");
+  assert.doesNotMatch(contact, /![\s"]/, "no important utilities");
   assert.match(contact, /const primary = profile\.emails\[0\]/, "the primary address is the first in the data");
   // Its visible text is "Email me", after an icon hidden from the accessibility tree
   const button = markup.match(/<a\b[^>]*glass-primary[^>]*>([\s\S]*?)<\/a>/)?.[1] ?? "";
@@ -53,25 +54,12 @@ test("the other addresses are compact rows: label, a mailto link and Copy; no h3
   assert.match(h3s[0][0], /font-display/, "in the display face");
 });
 
-test("GitHub, LinkedIn and the résumé are three glass keys with an icon and a label, the résumé through ResumeLink", () => {
-  assert.match(contact, /import ResumeLink from "\.\.\/\.\.\/resume\/ResumeLink"/);
+test("GitHub, LinkedIn and the résumé are the shared profile links, as glass keys, after the other addresses", () => {
+  assert.match(contact, /import ProfileLinks from "\.\.\/ProfileLinks"/);
+  assert.match(markup, /<ProfileLinks variant="keys" \/>/);
   assert.doesNotMatch(contact, /resumeUrl/, "never the résumé's address directly");
   assert.doesNotMatch(contact, /Colophon/, "the page renders the colophon once, at its foot");
-  const keys = [
-    [/<a\b[^>]*href=\{profile\.githubUrl\}[^>]*>([\s\S]*?)<\/a>/, "GitHub"],
-    [/<a\b[^>]*href=\{profile\.linkedinUrl\}[^>]*>([\s\S]*?)<\/a>/, "LinkedIn"],
-    [/<ResumeLink\b[^>]*>([\s\S]*?)<\/ResumeLink>/, "Résumé"],
-  ];
-  for (const [pattern, label] of keys) {
-    const match = markup.match(pattern);
-    assert.ok(match, `${label}: a key`);
-    assert.match(match[0], /className="glass\b/, `${label}: glass`);
-    assert.doesNotMatch(match[0], /glass-primary/, `${label}: not primary`);
-    assert.match(match[1], /<svg\b|\{\w+Icon\}/, `${label}: an icon`);
-    assert.ok(match[1].includes(label), `${label}: its label`);
-  }
-  // The keys come after the button and the addresses
-  assert.ok(markup.indexOf("profile.githubUrl") > markup.indexOf("slice(1)"), "keys after the other addresses");
+  assert.ok(markup.indexOf("<ProfileLinks") > markup.indexOf("slice(1)"), "keys after the other addresses");
   for (const match of contact.matchAll(/target="_blank"[^>]*/g)) assert.match(match[0], /rel="noopener noreferrer"/);
   for (const match of contact.matchAll(/<svg\b[^>]*>/g)) assert.match(match[0], /aria-hidden="true"/, "every icon aria-hidden");
 });

@@ -32,10 +32,8 @@ test("where to find me is built from profile", () => {
   assert.match(source, /profile\.emails\.map\(/);
   assert.match(source, /href=\{`mailto:\$\{email\.address\}`\}/);
   assert.match(source, /\{email\.label\}/);
-  assert.match(source, /href=\{profile\.githubUrl\}/);
-  assert.match(source, /href=\{profile\.linkedinUrl\}/);
-  // The résumé goes through ResumeLink, never the URL directly
-  assert.match(source, /<ResumeLink/);
+  // GitHub (with its note), LinkedIn and the résumé: the shared links
+  assert.match(source, /<ProfileLinks variant="text" githubNote=\{githubNote\} \/>/);
   assert.doesNotMatch(source, /resumeUrl/);
   // Links that open elsewhere
   for (const m of source.matchAll(/target="_blank"[^>]*/g)) assert.match(m[0], /rel="noopener noreferrer"/);
@@ -49,8 +47,8 @@ test("the about station is a server component with no fixed widths", () => {
   assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/);
 });
 
-test("the points' dash and the interests' edge glow are styled, the glow gone under more contrast", () => {
+test("the points' dash is the one quiet marker on black, and the retired card glow is gone", () => {
   const css = readFileSync(new URL("../app/city.css", import.meta.url), "utf8");
-  assert.match(css, /\.points > li::before \{[^}]*background: var\(--lantern\)/);
-  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*\.interest-card \{\s*box-shadow: none !important;/);
+  assert.match(css, /\.points > li::before \{[^}]*background: var\(--muted\)/);
+  assert.doesNotMatch(css, /\.interest-card/);
 });

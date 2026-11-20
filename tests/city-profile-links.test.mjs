@@ -1,0 +1,41 @@
+// The profile's links (components/city2d/ProfileLinks.tsx): GitHub,
+// LinkedIn and the résumé, one component for the hero, About and Contact,
+// each an icon and a label, one résumé label everywhere.
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+
+const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const links = read("app/components/city2d/ProfileLinks.tsx");
+
+test("three links, from profile, each with an aria-hidden icon and a label", () => {
+  assert.match(links, /href=\{profile\.githubUrl\}/);
+  assert.match(links, /href=\{profile\.linkedinUrl\}/);
+  assert.match(links, /<ResumeLink\b/);
+  assert.doesNotMatch(links, /resumeUrl/);
+  for (const label of ["GitHub", "LinkedIn", "Résumé"]) assert.match(links, new RegExp(`<Icon size=\\{size\\}>[^\\n]*\\n\\s*${label}\\n`), label);
+  for (const m of links.matchAll(/<svg\b[^>]*>/g)) assert.match(m[0], /aria-hidden="true"/);
+  for (const m of links.matchAll(/target="_blank"[^>]*/g)) assert.match(m[0], /rel="noopener noreferrer"/);
+  assert.doesNotMatch(links, /^["']use client["']/m);
+});
+
+test("one résumé label everywhere, and every place uses the shared links", () => {
+  for (const [file, variant] of [
+    ["app/components/city2d/sections/Hero.tsx", "text"],
+    ["app/components/city2d/sections/About.tsx", "text"],
+    ["app/components/city2d/sections/Contact.tsx", "keys"],
+  ]) {
+    const source = read(file);
+    assert.match(source, new RegExp(`<ProfileLinks variant="${variant}"`), file);
+    assert.doesNotMatch(source, /profile\.(githubUrl|linkedinUrl)|<ResumeLink/, `${file} writes no link of its own`);
+  }
+  assert.doesNotMatch(links, /Résumé \(PDF\)/);
+});
+
+test("text links in the hero and About, glass keys in Contact, with no important utilities", () => {
+  assert.match(links, /"glass profile-key w-full min-\[480px\]:w-auto"/);
+  assert.match(links, /"text-link text-link-solo gap-2"/);
+  const css = read("app/city.css");
+  assert.match(css, /\.profile-key \{\s*justify-content: flex-start;/);
+  assert.match(css, /\.glass-lg \{[^}]*min-height: 56px;/);
+});

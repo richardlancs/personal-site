@@ -3,25 +3,11 @@
 // grouping (lib/experience.ts) and its date helper (lib/machineDate.ts).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { registerHooks } from "node:module";
 import { test } from "node:test";
 
-// lib/experience.ts imports "./machineDate" without an extension (the
-// bundler's way); let Node find the .ts file for this test
-registerHooks({
-  resolve(specifier, context, next) {
-    try {
-      return next(specifier, context);
-    } catch (error) {
-      if (error?.code === "ERR_MODULE_NOT_FOUND" && specifier.startsWith(".")) return next(`${specifier}.ts`, context);
-      throw error;
-    }
-  },
-});
-
-const { experience } = await import("../app/data/portfolio.ts");
-const { machineDate } = await import("../app/lib/machineDate.ts");
-const { sortNewestFirst, groupByKind, isCurrent } = await import("../app/lib/experience.ts");
+import { experience } from "../app/data/portfolio.ts";
+import { machineDate } from "../app/lib/machineDate.ts";
+import { sortNewestFirst, groupByKind, isCurrent } from "../app/lib/experience.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const source = readFileSync(`${root}app/components/city2d/sections/Experience.tsx`, "utf8");
@@ -112,7 +98,7 @@ test("no panel, no warm or retired colours, no place names, no fixed pixel width
   for (const tag of source.matchAll(/<(ol|ul|article)\b[^>]*>/g)) assert.doesNotMatch(tag[0], /rounded|bg-panel/, tag[0]);
   assert.doesNotMatch(source, /rounded-\[var\(--radius/);
   assert.doesNotMatch(source, /lantern|amber|magenta/);
-  assert.doesNotMatch(source, /\bpoints\b|<details/);
+  assert.doesNotMatch(source, /<details/);
   assert.doesNotMatch(source, /Line \d|Lujiazui|Longtang|Century Avenue|Nanjing Road|The Bund/);
   assert.doesNotMatch(source, /\bw-\[\d+px\]|min-w-\[\d+px\]|max-w-\[\d+px\]|width:\s*\d+px/);
   assert.doesNotMatch(source, /grid-cols-\[[^\]]*\d+px/);

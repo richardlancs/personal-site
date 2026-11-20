@@ -79,20 +79,38 @@ replace its placeholders. Then in `app/page.tsx`:
 ```
 
 `<Station>` (`components/city2d/Station.tsx`) draws the band (the plates
-following Richmond Hill's clock, the weather over them), the stop's number
-and station, the section's `h2` from `title`, and the `districtLine`. So:
+following Richmond Hill's clock, the weather over them), the section's
+number ("02", muted, hidden from screen readers) and its `h2` from
+`title`. No place is ever named on the page. So:
 
 - the component's headings start at `h3`;
 - it is a server component; a small client child (as Contact's
   `CopyButton.tsx`) only where the browser is truly needed;
-- its words come from `app/data/portfolio.ts`;
+- its words come from `app/data/portfolio.ts`, and any text that holds
+  figures is wrapped in `<Figures>` (`components/city2d/Figures.tsx`), so
+  numbers are bold wherever content is shown;
 - it uses the shared pieces in `app/city.css`: `.points` (short points
-  with an amber dash), panels (`bg-panel`, a `--line` edge,
-  `--radius-lg`), `.glass` and `.glass-primary` keys, `.text-link`;
+  with a quiet muted dash, the one list marker on black), hairlines
+  (`border-line`) and spacing rather than boxes, a panel (`bg-panel`, a
+  `--line` edge, `--radius-lg`) only where a thing must stand apart,
+  `.glass` and `.glass-primary` keys (`.glass-lg` for one large action),
+  `.text-link`; GitHub, LinkedIn and the résumé through `ProfileLinks`
+  (`components/city2d/ProfileLinks.tsx`), never written out again;
+- anything that opens is a native `<details>` (it works without
+  JavaScript); its chevron takes the class `chevron` so it turns gently,
+  and not at all in still view or with reduced motion;
 - lists stay under about 65 characters a line (`max-w-[65ch]`), body text
-  is at least 16px on phones, and accents (cyan, magenta, amber) are for
-  edges, chosen states and display type of 24px or more, never body text;
+  is at least 16px on phones, and the accents (cyan; the lantern only for
+  the primary key's fill and tiny marks) are for edges, chosen states and
+  display type of 24px or more, never body text;
 - no words on a painting.
+
+## Photos for an interest
+
+The Interests section reads its photos from `public/interests/<scene>/`
+at build time: drop the files in, nothing else to edit. Captions are
+optional, in `portfolio.ts`. The steps, sizes and formats:
+[`docs/adding-interest-photos.md`](adding-interest-photos.md).
 
 ## 4. List it, and check
 
@@ -110,4 +128,4 @@ and, against `next dev -p 3101` (the `?sky=` preview is dev only),
 `node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 <out-dir>`
 (both need `PLAYWRIGHT` pointing at an installed Playwright: see
 `docs/audit/scripts/pw.mjs`). Add the section's content to the smoke
-test that checks every station's content is in its station's HTML.
+test that checks every section's content is in its section's HTML.

@@ -62,11 +62,30 @@ test("the keys come before the lists, and Live demo only when there is one", () 
 });
 
 test("My part is shown only with contributions, under a cyan rule; features take its place otherwise", () => {
-  assert.match(row, /project\.contributions \? \(/);
+  assert.match(source, /const part = project\.contributions \?\? \[\]/);
+  assert.match(row, /part\.length > 0 \? \(/);
   assert.match(row, /border-l-2 border-cyan/);
   assert.match(row, /<h4[^>]*>My part<\/h4>/);
   assert.match(row, /<h4[^>]*>What it does<\/h4>/);
   assert.match(source, /project\.role && /);
+});
+
+test("My part shows its first four points; the rest fold under \"More of my part\", so nothing is dropped", () => {
+  assert.match(source, /const SHOWN_PART = 4;/);
+  assert.match(row, /part\.slice\(0, SHOWN_PART\)\.map/);
+  assert.match(source, /const morePart = part\.slice\(SHOWN_PART\)/);
+  const details = row.slice(row.indexOf("<details"));
+  assert.match(details, /morePart\.length > 0 && \([\s\S]*?<h4[^>]*>More of my part<\/h4>[\s\S]*?morePart\.map/);
+  assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
+});
+
+test("from 1280px text and picture share the row half and half", () => {
+  assert.match(row, /<header className="[^"]*lg:col-span-5[^"]*xl:col-span-6/);
+  assert.match(row, /lg:col-span-7 lg:col-start-6[^"]*xl:col-span-6 xl:col-start-7/);
+});
+
+test("the index's glosses stay on one line", () => {
+  assert.match(source, /<span className="min-w-0 truncate text-muted"> \{gloss\(project\.summary\)\}<\/span>/);
 });
 
 test("the stack is one muted line joined by middle dots", () => {
@@ -113,7 +132,7 @@ test("links that open elsewhere say so and carry noopener noreferrer", () => {
   const rels = source.match(/rel="noopener noreferrer"/g) ?? [];
   assert.ok(blanks.length >= 4);
   assert.equal(rels.length, blanks.length);
-  assert.match(source, /\(opens in a new tab\)/);
+  assert.match(source, /import \{ newTab \} from "\.\.\/ProfileLinks"/);
 });
 
 test("no fixed pixel widths, no carousel, no client code, no place names", () => {

@@ -20,7 +20,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     // Browser-audit scripts and screenshots (disposable, not in git)
-    ".playwright-mcp/**", ".claude/**",
+    ".playwright-mcp/**", ".claude/**", ".superpowers/**",
     // A separate repository checked out inside this folder (not in git here)
     "garage-poker/**",
   ]),

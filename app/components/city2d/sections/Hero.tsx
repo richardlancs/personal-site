@@ -1,7 +1,5 @@
 import { profile } from "../../../data/portfolio";
-import ResumeLink from "../../resume/ResumeLink";
-
-const newTab = <span className="sr-only"> (opens in a new tab)</span>;
+import ProfileLinks from "../ProfileLinks";
 
 // The home section's opening (city.css, "The hero"): the name, the page's
 // one h1, on its own dark backing (on wide screens it rises over the foot
@@ -24,22 +22,7 @@ export default function Hero() {
         </a>
       </div>
       <ul aria-label="Links" className="hero-links">
-        <li>
-          <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link text-link-solo">
-            GitHub
-            {newTab}
-          </a>
-        </li>
-        <li>
-          <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link text-link-solo">
-            LinkedIn
-            {newTab}
-          </a>
-        </li>
-        <li>
-          {/* Opens the résumé over the page (components/resume) */}
-          <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
-        </li>
+        <ProfileLinks variant="text" />
       </ul>
     </div>
   );

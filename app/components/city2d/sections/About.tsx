@@ -1,7 +1,5 @@
 import { about, githubNote, profile } from "../../../data/portfolio";
-import ResumeLink from "../../resume/ResumeLink";
-
-const newTab = <span className="sr-only"> (opens in a new tab)</span>;
+import ProfileLinks from "../ProfileLinks";
 
 // The about station, in the lane of old houses: each entry in `about` is a
 // heading and a few short points set straight on the ground under a
@@ -32,23 +30,7 @@ export default function About() {
               </a>
             </li>
           ))}
-          <li>
-            <a href={profile.githubUrl} target="_blank" rel="noopener noreferrer" className="text-link text-link-solo">
-              GitHub
-              {newTab}
-            </a>
-            <span className="text-muted">, {githubNote}</span>
-          </li>
-          <li>
-            <a href={profile.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-link text-link-solo">
-              LinkedIn
-              {newTab}
-            </a>
-          </li>
-          <li>
-            {/* Opens the résumé over the page (components/resume) */}
-            <ResumeLink className="text-link text-link-solo">Résumé (PDF)</ResumeLink>
-          </li>
+          <ProfileLinks variant="text" githubNote={githubNote} />
         </ul>
       </section>
     </div>

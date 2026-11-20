@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
+import { newTab } from "../ProfileLinks";
 
 // The interests: one row per interest, a single column on the ground with
 // hairlines between them. Each row is a native <details> (name="interests",
@@ -10,8 +11,6 @@ import { interestPhotos } from "../../../lib/interestPhotos";
 // the description, then the interest's photos when it has any, read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
 // docs/adding-interest-photos.md). No photos, no gallery.
-
-const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
 // Line marks on a 24-unit grid, in cyan (currentColor). Decoration only.
 const marks: Record<Interest["scene"], ReactNode> = {
@@ -85,7 +84,7 @@ export default function Interests() {
                 strokeWidth="1.75"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-cyan"
+                className="chevron size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-cyan"
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>

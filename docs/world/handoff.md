@@ -1,4 +1,4 @@
-# Handoff: where the work stands (updated 20 November 2026)
+# Handoff: where the work stands (updated 20 November 2026, round 2)
 
 For whoever picks this up, human or Claude. Read this first.
 
@@ -8,17 +8,49 @@ The site redesigned as a dark, painted, one-page "Shanghai" city. Worktree
 `.claude/worktrees/shanghai`; not merged, not pushed. `main` is untouched
 and still the park.
 
-**What exists (Plan A, the 2D site: done)**
-- `/` is one page of six stations down a metro line (`app/page.tsx`,
-  `app/components/city2d/`): Lujiazui (home: the hero), Longtang (About),
-  Century Avenue (Projects, with Skills), the metro (Experience), Nanjing
-  Road (Interests), the Bund (Contact). The registry
-  (`app/sections/registry.ts`) drives the Sections menu, the hero's list
-  of stops, the metro line (from 97rem, in the right margin) and the stop
-  in the top bar (53 to 97rem). The old addresses (`/projects`, …, `/map`)
+**What exists (Plan A, the 2D site, and round 2: done)**
+- `/` is one page of six sections (`app/page.tsx`,
+  `app/components/city2d/`): Home (the hero), About, Projects (with
+  Skills), Experience, Interests, Contact. Each sits under a band of
+  painting of a Shanghai district, never named on the page (round 2
+  removed the district names, the home caption, the metro line and the
+  list of stops). Each section's `h2` is its title, with its number
+  ("02", muted, hidden from screen readers) beside it. The registry
+  (`app/sections/registry.ts`, `pageSections`) drives the Sections menu
+  and the progress line. The old addresses (`/projects`, …, `/map`)
   redirect to their anchors (`next.config.ts`).
-- Each station has a band of painting, a day and a night plate of one
-  composition (`app/assets/city/`, made in ChatGPT: `docs/city/prompts.md`;
+- **Soft black** is the main colour (round 2, Richard's pick): `--ink
+  #08090c`, `--ink-2 #101217`, `--panel #181b23`, `--line #2d323d`, text
+  `#e6e9ee`, muted `#9ea5b1`; cyan `#4fd8ee` the accent; `--lantern
+  #f4b860` only for the primary key's fill and tiny marks. Each painting
+  sinks into the black through a dark navy `--seam`
+  (`docs/city/style.md`, "The seam").
+- **The progress line** (`components/city2d/ProgressLine.tsx`,
+  `lib/progress.ts`): one line with a point per section. It follows the
+  scroll and locks onto a point as a section is reached (a short ease and
+  a pulse; steps only in still view and with reduced motion). From 97rem
+  it is a labelled line in the right margin; below, a 3px line along the
+  top bar's foot, with "03 / 06 · Projects" in the bar from 53rem.
+- **The sections, as rebuilt in round 2:**
+  - Projects: an index (one line per project) then unboxed rows, text
+    left and one fixed 16:10 picture frame right (half and half from
+    1280px), keys at the top, "My part" (its first four points; the rest
+    under "More of my part") and the rest folded into a `<details>`.
+    `cover` in `portfolio.ts` picks the screenshot shown first.
+  - Experience: dated rows, newest first (`lib/experience.ts`), work and
+    education apart (`kind: "education"`), the role the boldest line.
+  - Interests: one `<details>` per interest; photos come from
+    `public/interests/<scene>/` at build time, optional `captions`
+    (file name → caption) in `portfolio.ts`:
+    `docs/adding-interest-photos.md`.
+  - Contact: one large "Email me" key, the address with Copy, then the
+    other address and the shared GitHub / LinkedIn / Résumé keys
+    (`ProfileLinks.tsx`, also in the hero and About).
+  - Figures in content text are bold (`lib/figures.ts`, `Figures.tsx`);
+    questions for Richard about figures worth adding:
+    `docs/city/figures-to-add.md`.
+- Each band has a day and a night plate of one composition
+  (`app/assets/city/`, made in ChatGPT: `docs/city/prompts.md`;
   converted by `scripts/city-plates.mjs`; listed in
   `components/city2d/plates.ts`), cross-faded by Richmond Hill's clock
   (`CityDriver.tsx`, `lib/cityLook.ts`), with that weather's haze, rain
@@ -29,9 +61,8 @@ and still the park.
 - One dark interface (`app/city.css`; `globals.css` is no longer loaded),
   Rajdhani and Nunito. The 3D park's code (`components/world3d/`,
   `world/`, `locations/`) is still in the tree, unused by `/` except a few
-  small helpers (`world3d/still.ts`, `world3d/store.ts`,
-  `world3d/atmosphere/param.ts`); no three.js reaches `/` (the budget
-  script checks).
+  small helpers (`world3d/still.ts`, `world3d/atmosphere/param.ts`); no
+  three.js reaches `/` (the budget script checks).
 
 **Where things are**
 - Spec: `docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md`
@@ -41,9 +72,11 @@ and still the park.
   prompts: `docs/city/prompts.md`; concept frames: `docs/city/concepts/`
 - Adding a section: `docs/adding-a-section.md` (starter:
   `docs/development/section-template/Greenhouse.tsx`)
-- The task reports and the final pass's measurements:
-  `.superpowers/sdd/2026-11-19-shanghai-2d/` (not committed; see
-  `finish-report.md`)
+- Round 2's plan: `docs/superpowers/plans/2026-11-20-shanghai-2d-round2.md`
+- The task reports and the final passes' measurements:
+  `.superpowers/sdd/2026-11-19-shanghai-2d/` and
+  `.superpowers/sdd/2026-11-20-shanghai-2d-round2/` (not committed; see
+  each `finish-report.md`)
 
 **How to run it**
 - `npm run dev` (or `npx next dev -p 3101`); `?sky=<weather>-<daylight>[-progress]`
