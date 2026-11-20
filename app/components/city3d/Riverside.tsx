@@ -291,8 +291,10 @@ function build(quality: Quality): Built {
   const tr = rng(61);
   const bankTreeSpots: { x: number; z: number; s: number }[] = [];
   for (let x = L.bank.trees.from; x <= L.bank.trees.to; x += L.bank.trees.step) bankTreeSpots.push({ x: x + tr.range(-0.5, 0.5), z: L.bank.z - tr.range(0, 1.2), s: tr.range(L.bank.trees.size[0], L.bank.trees.size[1]) });
-  const bankTrees = buildStreetTrees(17, bankTreeSpots);
-  const landingTrees = buildStreetTrees(19, L.trees.map(([x, z]) => ({ x, z, s: 0.8 })));
+  // (the plates' yellow-green, lit warm from below after dark)
+  const greens = { greens: ["#8fb24a", "#7ea544", "#9fbd55", "#6f9a3e"], underGlow: { tone: "#ffc070", strength: 0.8 } };
+  const bankTrees = buildStreetTrees(17, bankTreeSpots, greens);
+  const landingTrees = buildStreetTrees(19, L.trees.map(([x, z]) => ({ x, z, s: 0.8 })), { ...greens, leaves: 0.5 });
   for (const t of [...bankTrees, ...landingTrees]) {
     geometries.push(t.geometry);
     t.position.y = LAND;

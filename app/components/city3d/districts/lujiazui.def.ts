@@ -91,12 +91,14 @@ export const RIVERSIDE = {
   // The towers' facades, as the day painting has them: glass towers in
   // pale blue, deep blue and teal; stone ones pale, warm and silver; the
   // far layer pale in the haze. Each tower takes one by its seed (base,
-  // the wall; glass, the panes by day)
+  // the wall; glass, the panes by day). After dark the night painting's
+  // glass towers light cool, cyan and blue, most of their windows
+  // (coolShare), the stone ones warm (kit/windows.ts)
   palettes: {
     glass: [
-      { base: "#9dbedb", glass: "#c0dcf2" },
-      { base: "#5d8cbb", glass: "#9cc7ec" },
-      { base: "#79aac4", glass: "#a8d4e6" },
+      { base: "#9dbedb", glass: "#c0dcf2", cool: "#9fe6ff", coolShare: 0.8 },
+      { base: "#5d8cbb", glass: "#9cc7ec", cool: "#7fb4ff", coolShare: 0.9 },
+      { base: "#79aac4", glass: "#a8d4e6", cool: "#a8f0f4", coolShare: 0.55 },
     ],
     stone: [
       { base: "#ddd0b8", glass: "#6888a8" },
@@ -104,7 +106,7 @@ export const RIVERSIDE = {
       { base: "#bcc6cf", glass: "#86a6c2" },
     ],
     far: [
-      { base: "#a9bfd2", glass: "#c3d8ea" },
+      { base: "#a9bfd2", glass: "#c3d8ea", cool: "#9fd2ff", coolShare: 0.5 },
       { base: "#d3cbbd", glass: "#9db4c8" },
     ],
   },
