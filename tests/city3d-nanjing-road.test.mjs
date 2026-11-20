@@ -92,3 +92,17 @@ test("the kit's new pieces: paving, stone relief on the arcade, planters, light 
   assert.match(src, /useDisposeOnUnmount\(built\)/);
   assert.doesNotMatch(src, /\battach\b/);
 });
+
+test("the tuning: carved, floodlit stone facades with windows lit by floors, glazed lit shopfronts, the day plate's sun and dapple", async () => {
+  // the left side is the kit's surface with stone relief and a floodlight glow, not window-material towers
+  assert.match(src, /"facades:stone"/);
+  assert.match(src, /relief: \{ kind: "stone", bay: BAY, floor: FLOOR/);
+  assert.match(src, /"windows:lit"/);
+  assert.doesNotMatch(src, /buildTowers\(\[\.\.\.left/);
+  // the shopfronts: kit glass over a lit room, their light spilling onto the paving
+  assert.match(src, /glassMaterial\(\{ tint: "#55697a"/);
+  assert.match(src, /"shops:sheen"/);
+  assert.match(src, /useDayShade\("nanjing-road", SHADE, active\)/);
+  const { scenes } = await import("../app/components/city3d/scenes.ts");
+  assert.ok(scenes["nanjing-road"].sun[0] > 0, "the sun from the right, as the day plate");
+});
