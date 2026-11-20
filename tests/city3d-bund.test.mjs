@@ -98,6 +98,16 @@ test("no words in the scene, no clickable things", () => {
 
 test("the clock shows Richmond Hill's hour from the store, redrawn when the minute changes", () => {
   assert.match(src, /const hour = useWorld\(\(s\) => s\.hour\);/);
-  assert.match(src, /screenMaterial\(paintClock, \{ w: 256, h: 256, key: "bund:clock" \}\)/);
-  assert.match(src, /\(m\.userData\.redraw as \(\) => void\)\(\);/);
+  // the kit's clock (kit/neon.ts: clockMaterial, kit/textures.ts: clockFace), not a local one
+  assert.match(src, /clockMaterial\(world\.get\(\)\.hour\)/);
+  assert.match(src, /if \(setClockHour\(hour\)\) invalidate\(\);/);
+  assert.doesNotMatch(src, /paintClock|function pavingTiles\(w: number, d: number\) \{/);
+});
+
+test("the kit's new pieces: glass kiosk, paving, ashlar relief on the floodlit stone, light pools", () => {
+  assert.match(src, /glassMaterial\(\{ tint: "#9fcfd6"[^)]*glow: \{ tone: "cyan"/);
+  assert.match(src, /pavingTexture\(\{ seed: 37, kind: "grid"/);
+  assert.match(src, /surface\(\{ color: STONE, relief: \{ kind: "brick"[^}]*\}, glow: \{ tone: SCENE_TONES\.gold/);
+  assert.match(src, /useGlowPools\("bund", POOLS, active\)/);
+  assert.match(src, /useDisposeOnUnmount\(built\)/);
 });

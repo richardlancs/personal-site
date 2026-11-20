@@ -113,3 +113,85 @@ test("a scene's lights are exactly its DISTRICT_LIGHTS spot lights, through Scen
   assert.match(common, /export type Mover = \{ object: THREE\.Object3D; update\(t: number\): void; park\(\): void \};/);
   assert.match(read(`${city}/City3D.tsx`), /<Scene active=\{active === id\} quality=\{tier\} navigate=\{navigate\} still=\{still\} \/>/);
 });
+
+// Wave 4: the shell does what the defs describe, and the scenes share the
+// kit's patterns
+
+test("the camera rests on a chosen thing's focus pose, for every district that has them, and home otherwise", async () => {
+  const { scenes, restingPose, focusTravel } = await import(`../${city}/scenes.ts`);
+  const withFocus = Object.entries(scenes).filter(([, def]) => Object.keys(def.focus).length > 0);
+  assert.deepEqual(withFocus.map(([id]) => id).sort(), ["metro", "nanjing-road", "towers"]);
+  for (const [id, def] of withFocus) {
+    for (const [key, pose] of Object.entries(def.focus)) {
+      assert.equal(restingPose(id, key), pose, `${id}: ${key}`);
+      // a short gentle arc there from home and back: a lifted middle, 0.6–1.1 s
+      for (const [from, to] of [[def.home, pose], [pose, def.home]]) {
+        const { mid, dur } = focusTravel(from, to);
+        assert.ok(dur >= 0.6 && dur <= 1.1, `${id}: ${key}: ${dur}`);
+        assert.ok(mid.pos[1] >= (from.pos[1] + to.pos[1]) / 2 - 1e-9, `${id}: ${key}: the arc is lifted`);
+        assert.ok(mid.pos[1] - (from.pos[1] + to.pos[1]) / 2 <= 0.6 + 1e-9);
+      }
+    }
+    // nothing chosen, or a key from another place: home
+    assert.equal(restingPose(id, null), def.home);
+    assert.equal(restingPose(id, "not-a-focus"), def.home);
+  }
+  assert.equal(restingPose("longtang", "screen-0"), scenes.longtang.home);
+});
+
+test("the Director travels to the focus pose and back, interruptibly, cut in still view, never touching the page's focus", () => {
+  const src = noComments(read(`${city}/City3D.tsx`));
+  assert.match(src, /const restPose = \(scene: SceneId\) => inWorld\(scene, restingPose\(scene, world\.get\(\)\.focus\)\);/);
+  // a focus belongs to its place: cleared on every journey to another
+  assert.match(src, /if \(from !== to\) world\.set\(\{ arrived: false, hover: null, focus: null \}\);/);
+  // the store's focus is followed; a journey is never cut short by it; still view cuts (the rest takes it at once)
+  assert.match(src, /world\.subscribe\(\(\) => \{\s*const key = world\.get\(\)\.focus;/);
+  assert.match(src, /if \(!s\.started \|\| holdingStill\(\)\) return;/);
+  assert.match(src, /const journey = s\.queue\.length > 0 \|\| \(s\.running && !s\.running\.seg\.focus\);/);
+  assert.match(src, /focusTravel\(/);
+  assert.match(src, /ease: easeInOut, to: \[[^\]]*\], focus: true \}/);
+  assert.doesNotMatch(src, /\.focus\(\{ preventScroll/, "the canvas never moves keyboard focus");
+});
+
+test("?frame=plate exists only in development: the painting's pose, lens and shape, the panel hidden", () => {
+  const src = read(`${city}/City3D.tsx`);
+  assert.match(src, /const plateWanted = \(\) => process\.env\.NODE_ENV === "development" && new URLSearchParams\(location\.search\)\.get\("frame"\) === "plate";/);
+  assert.match(src, /if \(process\.env\.NODE_ENV !== "development" \|\| !plate\) return;/);
+  assert.match(src, /export const PLATE_ASPECT = 2400 \/ 1032;/);
+  assert.match(src, /const pf = def\.plateFrame;[\s\S]*fov = pf\.fov;/);
+  assert.match(read("docs/superpowers/plans/2026-11-19-shanghai-3d.md"), /\?frame=plate/);
+});
+
+test("a Hitbox says where it was hit; the rain keeps out of a place's shelter; the sun stands where a place's def says", async () => {
+  const common = noComments(read(`${city}/common.tsx`));
+  assert.match(common, /export type Hit = \{ uv: THREE\.Vector2 \| null; point: THREE\.Vector3 \};/);
+  assert.match(common, /onSelect: \(hit: Hit\) => void;/);
+  assert.match(common, /onSelect\(\{ uv: e\.uv \? e\.uv\.clone\(\) : null, point:/);
+  const { scenes } = await import(`../${city}/scenes.ts`);
+  const { METRO } = await import(`../${city}/districts/metro.def.ts`);
+  assert.equal(scenes.metro.shelter, METRO.shelter);
+  const precip = noComments(read(`${city}/atmosphere/Precipitation.tsx`));
+  assert.match(precip, /const shelter = scenes\[active\]\.shelter;/);
+  assert.match(noComments(read(`${city}/kit/precip.ts`)), /if \(all\(greaterThan\(p, uShelterMin\)\) && all\(lessThan\(p, uShelterMax\)\)\) vAlpha = 0\.0;/);
+  assert.ok(Array.isArray(scenes.longtang.sun) && scenes.longtang.sun[0] > 0, "the lane is lit from the right");
+});
+
+test("what a scene builds is let go on its real unmount, never on development's double effect; the kit's dispose never detaches", () => {
+  const common = noComments(read(`${city}/common.tsx`));
+  assert.match(common, /export function useDisposeOnUnmount\(owner: \{ dispose\(\): void \}\): void/);
+  assert.match(common, /window\.clearTimeout\(waiting\);/);
+  assert.match(common, /window\.setTimeout\(\(\) => \{\s*pendingDispose\.delete\(owner\);\s*owner\.dispose\(\);\s*\}, 0\)/);
+  for (const f of ["Riverside.tsx", ...places.map((id) => `districts/${id}.tsx`)]) {
+    const src = noComments(read(`${city}/${f}`));
+    assert.match(src, /useDisposeOnUnmount\(built\);/, f);
+    assert.doesNotMatch(src, /useEffect\(\(\) => \(\) => built\.dispose\(\), \[built\]\);/, f);
+    assert.doesNotMatch(src, /built\.dispose\(\)/, `${f}: disposed only through useDisposeOnUnmount`);
+  }
+  for (const f of walk(`${city}/kit`)) assert.doesNotMatch(noComments(read(f)), /removeFromParent\(\)/, f);
+});
+
+test("every section's scene and the riverside light their surroundings after dark with the kit's pools", () => {
+  for (const [f, id] of [["Riverside.tsx", "lujiazui"], ...places.map((p) => [`districts/${p}.tsx`, p])]) {
+    assert.match(noComments(read(`${city}/${f}`)), new RegExp(`useGlowPools\\("${id}", POOLS, active\\)`), f);
+  }
+});

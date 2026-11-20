@@ -2,7 +2,8 @@
 
 import { useMemo } from "react";
 import * as THREE from "three";
-import { useDisposeOnUnmount, SceneLights, type SceneProps } from "../common";
+import { useDayShade, useDisposeOnUnmount, useGlowPools, SceneLights, type SceneProps } from "../common";
+import type { DayShade, GlowPool } from "../kit/glow";
 import { box, blob, merge, wire } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, SCENE_TONES, type SceneTone } from "../kit/neon";
@@ -10,7 +11,7 @@ import { buildMarkSign, disposeSign, glowPoints } from "../kit/signs";
 import { buildSkyDome } from "../kit/sky";
 import { glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
-import { track } from "../kit/textures";
+import { pavingTexture } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
 import { buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
@@ -67,64 +68,13 @@ const C = {
   far: "#5c6a7c",
 } as const;
 
-// A brick wall, painted once from a seed: courses of 7.5 cm, bricks of
-// 15 cm, light mortar; one tile is 0.6 m square (box() lays it by the metre)
+// The walls' brick is the kit's relief (courses of 7.5 cm, bricks of
+// 22 cm, light mortar), drawn in the shader; box() lays a texture by the
+// 0.6 m tile for the roofs' and gables' UVs
 const BRICK_TILE = 0.6;
-function brickTexture(): THREE.CanvasTexture {
-  const S = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = S;
-  const g = canvas.getContext("2d")!;
-  const r = rng(907);
-  g.fillStyle = "#cdbfae";
-  g.fillRect(0, 0, S, S);
-  const rows = 8;
-  const rh = S / rows;
-  const bw = S / 4;
-  for (let row = 0; row < rows; row++) {
-    const shift = row % 2 ? bw / 2 : 0;
-    for (let i = -1; i < 5; i++) {
-      const x = i * bw + shift;
-      const l = r.range(-14, 12);
-      const red = 166 + l + r.range(-8, 8);
-      g.fillStyle = `rgb(${red | 0}, ${(88 + l * 0.7 + r.range(-6, 6)) | 0}, ${(66 + l * 0.6) | 0})`;
-      g.fillRect(x + 2, row * rh + 2, bw - 4, rh - 4);
-    }
-  }
-  const t = track(new THREE.CanvasTexture(canvas));
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
-}
-
-// The lane's stones: slabs about 0.6 m, a little uneven, blue-grey; one
-// tile is 2.4 m square
+// The lane's stones: slabs about 0.6 m, a little uneven (the kit's
+// paving, laid blue-grey); one tile of 4 × 4 is 2.4 m square
 const SLAB_TILE = 2.4;
-function pavingTexture(): THREE.CanvasTexture {
-  const S = 256;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = S;
-  const g = canvas.getContext("2d")!;
-  const r = rng(911);
-  g.fillStyle = "#5f6672";
-  g.fillRect(0, 0, S, S);
-  const n = 4;
-  const c = S / n;
-  for (let row = 0; row < n; row++) {
-    const shift = row % 2 ? c / 2 : 0;
-    for (let i = -1; i <= n; i++) {
-      const l = r.range(-12, 12);
-      g.fillStyle = `rgb(${(128 + l) | 0}, ${(134 + l) | 0}, ${(146 + l) | 0})`;
-      g.fillRect(i * c + shift + 2, row * c + 2, c - 4, c - 4);
-    }
-  }
-  const t = track(new THREE.CanvasTexture(canvas));
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
-}
 
 // A rod between two points (a frame tube, a handlebar)
 function rod(a: V3, b: V3, r: number, radial = 6) {
@@ -207,9 +157,8 @@ function build(quality: Quality) {
   const lane = add(new THREE.Group());
   lane.name = "lane";
   lane.scale.setScalar(K);
-  const brick = brickTexture();
-  const slabs = pavingTexture();
-  disposers.push(() => brick.dispose(), () => slabs.dispose());
+  const slabs = pavingTexture({ seed: 911, kind: "slabs", cols: 4, rows: 4, repeat: [(LANE.right - LANE.left) / SLAB_TILE, (LANE.near - LANE.end) / SLAB_TILE] });
+  disposers.push(() => slabs.dispose());
   const parts: Parts = {
     brick: [],
     stone: [],
@@ -433,7 +382,7 @@ function build(quality: Quality) {
   }
 
   // ---- The lane's materials, one merged mesh each
-  const brickWall = surface({ color: "#ffffff", map: brick, grime: 0.15 });
+  const brickWall = surface({ color: "#a2604a", grime: 0.15, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 } });
   const MATERIALS: Record<string, THREE.Material> = {
     brick: brickWall,
     stone: surface({ color: C.stone, grime: 0.1 }),
@@ -496,7 +445,6 @@ function build(quality: Quality) {
 
   // ---- The paving: blue-grey slabs, wet in the rain, the lanterns' and
   // signs' lights streaked on it (fake on every tier)
-  slabs.repeat.set((LANE.right - LANE.left) / SLAB_TILE, (LANE.near - LANE.end) / SLAB_TILE);
   const paving = wetPaving({
     w: (LANE.right - LANE.left) * K,
     d: (LANE.near - LANE.end) * K,
@@ -505,7 +453,7 @@ function build(quality: Quality) {
     y: 0,
     mode: "fake",
     map: slabs,
-    color: "#ffffff",
+    color: "#959cab",
     lights: [
       ...LANE.lanterns.map(([side, z]) => ({ x: (face(side) - side * 0.62) * K, z: z * K, w: 0.04, color: "#ffc98a", height: 0.45 })),
       ...LANE.blades.map(([side, z, y], i) => ({ x: (face(side) - side * 0.5) * K, z: z * K, w: 0.05, color: SCENE_TONES[tones[i]], height: y * K })),
@@ -567,8 +515,30 @@ function build(quality: Quality) {
   };
 }
 
-function AboutScene({ quality }: SceneProps) {
+const face = (side: number) => (side < 0 ? LANE.left : LANE.right);
+
+// After dark the lanterns warm the brick and the stones round them, and the
+// blade signs throw their colour on the walls (kit/glow.ts: pools)
+const SIGN_TONES: SceneTone[] = ["cyan", "rose"];
+const POOLS: GlowPool[] = [
+  ...LANE.lanterns.map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 0.75) * K, 2.6 * K, z * K], reach: 3.6 * K, color: "#ffb873", strength: 1.1 })),
+  ...LANE.blades.map(([side, z, y], i): GlowPool => ({ pos: [(face(side) - side * 0.5) * K, y * K, z * K], reach: 2.6 * K, color: SCENE_TONES[SIGN_TONES[i]], strength: 0.5 })),
+];
+// By day the right-hand houses shade the right side of the lane (the sun
+// is on the right, as in the plate: longtang.def.ts: sun)
+const SHADE: DayShade = {
+  kind: "edge",
+  box: [LANE.left * K, LANE.end * K, LANE.right * K, LANE.near * K],
+  dir: [1, 0],
+  at: (LANE.right - LANE.left) * 0.58 * K,
+  depth: 0.38,
+  top: 0.05,
+};
+
+function AboutScene({ quality, active }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
+  useGlowPools("longtang", POOLS, active);
+  useDayShade("longtang", SHADE, active);
   useDisposeOnUnmount(built);
   return (
     <>

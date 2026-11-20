@@ -80,3 +80,13 @@ test("one upstairs window lit gold", () => {
   assert.equal([...src.matchAll(/\(lit \? parts\.lit : parts\.glass\)\.push/g)].length, 1);
   assert.match(src, /const lit = side < 0 && index === LANE\.litHouse && !litPlaced;/);
 });
+
+test("the kit's new pieces: brick relief instead of a painted map, the kit's paving, lanterns' and signs' pools, one side of the lane in shade by day, the sun on the right", () => {
+  assert.match(src, /relief: \{ kind: "brick", course: 0\.075 \* K/);
+  assert.doesNotMatch(src, /function brickTexture|function pavingTexture|new THREE\.CanvasTexture/);
+  assert.match(src, /pavingTexture\(\{ seed: 911, kind: "slabs"/);
+  assert.match(src, /useGlowPools\("longtang", POOLS, active\)/);
+  assert.match(src, /useDayShade\("longtang", SHADE, active\)/);
+  assert.match(src, /kind: "edge"/);
+  assert.match(src, /useDisposeOnUnmount\(built\)/);
+});

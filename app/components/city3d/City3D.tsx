@@ -19,7 +19,7 @@ import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import Post from "./Post";
 import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
-import { routesFromRiverside, sceneOrder, scenes, type Pose, type SceneId, type V3 } from "./scenes";
+import { focusTravel, restingPose, routesFromRiverside, sceneOrder, scenes, type Pose, type SceneId, type V3 } from "./scenes";
 import { useWorld, world } from "./store";
 import { TIERS, type Quality } from "./tiers";
 
@@ -102,11 +102,8 @@ const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] +
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
 // Where the camera rests in a place: the focus pose the panel or a click
 // chose (the store's `focus`, districts/<id>.def.ts: focus), else home
-const focusPose = (scene: SceneId) => {
-  const key = world.get().focus;
-  return key ? scenes[scene].focus[key] : undefined;
-};
-const restPose = (scene: SceneId) => inWorld(scene, focusPose(scene) ?? scenes[scene].home);
+const restPose = (scene: SceneId) => inWorld(scene, restingPose(scene, world.get().focus));
+const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
 // The plates' shape (app/assets/city/*.webp, 2400 × 1032)
 export const PLATE_ASPECT = 2400 / 1032;
@@ -262,15 +259,10 @@ function Director({
       const journey = s.queue.length > 0 || (s.running && !s.running.seg.focus);
       if (journey) return;
       const to = restPose(s.active);
-      const d = s.pos.distanceTo(to.pos) + 0.25 * s.look.distanceTo(to.target);
-      if (d < 0.01) return;
-      // the arc: through a point a little above the way between
-      const mid = {
-        pos: s.pos.clone().lerp(to.pos, 0.5).add(new THREE.Vector3(0, Math.min(0.6, 0.08 * s.pos.distanceTo(to.pos)), 0)),
-        target: s.look.clone().lerp(to.target, 0.5),
-      };
+      const { mid, dur, distance } = focusTravel({ pos: v3(s.pos), target: v3(s.look) }, { pos: v3(to.pos), target: v3(to.target) });
+      if (distance < 0.01) return;
       s.running = null;
-      s.queue = [{ kind: "move", dur: THREE.MathUtils.clamp(0.55 + 0.03 * d, 0.6, 1.1), ease: easeInOut, to: [mid, to], focus: true }];
+      s.queue = [{ kind: "move", dur, ease: easeInOut, to: [{ pos: new THREE.Vector3(...mid.pos), target: new THREE.Vector3(...mid.target) }, to], focus: true }];
     });
     return () => {
       off();

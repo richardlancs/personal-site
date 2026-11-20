@@ -5,7 +5,9 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { projects } from "../../../data/portfolio";
 import { anchors } from "../anchors";
-import { useDisposeOnUnmount, anchorKey, Hitbox, SceneLights, type SceneProps } from "../common";
+import { useDisposeOnUnmount, useGlowPools, anchorKey, Hitbox, SceneLights, type SceneProps } from "../common";
+import { glassMaterial } from "../kit/glass";
+import type { GlowPool } from "../kit/glow";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenArt, screenMaterial, type SceneTone } from "../kit/neon";
@@ -13,7 +15,7 @@ import type { LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
 import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
-import { fit, fonts, fontsReady, textureBytes } from "../kit/textures";
+import { fit, fonts, fontsReady, pavingTexture, textureBytes } from "../kit/textures";
 import { buildTowers, layoutTowers, type TowerSpec } from "../kit/towers";
 import { buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
@@ -171,8 +173,11 @@ function paintScreen(n: number) {
   };
 }
 
-// The screens' canvases: smaller on the phone tier
-const screenSize = (quality: Quality) => (quality === "mobile" ? { w: 512, h: 360 } : { w: 1024, h: 720 });
+// The screens' canvases, as large as a screen ever shows on each tier:
+// at its focus pose a screen is about 410 × 285 CSS px at 1440 × 900,
+// so 768 × 540 at the high tier's pixel ratio (1.75), 640 × 450 at the
+// low tier's (1.5); on the phone tier, a band over the sheet, 384 × 270
+const screenSize = (quality: Quality) => (quality === "mobile" ? { w: 384, h: 270 } : quality === "low" ? { w: 640, h: 450 } : { w: 768, h: 540 });
 
 function screenFace(n: number, quality: Quality) {
   const { w, h } = screenSize(quality);
@@ -351,6 +356,8 @@ function build(quality: Quality): Built {
     const rail = add(buildRailing(circle(r)));
     geometries.push(rail.geometry);
   }
+  // glass panes along both railings (the kit's glass)
+  mesh(merge([arcFace(rin + 0.045, 0, 360, top, top + 0.1, 96, true), arcFace(rout - 0.045, 0, 360, top, top + 0.1, 96, false)]), glassMaterial({ tint: "#bcd6e6", opacity: 0.2, sky: 0.6, double: true }), "glass:railing");
   for (let az = -150; az <= 150; az += 10) {
     const p = polar(R.r, az);
     lights.push({ x: p.x, z: p.z, w: 0.5, color: SCENE_TONES.gold, height: top });
@@ -393,7 +400,10 @@ function build(quality: Quality): Built {
   }
 
   // ---- The plaza's paving: the lights streak it in the rain
-  const paving = wetPaving({ w: 140, d: 140, x: 0, z: 0, y: 0, mode: "fake", color: PAVING, lights });
+  // (granite slabs about 2 m, the kit's paving)
+  const slabs = pavingTexture({ seed: 41, kind: "slabs", repeat: [140 / 0.8, 140 / 0.8] });
+  const paving = wetPaving({ w: 140, d: 140, x: 0, z: 0, y: 0, mode: "fake", color: PAVING, lights, map: slabs });
+  disposers.push(() => slabs.dispose());
   add(paving.mesh);
   disposers.push(paving.dispose);
 
@@ -430,12 +440,27 @@ const SPOTS: V3[] = T.spots.map((az) => {
   return [p.x, p.y, p.z];
 });
 
+// After dark: each screen's light on the plaza and the podium's stone
+// under it, and the downlights under the ring's deck, on the paving below
+// (kit/glow.ts: pools)
+const POOLS: GlowPool[] = [
+  ...T.screens.az.map((_, n): GlowPool => {
+    const [x, , z] = screenMiddle(n);
+    return { pos: [x * 0.9, 1.5, z * 0.9], reach: 7, color: n % 2 ? SCENE_TONES.rose : SCENE_TONES.cyan, strength: 0.45 };
+  }),
+  ...[-37.5, -22.5, -7.5, 7.5, 22.5, 37.5, 52.5].map((az): GlowPool => {
+    const p = polar(T.ring.r, az, T.ring.deck - T.ring.thick - 0.1);
+    return { pos: [p.x, p.y, p.z], reach: 1.6, color: "#ffd49a", strength: 1.1 };
+  }),
+];
+
 // May the screenshots be shown? Always on the desktop tiers; on the phone
 // tier only while the kit's textures are inside its budget
 const shotsFit = (quality: Quality) => quality !== "mobile" || textureBytes() <= TIERS.mobile.textureMB * 2 ** 20;
 
 function ProjectsScene({ quality, active }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
+  useGlowPools("towers", POOLS, active);
   const invalidate = useThree((s) => s.invalidate);
   const chosen = useWorld((s) => s.sel.project);
 
@@ -465,6 +490,17 @@ function ProjectsScene({ quality, active }: SceneProps) {
     built.frames.forEach((m, n) => (m.material = n === chosen ? FRAME_TONES.gold() : FRAME_TONES.cyan()));
     invalidate();
   }, [built, chosen, invalidate]);
+
+  // The screens' pictures exist only while the place is showing: released
+  // (canvas and upload) when it's left, painted again on the way back
+  useEffect(() => {
+    if (!active) {
+      for (const f of built.faces) f.userData.release?.();
+      return;
+    }
+    for (const f of built.faces) f.userData.restore?.();
+    invalidate();
+  }, [active, built, invalidate]);
 
   // The cover screenshots: fetched only while the place is showing, let
   // go (the title cards back) when it isn't

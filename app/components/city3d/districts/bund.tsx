@@ -3,23 +3,25 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useDisposeOnUnmount, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDisposeOnUnmount, useGlowPools, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { glassMaterial } from "../kit/glass";
+import type { GlowPool } from "../kit/glow";
 import { blob, box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { aircraftLights, buildBoat } from "../kit/movers";
-import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
+import { clockMaterial, glowSprites, litSurface, neonMaterial, SCENE_TONES, type SceneTone } from "../kit/neon";
 import { reflectIn, type LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
 import { buildLampRow, buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
-import { track } from "../kit/textures";
+import { pavingTexture, setClockHour } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
 import { buildStreetTrees } from "../kit/trees";
 import { buildRiver, wetPaving } from "../kit/water";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
 import type { V3 } from "../scenes";
-import { useWorld } from "../store";
+import { useWorld, world } from "../store";
 import { TIERS, type Quality } from "../tiers";
 import { BUND } from "./bund.def";
 
@@ -65,88 +67,19 @@ const GLASS_DAY = "#3c4756";
 
 const dim = (tone: SceneTone, k: number) => `#${new THREE.Color(SCENE_TONES[tone]).multiplyScalar(k).getHexString()}`;
 
-// The clock: Richmond Hill's hour (0..24, minutes as a fraction), read by
-// the face's painter whenever it is redrawn
-const clock = { hour: 12 };
-function paintClock(g: CanvasRenderingContext2D, w: number, h: number) {
-  const c = w / 2;
-  const R = w / 2 - 4;
-  g.fillStyle = "#1f2226";
-  g.fillRect(0, 0, w, h);
-  g.fillStyle = "#f1ead6";
-  g.beginPath();
-  g.arc(c, c, R, 0, Math.PI * 2);
-  g.fill();
-  g.strokeStyle = "#2b2f33";
-  g.lineWidth = w * 0.03;
-  g.stroke();
-  for (let i = 0; i < 60; i++) {
-    const a = (i / 60) * Math.PI * 2;
-    const long = i % 5 === 0;
-    g.lineWidth = long ? w * 0.028 : w * 0.009;
-    g.beginPath();
-    g.moveTo(c + Math.cos(a) * R * (long ? 0.74 : 0.84), c + Math.sin(a) * R * (long ? 0.74 : 0.84));
-    g.lineTo(c + Math.cos(a) * R * 0.92, c + Math.sin(a) * R * 0.92);
-    g.stroke();
-  }
-  const minutes = Math.floor((((clock.hour % 24) + 24) % 24) * 60);
-  const hand = (turn: number, len: number, width: number) => {
-    const a = turn * Math.PI * 2 - Math.PI / 2;
-    g.lineWidth = width;
-    g.lineCap = "round";
-    g.beginPath();
-    g.moveTo(c, c);
-    g.lineTo(c + Math.cos(a) * len, c + Math.sin(a) * len);
-    g.stroke();
-  };
-  g.strokeStyle = "#22262a";
-  hand((minutes % 720) / 720, R * 0.5, w * 0.045);
-  hand((minutes % 60) / 60, R * 0.78, w * 0.025);
-  g.fillStyle = "#22262a";
-  g.beginPath();
-  g.arc(c, c, w * 0.03, 0, Math.PI * 2);
-  g.fill();
-}
-// The promenade's paving: square stone slabs, a little uneven in tone,
-// painted once from a seed and repeated, one slab a metre
-let tiles: THREE.CanvasTexture | null = null;
-function pavingTiles(w: number, d: number) {
-  if (!tiles) {
-    const size = 256;
-    const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = size;
-    const g = canvas.getContext("2d")!;
-    const r = rng(37);
-    const n = 4;
-    const cell = size / n;
-    const base = new THREE.Color(PAVING);
-    for (let i = 0; i < n; i++)
-      for (let j = 0; j < n; j++) {
-        const k = 0.9 + r() * 0.16;
-        g.fillStyle = `#${base.clone().multiplyScalar(k).getHexString()}`;
-        g.fillRect(i * cell, j * cell, cell, cell);
-      }
-    g.strokeStyle = "rgba(70,60,50,0.32)";
-    g.lineWidth = 2;
-    for (let i = 0; i <= n; i++) {
-      g.beginPath();
-      g.moveTo(i * cell, 0);
-      g.lineTo(i * cell, size);
-      g.moveTo(0, i * cell);
-      g.lineTo(size, i * cell);
-      g.stroke();
-    }
-    tiles = track(new THREE.CanvasTexture(canvas));
-    tiles.colorSpace = THREE.SRGBColorSpace;
-    tiles.wrapS = tiles.wrapT = THREE.RepeatWrapping;
-    tiles.anisotropy = 8;
-  }
-  // a slab 0.1 units square: n slabs a repeat
-  tiles.repeat.set(w / 0.4, d / 0.4);
-  return tiles;
-}
+// The promenade's paving: square stone slabs a metre across (the kit's
+// paving, four to a tile 0.4 units square)
+const pavingTiles = (w: number, d: number) => pavingTexture({ seed: 37, kind: "grid", cols: 4, rows: 4, joint: 2, repeat: [w / 0.4, d / 0.4] });
 
-const clockMaterial = () => screenMaterial(paintClock, { w: 256, h: 256, key: "bund:clock" });
+// After dark: the lamps' light on the promenade and the facades' fronts
+// near the eye, and the kiosk's cyan on the stones round it (kit/glow.ts:
+// pools)
+const POOLS: GlowPool[] = [
+  ...Array.from({ length: 9 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.1), LAND + BUND.lamps.pier + 0.6, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.1, color: "#ffc98a", strength: 1.0 })),
+  { pos: [X(BUND.kiosk.s), BUND.kiosk.h * 0.6, Z(BUND.kiosk.a)], reach: 0.6, color: SCENE_TONES.cyan, strength: 0.9 },
+  { pos: [X(BUND.front + 0.6), 0.5, Z(BUND.clock.a)], reach: 1.6, color: "#ffd9a0", strength: 0.5 },
+];
+
 
 type Built = {
   group: THREE.Group;
@@ -195,6 +128,8 @@ function build(quality: Quality): Built {
   // streaked on it), the road, the river wall
   const lampAlong = Array.from({ length: B.lamps.count }, (_, i) => B.lamps.from + i * B.lamps.step);
   const P = B.promenade;
+  const tiles = pavingTiles(P.s1 - P.s0, P.a1 - P.a0);
+  disposers.push(() => tiles.dispose());
   const paving = wetPaving({
     w: P.s1 - P.s0,
     d: P.a1 - P.a0,
@@ -202,8 +137,8 @@ function build(quality: Quality): Built {
     z: (Z(P.a0) + Z(P.a1)) / 2,
     y: LAND,
     mode: "fake",
-    color: "#ffffff",
-    map: pavingTiles(P.s1 - P.s0, P.a1 - P.a0),
+    color: PAVING,
+    map: tiles,
     lights: [
       ...lampAlong.slice(0, 24).map((a) => ({ x: X(B.lamps.s - 0.1), z: Z(a), w: 0.12, color: "#ffc98a", height: 0.75 })),
       { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.08, color: SCENE_TONES.cyan, height: 0.3 },
@@ -252,7 +187,9 @@ function build(quality: Quality): Built {
   // the crowns on top
   const F = B.front;
   const back = 2.6;
-  const stone = litSurface({ color: STONE, tone: "gold", strength: 0.34 });
+  // (floodlit after dark; the kit's relief lays ashlar courses in it for
+  // the light to catch)
+  const stone = surface({ color: STONE, relief: { kind: "brick", course: 0.055, length: 0.16, strength: 0.4 }, glow: { tone: SCENE_TONES.gold, strength: 0.34 } });
   const trim = litSurface({ color: STONE_TRIM, tone: "gold", strength: 0.5 });
   const roof = surface({ color: "#6d7a74", grime: 0.4 });
   const bodies: THREE.BufferGeometry[] = [];
@@ -363,7 +300,7 @@ function build(quality: Quality): Built {
 
   // The clock's two faces
   const faceGeo = new THREE.CircleGeometry(0.3, 40);
-  const faces = mesh(merge([faceGeo.clone().rotateY(-Math.PI / 2).translate(X(cs + C.w / 2 + 0.006), C.face, cz), faceGeo.clone().rotateY(Math.PI).translate(cx, C.face, Z(C.a - C.w / 2 - 0.006))]), clockMaterial(), "clock");
+  const faces = mesh(merge([faceGeo.clone().rotateY(-Math.PI / 2).translate(X(cs + C.w / 2 + 0.006), C.face, cz), faceGeo.clone().rotateY(Math.PI).translate(cx, C.face, Z(C.a - C.w / 2 - 0.006))]), clockMaterial(world.get().hour), "clock");
   faceGeo.dispose();
   faces.renderOrder = 1;
 
@@ -416,7 +353,7 @@ function build(quality: Quality): Built {
   frame.push(box(0.045, 0.07, 0.02).translate(kx + 0.02, K.h * 0.55, kz + K.d / 2 - 0.02));
   mesh(merge(frame), surface({ color: METAL }), "kiosk");
   const glass = [box(K.w - 0.01, K.h - 0.02, 0.004).translate(kx, K.h / 2, kz - K.d / 2), box(K.w - 0.01, K.h - 0.02, 0.004).translate(kx, K.h / 2, kz + K.d / 2), box(0.004, K.h - 0.02, K.d - 0.01).translate(kx - K.w / 2, K.h / 2, kz), box(0.004, K.h - 0.02, K.d - 0.01).translate(kx + K.w / 2, K.h / 2, kz)];
-  mesh(merge(glass), litSurface({ color: "#93b4ba", tone: "cyan", strength: 0.16 }), "kiosk:glass");
+  mesh(merge(glass), glassMaterial({ tint: "#9fcfd6", opacity: 0.3, sky: 0.5, glow: { tone: "cyan", strength: 0.32 }, double: true }), "kiosk:glass");
   mesh(box(K.w - 0.02, 0.008, K.d - 0.02).translate(kx, K.h - 0.006, kz), neonMaterial(dim("cyan", 0.55), { dayColor: "#c9dce0" }), "kiosk:light");
   glow.push({ pos: new THREE.Vector3(kx, K.h * 0.6, kz), color: SCENE_TONES.cyan, size: 0.35 });
 
@@ -541,17 +478,12 @@ function ContactScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useMovers(built.movers, { active, still });
   useDisposeOnUnmount(built);
+  useGlowPools("bund", POOLS, active);
   // The clock follows Richmond Hill's hour, redrawn when the minute changes
   const hour = useWorld((s) => s.hour);
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
-    const minute = Math.floor(hour * 60);
-    if (Math.floor(clock.hour * 60) === minute && clockMaterial().userData.drawn) return;
-    clock.hour = hour;
-    const m = clockMaterial();
-    (m.userData.redraw as () => void)();
-    m.userData.drawn = true;
-    invalidate();
+    if (setClockHour(hour)) invalidate();
   }, [hour, built, invalidate]);
   return (
     <>

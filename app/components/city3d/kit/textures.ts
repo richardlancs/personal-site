@@ -48,8 +48,14 @@ export function textureBytes(root?: THREE.Object3D): number {
         for (const v of Object.values(mat as unknown as Record<string, unknown>)) if (v instanceof THREE.Texture) seen.add(v);
     });
   } else for (const t of live) seen.add(t);
+  // (clones share their source's one upload: counted once)
+  const sources = new Set<unknown>();
   let sum = 0;
-  for (const t of seen) sum += bytesOf(t);
+  for (const t of seen) {
+    if (sources.has(t.source)) continue;
+    sources.add(t.source);
+    sum += bytesOf(t);
+  }
   return sum;
 }
 
@@ -287,45 +293,117 @@ function drawPanel(g: CanvasRenderingContext2D, r: Rng, w: number, h: number, op
   }
 }
 
-// A clock's face (the Bund's clock tower), stopped at 4:17
-export const clockFace = () =>
-  texture("clock", 256, 256, (g) => {
-    g.fillStyle = "#efe6cf";
+// A clock's face (the Bund's clock tower) that tells the time: `hour`
+// is the local hour, 0 up to 24 with the minutes as a fraction (the
+// store's `hour`). One texture, redrawn only when the minute changes
+// (setClockHour); 256 × 256, 0.35 MB with its mipmaps.
+let clockAt = -1;
+let clockPaint: ((hour: number) => void) | null = null;
+function paintClock(g: CanvasRenderingContext2D, hour: number) {
+  g.clearRect(0, 0, 256, 256);
+  g.fillStyle = "#efe6cf";
+  g.beginPath();
+  g.arc(128, 128, 124, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = "#2b2f27";
+  g.lineWidth = 6;
+  g.stroke();
+  for (let i = 0; i < 60; i++) {
+    const a = (i / 60) * Math.PI * 2;
+    const long = i % 5 === 0;
+    g.lineWidth = long ? 6 : 2;
     g.beginPath();
-    g.arc(128, 128, 124, 0, Math.PI * 2);
-    g.fill();
-    g.strokeStyle = "#2b2f27";
-    g.lineWidth = 6;
+    g.moveTo(128 + Math.cos(a) * (long ? 92 : 104), 128 + Math.sin(a) * (long ? 92 : 104));
+    g.lineTo(128 + Math.cos(a) * 112, 128 + Math.sin(a) * 112);
     g.stroke();
-    for (let i = 0; i < 60; i++) {
-      const a = (i / 60) * Math.PI * 2;
-      const long = i % 5 === 0;
-      g.lineWidth = long ? 6 : 2;
-      g.beginPath();
-      g.moveTo(128 + Math.cos(a) * (long ? 92 : 104), 128 + Math.sin(a) * (long ? 92 : 104));
-      g.lineTo(128 + Math.cos(a) * 112, 128 + Math.sin(a) * 112);
-      g.stroke();
-    }
-    const hand = (turn: number, len: number, width: number) => {
-      const a = turn * Math.PI * 2 - Math.PI / 2;
-      g.lineWidth = width;
-      g.lineCap = "round";
-      g.beginPath();
-      g.moveTo(128, 128);
-      g.lineTo(128 + Math.cos(a) * len, 128 + Math.sin(a) * len);
-      g.stroke();
-    };
-    hand((4 + 17 / 60) / 12, 58, 9);
-    hand(17 / 60, 92, 5);
-    // Age: a stain across the glass
-    const grad = g.createLinearGradient(0, 0, 256, 256);
-    grad.addColorStop(0, "rgba(120,100,60,0.25)");
-    grad.addColorStop(0.6, "rgba(120,100,60,0)");
-    g.fillStyle = grad;
+  }
+  const hand = (turn: number, len: number, width: number) => {
+    const a = turn * Math.PI * 2 - Math.PI / 2;
+    g.lineWidth = width;
+    g.lineCap = "round";
     g.beginPath();
-    g.arc(128, 128, 120, 0, Math.PI * 2);
-    g.fill();
+    g.moveTo(128, 128);
+    g.lineTo(128 + Math.cos(a) * len, 128 + Math.sin(a) * len);
+    g.stroke();
+  };
+  const h = ((hour % 12) + 12) % 12;
+  const minutes = (hour - Math.floor(hour)) * 60;
+  hand(h / 12, 58, 9);
+  hand(Math.floor(minutes) / 60, 92, 5);
+  // Age: a stain across the glass
+  const grad = g.createLinearGradient(0, 0, 256, 256);
+  grad.addColorStop(0, "rgba(120,100,60,0.25)");
+  grad.addColorStop(0.6, "rgba(120,100,60,0)");
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(128, 128, 120, 0, Math.PI * 2);
+  g.fill();
+}
+/** The clock's face at `hour` (see above); the same texture every call, redrawn if the minute differs */
+export function clockFace(hour = 12): THREE.CanvasTexture {
+  const t = texture("clock", 256, 256, (g) => {
+    clockPaint = (at: number) => paintClock(g, at);
+    paintClock(g, hour);
+    clockAt = Math.floor(hour * 60);
   });
+  setClockHour(hour);
+  return t;
+}
+/** Moves the clock's hands to `hour`; true if it redrew (the caller asks for a frame) */
+export function setClockHour(hour: number): boolean {
+  const minute = Math.floor(hour * 60);
+  const t = cache.get("clock");
+  if (!t || !clockPaint || minute === clockAt) return false;
+  clockAt = minute;
+  clockPaint(hour);
+  t.needsUpdate = true;
+  return true;
+}
+
+// Paving, as the plates paint it: slabs of stone with dark joints, each a
+// little different in tone, a few flecks; grey on white, so it multiplies
+// whatever colour the surface is. `cols` × `rows` slabs fill one tile;
+// `repeat` how often the tile repeats across the surface's UVs (a
+// clone of the one tile, sharing its upload). `kind`: "slabs" (laid in
+// courses, every other row shifted half a slab), "grid" (square, as on a
+// platform) or "setts" (small stones). 256 × 256: 0.35 MB with mipmaps,
+// once per kind and seed. Works under wetPaving and surface (their `map`).
+export type PavingOptions = { seed: number; kind?: "slabs" | "grid" | "setts"; cols?: number; rows?: number; joint?: number; repeat?: [number, number] };
+export function pavingTexture(o: PavingOptions): THREE.Texture {
+  const kind = o.kind ?? "slabs";
+  const cols = o.cols ?? (kind === "setts" ? 8 : 4);
+  const rows = o.rows ?? (kind === "setts" ? 8 : kind === "grid" ? 4 : 6);
+  const joint = o.joint ?? (kind === "setts" ? 2 : 3);
+  const base = texture(`paving:${kind}:${o.seed}:${cols}x${rows}:${joint}`, 256, 256, (g, r) => {
+    g.fillStyle = "#6c6c6c";
+    g.fillRect(0, 0, 256, 256);
+    const sw = 256 / cols;
+    const sh = 256 / rows;
+    for (let row = 0; row < rows; row++) {
+      const shift = kind === "slabs" && row % 2 ? sw / 2 : 0;
+      for (let col = -1; col < cols + 1; col++) {
+        const x = col * sw + shift;
+        const y = row * sh;
+        const v = 218 + Math.round((r() - 0.5) * 34);
+        const warm = Math.round((r() - 0.5) * 8);
+        g.fillStyle = `rgb(${v + warm},${v},${v - warm})`;
+        g.fillRect(x + joint / 2, y + joint / 2, sw - joint, sh - joint);
+        // a soft worn patch and a few flecks
+        g.fillStyle = `rgba(255,255,255,${(r() * 0.08).toFixed(3)})`;
+        g.fillRect(x + sw * 0.2, y + sh * 0.25, sw * (0.3 + r() * 0.4), sh * (0.2 + r() * 0.4));
+        for (let k = 0; k < 6; k++) {
+          g.fillStyle = `rgba(60,60,60,${(0.08 + r() * 0.1).toFixed(3)})`;
+          g.fillRect(x + r() * sw, y + r() * sh, 1 + r() * 2, 1 + r() * 2);
+        }
+      }
+    }
+  }, { repeat: true, anisotropy: 8 });
+  if (!o.repeat) return base;
+  const t = base.clone();
+  t.repeat.set(o.repeat[0], o.repeat[1]);
+  t.needsUpdate = true;
+  return t;
+}
 
 // A soft round dot, warm: dust or rain in the light
 export const softDot = () =>

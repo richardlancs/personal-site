@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { interests } from "../../../data/portfolio";
 import { anchors } from "../anchors";
 import { createMachine } from "../arcade/arcadeMachine";
-import { useDisposeOnUnmount, anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDisposeOnUnmount, useGlowPools, anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
@@ -16,8 +16,10 @@ import { buildSkyDome } from "../kit/sky";
 import { buildLampRow, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { buildTowers, layoutTowers, type TowerSpec } from "../kit/towers";
-import { buildStreetTrees } from "../kit/trees";
+import { pavingTexture } from "../kit/textures";
+import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
+import type { GlowPool } from "../kit/glow";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
 import type { V3 } from "../scenes";
@@ -213,8 +215,9 @@ function build(quality: Quality): Built {
       // the room's back wall and floor
       slab(XL - 1.4, XL - A.depth, 0, A.height, A.open0, A.open1),
     ]),
-    // (floodlit after dark, warm, as the plates' old fronts)
-    litSurface({ color: STONE, tone: FLOOD, strength: 0.32 }),
+    // (floodlit after dark, warm, as the plates' old fronts; carved: piers,
+    // a cornice, window surrounds, in the kit's relief)
+    surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: 0.34, floor: 0.28, strength: 0.75 }, glow: { tone: FLOOD, strength: 0.32 } }),
     "arcade:front",
   );
   mesh(merge([slab(XL - A.depth, XL - 0.01, 0, 0.004, A.open0, A.open1)]), surface({ color: "#6a5f52" }), "arcade:floor");
@@ -347,7 +350,11 @@ function build(quality: Quality): Built {
   // ---- The ground: the paving between the facades (planar in the
   // puddles on the high tier), the tram's rails
   const length = 22 - FAR_Z;
+  // (stone slabs about a metre, laid in courses: the kit's paving)
+  const slabs = pavingTexture({ seed: 1543, kind: "slabs", repeat: [(XR - XL + 0.2) / 0.4, length / 0.4] });
+  disposers.push(() => slabs.dispose());
   const paving = wetPaving({
+    map: slabs,
     w: XR - XL + 0.2,
     d: length,
     x: (XL + XR) / 2,
@@ -396,11 +403,15 @@ function build(quality: Quality): Built {
     geometries.push(t.geometry);
     add(t);
   }
-  mesh(
-    merge(treeSpots.filter((_, i) => i % 2 === 0).map((t) => box(0.2, 0.07, 0.14).translate(t.x, 0.035, t.z + 0.35))),
-    surface({ color: "#7a5b3e", grime: 0.3 }),
-    "planters",
-  );
+  // planters with flowers (the kit's)
+  for (const p of buildPlanters(
+    1537,
+    treeSpots.filter((_, i) => i % 2 === 0).map((t) => ({ x: t.x, z: t.z + 0.35, w: 0.2, d: 0.14, h: 0.07 })),
+    { stone: "#7a5b3e" },
+  )) {
+    geometries.push(p.geometry);
+    add(p);
+  }
 
   // ---- The tram, parked on its rails: two green cars with a cream band,
   // its windows lit after dark, its headlamp gold
@@ -516,6 +527,14 @@ function build(quality: Quality): Built {
   };
 }
 
+// After dark: the lamps' light on the facades and the paving near the
+// eye, and the arcade's cyan board on its stone (kit/glow.ts: pools)
+const POOLS: GlowPool[] = [
+  ...LAMPS_L.filter((z) => z < 6.5 && z > -3).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
+  ...LAMPS_R.filter((z) => z < 6.5 && z > -2).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
+  { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 },
+];
+
 function InterestsScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useEffect(() => {
@@ -530,6 +549,7 @@ function InterestsScene({ quality, active, still }: SceneProps) {
   const arrived = useWorld((s) => s.arrived);
   const press = useWorld((s) => s.arcadePress);
   const on = active && arrived;
+  useGlowPools("nanjing-road", POOLS, active);
   useMovers(built.movers, { active: on, still });
 
   // A mode chosen (a key in the panel, or the idle cycle there): the
@@ -544,10 +564,12 @@ function InterestsScene({ quality, active, still }: SceneProps) {
 
   // The panel's Play key: the mode's one thing, as a click on the screen
   const seen = useRef(press);
-  const play = () => {
+  // (`uv`: where on the screen a click landed, for the modes that aim;
+  // the Play key presses without aiming)
+  const play = (uv: THREE.Vector2 | null = null) => {
     const t = seconds();
     const s = world.get().still;
-    const status = built.machine.press(null, t, s);
+    const status = built.machine.press(uv, t, s);
     if (status) world.set({ arcadeStatus: status });
     if (s) {
       built.machine.draw(t, true, true);
@@ -573,9 +595,13 @@ function InterestsScene({ quality, active, still }: SceneProps) {
         rotation={built.screen.ry}
         size={built.screen.size}
         enabled={() => on}
-        onSelect={() => {
+        onSelect={(hit) => {
           world.set({ focus: "machine" });
-          play();
+          // the Hitbox is the screen grown 1.2 × 1.3 round its middle, so
+          // the screen's own uv is the hit point scaled back
+          const u = 0.5 + hit.point.x * 1.2;
+          const v = 0.5 + hit.point.y * ((0.44 * 1.3) / 0.4375);
+          play(u >= 0 && u <= 1 && v >= 0 && v <= 1 ? new THREE.Vector2(u, v) : null);
         }}
       />
     </>

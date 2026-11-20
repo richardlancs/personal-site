@@ -33,6 +33,8 @@ const longtang: SceneDef = {
   // stays clear (keep), as in the paintings
   fog: { color: "#1c2232", near: 60, far: 520, keep: { near: 45, far: 380 } },
   background: "#1c2232",
+  // the plates light the left-hand houses from the right
+  sun: [70, 75, 15],
 };
 
 export default longtang;

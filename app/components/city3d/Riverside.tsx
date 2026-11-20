@@ -5,7 +5,8 @@ import * as THREE from "three";
 import { cityPath } from "../../lib/cityRoutes";
 import { section, type SectionId } from "../../sections/registry";
 import { anchors } from "./anchors";
-import { useDisposeOnUnmount, Hitbox, useMovers, type Mover, type SceneProps } from "./common";
+import { useDisposeOnUnmount, useGlowPools, Hitbox, useMovers, type Mover, type SceneProps } from "./common";
+import type { GlowPool } from "./kit/glow";
 import lujiazui, { RIVERSIDE } from "./districts/lujiazui.def";
 import { box, merge } from "./kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "./kit/landmarks";
@@ -318,11 +319,16 @@ function build(quality: Quality): Built {
 // (html[data-city-tags="over"]); where the links are a row of keys in the
 // sheet instead (a small phone, a phone on its side), the boards are just
 // signs
+// After dark the landing's lamps light the paving and the boards' posts
+// round them (kit/glow.ts: pools); lamp heads 0.61 up, over their +x
+const POOLS: GlowPool[] = L.lamps.slice(0, 12).map(([x, z]): GlowPool => ({ pos: [x + 0.1, LAND + 0.6, z], reach: 1.4, color: "#ffc98a", strength: 1.0 }));
+
 const boardsLive = () => document.documentElement.dataset.cityTags === "over";
 
 export default function Riverside({ navigate, quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useMovers(built.movers, { active, still });
+  useGlowPools("lujiazui", POOLS, active);
   useEffect(() => {
     // "sign:<id>", the board's middle, and its four edges' middles
     // ("sign:<id>:top", …), from which the page sizes the board's link

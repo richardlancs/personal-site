@@ -130,3 +130,24 @@ export const DISTRICT_LIGHTS: Record<SceneId, number> = {
   "nanjing-road": 3,
   bund: 4,
 };
+
+// Where the camera rests in a place: the focus pose chosen there (the
+// store's `focus`: a screen, a line, the machine), or its home view when
+// nothing is chosen or the key isn't the place's
+export function restingPose(id: SceneId, focus: string | null): Pose {
+  return (focus ? scenes[id].focus[focus] : undefined) ?? scenes[id].home;
+}
+
+// The camera's turn toward something chosen in a place, or back home: a
+// short gentle arc through a point a little above the way between (8% of
+// the distance, at most 0.6 units), eased, longer for a longer way
+// (0.6 s .. 1.1 s). `from` is where the camera is now.
+export function focusTravel(from: Pose, to: Pose): { mid: Pose; dur: number; distance: number } {
+  const d = (a: V3, b: V3) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  const half = (a: V3, b: V3): V3 => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+  const move = d(from.pos, to.pos);
+  const distance = move + 0.25 * d(from.target, to.target);
+  const pos = half(from.pos, to.pos);
+  pos[1] += Math.min(0.6, 0.08 * move);
+  return { mid: { pos, target: half(from.target, to.target) }, dur: Math.min(1.1, Math.max(0.6, 0.55 + 0.03 * distance)), distance };
+}

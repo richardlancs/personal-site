@@ -89,3 +89,12 @@ test("clicking a screen chooses its project, as the panel's keys do", () => {
   assert.match(boxes[0], /world\.set\(\{ focus: `screen-\$\{n\}` \}\)/);
   assert.match(src, /anchors\.set\(anchorKey\("towers", `screen-\$\{n\}`\)/);
 });
+
+test("the kit's new pieces: glass along the railings, slabs on the plaza, the screens' and downlights' pools; screens sized per tier and let go when the place is left", () => {
+  assert.match(src, /glassMaterial\(\{ tint: "#bcd6e6"[^)]*\}\), "glass:railing"/);
+  assert.match(src, /pavingTexture\(\{ seed: 41, kind: "slabs"/);
+  assert.match(src, /useGlowPools\("towers", POOLS, active\)/);
+  assert.match(src, /quality === "mobile" \? \{ w: 384, h: 270 \} : quality === "low" \? \{ w: 640, h: 450 \} : \{ w: 768, h: 540 \}/);
+  assert.match(src, /if \(!active\) \{\s*for \(const f of built\.faces\) f\.userData\.release\?\.\(\);/);
+  assert.match(src, /for \(const f of built\.faces\) f\.userData\.restore\?\.\(\);/);
+});

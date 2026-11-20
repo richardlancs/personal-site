@@ -67,7 +67,10 @@ test("the machine's screen is the one Hitbox: it plays, as the panel's Play key 
   assert.equal(boxes.length, 1);
   assert.match(boxes[0], /id="nanjing-road:machine"/);
   assert.match(boxes[0], /world\.set\(\{ focus: "machine" \}\)/);
-  assert.match(boxes[0], /play\(\)/);
+  // a click aims: the Hitbox's hit point, scaled back to the screen's uv
+  assert.match(boxes[0], /onSelect=\{\(hit\) =>/);
+  assert.match(boxes[0], /play\(u >= 0 && u <= 1 && v >= 0 && v <= 1 \? new THREE\.Vector2\(u, v\) : null\)/);
+  assert.match(src, /built\.machine\.press\(uv, t, s\)/);
   // the panel's presses and the chosen mode come from the store
   assert.match(src, /useWorld\(\(s\) => s\.arcadePress\)/);
   assert.match(src, /useWorld\(\(s\) => s\.sel\.interest\)/);
@@ -79,4 +82,13 @@ test("the machine's screen is the one Hitbox: it plays, as the panel's Play key 
 test("the paving is planar on the high tier only (TIERS), and reflects what it should", () => {
   assert.match(src, /mode: TIERS\[quality\]\.reflection/);
   assert.match(src, /if \(TIERS\[quality\]\.reflection === "planar"\) reflectIn\(/);
+});
+
+test("the kit's new pieces: paving, stone relief on the arcade, planters, light pools; no attach workaround", () => {
+  assert.match(src, /pavingTexture\(\{ seed: 1543, kind: "slabs"/);
+  assert.match(src, /relief: \{ kind: "stone"/);
+  assert.match(src, /buildPlanters\(/);
+  assert.match(src, /useGlowPools\("nanjing-road", POOLS, active\)/);
+  assert.match(src, /useDisposeOnUnmount\(built\)/);
+  assert.doesNotMatch(src, /\battach\b/);
 });

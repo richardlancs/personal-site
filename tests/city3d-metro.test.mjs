@@ -77,3 +77,13 @@ test("the paving is fake on every tier", () => {
   assert.match(src, /wetPaving\(\{[^}]*mode: "fake"/);
   assert.doesNotMatch(src, /buildRiver|"planar"/);
 });
+
+test("the kit's new pieces: a glazed canopy, square tiles, planters, the lamps' pools down the platform, the canopy's stripes by day, the rain kept out", () => {
+  assert.match(src, /glassMaterial\(\{ tint: "#cfe2ec"[^)]*double: true \}\), "glass:canopy"/);
+  assert.match(src, /pavingTexture\(\{ seed: 37, kind: "grid"/);
+  assert.match(src, /buildPlanters\(/);
+  assert.match(src, /useGlowPools\("metro", POOLS, active\)/);
+  assert.match(src, /useDayShade\("metro", SHADE, active\)/);
+  assert.match(src, /kind: "stripes"/);
+  assert.match(defSrc, /shelter: METRO\.shelter,/);
+});

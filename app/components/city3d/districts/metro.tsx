@@ -5,7 +5,9 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { experience } from "../../../data/portfolio";
 import { sortNewestFirst } from "../../../lib/experience";
-import { useDisposeOnUnmount, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDayShade, useDisposeOnUnmount, useGlowPools, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { glassMaterial } from "../kit/glass";
+import type { DayShade, GlowPool } from "../kit/glow";
 import { box, merge, tube } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { buildTrain } from "../kit/movers";
@@ -15,9 +17,9 @@ import { buildMarkSign, disposeSign, glowPoints } from "../kit/signs";
 import { buildSkyDome } from "../kit/sky";
 import { buildLampRow, buildRailing, buildViaduct } from "../kit/street";
 import { surface } from "../kit/surface";
-import { fit, fonts, fontsReady } from "../kit/textures";
+import { fit, fonts, fontsReady, pavingTexture } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
-import { buildStreetTrees } from "../kit/trees";
+import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
@@ -259,6 +261,23 @@ function build(quality: Quality): Built {
   mesh(merge(ribs), litSurface({ color: STEEL, tone: LAMP, strength: 0.16 }), "canopy");
   mesh(merge(posts), litSurface({ color: CONCRETE, tone: LAMP, strength: 0.12 }), "columns");
   mesh(merge(lampParts), neonMaterial(dim(LAMP, 0.42), { dayColor: "#d9dcdf" }), "neon:lamps");
+  // the glazing over the arches: one curved sheet, the arch's profile run
+  // the canopy's length (the kit's glass, both faces)
+  {
+    const segs = mobile ? 10 : 18;
+    const pos: number[] = [];
+    const idx: number[] = [];
+    for (let i = 0; i <= segs; i++) {
+      const p = arch(i / segs);
+      pos.push(p.x, p.y + 0.02, C.z0, p.x, p.y + 0.02, C.z1);
+      if (i < segs) idx.push(i * 2, i * 2 + 1, i * 2 + 2, i * 2 + 1, i * 2 + 3, i * 2 + 2);
+    }
+    const sheet = new THREE.BufferGeometry();
+    sheet.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    sheet.setIndex(idx);
+    sheet.computeVertexNormals();
+    mesh(sheet, glassMaterial({ tint: "#cfe2ec", opacity: 0.16, sky: 0.55, double: true }), "glass:canopy");
+  }
 
   // ---- The departures board, hanging from the canopy on two rods
   const B = METRO.board;
@@ -302,7 +321,15 @@ function build(quality: Quality): Built {
     for (const s of [-1, 1]) seats.push(box(0.045, 0.042, 0.01).translate(0.8, D + 0.021, z + s * 0.07));
   }
   mesh(merge(seats), surface({ color: BENCH, wet: 0.5 }), "benches");
-  mesh(merge(METRO.planters.map((z) => box(0.13, 0.085, 0.13).translate(0.9, D + 0.0425, z))), surface({ color: PLANTER, grime: 0.3 }), "planters");
+  // planters with flowers round each tree (the kit's)
+  for (const p of buildPlanters(
+    87,
+    METRO.planters.map((z) => ({ x: 0.9, z, w: 0.13, d: 0.13, h: 0.085, y: D })),
+    { stone: PLANTER },
+  )) {
+    geometries.push(p.geometry);
+    add(p);
+  }
   const shrubs = buildStreetTrees(
     81,
     METRO.planters.map((z) => ({ x: 0.9, z, s: 0.17 })),
@@ -375,9 +402,11 @@ function build(quality: Quality): Built {
   }
 
   // ---- The paving, last of the platform, with every light that falls on it
-  const paving = wetPaving({ w: P.x1 - P.x0, d: P.z0 - P.z1, x: (P.x0 + P.x1) / 2, z: (P.z0 + P.z1) / 2, y: D, mode: "fake", color: PAVING, lights });
+  // (square tiles 1.2 m across, the kit's paving)
+  const tiles = pavingTexture({ seed: 37, kind: "grid", repeat: [(P.x1 - P.x0) / 0.48, (P.z0 - P.z1) / 0.48] });
+  const paving = wetPaving({ w: P.x1 - P.x0, d: P.z0 - P.z1, x: (P.x0 + P.x1) / 2, z: (P.z0 + P.z1) / 2, y: D, mode: "fake", color: PAVING, lights, map: tiles });
   add(paving.mesh);
-  disposers.push(paving.dispose);
+  disposers.push(paving.dispose, () => tiles.dispose());
 
   // ---- The train, stopped at the platform (a mover), its headlamps lit
   // after dark
@@ -412,6 +441,24 @@ function build(quality: Quality): Built {
   };
 }
 
+// After dark the canopy's lamps light the platform all the way down, and
+// the board's light falls on the paving under it (kit/glow.ts: pools)
+const LAMP_LINE = 0.42;
+const POOLS: GlowPool[] = [
+  ...[2.0, 0.6, -0.8, -2.2, -3.6, -5.0, -6.4, -7.8, -9.2, -10.6].map((z): GlowPool => ({ pos: [LAMP_LINE, METRO.deck + 0.55, z], reach: 0.95, color: "#ffd9a8", strength: 0.9 })),
+  { pos: [METRO.board.x, METRO.board.y - 0.2, METRO.board.z], reach: 0.6, color: "#ffc98a", strength: 0.6 },
+];
+// By day the canopy's arches and purlins lay their stripes on the platform
+const SHADE: DayShade = {
+  kind: "stripes",
+  box: [METRO.platform.x0, METRO.platform.z1, METRO.platform.x1, METRO.platform.z0],
+  dir: [0.25, 1],
+  period: METRO.canopy.step / 2,
+  duty: 0.62,
+  depth: 0.32,
+  top: METRO.deck + 0.05,
+};
+
 function choose(line: number) {
   world.select("line", line);
   world.set({ focus: `line-${line}` });
@@ -420,6 +467,8 @@ function choose(line: number) {
 function ExperienceScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useMovers(built.movers, { active, still });
+  useGlowPools("metro", POOLS, active);
+  useDayShade("metro", SHADE, active);
   const invalidate = useThree((s) => s.invalidate);
   const line = useWorld((s) => s.sel.line);
   useDisposeOnUnmount(built);

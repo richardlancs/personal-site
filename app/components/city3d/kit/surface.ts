@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { shared } from "./materials";
-import { envUniforms, glowOn, materialKey, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
+import { envUniforms, glowOn, materialKey, neonUniforms, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
 
 // The city's one lit material: three's Lambert, plus what the park's paint
 // (world3d/paint.ts) did for weather and distance, kept plain enough for a
@@ -76,6 +76,11 @@ export type SurfaceOptions = {
   grime?: number; // 0 (the default) .. 1
   fogScale?: number; // fog as if this many times farther away (far scenery > 1); 1 by default
   relief?: Relief; // a facade's carving, drawn in the shader (below)
+  // after dark it glows in `tone` (a colour) × `strength`, rising with the
+  // neon (as neon.ts: litSurface does), the relief's carving in the glow:
+  // for floodlit stone
+
+  glow?: { tone: string; strength: number };
 };
 
 // A facade's relief, drawn in the fragment shader on what faces sideways
@@ -116,6 +121,7 @@ if (uRelief.x > 0.5 && abs(n.y) < 0.5) {
     float surround = (1.0 - smoothstep(0.98, 1.0, win)) * smoothstep(0.78, 0.82, win);
     float recess = 1.0 - smoothstep(0.76, 0.8, win);
     float lift = pil * 0.16 + cornice * 0.22 + surround * 0.14 - seam * 0.3 - under * 0.32 - recess * 0.12;
+    kitRelief = 1.0 + lift * k * fade * 1.6;
     diffuseColor.rgb *= 1.0 + lift * k * fade;
   } else {
     float len = uRelief.y;
@@ -131,6 +137,7 @@ if (uRelief.x > 0.5 && abs(n.y) < 0.5) {
     vec3 brick = diffuseColor.rgb * (1.0 + tone * 0.22);
     vec3 lime = mix(diffuseColor.rgb, vec3(0.62, 0.6, 0.56), 0.55);
     diffuseColor.rgb = mix(diffuseColor.rgb, mix(brick, lime, mortar), k * fade);
+    kitRelief = 1.0 + (tone * 0.3 - mortar * 0.25) * k * fade;
   }
 }
 if (uShadeOn > 0.001 && uShade.x > 0.5) {
@@ -170,7 +177,7 @@ if (uPoolsOn > 0.001) {
 }`;
 
 export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
-  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1, reliefVector(o.relief).join(",")].join("|");
+  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1, reliefVector(o.relief).join(","), o.glow ? `${o.glow.tone}*${o.glow.strength}` : ""].join("|");
   return shared(materialKey("surface", variant), () => {
     const m = new THREE.MeshLambertMaterial({ color: o.color, map: o.map ?? null });
     const uniforms = {
@@ -179,10 +186,12 @@ export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
       uGrime: { value: o.grime ?? 0 },
       uFogScale: { value: o.fogScale ?? 1 },
       uRelief: { value: new THREE.Vector4(...reliefVector(o.relief)) },
+      uLitTone: { value: new THREE.Color(o.glow?.tone ?? "#000000") },
+      uLitStrength: { value: o.glow?.strength ?? 0 },
     };
     m.userData.surface = uniforms;
     m.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms, envUniforms, poolUniforms, shadeUniforms, { uGlowOn: glowOn });
+      Object.assign(shader.uniforms, uniforms, envUniforms, poolUniforms, shadeUniforms, { uGlowOn: glowOn, uNeon: neonUniforms.uNeon });
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `#include <common>\nvarying vec3 vKitWorld;\nvarying vec3 vKitNormal;`)
         .replace("#include <project_vertex>", `#include <project_vertex>\n${WORLD_VARYINGS_VERTEX}`);
@@ -200,6 +209,9 @@ uniform float uWet;
 uniform float uSnow;
 uniform float uNight;
 uniform vec4 uRelief;
+uniform vec3 uLitTone;
+uniform float uLitStrength;
+uniform float uNeon;
 uniform vec4 uPools[${POOLS}];
 uniform vec3 uPoolTones[${POOLS}];
 uniform float uPoolsOn;
@@ -214,6 +226,7 @@ ${NOISE}`,
           "#include <color_fragment>",
           `#include <color_fragment>
 float kitWet = 0.0;
+float kitRelief = 1.0;
 {
   vec3 n = normalize(vKitNormal);
   float up = smoothstep(0.35, 0.9, n.y);
@@ -244,6 +257,7 @@ float kitWet = 0.0;
         .replace(
           "#include <opaque_fragment>",
           `${POOLS_GLSL}
+if (uLitStrength > 0.0) outgoingLight += uLitTone * uLitStrength * smoothstep(0.35, 1.0, uNeon) * kitRelief;
 if (kitWet > 0.0) {
   // a wet surface that faces up catches the sky at a glancing angle: a sheen, not a mirror
   float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);

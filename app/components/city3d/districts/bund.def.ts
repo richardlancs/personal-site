@@ -17,7 +17,7 @@ const bund: SceneDef = {
   // further back along the promenade, by the railing, the view turned 12°
   // toward the river, so the half the panel leaves holds the clock tower,
   // the kiosk, the lamps and the far skyline with the Pearl
-  home: { pos: [-0.15, 0.26, -8], target: [-2.23, 1.0, 1.78] },
+  home: { pos: [-0.1, 0.3, -11.5], target: [-1.9, 1.12, 0.3] },
   enter: { pos: [0.1, 0.6, -13], target: [-2.23, 1.0, 1.78] },
   exit: { pos: [0.1, 0.6, -13], target: [-2.23, 1.0, 1.78] },
   focus: {},
@@ -27,7 +27,7 @@ const bund: SceneDef = {
   // up, the vanishing point just right of the middle
   plateFrame: { fov: 50, pos: [0, 0.22, 0], target: [-0.26, 0.97, 10] },
   frame: "right",
-  span: 23,
+  span: 25,
   // (portrait: the middle turned back toward the clock tower)
   portrait: { yaw: -7, half: 22 },
   short: 3,

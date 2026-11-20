@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { shared } from "./materials";
-import { track } from "./textures";
+import { clockFace, track } from "./textures";
 import { glowOn, materialKey, neonUniforms } from "./uniforms";
 import { rng } from "../rng";
 
@@ -116,7 +116,8 @@ export function litSurface(o: { color: string; tone: SceneTone | string; strengt
 
 // A face drawn on a canvas (a sign's board, a screen): `draw` paints it at
 // w × h pixels, again whenever the material's userData.redraw() is called
-// (e.g. once the display face has loaded). One material per `key`. As
+// (e.g. once the display face has loaded); userData.release() and
+// restore() free its picture while nothing shows it, and paint it again. One material per `key`. As
 // painted, or with `glow` a lit screen (see the top of this file).
 export function screenMaterial(
   draw: (g: CanvasRenderingContext2D, w: number, h: number) => void,
@@ -139,6 +140,24 @@ export function screenMaterial(
     };
     paint();
     const m = new THREE.MeshBasicMaterial({ map: texture });
+    // Let go of the picture while nothing shows it (the canvas shrunk to a
+    // pixel, the upload freed), and take it back: for screens whose place
+    // isn't showing (textureBytes stops counting it meanwhile)
+    let released = false;
+    m.userData.release = () => {
+      if (released) return;
+      released = true;
+      canvas.width = canvas.height = 1;
+      texture.dispose();
+    };
+    m.userData.restore = () => {
+      if (!released) return;
+      released = false;
+      canvas.width = o.w;
+      canvas.height = o.h;
+      track(texture);
+      paint();
+    };
     const glow = { value: o.glow ?? 1 };
     m.onBeforeCompile = (s) => {
       if (o.glow) {
@@ -155,6 +174,21 @@ export function screenMaterial(
     };
     m.customProgramCacheKey = () => program;
     m.userData.redraw = paint;
+    return m;
+  });
+}
+
+// A clock's face that tells the time (textures.ts: clockFace), shown
+// exactly as painted (a floodlit face reads the same by day and night),
+// on the screens' "exact" program. Its hands move with setClockHour
+// (textures.ts) whenever the minute changes; the caller asks for a frame.
+export function clockMaterial(hour = 12): THREE.MeshBasicMaterial {
+  return shared(materialKey("screen", "clock"), () => {
+    const m = new THREE.MeshBasicMaterial({ map: clockFace(hour) });
+    m.onBeforeCompile = (s) => {
+      s.fragmentShader = `${UNTONE}\n${s.fragmentShader}`.replace("#include <opaque_fragment>", "#include <opaque_fragment>\n  gl_FragColor.rgb = untone(gl_FragColor.rgb);");
+    };
+    m.customProgramCacheKey = () => materialKey("screen", "exact");
     return m;
   });
 }
