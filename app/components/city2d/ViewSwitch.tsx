@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { cityPath, twoDHref } from "../../lib/cityRoutes";
+import { focusAnchor } from "./jump";
 import { useSection } from "./useSection";
 import { mayDrawWebGL } from "./webgl";
 
@@ -26,6 +27,18 @@ export default function ViewSwitch({ place }: { place: "bar" | "menu" }) {
   useEffect(() => {
     if (mayDrawWebGL()) document.documentElement.setAttribute("data-webgl2", "");
   }, []);
+
+  // Back from the city to the 2D page ("2D view", Back, the menu): focus
+  // goes to the section it lands on, as a jump's does (jump.ts), so the
+  // keyboard carries on from there. (The city's own pages focus their
+  // heading themselves: city3d/CityFocus.tsx.) Once, from the bar's copy.
+  const previous = useRef(pathname);
+  useEffect(() => {
+    const from = previous.current;
+    previous.current = pathname;
+    if (place !== "bar" || from === pathname || pathname !== "/" || !(from === "/city" || from.startsWith("/city/"))) return;
+    focusAnchor(location.hash);
+  }, [pathname, place]);
 
   return inCity ? (
     <Link href={twoDHref(pathname)} className="glass view-switch" data-place={place} data-to="2d">

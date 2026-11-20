@@ -23,13 +23,15 @@ const startedOn = () => {
     return null;
   }
 };
-let firstShown = true;
+// Whether the visit has been anywhere but where it started: until then,
+// the page showing is the one loaded, and keeps the focus where it is
+// (however often its effect runs)
+let moved = false;
 
 export default function CityFocus({ id }: { id: SectionId }) {
   useEffect(() => {
-    const first = firstShown;
-    firstShown = false;
-    if (first && startedOn() === location.pathname) return;
+    if (location.pathname !== startedOn()) moved = true;
+    if (!moved) return;
     document.querySelector<HTMLElement>(`main.city-page[data-section="${id}"] h1`)?.focus({ preventScroll: true });
   }, [id]);
   return null;

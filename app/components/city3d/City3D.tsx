@@ -29,6 +29,15 @@ import { TIERS, type Quality } from "./tiers";
 
 const RIVERSIDE: SceneId = "lujiazui";
 
+// R3F 9.8 still makes a THREE.Clock for every canvas, which three r183 and
+// later report as deprecated, once per canvas: R3F's to change, not ours,
+// and noise in every console check. That one message is dropped; every
+// other message three sends goes to the console as before.
+THREE.setConsoleFunction((type, message, ...params) => {
+  if (type === "warn" && typeof message === "string" && message.startsWith("THREE.Clock: This module has been deprecated")) return;
+  (console[type as "log" | "warn" | "error"] ?? console.log)(message, ...params);
+});
+
 // Which place an address shows: the section's district, the riverside for
 // /city (and anything that isn't a section)
 const placeFor = (pathname: string): SceneId => {

@@ -12,6 +12,7 @@ import Projects from "../city2d/sections/Projects";
 import Arrivals from "../ui/Arrivals";
 import Colophon from "../ui/Colophon";
 import CityFocus from "./CityFocus";
+import { scenes } from "./scenes";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
 // without JavaScript or WebGL: the section's plate as a band where the
@@ -55,6 +56,8 @@ export default function CityPage({ id }: { id: SectionId }) {
           <nav aria-label="Places" className="city-keys">
             {listed
               .filter((s) => s.id !== "home")
+              // in the order their signs stand, left to right
+              .sort((a, b) => (scenes[a.district].sign?.bearing ?? 0) - (scenes[b.district].sign?.bearing ?? 0))
               .map((s) => (
                 <Link key={s.id} href={cityPath(s.id)} className="glass city-key">
                   {s.title}
