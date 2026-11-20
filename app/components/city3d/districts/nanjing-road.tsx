@@ -715,8 +715,7 @@ function InterestsScene({ quality, active, still }: SceneProps) {
   const arrived = useWorld((s) => s.arrived);
   const press = useWorld((s) => s.arcadePress);
   const on = active && arrived;
-  const POOLS = built.pools;
-  useGlowPools("nanjing-road", POOLS, active);
+  useGlowPools("nanjing-road", built.pools, active);
   useDayShade("nanjing-road", SHADE, active);
   useMovers(built.movers, { active: on, still });
 

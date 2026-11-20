@@ -85,7 +85,7 @@ test("the kit's new pieces: brick relief instead of a painted map, the kit's pav
   assert.match(src, /relief: \{ kind: "brick", course: 0\.075 \* K/);
   assert.doesNotMatch(src, /function brickTexture|function pavingTexture|new THREE\.CanvasTexture/);
   assert.match(src, /pavingTexture\(\{ seed: 911, kind: "slabs"/);
-  assert.match(src, /useGlowPools\("longtang", POOLS, active\)/);
+  assert.match(src, /useGlowPools\("longtang", built\.pools, active\)/);
   assert.match(src, /useDayShade\("longtang", SHADE, active\)/);
   assert.match(src, /kind: "edge"/);
   assert.match(src, /useDisposeOnUnmount\(built\)/);

@@ -88,7 +88,7 @@ test("the kit's new pieces: paving, stone relief on the arcade, planters, light 
   assert.match(src, /pavingTexture\(\{ seed: 1543, kind: "slabs"/);
   assert.match(src, /relief: \{ kind: "stone"/);
   assert.match(src, /buildPlanters\(/);
-  assert.match(src, /useGlowPools\("nanjing-road", POOLS, active\)/);
+  assert.match(src, /useGlowPools\("nanjing-road", built\.pools, active\)/);
   assert.match(src, /useDisposeOnUnmount\(built\)/);
   assert.doesNotMatch(src, /\battach\b/);
 });

@@ -596,8 +596,7 @@ const SHADE: DayShade = {
 function AboutScene({ quality, active }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   // the pools are laid out with the lane (the nearest windows among them)
-  const POOLS = built.pools;
-  useGlowPools("longtang", POOLS, active);
+  useGlowPools("longtang", built.pools, active);
   useDayShade("longtang", SHADE, active);
   useDisposeOnUnmount(built);
   return (

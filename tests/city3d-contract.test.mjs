@@ -192,6 +192,6 @@ test("what a scene builds is let go on its real unmount, never on development's 
 
 test("every section's scene and the riverside light their surroundings after dark with the kit's pools", () => {
   for (const [f, id] of [["Riverside.tsx", "lujiazui"], ...places.map((p) => [`districts/${p}.tsx`, p])]) {
-    assert.match(noComments(read(`${city}/${f}`)), new RegExp(`useGlowPools\\("${id}", POOLS, active\\)`), f);
+    assert.match(noComments(read(`${city}/${f}`)), new RegExp(`useGlowPools\\("${id}", [\\w.]+, active\\)`), f);
   }
 });
