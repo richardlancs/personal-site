@@ -5,7 +5,7 @@ import type { SkyState } from "../../lib/sky";
 import { useWorld, world } from "../city3d/store";
 import { useRichmondHill } from "./useRichmondHill";
 
-// Tells the world what Richmond Hill's sky is like (world3d/store.ts:
+// Tells the world what Richmond Hill's sky is like (city3d/store.ts:
 // `sky`): the weather's preset from the live reading, and the daylight
 // from Richmond Hill's clock and that day's sun. Without a usable reading
 // the preset is "neutral" and the source "fallback", while the daylight

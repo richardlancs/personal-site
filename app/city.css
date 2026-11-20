@@ -95,17 +95,6 @@
   --scroll-offset: calc(var(--bar-h) + 0.5rem);
 }
 
-/* A softer spring where linear() is supported: one overshoot of about 4%,
-   then settled (the cubic-bezier above is the fallback) */
-@supports (transition-timing-function: linear(0, 1)) {
-  :root {
-    --ease-spring: linear(
-      0, 0.18 7%, 0.52 15%, 0.85 25%, 1.03 35%, 1.045 42%, 1.03 52%,
-      1.006 66%, 0.998 80%, 1
-    );
-  }
-}
-
 /* Makes the tokens usable as Tailwind classes, e.g. bg-ink, text-muted,
    border-line */
 @theme inline {
@@ -554,6 +543,49 @@ button.text-link,
   width: calc(100% - 1.25rem);
   margin-left: 1.25rem;
   font-size: 1rem;
+}
+
+/* ---------- The view switch (city2d/ViewSwitch.tsx) ----------
+   "3D city" on the 2D page, "2D view" in the city: one key, one obvious
+   target, answering at once (it is used often: no flourish of its own).
+   Two copies, one shown: the first key in the bar from 80rem, where the
+   bar has room for it on its one row (docs/city/scripts/bar-fit.mjs); below
+   that, the first entry of the Sections menu, set apart from the sections
+   by a rule under it and its cube. "3D city" (and the Interests link into
+   the city) only where WebGL2 exists (html[data-webgl2]); until then, or
+   without it, it keeps its space, hidden. "2D view" always shows. */
+:root:not([data-webgl2]) :is(.view-switch, .city-link):not([data-to="2d"]) {
+  visibility: hidden;
+}
+
+.top-bar-end .view-switch {
+  display: none;
+}
+
+.sections-menu .sections-menu-view {
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+:root:not([data-webgl2]) .sections-menu-view:not(:has([data-to="2d"])) {
+  display: none;
+}
+
+.sections-menu .view-switch {
+  font-family: var(--font-text);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+@media (min-width: 80rem) {
+  .top-bar-end .view-switch {
+    display: inline-flex;
+  }
+
+  .sections-menu .sections-menu-view {
+    display: none;
+  }
 }
 
 /* The music's note, if the song can't be loaded (MusicToggle.tsx): a

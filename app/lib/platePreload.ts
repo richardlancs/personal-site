@@ -15,8 +15,8 @@
 // the band's <img> for that plate later asks for the very same URL
 // (homePlate.ts), so it fades in over an identical picture from the cache.
 //
-// A deep link (/#projects, …) lands below the home band, so then it does
-// nothing. Its only inputs are the clock, the window's width, the device
+// A deep link (/#projects, …) lands below the home band, and any other
+// page (/city/…) has no home band, so then it does nothing. Its only inputs are the clock, the window's width, the device
 // pixel ratio and the address's hash, tested for presence: the URLs and
 // numbers in it are fixed at build time.
 
@@ -45,7 +45,7 @@ export type BandWidth = { phoneMax: number; phoneScale: number };
 export function platePreloadScript(place: Place, day: string, night: string, band: BandWidth): string {
   const q = JSON.stringify;
   return (
-    `(function(){try{var h=location.hash;if(h&&h!=="#"&&h!=="#home")return;var sun=${SUN_JS};` +
+    `(function(){try{var h=location.hash;if(location.pathname!=="/"||h&&h!=="#"&&h!=="#home")return;var sun=${SUN_JS};` +
     `var p=new Intl.DateTimeFormat("en-CA",{timeZone:${q(place.timeZone)},year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};` +
     `p.forEach(function(x){v[x.type]=+x.value});` +
     `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,` +

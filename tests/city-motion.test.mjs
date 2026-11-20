@@ -28,8 +28,9 @@ test("the seven motion tokens are in city.css with their values", () => {
     ["--stagger", "60ms"],
   ])
     assert.ok(rootBlock.includes(`${name}: ${value};`), `${name}: ${value}`);
-  // The spring is a linear() spring where supported, the bezier elsewhere
-  assert.match(city, /@supports \(transition-timing-function: linear\(0, 1\)\) \{\s*:root \{\s*--ease-spring: linear\(/);
+  // One spring, the cubic-bezier (a linear() refinement was cut for the
+  // CSS budget: the overshoot looks the same)
+  assert.doesNotMatch(city, /--ease-spring: linear\(/);
 });
 
 test("no transition or animation writes a duration or a curve of its own", () => {

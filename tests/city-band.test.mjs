@@ -155,8 +155,8 @@ test("the hero has the name, the headline, two actions and three links, and no p
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
   assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
   assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
-  assert.match(src, /href="#projects" className="glass glass-primary"/);
-  assert.match(src, /href="#contact" className="glass"/);
+  assert.match(src, /href=\{where === "3d" \? cityPath\("projects"\) : "#projects"\} className="glass glass-primary"/);
+  assert.match(src, /href=\{where === "3d" \? cityPath\("contact"\) : "#contact"\} className="glass"/);
   // GitHub, LinkedIn and the résumé: the shared links, as text links
   assert.match(src, /<ProfileLinks variant="text" \/>/);
 });
@@ -175,7 +175,7 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   const place = { latitude: 43.87111, longitude: -79.43725, timeZone: "America/Toronto" };
   const srcset = (p) => [640, 1080, 1920, 3840].map((w) => `/img/${p}?w=${w} ${w}w`).join(", ");
   const band = { phoneMax: 767, phoneScale: 1.75 };
-  const run = (iso, { width = 1440, dpr = 1, hash = "" } = {}) => {
+  const run = (iso, { width = 1440, dpr = 1, hash = "", pathname = "/" } = {}) => {
     const added = [];
     const vars = {};
     const attrs = {};
@@ -188,7 +188,7 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
       documentElement: { style: { setProperty: (k, v) => (vars[k] = v) }, setAttribute: (k, v) => (attrs[k] = v) },
     };
     const window = { innerWidth: width, devicePixelRatio: dpr };
-    new Function("document", "Date", "window", "location", platePreloadScript(place, srcset("day"), srcset("night"), band))(document, FakeDate, window, { hash });
+    new Function("document", "Date", "window", "location", platePreloadScript(place, srcset("day"), srcset("night"), band))(document, FakeDate, window, { hash, pathname });
     return { links: added.map((l) => `${l.rel} ${l.as} ${l.href} ${l.fetchpriority}`), plate: vars["--home-plate"] ?? null, which: attrs["data-home-plate"] ?? null };
   };
   const noon = run("2026-06-21T16:00:00Z");
@@ -212,6 +212,8 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   // A deep link lands below the home band: nothing fetched or painted
   assert.deepEqual(run("2026-06-21T16:00:00Z", { hash: "#projects" }), { links: [], plate: null, which: null });
   assert.equal(run("2026-06-21T16:00:00Z", { hash: "#home" }).which, "day");
+  // Another page (the 3D city's) has no home band: nothing fetched
+  assert.deepEqual(run("2026-06-21T16:00:00Z", { pathname: "/city/projects" }), { links: [], plate: null, which: null });
   const layout = read("app/layout.tsx");
   assert.match(layout, /__html: PLATE_PRELOAD/);
 });
@@ -247,5 +249,5 @@ test("a deep link fetches no home plate: the head script and the bands wait for 
   assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   const band = read("app/components/city2d/DistrictBand.tsx");
   assert.match(band, /useNear\(ref, priority && !deepLinked\(\)\)/);
-  assert.match(read("app/lib/platePreload.ts"), /var h=location\.hash;if\(h&&h!=="#"&&h!=="#home"\)return;/);
+  assert.match(read("app/lib/platePreload.ts"), /var h=location\.hash;if\(location\.pathname!=="\/"\|\|h&&h!=="#"&&h!=="#home"\)return;/);
 });

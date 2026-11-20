@@ -81,11 +81,10 @@ test("the Sections menu's entries and the top bar's keys are glass", () => {
   const menu = readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8").match(/<nav [^>]*id="places-menu"[\s\S]*?<\/nav>/)[0];
   assert.equal((menu.match(/<Link [^>]*className="glass"/g) ?? []).length, 1, "one glass entry per listed section");
   assert.equal((menu.match(/<Link [^>]*className="glass sections-menu-sub"/g) ?? []).length, 1, "and one per section's part (Skills)");
-  // One page: an entry is a jump within it, not a route, so nothing is
-  // marked chosen by the address; where you are comes from the scroll
-  assert.doesNotMatch(menu, /aria-current="page"/);
-  assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/);
-  assert.equal((menu.match(/onClick=\{go\((s\.href|jumpHref\(s\.href\)|sub\.href)\)\}/g) ?? []).length, 2, "every entry jumps and hands focus on");
+  // On the one page an entry is a jump within it, so where you are comes
+  // from the scroll; only on a /city page (each section a page) from the address
+  assert.match(menu, /aria-current=\{s\.id === here \? \(city \? "page" : "location"\) : undefined\}/);
+  assert.equal((menu.match(/onClick=\{(city \? close : )?go\((s\.href|jumpHref\(s\.href\)|sub\.href)\)\}/g) ?? []).length, 2, "every entry jumps and hands focus on");
   const bar = readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8");
   assert.match(bar, /<button type="button" popoverTarget="places-menu" className="glass top-bar-sections">/);
 });

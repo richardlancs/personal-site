@@ -9,7 +9,7 @@ const read = (path) => readFileSync(`${root}${path}`, "utf8");
 
 test("the Sections menu marks where you are and leaves modified clicks to the browser", () => {
   const src = read("app/components/city2d/SectionsMenu.tsx");
-  assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
+  assert.match(src, /aria-current=\{s\.id === here \? \(city \? "page" : "location"\) : undefined\}/);
   assert.match(src, /sections-menu-here/, "a mark as well as colour");
   assert.match(src, /if \(!isPlainClick\(e\)\) return;/);
   const jump = read("app/components/city2d/jump.ts");

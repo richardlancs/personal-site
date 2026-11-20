@@ -123,7 +123,8 @@ test("black is the ground and the warm secondary is the lantern: no magenta, no 
   };
   walk("app");
   assert.ok(files.length > 10, "the walk reached the components");
-  for (const file of files) assert.doesNotMatch(read(file), /magenta|amber/i, file);
+  // Whole words: a three.js MeshLambertMaterial is no amber
+  for (const file of files) assert.doesNotMatch(read(file), /\b(magenta|amber)\b/i, file);
   const css = read("app/city.css");
   for (const name of ["--lantern", "--seam", "--seam-2"]) assert.match(css, new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), name);
   for (const utility of ["lantern"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));

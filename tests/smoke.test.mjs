@@ -235,3 +235,36 @@ test("the icons and the share card are served with the right types", { skip }, a
     assert.match(res.headers.get("content-type") ?? "", type, path);
   }
 });
+
+// The 3D city's pages (app/city/): readable as HTML, before any script or
+// WebGL, never indexed, and the 2D page carries nothing of them
+const placeNames = ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"];
+
+test("a /city section page is its content in HTML, one h1, the way back, and noindex", { skip }, async () => {
+  const { status, body } = await get("/city/projects");
+  assert.equal(status, 200);
+  assert.equal((body.match(/<h1[\s>]/g) ?? []).length, 1, "one h1");
+  for (const p of projects) assert.ok(body.includes(html(p.title)), p.title);
+  assert.match(body, /href="\/#projects"/);
+  assert.match(body, /<meta name="robots" content="noindex, follow"/);
+  assert.match(body, /<link rel="canonical" href="https:\/\/[^"\/]+\/?"\/?>/, "canonical to the 2D page");
+});
+
+test("Skills has no /city page", { skip }, async () => {
+  assert.equal((await get("/city/skills")).status, 404);
+});
+
+test("/city is home: my name in its h1, and the way to every section's page", { skip }, async () => {
+  const { status, body } = await get("/city");
+  assert.equal(status, 200);
+  assert.match(body, new RegExp(`<h1[^>]*>${html(profile.name)}</h1>`));
+  for (const s of ["about", "projects", "experience", "interests", "contact"]) assert.ok(body.includes(`href="/city/${s}"`), s);
+});
+
+test("/ names no city3d chunk, and no /city page names a place", { skip }, async () => {
+  assert.doesNotMatch((await get("/")).body, /city3d/);
+  for (const s of pageSections) {
+    const { body } = await get(s.city);
+    for (const name of placeNames) assert.ok(!body.includes(name), `${s.city} says "${name}"`);
+  }
+});

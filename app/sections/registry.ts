@@ -25,6 +25,8 @@ export type Section = {
   // the page; it's just not pointed at.
   listed: boolean;
   district: DistrictId; // the painting above it (never named on the page)
+  // Its address in the 3D city (app/city/): its own page there
+  city: "/city" | `/city/${string}`;
   // Deeper anchors inside the section, for the menu
   subsections?: { title: string; href: `/#${string}` }[];
   metadata: { title: string; description: string };
@@ -34,6 +36,7 @@ export type Section = {
 export const pageSections: Section[] = [
   {
     id: "home",
+    city: "/city",
     hash: "",
     href: "/",
     title: "Home",
@@ -47,6 +50,7 @@ export const pageSections: Section[] = [
   },
   {
     id: "about",
+    city: "/city/about",
     hash: "about",
     href: "/#about",
     title: "About",
@@ -57,6 +61,7 @@ export const pageSections: Section[] = [
   },
   {
     id: "projects",
+    city: "/city/projects",
     hash: "projects",
     href: "/#projects",
     title: "Projects",
@@ -68,6 +73,7 @@ export const pageSections: Section[] = [
   },
   {
     id: "experience",
+    city: "/city/experience",
     hash: "experience",
     href: "/#experience",
     title: "Experience",
@@ -78,6 +84,7 @@ export const pageSections: Section[] = [
   },
   {
     id: "interests",
+    city: "/city/interests",
     hash: "interests",
     href: "/#interests",
     title: "Interests",
@@ -88,6 +95,7 @@ export const pageSections: Section[] = [
   },
   {
     id: "contact",
+    city: "/city/contact",
     hash: "contact",
     href: "/#contact",
     title: "Contact",
@@ -143,5 +151,20 @@ export const sectionMetadata = (id: "home"): Metadata => {
     openGraph: { type: "website", siteName, url: s.href, title, description: s.metadata.description, images: [shareCard] },
     twitter: { card: "summary_large_image", title, description: s.metadata.description, images: [shareCard] },
     ...(s.listed ? {} : { robots: { index: false, follow: false } }),
+  };
+};
+
+// A page of the 3D city (app/city/): titled "3D city" (home) or
+// "Projects · 3D city", described as its section is, never indexed, and
+// canonical to the 2D page, the one page that is (an anchor such as
+// "/#projects" is never a canonical address, so every one points at "/").
+export const cityMetadata = (id: SectionId): Metadata => {
+  const s = section(id);
+  const title = s.id === "home" ? "3D city" : `${s.title} · 3D city`;
+  return {
+    title,
+    description: s.metadata.description,
+    robots: { index: false, follow: true },
+    alternates: { canonical: "/" },
   };
 };

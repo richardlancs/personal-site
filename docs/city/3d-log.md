@@ -49,3 +49,28 @@ The city's own interface needs plain classes in a stylesheet the
 ## Task 8: the landmarks (noted from its report)
 
 Weakest: Jin Mao, from far. Its identity in the plates is the fine rhythm of the stepped tiers, the fluted corners and a crown of pinnacles; at 1.2 k triangles the far level keeps only a straight shaft with small eave ledges and a stepped gold crown, so its silhouette reads "tiered pagoda-like tower" but not as clearly as the other three. The Shanghai Tower's 120° twist is also subtle in silhouette (the outline is a slightly convex taper); the twist shows through the notch's spiral line and the bands, so it depends on shading and the window shader. The Pearl and the opener are unmistakable even in flat grey.
+
+## Task 2: the /city addresses and the switch (20 November 2026)
+
+- Five static page files plus `app/city/page.tsx`, each `<CityPage id>`:
+  the section's plate (DistrictBand) where the scene will be, and one
+  panel with its h1, its 2D content, the link back and the credit. Wide
+  landscape: the plate fixed behind, the panel on the left; phones and
+  portrait: the plate a 46svh band, the panel a sheet. `/city/skills` is a
+  404. `noindex, follow`, canonical `/`.
+- The switch: "3D city" (only with WebGL2, `html[data-webgl2]`, never
+  prefetched, to the section you're reading) / "2D view" (always). In the
+  bar from **80rem**; below that, the first entry of the Sections menu.
+  `bar-fit.mjs` against `bar-baseline.json` (320–1920 every 16px, plus 390,
+  830, 1440, and 200% text at 320×900, 390×844, 844×390): the bar is as
+  tall as before at every width, and the same on `/city/projects`.
+- Budgets after: homeInitialJs **199,679** (Task 1's 199,389 + 290; gate
+  200,389), totalJs 205,750, totalCss (what `/` links) 10,521, cityCss
+  (only `/city/*`) 572 / 2,000, resumeJs 447,951, resumeCss 1,853; no
+  three.js on `/`. `budget.mjs` now measures `/`'s linked CSS as totalCss
+  and the city's own stylesheet (`app/city/city-pages.css`) as cityCss.
+- The `linear()` spring was cut (the cubic-bezier stays): the 2D page's
+  CSS budget had no room for the switch otherwise.
+- Known until Task 3: on `/city/<section>` the h1 is followed by the
+  sections' h3s (no h2); the sections use viewport breakpoints, so a
+  half-width panel at 1440 gets their wide layouts in about 720px.

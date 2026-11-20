@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
+import CityLink from "../CityLink";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
 import { order } from "../Station";
@@ -52,8 +53,12 @@ const marks: Record<Interest["scene"], ReactNode> = {
 // column stops at 72rem, so a tile is never wider than about 18rem)
 const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 
-export default function Interests() {
+// On the 2D page (where="2d") the list is followed by a link to the arcade
+// in the 3D city (CityLink: shown only where WebGL2 exists); in the city
+// itself, not.
+export default function Interests({ where = "2d" }: { where?: "2d" | "3d" }) {
   return (
+    <>
     <div className="interests mt-10 border-b border-line">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
@@ -133,5 +138,11 @@ export default function Interests() {
         );
       })}
     </div>
+    {where === "2d" && (
+      <p className="mt-6">
+        <CityLink id="interests">Play it in the 3D city</CityLink>
+      </p>
+    )}
+    </>
   );
 }

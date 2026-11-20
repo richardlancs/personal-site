@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, type MouseEvent } from "react";
+import { sectionForCityPath } from "../../lib/cityRoutes";
 import { listed } from "../../sections/registry";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { useSection } from "./useSection";
+import ViewSwitch from "./ViewSwitch";
 
 // The Sections menu under its button in the top bar (TopBar.tsx): every
 // listed section from the registry, by its title, with a section's parts
@@ -27,9 +30,20 @@ import { useSection } from "./useSection";
 // back to sticky once the bar is clearly shorter (under 22%), so a phone's
 // toolbar coming and going (the screen's height changing by a little) can't
 // flip it back and forth mid-scroll.
+//
+// In the 3D city (/city/*) every entry is that section's page there
+// (registry: city), a plain navigation (the city moves focus itself), and
+// the section whose page it is is the one marked. Its first entry, set
+// apart from the sections, is the switch between the views (ViewSwitch.tsx),
+// shown here only on screens too narrow for it in the bar.
 export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
-  const here = useSection();
+  const pathname = usePathname();
+  const city = pathname === "/city" || pathname.startsWith("/city/");
+  const scrolled = useSection();
+  const here = city ? sectionForCityPath(pathname) : scrolled;
+  // In the city: close; the page's own navigation does the rest
+  const close = () => nav.current?.hidePopover();
   // Close, then hand focus to the section
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;
@@ -66,13 +80,16 @@ export default function SectionsMenu() {
   return (
     <nav ref={nav} id="places-menu" popover="auto" aria-label="Sections" className="sections-menu">
       <ul>
+        <li className="sections-menu-view">
+          <ViewSwitch place="menu" />
+        </li>
         {listed.map((s) => (
           <li key={s.id}>
-            <Link href={jumpHref(s.href)} onClick={go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? "location" : undefined}>
+            <Link href={city ? s.city : jumpHref(s.href)} onClick={city ? close : go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? (city ? "page" : "location") : undefined}>
               {s.title}
               {s.id === here && <span className="sections-menu-here" aria-hidden="true" />}
             </Link>
-            {s.subsections?.map((sub) => (
+            {!city && s.subsections?.map((sub) => (
               <Link key={sub.href} href={sub.href} onClick={go(sub.href)} className="glass sections-menu-sub">
                 {sub.title}
               </Link>

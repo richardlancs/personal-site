@@ -1,4 +1,5 @@
 import { profile } from "../../../data/portfolio";
+import { cityPath } from "../../../lib/cityRoutes";
 import ProfileLinks from "../ProfileLinks";
 import { order } from "../Station";
 
@@ -8,8 +9,9 @@ import { order } from "../Station";
 // headline; the two ways in; and the links. No paragraph, no caption and
 // no list of sections (the Sections menu and the progress line have them).
 // On first load the four settle in one after another (reveal.css, "The
-// hero"), visible from the first paint.
-export default function Hero() {
+// hero"), visible from the first paint. In the 3D city (where="3d") the two
+// ways in go to those sections' pages there, not to anchors on this page.
+export default function Hero({ where = "2d" }: { where?: "2d" | "3d" }) {
   return (
     <div className="hero">
       <div className="hero-backing hero-arrive" style={order(0)}>
@@ -17,10 +19,10 @@ export default function Hero() {
       </div>
       <p className="hero-headline hero-arrive" style={order(1)}>{profile.headline}</p>
       <div className="hero-actions hero-arrive" style={order(2)}>
-        <a href="#projects" className="glass glass-primary">
+        <a href={where === "3d" ? cityPath("projects") : "#projects"} className="glass glass-primary">
           View projects
         </a>
-        <a href="#contact" className="glass">
+        <a href={where === "3d" ? cityPath("contact") : "#contact"} className="glass">
           Contact
         </a>
       </div>

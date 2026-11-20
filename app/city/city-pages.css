@@ -1,0 +1,79 @@
+/* Loaded by app/city/layout.tsx only: the 2D page never downloads it.
+   Tokens and the band's own rules are in app/city.css. */
+
+/* ---------- The 3D city's pages (city3d/CityPage.tsx) ----------
+   Until the canvas comes (and wherever it can't), the section's plate is
+   where the scene will be, and the section's content is in one panel over
+   it. Wide landscape screens: the plate fills the window under the bar,
+   fixed, and the panel stands on its left half, scrolling with the page.
+   Phones, portrait and short screens: the plate is a band at the top and
+   the panel a sheet that comes up over its foot, one column. */
+/* No progress line here: the time and weather keep their place beside the
+   keys, as on the 2D page */
+body:has(.city-page) .top-bar .rh {
+  margin-left: auto;
+}
+
+.city-band {
+  position: relative;
+  height: 46svh;
+  background: var(--ink);
+}
+
+.city-band .band {
+  aspect-ratio: auto;
+  height: 100%;
+  max-height: none;
+}
+
+.city-band .band-top {
+  display: none;
+}
+
+.city-panel {
+  position: relative;
+  z-index: 1;
+  margin-top: -2rem;
+  padding: 1.5rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--line);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--ink-2);
+}
+
+.city-title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 1.6rem + 2.5vw, 3.25rem);
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.city-panel-foot {
+  margin-top: 2.5rem;
+}
+
+.city-colophon {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  .city-band {
+    position: fixed;
+    inset: 0;
+    height: auto;
+  }
+
+  .city-panel {
+    width: min(46rem, 100% - 3rem, max(32rem, 50vw));
+    margin: 1.5rem 0 3rem max(1.5rem, env(safe-area-inset-left));
+    padding: 2rem clamp(1.25rem, 2.5vw, 2.5rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.9);
+  }
+}

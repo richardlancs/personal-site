@@ -12,7 +12,10 @@
 //   every chunk those name for loading later (followed until there are no
 //   more). three.js is found by its renderer's name, `WebGLRenderer`.
 // - initial JS of `/`: the scripts its HTML loads before anything else
-// - all JS and all CSS in the build, except the résumé viewer's
+// - all JS in the build, except the résumé viewer's
+// - the CSS `/` links (totalCss: every visit's stylesheet); and the CSS
+//   only the 3D city's pages (/city/*) load, on a budget of its own
+//   (cityCss), so the city's styles never hide in, or grow, the 2D page's
 // - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS,
 //   loaded only when the résumé is opened: on its own budget, so it can't
 //   hide growth in what every visit downloads
@@ -36,7 +39,13 @@ const HOME_JS_LIMIT = 200_848;
 // unloaded park code, docs and tests (city.css, @source not). Round 2 had
 // grown it from 9,646 to 10,653 (the four rebuilt sections, the progress
 // line, figures, the list marker).
+// Since the 3D city's pages (Task 2 of the 3D plan, 20 November 2026) this
+// is the CSS `/` links, which then was every CSS file but the résumé's;
+// the city's own stylesheet (app/city/city-pages.css) has CITY_CSS_LIMIT.
 const TOTAL_CSS_LIMIT = 10_760;
+// The /city pages' own layout (564 measured, Task 2); the canvas's panels
+// and tags come later
+const CITY_CSS_LIMIT = 2_000;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;
@@ -45,6 +54,7 @@ const budgets = {
   homeInitialJs: HOME_JS_LIMIT,
   totalJs: TOTAL_JS_LIMIT,
   totalCss: TOTAL_CSS_LIMIT,
+  cityCss: CITY_CSS_LIMIT,
   // feature/baby-blue-glass-resume: pdfjs-dist 5.4.624's legacy build
   // (141,641), its worker (301,558) and the viewer (4,726)
   resumeJs: 470_000, // 447,925
@@ -85,6 +95,9 @@ const css = allCss.filter((c) => !c.resume);
 // ("/_next/static/chunks/a.js", "static/chunks/a.js")
 const chunkPath = (ref) => `${dir}/${ref.replace(/^\/?_next\//, "").replace(/^\//, "")}`;
 const html = readFileSync(homeHtml, "utf8");
+// The stylesheets `/` links
+const homeCss = new Set([...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="\/_next\/(static\/[^"]+\.css)"/g)].map((m) => `${dir}/${m[1]}`));
+if (!homeCss.size) die(`${homeHtml} links no /_next/static stylesheet: has the HTML's form changed?`);
 const initial = [...new Set([...html.matchAll(/<script[^>]*\ssrc="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]))];
 if (!initial.length) die(`${homeHtml} loads no /_next/static scripts: has the HTML's form changed? (this script reads <script src="/_next/static/…">)`);
 const preloaded = [...html.matchAll(/<link[^>]*rel="preload"[^>]*as="script"[^>]*href="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]);
@@ -114,7 +127,8 @@ const withThree = [...reached].filter(([p]) => THREE.test(readFileSync(p, "utf8"
 const measured = {
   homeInitialJs: initial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
   totalJs: js.reduce((a, b) => a + b.gz, 0),
-  totalCss: css.reduce((a, b) => a + b.gz, 0),
+  totalCss: css.filter((c) => homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
+  cityCss: css.filter((c) => !homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
   resumeJs: allJs.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
   resumeCss: allCss.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
 };
