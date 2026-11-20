@@ -1,19 +1,19 @@
 import * as THREE from "three";
 import { world } from "../store";
 
-// Light after dark: the street lamps' beams in the air, and the signs.
+// Light after dark that isn't a light: the street lamps' beams in the
+// air, and the wash a sign or a screen throws on the wall round it.
 //
-// - A lamp is a real spotlight at its bulb, aimed straight down (props.ts:
-//   buildLamp). What shows in the air is `lampBeam`: the light scattered
-//   by the air inside its cone, worked out per pixel along the view ray
-//   (no cone outline: the edge is where the ray's path through the light
-//   goes to nothing), brightest just under the lens, fading toward the
-//   ground and into the fog
-// - The signs are carved boards lit by torches (torch.ts); their light on
-//   the walls is `wash`, below: additive, far dimmer than the words
-// - The day and the weather set how much of this shows, through
-//   `glowUniforms` (atmosphere/Atmosphere.tsx) and the painted material's
-//   own day/night glow (paint.ts: `glow`). Nothing flickers.
+// - A lamp is a real spotlight at its bulb, aimed straight down
+//   (street.ts: buildLamp). What shows in the air is `lampBeam`: the light
+//   scattered by the air inside its cone, worked out per pixel along the
+//   view ray (no cone outline: the edge is where the ray's path through
+//   the light goes to nothing), brightest just under the lens, fading
+//   toward the ground and into the fog
+// - Neon, screens and signs are unlit surfaces (neon.ts, signs.ts); their
+//   light on the walls is `wash`, below: additive, far dimmer than they are
+// - The hour and the weather set how much of this shows, through
+//   `glowUniforms` (atmosphere/Atmosphere.tsx). Nothing flickers.
 
 export const glowUniforms = {
   uLamps: { value: 0 }, // the beams in the air: 0 by day .. 1 at night (more in rain and mist)
@@ -21,11 +21,9 @@ export const glowUniforms = {
   uHaze: { value: 0 }, // rain, snow or mist outdoors: light spreads a little wider and softer
 };
 
-// The palette of the lights: warm for the lamps (the signs' torches are
-// in torch.ts)
-export const NEON = {
-  lamp: "#ffc98a",
-};
+// A street lamp's light, warm (the same tone as a lit window's warm
+// light, uniforms.ts: windowUniforms.uWarm)
+const LAMP = "#ffc98a";
 
 const mobile = () => world.get().quality === "mobile";
 
@@ -59,7 +57,7 @@ function beamMaterial(steps: number) {
     uniforms: {
       ...fogUniforms(),
       uLamps: glowUniforms.uLamps,
-      uColor: { value: new THREE.Color(NEON.lamp) },
+      uColor: { value: new THREE.Color(LAMP) },
       uTan: { value: BEAM.tan },
       uBound: { value: BEAM.bound },
     },
