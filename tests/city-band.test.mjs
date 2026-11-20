@@ -64,7 +64,7 @@ test("the bands wait on one shared observer, half a screen ahead", () => {
   assert.equal((near.match(/new IntersectionObserver\(/g) ?? []).length, 1, "one observer");
   assert.match(near, /if \(!observer\) \{/, "made once, shared by every band");
   assert.match(near, /addEventListener\("scroll", onFirstScroll, \{ once: true, passive: true \}\)/, "no look-ahead before the first scroll");
-  assert.match(near, /scrolled \|\| within\(entry\.target, 0\)/);
+  assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   assert.match(near, /rootMargin: ROOT_MARGIN/);
   assert.match(near, /const ROOT_MARGIN = "50% 0px"/);
   assert.match(near, /unobserve\(/, "each band is let go once seen");
