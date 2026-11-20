@@ -1,5 +1,7 @@
 import { experience, type Experience as Entry } from "../../../data/portfolio";
+import { groupByKind, isCurrent, sortNewestFirst } from "../../../lib/experience";
 import { machineDate } from "../../../lib/machineDate";
+import ResumeLink from "../../resume/ResumeLink";
 
 // A date as written in the data, in a <time> only when it is a real date
 // ("Present" is plain words: a <time> must hold a valid date)
@@ -8,47 +10,82 @@ function When({ value }: { value: string }) {
   return date ? <time dateTime={date}>{value}</time> : <>{value}</>;
 }
 
-// The station's departure board: every line written out, one row each, a
-// hairline between them. On wide screens the dates are the board's left
-// column, in display type with tabular figures; on phones they sit above
-// the role. In the document the role comes first (so heading navigation
-// lands on it and reads its dates next); the grid places the dates. Work
-// and education are all one list in the data, so they stay one board.
-export default function Experience() {
+// One entry: the role (the boldest line), the organisation, the dates,
+// then every highlight. On wide screens the grid puts the dates in a left
+// column of their own, so they read straight down the section; on phones
+// they follow the organisation. The role comes first in the document so
+// heading navigation lands on it.
+function Row({ entry }: { entry: Entry }) {
   return (
-    <ol role="list" className="mt-10 rounded-[var(--radius-lg)] border border-line bg-panel">
-      {experience.map((entry: Entry) => (
-        <li key={`${entry.role}-${entry.organization}`} className="border-t border-line first:border-t-0">
-          <article className="grid gap-x-8 gap-y-3 p-4 min-[400px]:p-5 sm:grid-cols-[minmax(0,13rem)_minmax(0,1fr)] sm:p-8">
-            <div className="min-w-0 sm:col-start-2 sm:row-start-1">
-              <h3 className="font-display text-2xl font-bold leading-tight text-text break-words">{entry.role}</h3>
-              <p className="mt-1 text-base text-muted break-words">
-                {entry.organization}
-                {entry.location && <span> · {entry.location}</span>}
-              </p>
-              <ul role="list" className="mt-4 max-w-[65ch] list-disc space-y-2 pl-5 text-[1.0625rem] leading-relaxed text-text marker:text-muted">
-                {entry.highlights.map((highlight) => (
-                  <li key={highlight} className="break-words">
-                    {highlight}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <p className="order-first flex items-start gap-3 font-display text-2xl font-semibold leading-tight text-text tabular-nums sm:order-none sm:col-start-1 sm:row-start-1">
-              <span aria-hidden="true" className="mt-[0.35em] h-[0.6em] w-1 shrink-0 rounded-sm bg-lantern" />
-              <span className="break-words">
-                <When value={entry.startDate} />
-                {entry.endDate && (
-                  <>
-                    {" – "}
-                    <When value={entry.endDate} />
-                  </>
-                )}
-              </span>
-            </p>
-          </article>
-        </li>
+    <article className="grid gap-y-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-x-10">
+      <h3 className="font-display text-2xl font-bold leading-tight text-text break-words sm:col-start-2 sm:row-start-1">
+        {entry.role}
+      </h3>
+      <p className="text-[1.0625rem] font-semibold text-text break-words sm:col-start-2 sm:row-start-2">
+        {entry.organization}
+        {entry.location && <span className="font-normal text-muted"> · {entry.location}</span>}
+      </p>
+      <div className="mt-2 sm:col-start-1 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:pt-1">
+        <p className="font-display text-lg font-semibold leading-snug text-muted tabular-nums break-words">
+          <When value={entry.startDate} />
+          {entry.endDate && (
+            <>
+              {" – "}
+              <When value={entry.endDate} />
+            </>
+          )}
+        </p>
+        {isCurrent(entry) && (
+          <p className="mt-1.5 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-text">
+            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-cyan" />
+            Current
+          </p>
+        )}
+      </div>
+      <ul
+        role="list"
+        className="mt-4 list-disc space-y-2 pl-5 text-[1.0625rem] leading-relaxed text-text marker:text-muted sm:col-start-2 sm:row-start-3"
+      >
+        {entry.highlights.map((highlight) => (
+          <li key={highlight} className="max-w-[62ch] break-words">
+            {highlight}
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+// Plain dated rows, newest first, work and education apart, each group
+// under a small label on a hairline. No card, no board and no timeline
+// line (the page's progress line is the one line). Ends with the résumé.
+export default function Experience() {
+  const { work, education } = groupByKind(sortNewestFirst(experience));
+  const groups = [
+    { id: "experience-work", label: "Work", entries: work },
+    { id: "experience-education", label: "Education", entries: education },
+  ].filter((group) => group.entries.length > 0);
+
+  return (
+    <div className="mt-10">
+      {groups.map((group) => (
+        <div key={group.id} className="mb-14">
+          <p id={group.id} className="border-b border-line pb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">
+            {group.label}
+          </p>
+          <ol role="list" aria-labelledby={group.id} className="mt-8 space-y-12">
+            {group.entries.map((entry) => (
+              <li key={`${entry.role}-${entry.organization}`}>
+                <Row entry={entry} />
+              </li>
+            ))}
+          </ol>
+        </div>
       ))}
-    </ol>
+      <p>
+        {/* Opens the résumé over the page (components/resume) */}
+        <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
+      </p>
+    </div>
   );
 }
