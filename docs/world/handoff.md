@@ -1,9 +1,82 @@
-# Handoff: where the work stands (updated 17 November 2026)
+# Handoff: where the work stands (updated 20 November 2026)
 
-For whoever picks this up, human or Claude. Read this first, then
-`docs/world/park-balance-2026-11-06.md` for the measurements.
+For whoever picks this up, human or Claude. Read this first.
 
-## Latest: the world painted to match the intro film (branch `film-look`)
+## Shanghai redesign (branch `shanghai`, 19 November 2026)
+
+The site redesigned as a dark, painted, one-page "Shanghai" city. Worktree
+`.claude/worktrees/shanghai`; not merged, not pushed. `main` is untouched
+and still the park.
+
+**What exists (Plan A, the 2D site: done)**
+- `/` is one page of six stations down a metro line (`app/page.tsx`,
+  `app/components/city2d/`): Lujiazui (home: the hero), Longtang (About),
+  Century Avenue (Projects, with Skills), the metro (Experience), Nanjing
+  Road (Interests), the Bund (Contact). The registry
+  (`app/sections/registry.ts`) drives the Sections menu, the hero's list
+  of stops, the metro line (from 97rem, in the right margin) and the stop
+  in the top bar (53 to 97rem). The old addresses (`/projects`, …, `/map`)
+  redirect to their anchors (`next.config.ts`).
+- Each station has a band of painting, a day and a night plate of one
+  composition (`app/assets/city/`, made in ChatGPT: `docs/city/prompts.md`;
+  converted by `scripts/city-plates.mjs`; listed in
+  `components/city2d/plates.ts`), cross-faded by Richmond Hill's clock
+  (`CityDriver.tsx`, `lib/cityLook.ts`), with that weather's haze, rain
+  or snow over it (`WeatherOverlay.tsx`, `lib/precip.ts`; no canvas in still
+  view or under reduced motion). The home plate is fetched and painted by an
+  inline head script before hydration (`lib/platePreload.ts`,
+  `components/city2d/homePlate.ts`).
+- One dark interface (`app/city.css`; `globals.css` is no longer loaded),
+  Rajdhani and Nunito. The 3D park's code (`components/world3d/`,
+  `world/`, `locations/`) is still in the tree, unused by `/` except a few
+  small helpers (`world3d/still.ts`, `world3d/store.ts`,
+  `world3d/atmosphere/param.ts`); no three.js reaches `/` (the budget
+  script checks).
+
+**Where things are**
+- Spec: `docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md`
+- Plan A (2D): `docs/superpowers/plans/2026-11-19-shanghai-2d.md`; Plan B
+  (the 3D city under `/city`): `docs/superpowers/plans/2026-11-19-shanghai-3d.md`
+- Style, palette, type and composition rules: `docs/city/style.md`;
+  prompts: `docs/city/prompts.md`; concept frames: `docs/city/concepts/`
+- Adding a section: `docs/adding-a-section.md` (starter:
+  `docs/development/section-template/Greenhouse.tsx`)
+- The task reports and the final pass's measurements:
+  `.superpowers/sdd/2026-11-19-shanghai-2d/` (not committed; see
+  `finish-report.md`)
+
+**How to run it**
+- `npm run dev` (or `npx next dev -p 3101`); `?sky=<weather>-<daylight>[-progress]`
+  (e.g. `?sky=rain-night`, `?sky=clear-dusk-0.8`) previews a sky, dev only.
+- Always `rm -rf .next` before starting a dev server or a build: `next dev`
+  can serve a stale stylesheet (check the served CSS if a change doesn't show).
+
+**The audits** (all passing at the end of the finish pass)
+```
+npm run lint && npm test && npx tsc --noEmit
+rm -rf .next && npm run build && npx next start -p 3100
+SMOKE_URL=http://localhost:3100 npm test
+node docs/audit/scripts/budget.mjs                       # home JS ≤ the park's home (200,848)
+PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs http://localhost:3101   # next dev
+PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 <out>
+CHROME_PATH=… node docs/audit/scripts/lighthouse.mjs http://localhost:3100/ <out> 3 mobile
+```
+(`PLAYWRIGHT` points at an installed Playwright, e.g. one under
+`~/.npm/_npx`; see `docs/audit/scripts/pw.mjs`.)
+
+**What is left**
+- Simulated mobile LCP (Lighthouse 13.6, slow 4G, 4x CPU) is about 3.0 s
+  (2944 / 3020 / 3017 ms) against the 2.5 s target, though the plate now
+  paints before hydration (observed LCP 84 to 134 ms; CLS 0; first view
+  422 KB). What remains is Lantern counting the page's scripts and fonts
+  that load alongside the plate; see `finish-report.md`, group 2.
+- Richard reviews the 2D site in the worktree (the plan's checkpoint).
+- Then Plan B: the 3D city under `/city`
+  (`docs/superpowers/plans/2026-11-19-shanghai-3d.md`), reusing or
+  deleting the park's `world3d/`.
+- `CLAUDE.md` still describes the park. It is rewritten only at merge.
+
+## Earlier (the park): the world painted to match the intro film (branch `film-look`)
 - Target `docs/world/film-look.md`, measured by `docs/world/scripts/film-compare.mjs`. Restart `next dev` with `rm -rf .next` before judging CSS changes (it serves stale CSS).
 
 ## Earlier: the home page's intro, now a film (merged)

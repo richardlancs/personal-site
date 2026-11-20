@@ -1,102 +1,116 @@
 # Adding a section
 
-Every section of the site is one entry in `app/sections/registry.ts` and
-one page file. The menu, the home page's tags and list, the map, the name
-tags in the 3D park and the "Other sections" links at the foot of each
-page are all generated from the registry, so none of them need editing.
+The site is one page, `/`: six stations down a metro line, each a section
+under a band of painting of its district (`app/page.tsx`,
+`app/components/city2d/`). A section is two things:
 
-The starter is `docs/development/section-template/page.tsx`, a page for
-a "greenhouse" section. It lives in `docs/` so it is never built or served
-(it used to be a public, unlisted page at `/greenhouse`). Copy it to
-`app/<id>/page.tsx` and register the section as below. While a section is
-`listed: false` it still has a public address, marked `noindex`; keep
-drafts on a branch rather than shipping them unlisted.
+- one entry in `app/sections/registry.ts`, and
+- one component in `app/components/city2d/sections/`, mounted inside its
+  `<Station>` in `app/page.tsx`.
+
+The Sections menu, the list of stations under the hero, the metro line,
+the stop shown in the top bar and the stops' numbers (01 to 06) are all
+generated from the registry, so none of them need editing.
+
+The starter is `docs/development/section-template/Greenhouse.tsx`. It
+lives in `docs/` so it is never built or served; `npm test` checks that
+its imports still resolve from `app/components/city2d/sections/` and that
+nothing called "greenhouse" is mounted or registered. Copy it there and
+follow the steps below.
 
 ## 1. Register it
 
-Add an entry to `sections` in `app/sections/registry.ts`:
+Add an entry to `stations` in `app/sections/registry.ts`, at its place in
+the page's order (the order is the line's, and the stops are numbered by
+it):
 
 ```ts
 {
-  id: "reading",                // also the SectionId union, above
-  href: "/reading",
-  title: "Reading",             // the section, on the page and in lists
-  place: "The bench",           // where it is in the park (wide screens)
-  summary: "What I'm reading.", // one line, for lists
-  glyph: "pavilion",            // its drawing (components/world/glyphs.ts)
-  listed: false,                // true once it's ready to be pointed at
-  intro: "A bench under the ginkgo, a book left face down.",
-  side: "left",                 // the page's side of a wide screen
-  scene: { id: "park", focus: null },   // where the camera goes
-  map: { x: 44, y: 70 },                // its pin on the map sheet
-  metadata: { title: "Reading", description: "What Richard Lan is reading." },
+  id: "reading",                    // also the SectionId union, above
+  hash: "reading",                  // its anchor: /#reading
+  href: "/#reading",
+  title: "Reading",                 // the section's h2, and its name in lists
+  summary: "What I'm reading.",     // one line, for lists
+  listed: false,                    // true once it's ready to be pointed at
+  district: "yuyuan",               // the painting above it (DistrictId)
+  station: "Yuyuan",                // its stop on the line
+  districtLine: "…",                // one line naming the place, under the band
+  scene: { id: "park", focus: null },  // the 3D city's (Plan B); any SceneId for now
+  metadata: { title: "Reading", description: "…" },
 }
 ```
 
-What each field is for is commented in the registry. The only ones a new
-section must have are `id`, `href`, `title`, `place`, `summary`, `glyph`,
-`listed`, `side`, `scene` and `metadata`; `npm test` checks the rest is
-consistent (unique addresses, a page for every entry, a glyph and a scene
-that exist, a pin for every listed building).
+What each field is for is commented in the registry. A section that is
+`listed: false` is still on the page; it just isn't in the menu or the
+lists. `subsections` adds deeper anchors to the menu (as Projects has
+Skills).
 
-## 2. Give it a page
+The words in `title`, `summary` and `districtLine` are interface words;
+anything about Richard belongs in `app/data/portfolio.ts`.
 
-Create `app/<href>/page.tsx`:
+## 2. Give it a district and its plates
+
+Each station has its own district: add it to `DistrictId` in the
+registry, then:
+
+1. Paint a day and a night plate of one composition, following
+   `docs/city/style.md` (the style paragraph opens every prompt; the
+   prompts used so far are in `docs/city/prompts.md`; record yours there).
+2. Save them as `shanghai-plate-<district>-day.png` and `-night.png` in a
+   folder, add the district to the list at the top of
+   `scripts/city-plates.mjs`, and run
+   `node scripts/city-plates.mjs <folder> [check-sheet.jpg]`. It writes
+   `app/assets/city/<district>-<day|night>.webp` at 2400 × 1032, each at
+   most 600 KB; the sheet lays each pair over itself at 50% so you can
+   check that the buildings line up.
+3. Import both in `app/components/city2d/plates.ts` and add them to
+   `plates`, with the district's `focal` point (where its subject sits, so
+   the phone's 4:3 crop keeps it).
+
+Until it has plates, a band is its dark gradient, which already holds its
+height.
+
+## 3. Write the component and mount it
+
+Copy the starter to `app/components/city2d/sections/<Name>.tsx` and
+replace its placeholders. Then in `app/page.tsx`:
 
 ```tsx
-import Points from "../components/ui/Points";
-import Location from "../components/world/Location";
-import { section, sectionMetadata } from "../sections/registry";
-
-export const metadata = sectionMetadata("reading");
-
-export default function ReadingPage() {
-  return (
-    <Location section={section("reading")}>
-      <section className="project-notes take-clicks">
-        <h2 className="font-display text-3xl font-semibold tracking-tight">Lately</h2>
-        <Points items={["…", "…"]} />
-      </section>
-    </Location>
-  );
-}
+<Station section={section("reading")}>
+  <Reading />
+</Station>
 ```
 
-`Location` gives it the heading, the line about the place, the painting
-on phones, the park behind it on wide screens, and the links on to
-everything else. Inside, use the shared pieces:
+`<Station>` (`components/city2d/Station.tsx`) draws the band (the plates
+following Richmond Hill's clock, the weather over them), the stop's number
+and station, the section's `h2` from `title`, and the `districtLine`. So:
 
-- `components/ui/Points`: short points on paper (`variant="notebook"` for
-  ruled lines)
-- `components/ui/Notice`: a notice in the middle of the view (used by the
-  not-found and error pages)
-- the surfaces in `globals.css`: `.project-notes` (a clipped board),
-  `.paper` (a plain sheet), `.directory`, `.timetable`, `.cabinet-card`
-- the location components for the selectable patterns:
-  `locations/Workbench` (tabs + notes + screenshots), `locations/Cabinets`
-  (a row of choices + a card), `locations/Timetable` (a table + a notice),
-  `locations/Notebook` (pages), `locations/Payphone` (links + copy)
+- the component's headings start at `h3`;
+- it is a server component; a small client child (as Contact's
+  `CopyButton.tsx`) only where the browser is truly needed;
+- its words come from `app/data/portfolio.ts`;
+- it uses the shared pieces in `app/city.css`: `.points` (short points
+  with an amber dash), panels (`bg-panel`, a `--line` edge,
+  `--radius-lg`), `.glass` and `.glass-primary` keys, `.text-link`;
+- lists stay under about 65 characters a line (`max-w-[65ch]`), body text
+  is at least 16px on phones, and accents (cyan, magenta, amber) are for
+  edges, chosen states and display type of 24px or more, never body text;
+- no words on a painting.
 
-The words themselves belong in `app/data/portfolio.ts`, next to the
-projects and the notebook, so the content stays apart from the components.
+## 4. List it, and check
 
-## 3. Optional: artwork or a scene
+Set `listed: true`. Then run:
 
-- Every screen shows the 3D scene named in `scene.id` (phones at the
-  mobile tier, framed in the upper part of the screen). A new section
-  can simply stand in the park (`{ id: "park", focus: null }`), or at an
-  existing place with the camera on one of its objects (`focus` is a key
-  of that scene's `focus` poses in `components/world3d/scenes.ts`).
-- A scene of its own: add it to `scenes.ts` (offset, poses, fog) and
-  `components/world3d/scenes/`, register the component in `World3D.tsx`'s
-  `components` map, and give the section an `anchor` if it has a building
-  in the park (`scenes/Park.tsx` keeps the building positions by anchor).
-  That is the one case that touches the renderer.
+```
+npm run lint && npm test && npx tsc --noEmit
+rm -rf .next && npm run build && npx next start -p 3100
+SMOKE_URL=http://localhost:3100 npm test
+node docs/audit/scripts/budget.mjs
+```
 
-## 4. List it
-
-Set `listed: true`. It now appears in the Sections menu, the home page's
-tags and section list, the map (if it has `map`), the name tags in the
-park (if it has an `anchor`) and the links at the foot of every page.
-
-Run `npm test`, `npm run lint` and `npm run build`.
+and, against `next dev -p 3101` (the `?sky=` preview is dev only),
+`node docs/ui/scripts/city-contrast.mjs` and, against the build,
+`node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 <out-dir>`
+(both need `PLAYWRIGHT` pointing at an installed Playwright: see
+`docs/audit/scripts/pw.mjs`). Add the section's content to the smoke
+test that checks every station's content is in its station's HTML.

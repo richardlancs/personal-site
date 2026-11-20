@@ -87,23 +87,31 @@ test("every section in the registry is complete and is a station on the one page
 });
 
 test("the section starter is a template in docs, not a public page", () => {
-  assert.ok(existsSync(`${root}docs/development/section-template/page.tsx`), "the starter template is kept in docs/development");
+  const path = `${root}docs/development/section-template/Greenhouse.tsx`;
+  assert.ok(existsSync(path), "the starter template is kept in docs/development");
   // docs/ isn't type-checked, so check the template still fits the code it
-  // is copied next to: every import resolves from app/<id>/, and every
-  // name it imports is exported there
-  const template = readFileSync(`${root}docs/development/section-template/page.tsx`, "utf8");
-  const imports = [...template.matchAll(/import\s+(.+?)\s+from\s+"(\.\.\/[^"]+)"/g)];
-  assert.ok(imports.length >= 3, "the template's imports were found");
+  // is copied next to: every import resolves from
+  // app/components/city2d/sections/, and every name it imports is exported
+  // there
+  const template = readFileSync(path, "utf8");
+  const imports = [...template.matchAll(/import\s+(.+?)\s+from\s+"(\.\.?\/[^"]+)"/g)];
+  assert.ok(imports.length >= 1, "the template's imports were found");
+  const here = new URL("../app/components/city2d/sections/", import.meta.url);
   for (const [, names, from] of imports) {
-    const base = `${root}app/${from.slice(3)}`;
+    const base = new URL(from, here).pathname;
     const file = [".tsx", ".ts"].map((ext) => base + ext).find(existsSync);
-    assert.ok(file, `the template imports ${from}, which isn't in app/`);
+    assert.ok(file, `the template imports ${from}, which isn't there from city2d/sections/`);
     const source = readFileSync(file, "utf8");
     const wanted = names.startsWith("{") ? names.slice(1, -1).split(",").map((n) => n.trim()) : [];
     if (!names.startsWith("{")) assert.match(source, /export default/, `${from} has no default export`);
     for (const name of wanted) assert.match(source, new RegExp(`export (const|function|type) ${name}\\b`), `${from} doesn't export ${name}`);
   }
+  // A section component: no h2 of its own (the Station gives it one), and
+  // not a page
+  assert.doesNotMatch(template, /<h2[\s>]/);
+  assert.doesNotMatch(template, /^export const metadata/m);
   assert.ok(!existsSync(`${root}app/greenhouse`), "app/greenhouse would be served at /greenhouse");
+  assert.ok(!existsSync(`${root}app/components/city2d/sections/Greenhouse.tsx`), "the starter isn't mounted");
   assert.ok(!sections.some((s) => s.id === "greenhouse"), "no greenhouse entry in the registry");
 });
 
