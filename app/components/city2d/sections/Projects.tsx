@@ -11,6 +11,9 @@ const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 const shotSizes = (first: boolean) =>
   first ? "(min-width: 1024px) min(40rem, 56vw), calc(100vw - 2.5rem)" : "(min-width: 1024px) min(34rem, 48vw), calc(100vw - 2.5rem)";
 
+// A portrait screenshot is drawn at a set height (20rem on phones, 26rem,
+// then up to 36rem on wide screens), its width from its own proportions:
+// so its box holds its size before the lazy image arrives
 const tall = (shot: Screenshot) => shot.height > shot.width;
 
 // A project's keys: "Live demo" is the primary key when there is one and
@@ -78,7 +81,7 @@ export default function Projects() {
                       loading="lazy"
                       className={
                         tall(main)
-                          ? "mx-auto h-auto max-h-[20rem] w-auto max-w-full min-[480px]:max-h-[26rem] lg:max-h-[min(36rem,calc(100svh-var(--bar-h)-14rem))]"
+                          ? "mx-auto h-[20rem] w-auto max-w-full object-contain min-[480px]:h-[26rem] lg:h-[min(36rem,calc(100svh-var(--bar-h)-14rem))]"
                           : "h-auto w-full"
                       }
                     />
