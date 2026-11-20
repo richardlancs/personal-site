@@ -57,4 +57,16 @@ if (!failed) {
     console.log(`${ok ? "ok  " : "FAIL"} ${label} ${fg} on ${fill} ${bg}: ${ratio.toFixed(2)}:1 (needs ${min})`);
   }
 }
+// The list marker (city.css, .points): a small diamond, a non-text mark,
+// in cyan for points, in muted for the folded ones; 3:1 on every ground
+if (!failed) {
+  for (const name of ["--cyan", "--muted"]) {
+    for (const ground of grounds) {
+      const ratio = contrast(palette[name], palette[ground]);
+      const ok = ratio >= 3;
+      if (!ok) failed = true;
+      console.log(`${ok ? "ok  " : "FAIL"} list marker ${name} on ${ground}: ${ratio.toFixed(2)}:1 (needs 3)`);
+    }
+  }
+}
 process.exit(failed ? 1 : 0);

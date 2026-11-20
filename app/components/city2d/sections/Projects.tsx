@@ -217,7 +217,7 @@ export default function Projects() {
                     {morePart.length > 0 && (
                       <section className="mt-3 border-l-2 border-cyan pl-5">
                         <h4 className={h5}>More of my part</h4>
-                        <ul role="list" className="points mt-2 space-y-2 text-text">
+                        <ul role="list" className="points points-quiet mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
                             <li key={contribution}><Figures>{contribution}</Figures></li>
                           ))}
@@ -227,7 +227,7 @@ export default function Projects() {
                     {foldedFeatures && (
                       <section className={subheads ? "mt-6" : undefined}>
                         {subheads && <h4 className={h5}>What it does</h4>}
-                        <ul role="list" className={`points space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
+                        <ul role="list" className={`points points-quiet space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
                           {project.features.map((feature) => (
                             <li key={feature}><Figures>{feature}</Figures></li>
                           ))}

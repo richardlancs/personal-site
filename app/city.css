@@ -3,6 +3,15 @@
    separate project): never scanned, so a local build matches Vercel's */
 @source not "../.claude";
 @source not "../garage-poker";
+/* Code in the tree that the page doesn't load (the 3D park, docs and
+   tests): its classes would only be dead utilities in the stylesheet */
+@source not "./components/world3d";
+@source not "./components/world";
+@source not "./components/locations";
+@source not "./globals.css";
+@source not "../docs";
+@source not "../tests";
+@source not "../scripts";
 
 /*
   The city: one dark theme (docs/city/style.md). Soft black grounds (a
@@ -675,7 +684,8 @@ a[data-resume][data-opening] {
   opacity: var(--city-night, 1);
 }
 
-/* Dawn and dusk's warm grade (and none by full day or night) */
+/* Twilight's grade: warm at golden hour, cyan at blue hour (lib/cityLook.ts),
+   and none by full day or night */
 .band::after {
   content: "";
   position: absolute;
@@ -1270,8 +1280,13 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 
 /* ---------- The sections' shared pieces ---------- */
 
-/* Short points, each with a quiet dash in the margin: the one list
-   marker on black (About, Projects, Experience) */
+/* Short points, each marked with a small light-blue diamond: the one list
+   marker on the site (About, Projects, Experience), drawn, not a
+   character, so it is neither read out nor copied. It sits on the middle
+   of the first line (0.5lh), whatever the text's size; wrapped lines
+   align with the first line's text. Points folded away (.points-quiet:
+   "What it does", "More of my part") take the same diamond in muted, with
+   no glow, so they read as secondary by more than their place. */
 .points {
   max-width: 65ch;
   list-style: none;
@@ -1286,11 +1301,26 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 .points > li::before {
   content: "";
   position: absolute;
-  left: 0;
-  top: calc(0.8em - 1px);
-  width: 0.6rem;
-  height: 2px;
+  left: 0.125rem;
+  top: calc(0.8em - 3px);
+  top: calc(0.5lh - 3px);
+  width: 6px;
+  height: 6px;
+  background: var(--cyan);
+  rotate: 45deg;
+  /* Decoration only; gone under prefers-contrast */
+  box-shadow: 0 0 4px rgb(79 216 238 / 0.5);
+}
+
+.points-quiet > li::before {
   background: var(--muted);
+  box-shadow: none;
+}
+
+/* A point that is a link standing alone (44px tall): the diamond at the
+   middle of that 44px line */
+.points > li:has(> .text-link-solo)::before {
+  top: calc(1.375rem - 3px);
 }
 
 /* A figure in content text (components/city2d/Figures.tsx): bold, in the
@@ -1300,12 +1330,6 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   color: var(--text);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
-}
-
-/* A point that is a link standing alone (44px tall): the dash at the
-   middle of its first line */
-.points > li:has(> .text-link-solo)::before {
-  top: calc(1.375rem - 1px);
 }
 
 /* A <details>' chevron (Projects, Interests) turns as it opens: at once
@@ -1660,6 +1684,10 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   :root {
     --glow-cyan: 0 0 #0000;
     --glass-border: var(--muted);
+  }
+
+  .points > li::before {
+    box-shadow: none;
   }
 
   *,

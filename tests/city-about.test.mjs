@@ -47,8 +47,7 @@ test("the about station is a server component with no fixed widths", () => {
   assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/);
 });
 
-test("the points' dash is the one quiet marker on black, and the retired card glow is gone", () => {
+test("the retired card glow is gone", () => {
   const css = readFileSync(new URL("../app/city.css", import.meta.url), "utf8");
-  assert.match(css, /\.points > li::before \{[^}]*background: var\(--muted\)/);
   assert.doesNotMatch(css, /\.interest-card/);
 });
