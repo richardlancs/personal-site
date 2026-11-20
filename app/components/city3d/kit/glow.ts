@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { world } from "./store";
+import { world } from "../store";
 
 // Light after dark: the street lamps' beams in the air, and the signs.
 //

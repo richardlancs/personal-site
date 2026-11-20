@@ -1,9 +1,9 @@
-// Still view (app/components/world3d/still.ts): the script that sets
+// Still view (app/lib/still.ts): the script that sets
 // <html data-still> before the first paint, and the CSS that keys on it.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { STILL_KEY, STILL_SCRIPT } from "../app/components/world3d/still.ts";
+import { STILL_KEY, STILL_SCRIPT } from "../app/lib/still.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 
@@ -59,7 +59,8 @@ test("the page's motion keys on still view, and the toggle is in the top bar", (
   assert.match(readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8"), /<StillViewToggle \/>/);
   // The menu's own motion is CSS only: nothing in it asks the media query
   assert.doesNotMatch(readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8"), /prefers-reduced-motion|matchMedia/);
-  // One source of truth: nothing in the world asks the media query itself
-  for (const file of ["world3d/World3D.tsx", "world3d/scenes/Park.tsx", "world3d/scenes/ShakeableTrees.tsx", "locations/Notebook.tsx"])
-    assert.doesNotMatch(readFileSync(`${root}app/components/${file}`, "utf8"), /prefers-reduced-motion/, file);
+  // One source of truth: the page's moving parts ask the still script's
+  // query (app/lib/still.ts), never the media query themselves
+  for (const file of ["city2d/ProgressLine.tsx", "city2d/WeatherOverlay.tsx"])
+    assert.doesNotMatch(readFileSync(`${root}app/components/${file}`, "utf8").replace(/^\s*\/\/.*$/gm, ""), /prefers-reduced-motion/, file);
 });

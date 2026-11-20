@@ -2,7 +2,7 @@ import Link from "next/link";
 import { profile } from "../../data/portfolio";
 import MusicToggle from "../MusicToggle";
 import WeatherClock from "../weather/WeatherClock";
-import StillViewToggle from "../world/StillViewToggle";
+import StillViewToggle from "./StillViewToggle";
 import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 

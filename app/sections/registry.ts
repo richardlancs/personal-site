@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type { SceneId } from "../components/world3d/scenes";
 
 // The sections of the site, and everything the rest of the site needs to
 // know about each one: its anchor on the one page, its name and the
@@ -26,8 +25,6 @@ export type Section = {
   // the page; it's just not pointed at.
   listed: boolean;
   district: DistrictId; // the painting above it (never named on the page)
-  // The 3D city (a later plan): the scene a section belongs to
-  scene: { id: SceneId; focus: string | null };
   // Deeper anchors inside the section, for the menu
   subsections?: { title: string; href: `/#${string}` }[];
   metadata: { title: string; description: string };
@@ -43,7 +40,6 @@ export const pageSections: Section[] = [
     summary: "My name, what I do, and the way to everything else.",
     listed: true,
     district: "lujiazui",
-    scene: { id: "park", focus: null },
     metadata: {
       title: "Richard Lan | Software Engineering Portfolio",
       description: "Portfolio of Richard Lan, a Computer Science student at the University of Waterloo seeking software engineering internship and co-op roles.",
@@ -57,7 +53,6 @@ export const pageSections: Section[] = [
     summary: "Who I am and what I'm working toward.",
     listed: true,
     district: "longtang",
-    scene: { id: "library", focus: "notebook" },
     metadata: { title: "About", description: "About Richard Lan, a Computer Science student at the University of Waterloo." },
   },
   {
@@ -68,7 +63,6 @@ export const pageSections: Section[] = [
     summary: "The software I've built, and my tools.",
     listed: true,
     district: "towers",
-    scene: { id: "workshop", focus: "monitor" },
     subsections: [{ title: "Skills", href: "/#skills" }],
     metadata: { title: "Projects", description: "Software projects by Richard Lan, with screenshots, code and live demos." },
   },
@@ -80,7 +74,6 @@ export const pageSections: Section[] = [
     summary: "Where I've worked and studied.",
     listed: true,
     district: "metro",
-    scene: { id: "station", focus: "timetable" },
     metadata: { title: "Experience", description: "Richard Lan's experience and education." },
   },
   {
@@ -91,7 +84,6 @@ export const pageSections: Section[] = [
     summary: "What I do away from the keyboard.",
     listed: true,
     district: "nanjing-road",
-    scene: { id: "arcade", focus: "cabinet" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
   {
@@ -102,7 +94,6 @@ export const pageSections: Section[] = [
     summary: "Email, GitHub, LinkedIn and my résumé.",
     listed: true,
     district: "bund",
-    scene: { id: "booth", focus: null },
     metadata: { title: "Contact", description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé." },
   },
 ];

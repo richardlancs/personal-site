@@ -1,4 +1,4 @@
-// The weather and the hour in the world (app/components/world3d/atmosphere/):
+// The weather and the hour in the world (app/components/city3d/atmosphere/):
 // the table of looks, the arithmetic that moves a place's own lighting, the
 // development preview's address form, and that the preview stays out of
 // production.
@@ -20,43 +20,14 @@ import {
   progressStep,
   skyColor,
   weatherLook,
-} from "../app/components/world3d/atmosphere/looks.ts";
-import { PREVIEW_PHASES, PREVIEW_PRESETS, parseSkyParam } from "../app/components/world3d/atmosphere/param.ts";
-import { scenes } from "../app/components/world3d/scenes.ts";
+} from "../app/components/city3d/atmosphere/looks.ts";
+import { PREVIEW_PHASES, PREVIEW_PRESETS, parseSkyParam } from "../app/lib/skyParam.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(root + path, "utf8");
 
 const finite01 = (c) => c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
-
-test("the park's places stay clear of the fog in every weather and at every hour", () => {
-  // From the steps (scenes.ts: park.home) to the station's sign, the
-  // farthest place, about 63 m, and the arcade's and workshop's, about 46
-  // and 44 m. three.js's linear fog: smoothstep(near, far, depth).
-  const smooth = (a, b, x) => {
-    const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-    return t * t * (3 - 2 * t);
-  };
-  const signs = { station: 63, arcade: 46, workshop: 44 };
-  let worst = 0;
-  for (const p of WEATHER_PRESETS)
-    for (const ph of DAYLIGHTS)
-      for (const progress of [0, 0.5, 1]) {
-        const d = daylightLook(newDaylight(), ph, progress);
-        const w = weatherLook(newWeather(), p);
-        const r = fogRange({ near: 0, far: 0 }, scenes.park.fog, d, w, false);
-        for (const [name, depth] of Object.entries(signs)) {
-          const fog = smooth(r.near, r.far, depth);
-          worst = Math.max(worst, fog);
-          assert.ok(fog <= 0.4, `${p}/${ph}/${progress}: ${Math.round(fog * 100)}% fog on the ${name}'s sign`);
-        }
-      }
-  // ...and the fog's floor is what holds them there, not luck
-  const rainyDawn = fogRange({ near: 0, far: 0 }, { near: 40, far: 160 }, daylightLook(newDaylight(), "dawn", 0), weatherLook(newWeather(), "rain"), false);
-  assert.ok(smooth(rainyDawn.near, rainyDawn.far, signs.station) > 0.6, "without keep, a rainy dawn would swallow the station");
-  assert.ok(worst > 0.1, "the farthest place still sits in a little air");
-});
 
 test("every weather and every time of day has a look", () => {
   assert.deepEqual([...PREVIEW_PRESETS].sort(), [...WEATHER_PRESETS].sort());
@@ -81,19 +52,6 @@ test("all sixteen combinations compose to colours and numbers in range, in every
         assert.ok(finite01(skyColor([0, 0, 0], d.top, w)) && finite01(skyColor([0, 0, 0], d.horizon, w)), `${p}/${ph} sky`);
         assert.ok(d.night >= 0 && d.night <= 1 && w.cover >= 0 && w.cover <= 1);
       }
-});
-
-test("neutral weather by day stays close to the intro film's light (docs/world/film-look.md)", () => {
-  const d = daylightLook(newDaylight(), "day", 0.5);
-  const w = weatherLook(newWeather(), "neutral");
-  // The sky's own colours, the park's fog, its sun's colour and strength
-  assert.ok(dist(skyColor([0, 0, 0], d.top, w), hexToRGB("#174a9e")) < 0.02);
-  assert.ok(dist(skyColor([0, 0, 0], d.horizon, w), hexToRGB("#9cc3e2")) < 0.03);
-  assert.ok(dist(fogColor([0, 0, 0], hexToRGB("#b3cbd8"), d, w, false), hexToRGB("#b3cbd8")) < 0.03);
-  assert.ok(dist(lightColor([0, 0, 0], hexToRGB("#ffd09a"), d.sun, d.sunMix, w), hexToRGB("#ffd09a")) < 0.1);
-  assert.ok(Math.abs(d.sunScale * w.sunScale - 1) < 0.1 && Math.abs(d.hemiScale * w.hemiScale - 1) < 0.1);
-  assert.equal(w.wet + w.snow + w.rain + w.flakes, 0);
-  assert.equal(d.night, 0);
 });
 
 test("only rain wets, only snow lies, and nothing falls indoors", () => {
@@ -136,11 +94,8 @@ test("the preview's address form", () => {
   assert.equal(parseSkyParam("rain-day-7").progress, 1);
 });
 
-test("the sky preview is loaded only in development", () => {
-  const world = read("app/components/world3d/World3D.tsx");
-  assert.match(world, /process\.env\.NODE_ENV === "development" \? lazy\(\(\) => import\("\.\/atmosphere\/DevSkyPanel"\)\) : null/);
-  // and nothing else imports it
-  for (const file of ["app/layout.tsx", "app/components/world3d/WorldShell.tsx", "app/components/world3d/atmosphere/Atmosphere.tsx"]) {
-    assert.ok(!read(file).includes("DevSkyPanel"), file);
-  }
+test("the sky preview is never loaded by the 2D page", () => {
+  // The city's canvas (a later task) loads it in development only; the
+  // page and its layout never do
+  for (const file of ["app/layout.tsx", "app/page.tsx"]) assert.ok(!read(file).includes("DevSkyPanel"), file);
 });

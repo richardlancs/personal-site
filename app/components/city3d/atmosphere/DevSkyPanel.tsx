@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { DAYLIGHTS, WEATHER_PRESETS, type SkyState } from "../../../lib/sky";
 import { useWorld, world } from "../store";
-import { parseSkyParam } from "./param";
+import { parseSkyParam } from "../../../lib/skyParam";
 
 // Development only (World3D.tsx loads it only when NODE_ENV is
 // "development", so a production build has none of it): every weather

@@ -6,7 +6,7 @@ import { BAND_SIZES, BAND_WIDTH, HOME_QUALITY, plates } from "./components/city2
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
-import { STILL_SCRIPT } from "./components/world3d/still";
+import { STILL_SCRIPT } from "./lib/still";
 import { richmondHill } from "./data/weather";
 import { platePreloadScript } from "./lib/platePreload";
 import { siteUrl } from "./sections/registry";
@@ -78,7 +78,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <head>
         {/* Still view, before the first paint: the visitor's saved choice,
-            or the system's reduced-motion setting (world3d/still.ts) */}
+            or the system's reduced-motion setting (lib/still.ts) */}
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
         {/* The home band's plate, by day or by night, fetched and painted
             while the HTML parses (lib/platePreload.ts); not on a deep link */}

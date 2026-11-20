@@ -55,7 +55,6 @@ test("every résumé link is a real link to the PDF that opens the viewer", () =
   const link = read("app/components/resume/ResumeLink.tsx");
   assert.match(link, /href=\{profile\.resumeUrl\}/);
   assert.match(link, /data-resume=""/);
-  assert.match(read("app/components/locations/Payphone.tsx"), /data-resume=\{line\.viewer \? "" : undefined\}/);
   // The link component stays a server component: the listener is the host's
   assert.ok(!link.includes('"use client"'));
   assert.match(read("app/components/city2d/ProfileLinks.tsx"), /<ResumeLink[\s>]/, "the shared profile links use ResumeLink");

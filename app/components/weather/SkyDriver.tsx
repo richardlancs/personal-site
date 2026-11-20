@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import type { SkyState } from "../../lib/sky";
-import { useWorld, world } from "../world3d/store";
+import { useWorld, world } from "../city3d/store";
 import { useRichmondHill } from "./useRichmondHill";
 
 // Tells the world what Richmond Hill's sky is like (world3d/store.ts:

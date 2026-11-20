@@ -3,12 +3,8 @@
    separate project): never scanned, so a local build matches Vercel's */
 @source not "../.claude";
 @source not "../garage-poker";
-/* Code in the tree that the page doesn't load (the 3D park, docs and
-   tests): its classes would only be dead utilities in the stylesheet */
-@source not "./components/world3d";
-@source not "./components/world";
-@source not "./components/locations";
-@source not "./globals.css";
+/* Code in the tree that the page doesn't load (docs and tests): its
+   classes would only be dead utilities in the stylesheet */
 @source not "../docs";
 @source not "../tests";
 @source not "../scripts";

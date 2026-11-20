@@ -1,4 +1,4 @@
-import type { Daylight, SkyState, WeatherPreset } from "../../../lib/sky";
+import type { Daylight, SkyState, WeatherPreset } from "./sky";
 
 // The development preview's address form (DevSkyPanel.tsx): ?sky=rain-night,
 // or with how far into the phase, ?sky=clear-dusk-0.8. Anything else is

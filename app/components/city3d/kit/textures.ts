@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { rng, type Rng } from "./rng";
+import { rng, type Rng } from "../rng";
 
 // Every texture in the world, painted on a canvas from a seed. Nothing is
 // downloaded except the project screenshots. Textures with words wait for

@@ -1,7 +1,7 @@
-// The arcade machine's rules: app/components/world3d/scenes/arcadeLogic.ts
+// The arcade machine's rules: app/components/city3d/arcade/arcadeLogic.ts
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { deal, handName, knightMoves, nextKnightSquare, shotGoesIn } from "../app/components/world3d/scenes/arcadeLogic.ts";
+import { deal, handName, knightMoves, nextKnightSquare, shotGoesIn } from "../app/components/city3d/arcade/arcadeLogic.ts";
 
 const c = (s) => s.split(" ").map((t) => ({ rank: { J: 11, Q: 12, K: 13, A: 14 }[t.slice(0, -1)] ?? Number(t.slice(0, -1)), suit: "shdc".indexOf(t.slice(-1)) }));
 

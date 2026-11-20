@@ -64,14 +64,10 @@ test("no Chinese or Japanese characters in app/ source", () => {
 });
 
 test("no theme toggle and no saved theme anywhere the site loads", () => {
-  // The park's unloaded files (globals.css, world3d, world, locations) are
-  // left out; a later task removes them
-  const skip = ["app/globals.css", "app/components/world3d", "app/components/world", "app/components/locations"];
   const files = [];
   const walk = (dir) => {
     for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
-      if (skip.includes(path)) continue;
       if (entry.isDirectory()) walk(path);
       else if (/\.(tsx?|css)$/.test(entry.name)) files.push(path);
     }
@@ -117,14 +113,10 @@ test("every colour and size the résumé viewer uses is defined by the city's st
 });
 
 test("black is the ground and the warm secondary is the lantern: no magenta, no amber left", () => {
-  // The park's unloaded files (world3d, world, locations, globals.css) keep
-  // their own colour names; a later task removes them
-  const skip = ["app/globals.css", "app/components/world3d", "app/components/world", "app/components/locations"];
   const files = ["app/city.css"];
   const walk = (dir) => {
     for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
-      if (skip.includes(path)) continue;
       if (entry.isDirectory()) walk(path);
       else if (/\.tsx$/.test(entry.name)) files.push(path);
     }

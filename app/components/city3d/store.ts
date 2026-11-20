@@ -2,7 +2,7 @@
 
 import { useSyncExternalStore } from "react";
 import type { SkyState } from "../../lib/sky";
-import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "./still";
+import { REDUCED_MOTION, STILL_KEY, storedStill, systemStill } from "../../lib/still";
 
 // What the world and the pages share: which object the camera is looking
 // at, what's been chosen in each place, and what the visitor is pointing

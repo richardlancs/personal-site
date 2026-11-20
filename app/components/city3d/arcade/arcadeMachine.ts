@@ -2,7 +2,7 @@
 
 import * as THREE from "three";
 import type { Interest } from "../../../data/portfolio";
-import { fonts } from "../textures";
+import { fonts } from "../kit/textures";
 import { ACTIONS, BOARD, HUES, deal, handName, knightMoves, nextKnightSquare, rankLabel, shotGoesIn, type Card } from "./arcadeLogic";
 
 // The arcade's one machine (Arcade.tsx): every interest is a mode of it,

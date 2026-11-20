@@ -45,8 +45,8 @@ test("still view and reduced motion are checked before rain or snow", () => {
   const weather = body.indexOf("dataset.weather");
   assert.ok(still >= 0 && reduced >= 0 && weather >= 0, "reads data-still, prefers-reduced-motion and data-weather");
   assert.ok(still < weather && reduced < weather, "still view and reduced motion first");
-  assert.match(src, /REDUCED_MOTION = "\(prefers-reduced-motion: reduce\)"|from "\.\.\/world3d\/still"/);
-  assert.match(readFileSync(new URL("../app/components/world3d/still.ts", import.meta.url), "utf8"), /REDUCED_MOTION = "\(prefers-reduced-motion: reduce\)"/);
+  assert.match(src, /REDUCED_MOTION = "\(prefers-reduced-motion: reduce\)"|from "\.\.\/\.\.\/lib\/still"/);
+  assert.match(readFileSync(new URL("../app/lib/still.ts", import.meta.url), "utf8"), /REDUCED_MOTION = "\(prefers-reduced-motion: reduce\)"/);
 });
 
 test("it follows data-weather and data-still on <html>, and the motion setting", () => {

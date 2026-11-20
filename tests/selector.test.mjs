@@ -1,8 +1,8 @@
 // The keyboard on the rows of choices (bench tabs, cabinets, timetable
-// lines): see app/components/locations/selector.ts
+// lines): see app/components/city3d/panels/selector.ts
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { stepChoice } from "../app/components/locations/selector.ts";
+import { stepChoice } from "../app/components/city3d/panels/selector.ts";
 
 test("arrows step along the row and wrap at its ends", () => {
   assert.equal(stepChoice("ArrowRight", 0, 3), 1);

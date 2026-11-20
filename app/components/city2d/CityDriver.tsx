@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { cityVars } from "../../lib/cityLook";
 import type { SkyState } from "../../lib/sky";
 import { useRichmondHill } from "../weather/useRichmondHill";
-import { parseSkyParam } from "../world3d/atmosphere/param";
+import { parseSkyParam } from "../../lib/skyParam";
 import { setCityBlend } from "./citySky";
 
 // Sets the city's sky on <html> from Richmond Hill's clock and weather
@@ -15,7 +15,7 @@ import { setCityBlend } from "./citySky";
 // Without a usable reading the weather is "neutral" and the daylight
 // still follows the clock. Renders nothing.
 //
-// In development only, ?sky= (world3d/atmosphere/param.ts, e.g.
+// In development only, ?sky= (lib/skyParam.ts, e.g.
 // ?sky=clear-dusk-0.5) stands in for the live sky, to check each look.
 export default function CityDriver() {
   const { now, condition, daylight } = useRichmondHill();

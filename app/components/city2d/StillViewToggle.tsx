@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useSyncExternalStore } from "react";
-import { chooseStill, syncStill, world } from "../world3d/store";
+import { chooseStill, syncStill, world } from "../city3d/store";
 
 const isStill = () => world.get().still;
 // The server can't know the visitor's setting; the button hydrates as

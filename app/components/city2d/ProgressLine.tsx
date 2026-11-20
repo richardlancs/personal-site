@@ -3,7 +3,7 @@
 import { useEffect, useRef, type CSSProperties, type MouseEvent } from "react";
 import { FAST, lockedAt, progressAt, reached, shown, type Marks } from "../../lib/progress";
 import { listed, sectionNumber } from "../../sections/registry";
-import { REDUCED_MOTION } from "../world3d/still";
+import { REDUCED_MOTION } from "../../lib/still";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { setSection, useSection } from "./useSection";
 

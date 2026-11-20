@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { FRAME_MS, MAX_DPR, PRECIP_SEED, RAIN_SLANT, flakeX, seedParticles, stepParticles, type Particle, type PrecipKind } from "../../lib/precip";
-import { REDUCED_MOTION } from "../world3d/still";
+import { REDUCED_MOTION } from "../../lib/still";
 
 // The weather over a district's band (city.css, "The band's weather"):
 // inside the band, over its plates, under its foot's fade. Decorative, so

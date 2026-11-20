@@ -93,7 +93,6 @@ test("the display is something to read, not a control, and announces nothing on 
   const colophon = read("app/components/ui/Colophon.tsx");
   assert.match(colophon, /weatherProvider\.url/);
   assert.match(colophon, /weatherProvider\.licenceUrl/);
-  assert.match(read("app/components/world/Location.tsx"), /<Colophon \/>/);
   assert.match(read("app/page.tsx"), /<Colophon \/>/);
   // On narrow screens it takes a row of its own under the bar; it stays
   // selectable text

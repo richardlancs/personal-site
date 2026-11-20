@@ -4,6 +4,9 @@
 // `window` or `navigator` when the module loads, so the tests can load it
 // straight into Node and the shell can import it before any 3D is fetched.
 
+// The narrow layout's media query, shared with the shell
+import { FLAT_QUERY } from "./flat.ts";
+
 export type Quality = "high" | "low" | "mobile";
 export type ReflectionMode = "planar" | "fake";
 
@@ -16,12 +19,6 @@ export type TierInput = {
   saveData: boolean;
   forced?: Quality | null; // ?tier=
 };
-
-// The narrow layout's media query. Equal to FLAT_QUERY in
-// app/components/world/flat.ts (tests/city3d-tiers.test.mjs reads that file
-// and checks). The task that moves flat.ts to ./flat replaces this
-// constant with `import { FLAT_QUERY } from "./flat"`.
-export const DEFAULT_FLAT_QUERY = "(orientation: portrait), (max-width: 767px), (max-height: 480px)";
 
 const QUALITIES: readonly Quality[] = ["high", "low", "mobile"];
 
@@ -65,7 +62,7 @@ export function readTierInput(gl: WebGLRenderingContext | WebGL2RenderingContext
   const memory = nav?.deviceMemory;
   return {
     coarse: matches("(pointer: coarse)"),
-    narrow: matches(env.flatQuery ?? DEFAULT_FLAT_QUERY),
+    narrow: matches(env.flatQuery ?? FLAT_QUERY),
     renderer: rendererName(gl),
     // Unknown counts as plenty, as the park did
     cores: typeof cores === "number" && cores > 0 ? cores : 8,

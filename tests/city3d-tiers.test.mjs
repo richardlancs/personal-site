@@ -3,7 +3,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { DEFAULT_FLAT_QUERY, pickTier, readTierInput, SAVE_DATA_MB, stepDown, TIERS } from "../app/components/city3d/tiers.ts";
+import { FLAT_QUERY } from "../app/components/city3d/flat.ts";
+import { pickTier, readTierInput, SAVE_DATA_MB, stepDown, TIERS } from "../app/components/city3d/tiers.ts";
 
 const desk = { coarse: false, narrow: false, renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060)", cores: 8, memoryGB: 8, saveData: false };
 
@@ -57,11 +58,11 @@ test("the tiers keep the plan's numbers", () => {
   assert.equal(SAVE_DATA_MB, 2);
 });
 
-test("the flat query is the narrow layout's, as flat.ts has it", () => {
-  const source = readFileSync(new URL("../app/components/world/flat.ts", import.meta.url), "utf8");
-  const m = source.match(/export const FLAT_QUERY = "([^"]+)"/);
-  assert.ok(m, "FLAT_QUERY found in flat.ts");
-  assert.equal(DEFAULT_FLAT_QUERY, m[1]);
+test("the flat query is the narrow layout's, imported from flat.ts", () => {
+  const source = readFileSync(new URL("../app/components/city3d/tiers.ts", import.meta.url), "utf8");
+  assert.match(source, /import \{ FLAT_QUERY \} from "\.\/flat\.ts"/);
+  assert.doesNotMatch(source, /"\(orientation: portrait\)/, "no second copy of the query");
+  assert.equal(FLAT_QUERY, "(orientation: portrait), (max-width: 767px), (max-height: 480px)");
 });
 
 // A fake GL context: RENDERER is 0x1F01; the debug extension's unmasked
@@ -86,7 +87,7 @@ test("readTierInput reads the pointer, the layout, the device and ?tier=", () =>
   const gl = fakeGl({ renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060)" });
   const input = readTierInput(gl, "?tier=low&x=1", {
     nav: { hardwareConcurrency: 4, deviceMemory: 2, connection: { saveData: true } },
-    matchMedia: media(["(pointer: coarse)", DEFAULT_FLAT_QUERY]),
+    matchMedia: media(["(pointer: coarse)", FLAT_QUERY]),
   });
   assert.deepEqual(input, { coarse: true, narrow: true, renderer: "ANGLE (NVIDIA, NVIDIA GeForce RTX 3060)", cores: 4, memoryGB: 2, saveData: true, forced: "low" });
   assert.equal(pickTier(input), "low");
