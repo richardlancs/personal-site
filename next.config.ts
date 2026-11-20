@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: false,
     turbopackFileSystemCacheForBuild: false,
   },
+  // Development-only pages are named page.dev.tsx (app/city/dev/kit/): the
+  // "dev.tsx" extension is a page only in `next dev`, so a production
+  // build has no such route and no chunk for it
+  pageExtensions: process.env.NODE_ENV === "development" ? ["dev.tsx", "tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js"],
   cacheComponents: true,
   partialPrefetching: true,
   images: {

@@ -48,7 +48,7 @@ body:has(.city-page) .top-bar .rh {
   color: var(--text);
 }
 
-/* The heading takes focus on a journey (CityFocus.tsx): a ring only when
+/* The heading takes focus on a journey (panels/CityPanel.tsx): a ring only when
    the journey came from the keyboard */
 .city-panel h1:focus:not(:focus-visible) {
   outline: none;
@@ -56,6 +56,74 @@ body:has(.city-page) .top-bar .rh {
 
 .city-panel-foot {
   margin-top: 2.5rem;
+}
+
+/* The section's picker (panels/ScreenPicker.tsx, BoardLines.tsx,
+   ArcadeControls.tsx): a row of glass keys choosing what the scene shows,
+   there only while the 3D city draws. Its slot keeps one row's height
+   from the start wherever the city may still come (JavaScript on, the
+   canvas starting or drawing), so the panel doesn't move when it does;
+   no JavaScript, or a fallback, and the slot takes no room. */
+html[data-still]:not([data-city3d]) .city-picker-slot,
+html[data-city3d="on"] .city-picker-slot {
+  min-height: calc(1.25rem + 44px);
+}
+
+.city-picker,
+.city-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.city-picker {
+  margin-top: 1.25rem;
+}
+
+.city-picker[data-picker="arcade"] {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+
+.city-picker-play {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.city-picker-key {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  padding-block: 0.375rem;
+  text-align: left;
+}
+
+.city-picker-sub {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.city-picker-key[aria-pressed="true"] .city-picker-sub {
+  color: inherit;
+}
+
+.city-picker-play .city-picker-key {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.25em;
+}
+
+.city-picker-play .city-picker-sub {
+  display: inline;
+  color: inherit;
+}
+
+.city-picker-status {
+  min-height: 1.5em;
+  color: var(--text);
 }
 
 .city-colophon {
@@ -242,5 +310,13 @@ html[data-city-tags="row"] .city-tags {
     top: calc(var(--hero) - 2.5rem);
     max-width: none;
     transform: translateY(-100%);
+  }
+}
+
+/* More contrast: the panel is opaque, nothing shows through it */
+@media (prefers-contrast: more) {
+  .city-panel {
+    background: var(--panel);
+    backdrop-filter: none;
   }
 }

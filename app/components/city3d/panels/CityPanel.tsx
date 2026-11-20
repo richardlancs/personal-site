@@ -63,10 +63,9 @@ export default function CityPanel({ section }: { section: SectionId }) {
 
   const on = useSyncExternalStore(watchDrawing, drawing, notYet);
   const Picker = PICKERS[section];
-  if (!on || !Picker) return null;
-  return (
-    <Suspense fallback={null}>
-      <Picker />
-    </Suspense>
-  );
+  if (!Picker) return null;
+  // The slot is in the server's HTML, so its height can be kept while the
+  // 3D city starts (city-pages.css: .city-picker-slot) and the panel
+  // doesn't move when the row arrives
+  return <div className="city-picker-slot">{on && <Suspense fallback={null}><Picker /></Suspense>}</div>;
 }

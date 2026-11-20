@@ -31,7 +31,7 @@ export default function ViewSwitch({ place }: { place: "bar" | "menu" }) {
   // Back from the city to the 2D page ("2D view", Back, the menu): focus
   // goes to the section it lands on, as a jump's does (jump.ts), so the
   // keyboard carries on from there. (The city's own pages focus their
-  // heading themselves: city3d/CityFocus.tsx.) Once, from the bar's copy.
+  // heading themselves: city3d/panels/CityPanel.tsx.) Once, from the bar's copy.
   const previous = useRef(pathname);
   useEffect(() => {
     const from = previous.current;

@@ -127,7 +127,8 @@ export const TIERS: Record<Quality, Tier> = {
     dpr: [1, 1.5],
     msaa: 2,
     canvasAntialias: false,
-    bloom: { scale: 0.25, levels: 4, threshold: 1, smoothing: 0.05 },
+    // (5 levels, as high: a step down compiles nothing; Post.tsx)
+    bloom: { scale: 0.25, levels: 5, threshold: 1, smoothing: 0.05 },
     reflection: "fake",
     reflectionSize: 0,
     shadowMap: 1024,

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { world } from "../store";
+import { glowOn } from "./uniforms";
 
 // Light after dark that isn't a light: the street lamps' beams in the
 // air, and the wash a sign or a screen throws on the wall round it.
@@ -189,6 +190,7 @@ export function wash(rect: [number, number], reach: [number, number, number, num
         ...fogUniforms(),
         uSigns: glowUniforms.uSigns,
         uHaze: glowUniforms.uHaze,
+        uGlowOn: glowOn,
         uColor: { value: new THREE.Color(color) },
         uStrength: { value: strength },
         uFall: { value: fall },
@@ -209,6 +211,7 @@ export function wash(rect: [number, number], reach: [number, number, number, num
         ${FOG}
         uniform float uSigns;
         uniform float uHaze;
+        uniform float uGlowOn;
         uniform vec3 uColor;
         uniform float uStrength;
         uniform float uFall;
@@ -218,7 +221,7 @@ export function wash(rect: [number, number], reach: [number, number, number, num
         varying vec2 vUv;
         varying float vDepth;
         void main() {
-          if (uSigns < 0.002) discard;
+          if (uSigns * uGlowOn < 0.002) discard;
           vec2 p = vUv * uPlane - uCentre;
           vec2 q = abs(p) - uHalf;
           float d = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
@@ -239,6 +242,7 @@ export function wash(rect: [number, number], reach: [number, number, number, num
   const m = base.clone();
   m.uniforms.uSigns = glowUniforms.uSigns;
   m.uniforms.uHaze = glowUniforms.uHaze;
+  m.uniforms.uGlowOn = glowOn;
   m.uniforms.uHalf.value.set(w / 2, h / 2);
   m.uniforms.uPlane.value.set(pw, ph);
   // The sign's centre, measured in the quad from its lower left corner

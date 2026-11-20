@@ -147,9 +147,25 @@ export function WorldLights() {
 // A scene's own lights: exactly DISTRICT_LIGHTS[id] spot lights, one at
 // each of `spots` (the lamp heads, in the scene's coordinates), aimed
 // straight down, at intensity 0 until the atmosphere raises them after
-// dark (it finds them by userData.atmos === "spot"). A wrong number of
-// spots is an error, so the light count never changes.
-export function SceneLights({ id, spots, color = "#ffd7a1", distance = 18, angle = 0.7 }: { id: SceneId; spots: readonly V3[]; color?: string; distance?: number; angle?: number }) {
+// dark (it finds them by userData.atmos === "spot"). `night` is a spot's
+// intensity at full night (userData.night; the atmosphere's SPOT_NIGHT
+// when left out). A wrong number of spots is an error, so the light count
+// never changes.
+export function SceneLights({
+  id,
+  spots,
+  color = "#ffd7a1",
+  distance = 18,
+  angle = 0.7,
+  night,
+}: {
+  id: SceneId;
+  spots: readonly V3[];
+  color?: string;
+  distance?: number;
+  angle?: number;
+  night?: number;
+}) {
   const count = DISTRICT_LIGHTS[id];
   if (spots.length !== count) throw new Error(`SceneLights: ${id} has ${count} spot lights, not ${spots.length}`);
   const lights = useMemo(
@@ -161,10 +177,10 @@ export function SceneLights({ id, spots, color = "#ffd7a1", distance = 18, angle
         // so it moves with the scene's group
         light.target.position.set(0, -p[1], 0);
         light.add(light.target);
-        light.userData = { ...SPOT, index: i };
+        light.userData = night === undefined ? { ...SPOT, index: i } : { ...SPOT, index: i, night };
         return light;
       }),
-    [spots, color, distance, angle],
+    [spots, color, distance, angle, night],
   );
   useEffect(() => () => lights.forEach((l) => l.dispose()), [lights]);
   return (

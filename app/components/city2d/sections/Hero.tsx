@@ -15,7 +15,7 @@ import { order } from "../Station";
 // ways in are links to those sections' pages there (next/link, so the page
 // stays and the camera travels), not anchors on this page; and the name,
 // the page's h1, can take focus there (tabIndex -1: a journey back to Home
-// focuses it, city3d/CityFocus.tsx).
+// focuses it, city3d/panels/CityPanel.tsx).
 export default function Hero({ where = "2d" }: { where?: Where }) {
   return (
     <div className="hero">

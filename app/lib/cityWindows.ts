@@ -87,10 +87,43 @@ float windowHash(int floorIndex, int bay, int seed) {
 }
 `;
 
+// Lit windows come by floors, not one by one: a city at night reads as
+// buildings with lit floors (and a few lit windows on dark ones), not as
+// static. A window's score mixes its floor's hash (FLOOR_WEIGHT of it)
+// with its own, and is then spread back to an even 0..1 (the exact
+// distribution of that sum), so a share still lights that share of the
+// windows, the floors whose hash is low first, and a window's state only
+// grows with the share. Written once here and once in GLSL
+// (WINDOW_LIT_GLSL); keep the two in step.
+export const FLOOR_WEIGHT = 0.72;
+
+/** A window's place in the order windows light in, 0 up to 1, evenly spread: its floor's hash mostly, its own a little. */
+export function windowScore(floor: number, bay: number, seed: number): number {
+  const a = FLOOR_WEIGHT;
+  const b = 1 - a;
+  const x = a * windowHash(floor, -7, seed) + b * windowHash(floor, bay, seed);
+  if (x < b) return (x * x) / (2 * a * b);
+  if (x < a) return (x - b / 2) / a;
+  return 1 - ((1 - x) * (1 - x)) / (2 * a * b);
+}
+
 /** Whether a window is lit when a share of them are. */
 export function windowLit(floor: number, bay: number, seed: number, share: number): boolean {
-  return windowHash(floor, bay, seed) < share;
+  return windowScore(floor, bay, seed) < share;
 }
+
+/** The GLSL twin of windowScore (after WINDOW_HASH_GLSL). */
+export const WINDOW_LIT_GLSL = /* glsl */ `
+float windowScore(int floorIndex, int bay, int seed) {
+  // the twin of windowScore in app/lib/cityWindows.ts: keep the two in step
+  const float a = ${FLOOR_WEIGHT.toFixed(4)};
+  const float b = 1.0 - a;
+  float x = a * windowHash(floorIndex, -7, seed) + b * windowHash(floorIndex, bay, seed);
+  if (x < b) return (x * x) / (2.0 * a * b);
+  if (x < a) return (x - b / 2.0) / a;
+  return 1.0 - ((1.0 - x) * (1.0 - x)) / (2.0 * a * b);
+}
+`;
 
 const clamp01 = (n: number) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0);
 

@@ -54,7 +54,7 @@ test("the tiers keep the plan's numbers", () => {
   assert.deepEqual([TIERS.high.reflection, TIERS.low.reflection, TIERS.mobile.reflection], ["planar", "fake", "fake"]);
   assert.deepEqual([TIERS.high.shadowMap, TIERS.low.shadowMap, TIERS.mobile.shadowMap], [2048, 1024, 0]);
   assert.deepEqual([TIERS.high.frameMs, TIERS.low.frameMs, TIERS.mobile.frameMs], [12, 9, 8]);
-  assert.deepEqual(TIERS.low.bloom, { scale: 0.25, levels: 4, threshold: 1, smoothing: 0.05 });
+  assert.deepEqual(TIERS.low.bloom, { scale: 0.25, levels: 5, threshold: 1, smoothing: 0.05 });
   // Measured from the build (budget.mjs city3dJs), rounded up to a tenth of a MB
   assert.equal(SAVE_DATA_MB, 0.3);
 });

@@ -10,7 +10,11 @@ import { parseSkyParam } from "../../lib/skyParam";
 import { listed, pageSections, section, type SectionId } from "../../sections/registry";
 import { anchors } from "./anchors";
 import { WorldLights } from "./common";
+import Atmosphere from "./atmosphere/Atmosphere";
+import Precipitation from "./atmosphere/Precipitation";
 import { disposeShared } from "./kit/materials";
+import { disposeTextures } from "./kit/textures";
+import { glowOn } from "./kit/uniforms";
 import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import Post from "./Post";
@@ -539,22 +543,27 @@ function Tags({ show }: { show: boolean }) {
   );
 }
 
-// The place's fog and background (the atmosphere, a later task, will move
-// them with the weather and the hour)
-function Look({ active }: { active: SceneId }) {
-  const { scene, invalidate } = useThree();
+// Under `prefers-contrast: more`, no added glow (kit/uniforms.ts: glowOn;
+// Post.tsx drops the bloom itself), followed live
+function Contrast() {
+  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
-    const def = scenes[active];
-    scene.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
-    scene.background = new THREE.Color(def.background);
-    invalidate();
-  }, [active, scene, invalidate]);
+    const query = matchMedia("(prefers-contrast: more)");
+    const apply = () => {
+      glowOn.value = query.matches ? 0 : 1;
+      invalidate();
+    };
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, [invalidate]);
   return null;
 }
 
 // The loop draws on demand: a few frames whenever something the picture
 // shows changes (the address, the store), and none in between. A change
-// of sky alone draws nothing yet (no atmosphere).
+// of sky alone draws nothing here: the atmosphere (atmosphere/
+// Atmosphere.tsx) asks for its own frames while it blends.
 function Demand({ pathname }: { pathname: string }) {
   const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
@@ -730,8 +739,10 @@ export default function City3D({ tier }: { tier: Quality }) {
   const live = useWorld((s) => s.live > 0);
   useEffect(() => world.set({ quality: tier }), [tier]);
   // The canvas is going away (leaving /city, a lost context): the kit's
-  // shared materials go with it (kit/materials.ts)
+  // shared materials and its textures go with it (kit/materials.ts,
+  // kit/textures.ts)
   useEffect(() => () => disposeShared(), []);
+  useEffect(() => () => disposeTextures(), []);
 
   if (!mounted.includes(target)) setMounted([...mounted, target]);
 
@@ -854,7 +865,9 @@ export default function City3D({ tier }: { tier: Quality }) {
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} tier={tier} />
         <Demand pathname={pathname} />
-        <Look active={active} />
+        <Contrast />
+        <Atmosphere active={active} />
+        <Precipitation quality={tier} />
         <WorldLights />
         <TagProjector active={active} />
         {built.map((id) => {

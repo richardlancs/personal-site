@@ -2,7 +2,7 @@
 // (app/lib/cityWindows.ts), so the 3D city agrees with the 2D paintings.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { litShare, localHour, previewHour, SHARE_STEP, WINDOW_HASH_GLSL, windowHash, windowLit } from "../app/lib/cityWindows.ts";
+import { FLOOR_WEIGHT, litShare, localHour, previewHour, SHARE_STEP, WINDOW_HASH_GLSL, WINDOW_LIT_GLSL, windowHash, windowLit, windowScore } from "../app/lib/cityWindows.ts";
 
 test("Richmond Hill's hour, as a number", () => assert.equal(localHour(Date.UTC(2026, 10, 20, 17, 30), "America/Toronto"), 12.5));
 test("few windows by day, most in the evening, fewer before dawn", () => {
@@ -74,4 +74,33 @@ test("previewed phases stand for their hours: day plates almost dark, night plat
   assert.equal(previewHour({ daylight: "dusk", progress: 1 }), 20);
   assert.equal(previewHour({ daylight: "dusk", progress: NaN }), 18);
   assert.ok(litShare(previewHour({ daylight: "day", progress: 0 })) <= 0.08);
+});
+
+test("windows light by floors: most floors mostly lit or mostly dark, the share still exact", () => {
+  // At a night's share, a floor's windows are mostly one way: the floors
+  // read as lit bands, not as static
+  const share = 0.5;
+  let banded = 0;
+  const floors = 200;
+  for (let f = 0; f < floors; f++) {
+    let lit = 0;
+    for (let b = 0; b < 20; b++) if (windowLit(f, b, 5, share)) lit++;
+    if (lit <= 4 || lit >= 16) banded++;
+  }
+  assert.ok(banded / floors > 0.7, `${banded / floors}`);
+  // The score is spread evenly: a share lights that share
+  let n = 0, under = 0;
+  for (let f = 0; f < 120; f++) for (let b = 0; b < 30; b++) {
+    const s = windowScore(f, b, 3);
+    assert.ok(s >= 0 && s <= 1);
+    n++;
+    if (s < 0.2) under++;
+  }
+  assert.ok(Math.abs(under / n - 0.2) < 0.04, `${under / n}`);
+});
+
+test("the GLSL score uses the same weight and the floor's hash", () => {
+  assert.ok(WINDOW_LIT_GLSL.includes(FLOOR_WEIGHT.toFixed(4)));
+  assert.match(WINDOW_LIT_GLSL, /windowHash\(floorIndex, -7, seed\)/);
+  assert.match(WINDOW_LIT_GLSL, /windowHash\(floorIndex, bay, seed\)/);
 });

@@ -113,19 +113,21 @@ test("layoutTowers is the same for the same seed, and not for another", () => {
 test("the window shader's hash is lib/cityWindows.ts's, constant for constant", () => {
   const src = read(`${kit}/windows.ts`);
   // windows.ts takes the GLSL twin from the tested module rather than retyping it
-  assert.match(src, /import \{ WINDOW_HASH_GLSL \} from "\.\.\/\.\.\/\.\.\/lib\/cityWindows(\.ts)?";/);
+  assert.match(src, /import \{ FLOOR_WEIGHT, WINDOW_HASH_GLSL, WINDOW_LIT_GLSL \} from "\.\.\/\.\.\/\.\.\/lib\/cityWindows(\.ts)?";/);
   assert.match(src, /\$\{WINDOW_HASH_GLSL\}/);
+  assert.match(src, /\$\{WINDOW_LIT_GLSL\}/);
+  assert.doesNotMatch(noComments(src), /float windowScore\(/, "no second score in windows.ts");
   assert.doesNotMatch(noComments(src), /float windowHash\(/, "no second hash in windows.ts");
   const lib = read("app/lib/cityWindows.ts");
   const js = lib.slice(lib.indexOf("export function windowHash"), lib.indexOf("export const WINDOW_HASH_GLSL"));
-  const glsl = lib.slice(lib.indexOf("export const WINDOW_HASH_GLSL"), lib.indexOf("export function windowLit"));
+  const glsl = lib.slice(lib.indexOf("export const WINDOW_HASH_GLSL"), lib.indexOf("// Lit windows come by floors"));
   const hex = (s) => [...s.matchAll(/0x[0-9a-f]+/gi)].map((m) => m[0].toLowerCase());
   const shifts = (s) => [...s.matchAll(/>>>? ?(\d+)u?/g)].map((m) => Number(m[1]));
   assert.ok(hex(js).length >= 5);
   assert.deepEqual(hex(glsl), hex(js));
   assert.deepEqual(shifts(glsl), shifts(js));
-  // ...and the lit test is the tested one: hash < share
-  assert.match(src, /windowHash\(fl, bay, seed\) < uLitShare/);
+  // ...and the lit test is the tested one: score < share (windowLit)
+  assert.match(src, /windowScore\(fl, bay, seed\) < uLitShare/);
 });
 
 test("surface.ts and windows.ts set customProgramCacheKey through materialKey; windows has a near and a far program", () => {

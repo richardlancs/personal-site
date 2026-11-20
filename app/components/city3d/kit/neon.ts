@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { shared } from "./materials";
 import { track } from "./textures";
-import { materialKey, neonUniforms } from "./uniforms";
+import { glowOn, materialKey, neonUniforms } from "./uniforms";
 import { rng } from "../rng";
 
 // Neon, screens, and the mobile tier's stand-in for bloom.
@@ -200,19 +200,18 @@ function glowDot() {
   return t;
 }
 
-const MORE_CONTRAST = "(prefers-contrast: more)";
-
 // Mobile's stand-in for bloom: a soft dot of light round each point,
 // facing the camera, added over the scene, as bright as the neon is
 // (nothing by day, full at night), fading into the fog like the rest.
-// One draw call for all of them. Hidden under `prefers-contrast: more`
-// (as the bloom is). The caller disposes its geometry (mesh.geometry,
+// One draw call for all of them. Nothing under `prefers-contrast: more`
+// (as the bloom: uniforms.ts glowOn, followed live). The caller disposes its geometry (mesh.geometry,
 // mesh.dispose()); the material is shared.
 export function glowSprites(points: { pos: THREE.Vector3; color: string; size: number }[]): THREE.InstancedMesh {
   const m = shared(materialKey("glow", "sprite"), () => {
     const mat = new THREE.MeshBasicMaterial({ map: glowDot(), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
     mat.onBeforeCompile = (s) => {
       s.uniforms.uNeon = neonUniforms.uNeon;
+      s.uniforms.uGlowOn = glowOn;
       s.vertexShader = s.vertexShader.replace(
         "#include <project_vertex>",
         // Facing the camera, and drawn toward it by its radius (keeping
@@ -225,8 +224,8 @@ export function glowSprites(points: { pos: THREE.Vector3; color: string; size: n
         mvPosition.xy += position.xy * spriteSize * pull;
         gl_Position = projectionMatrix * mvPosition;`,
       );
-      s.fragmentShader = `uniform float uNeon;\n${s.fragmentShader}`
-        .replace("#include <color_fragment>", "#include <color_fragment>\n  diffuseColor.rgb *= 1.6 * smoothstep(0.35, 1.0, uNeon);")
+      s.fragmentShader = `uniform float uNeon;\nuniform float uGlowOn;\n${s.fragmentShader}`
+        .replace("#include <color_fragment>", "#include <color_fragment>\n  diffuseColor.rgb *= 1.6 * smoothstep(0.35, 1.0, uNeon) * uGlowOn;")
         // Faded by the fog, not tinted by it (it's added on top)
         .replace(
           "#include <fog_fragment>",
@@ -259,6 +258,5 @@ export function glowSprites(points: { pos: THREE.Vector3; color: string; size: n
   mesh.renderOrder = 3;
   mesh.castShadow = mesh.receiveShadow = false;
   mesh.name = "glow-sprites";
-  if (typeof matchMedia !== "undefined" && matchMedia(MORE_CONTRAST).matches) mesh.visible = false;
   return mesh;
 }

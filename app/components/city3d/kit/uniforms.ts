@@ -18,6 +18,12 @@ import { litShare } from "../../../lib/cityWindows";
 // - envUniforms (environment.ts): uWet, uSnow, uNight written by
 //   atmosphere/Atmosphere.tsx; read by kit/surface.ts, kit/windows.ts and
 //   kit/water.ts
+// - glowOn: 1, or 0 under `prefers-contrast: more` (written by City3D.tsx:
+//   Contrast, live); multiplies every added glow that isn't the thing
+//   itself: the mobile tier's glow sprites (kit/neon.ts: glowSprites) and
+//   the signs' wash on walls (kit/glow.ts: wash). Bloom goes in Post.tsx.
+export const glowOn = { value: 1 };
+
 export const neonUniforms = {
   uNeon: { value: 0.3 }, // how bright the neon is: 0.3 by day .. 1 at night
 };

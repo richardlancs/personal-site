@@ -148,7 +148,7 @@ test("hover only adds: no :hover outside @media (hover: hover) in the city's CSS
   assert.deepEqual(strayHovers("a:hover { color: red } @media (hover: hover) { b:hover { color: red } }"), ["a:hover"]);
 });
 
-test("under prefers-contrast: more the panel is opaque", { todo: "lead: app/city.css, .city-panel under prefers-contrast" }, () => {
+test("under prefers-contrast: more the panel is opaque", () => {
   const css = panelCss().replace(/\/\*[\s\S]*?\*\//g, "");
   const blocks = [...css.matchAll(/@media[^{]*prefers-contrast:\s*more[^{]*\{([\s\S]*?)\n\}/g)].map((m) => m[1]);
   const rule = blocks.join("\n").match(/\.city-panel[^{]*\{([^}]*)\}/);

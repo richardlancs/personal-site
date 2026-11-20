@@ -1,19 +1,20 @@
 import * as THREE from "three";
-import { WINDOW_HASH_GLSL } from "../../../lib/cityWindows";
+import { FLOOR_WEIGHT, WINDOW_HASH_GLSL, WINDOW_LIT_GLSL } from "../../../lib/cityWindows";
 import { shared } from "./materials";
 import { FOG_FRAGMENT, WORLD_VARYINGS_VERTEX } from "./surface";
 import { envUniforms, materialKey, windowUniforms } from "./uniforms";
 
 // Towers' windows, drawn in the fragment shader: no textures. A Lambert
 // material whose walls are divided into floors (windowUniforms.uFloor) and
-// bays (uBay); each floor × bay is one window, and it is lit when its hash
-// (lib/cityWindows.ts: WINDOW_HASH_GLSL, the twin of the tested windowHash)
-// is under uLitShare, the share the atmosphere sets from Richmond Hill's
+// bays (uBay); each floor × bay is one window, and it is lit when its score
+// (lib/cityWindows.ts: WINDOW_LIT_GLSL, the twin of the tested
+// windowScore, mostly its floor's hash, so windows light by floors) is
+// under uLitShare, the share the atmosphere sets from Richmond Hill's
 // hour. So which windows are lit is the same as windowLit(floor, bay, seed,
 // share) says, a window keeps its state, and the lit ones only grow as the
 // share rises.
 //
-// - A lit window glows warm (uWarm) or, one in four or so, cool (uCool), by
+// - A lit window glows warm (uWarm) or, about one in eight, cool (uCool), by
 //   a second hash, each a little brighter or dimmer by a third; its glow is
 //   × envUniforms.uNight, so by day lit windows don't show. It stays under
 //   1.0, below the bloom threshold: windows never bloom, neon does.
@@ -104,6 +105,16 @@ uniform float uWet;
 uniform float uSnow;
 uniform float uNight;
 ${WINDOW_HASH_GLSL}
+${WINDOW_LIT_GLSL}
+// The share of one floor's windows that windowScore lights at a share
+// (where they have merged into one band, it shows as that floor's tone)
+float windowFloorShare(int floorIndex, int seed, float share) {
+  const float a = ${FLOOR_WEIGHT.toFixed(4)};
+  const float b = 1.0 - a;
+  // the sum the score spreads, at this share
+  float x = share < b / (2.0 * a) ? sqrt(2.0 * a * b * share) : share < 1.0 - b / (2.0 * a) ? a * share + b / 2.0 : 1.0 - sqrt(2.0 * a * b * (1.0 - share));
+  return clamp((x - a * windowHash(floorIndex, -7, seed)) / b, 0.0, 1.0);
+}
 `;
 
 // Sets kitPane (how much of this pixel is glass), kitEmit (the lit
@@ -116,7 +127,7 @@ const FRAGMENT_COLOR = /* glsl */ `
 float kitPane = 0.0;
 vec3 kitEmit = vec3(0.0);
 float kitShade = 1.0;
-vec3 kitAvgTone = mix(uWarm, uCool, 0.28);
+vec3 kitAvgTone = mix(uWarm, uCool, 0.12);
 // (the grid and its derivatives outside any branch, so fwidth is defined)
 bool fitted = vWinSpan.x > 0.0;
 float bays = fitted ? max(1.0, floor(vWinSpan.x / uBay + 0.5)) : 0.0;
@@ -142,12 +153,15 @@ if (vWinFace >= 0.0) {
     float px = mix(${(PANE.x1 - PANE.x0).toFixed(4)}, smoothstep(${PANE.x0} - e.x, ${PANE.x0} + e.x, f.x) * (1.0 - smoothstep(${PANE.x1} - e.x, ${PANE.x1} + e.x, f.x)), sx);
     float py = mix(${(PANE.y1 - PANE.y0).toFixed(4)}, smoothstep(${PANE.y0} - e.y, ${PANE.y0} + e.y, f.y) * (1.0 - smoothstep(${PANE.y1} - e.y, ${PANE.y1} + e.y, f.y)), sy);
     float sharp = sx * sy;
-    // one window: lit by its own hash, the tested rule (windowLit)
-    float lit = windowHash(fl, bay, seed) < uLitShare ? 1.0 : 0.0;
-    // one floor whose windows have merged: that floor's own share
-    float floorShare = clamp(uLitShare * (0.6 + 0.8 * windowHash(fl, -7, seed)), 0.0, 1.0);
+    // one window: lit by its score (mostly its floor's), the tested rule
+    // (windowLit), so windows light by floors
+    float lit = windowScore(fl, bay, seed) < uLitShare ? 1.0 : 0.0;
+    // one floor whose windows have merged: that floor's own share (the
+    // share of its windows windowLit would light: floors with a low hash
+    // are mostly lit, the rest mostly dark)
+    float floorShare = windowFloorShare(fl, seed, uLitShare);
     float litNow = mix(mix(uLitShare, floorShare, sy), lit, sharp);
-    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 0.72 ? uWarm : uCool, sharp);
+    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 0.88 ? uWarm : uCool, sharp);
     float bright = mix(0.75, 0.55 + 0.4 * windowHash(fl, bay, seed + 15887), sharp);
     kitPane = px * py;
     kitEmit = tone * litNow * bright * kitPane;
@@ -168,8 +182,7 @@ if (vWinFace >= 0.0) {
 
 export function windowMaterial(o: WindowOptions): THREE.MeshLambertMaterial {
   const far = !!o.far;
-  const key = materialKey("win", `${far ? "far" : "near"}:${o.base}:${o.glass}:${o.fogScale ?? 1}`);
-  return shared(key, () => {
+  return shared(materialKey("win", `${far ? "far" : "near"}:${o.base}:${o.glass}:${o.fogScale ?? 1}`), () => {
     const m = new THREE.MeshLambertMaterial({ color: o.base });
     const uniforms = {
       uGlass: { value: new THREE.Color(o.glass) },

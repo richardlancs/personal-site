@@ -21,8 +21,8 @@ import { TIERS, type Quality } from "./tiers";
 // at night, a little less on the low tier. A step from high to low (or
 // back) changes only the bloom's resolution scale and the composer's
 // multisampling, on the same composer and passes: the level count is one
-// for both tiers (BLOOM_LEVELS; tiers.ts gives low 4, which would rebuild
-// the blur's chain), so nothing is compiled. The renderer's exposure is
+// for both tiers (BLOOM_LEVELS; tiers.ts gives both 5: a different count
+// would rebuild the blur's chain), so nothing is compiled. The renderer's exposure is
 // the mobile tier's 1.12 here too: the ToneMapping effect's shader takes
 // the renderer's toneMappingExposure (three's tonemapping_pars_fragment).
 //
