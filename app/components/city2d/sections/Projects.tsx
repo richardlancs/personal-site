@@ -49,7 +49,7 @@ export default function Projects() {
                     height={main.height}
                     sizes={shotSizes(first)}
                     loading="lazy"
-                    className={tall(main) ? "mx-auto h-auto max-h-[36rem] w-auto max-w-full" : "h-auto w-full"}
+                    className={tall(main) ? "mx-auto h-auto max-h-[26rem] w-auto max-w-full lg:max-h-[36rem]" : "h-auto w-full"}
                   />
                   {newTab}
                 </a>

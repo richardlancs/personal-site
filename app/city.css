@@ -700,8 +700,8 @@ a[data-resume][data-opening] {
    name on its own near-solid backing, the headline, the two ways in and
    the links. On wide screens the backing sits centred on the band's
    bottom edge (the one place words meet a painting, and they sit on ink)
-   and the caption takes the right of the hero's row; on phones it is all
-   under the band, the caption a small line above the name. */
+   and the caption takes the right of the hero's row; under 1024px it is
+   all under the band, the caption a small line above the name. */
 
 /* On phones the caption sits close under the band's faded foot */
 .station-body-home {
@@ -778,12 +778,14 @@ a[data-resume][data-opening] {
   margin-top: 1.25rem;
 }
 
-@media (min-width: 768px) {
+/* From 1024px the name's row has room for the caption beside it (under
+   that, a two-column row would wrap the name) */
+@media (min-width: 1024px) {
   /* The hero's row: the hero on the left, the caption at the right,
-     level with the links */
+     just under the band's edge */
   .station-body-home {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 20rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
     column-gap: 2.5rem;
     padding-top: 0;
   }
@@ -1021,10 +1023,16 @@ ol.metro-stops::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0.8em;
+  top: calc(0.8em - 1px);
   width: 0.6rem;
-  height: 1px;
+  height: 2px;
   background: var(--amber);
+}
+
+/* A point that is a link standing alone (44px tall): the dash at the
+   middle of its first line */
+.points > li:has(> .text-link-solo)::before {
+  top: calc(1.375rem - 1px);
 }
 
 /* Interests: a faint glow along each card's accent edge (decoration only;
