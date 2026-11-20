@@ -15,10 +15,11 @@ import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenArt, screenMa
 import { reflectIn, type LightStrip } from "./kit/reflection";
 import { buildSign, disposeSign } from "./kit/signs";
 import { buildSkyDome } from "./kit/sky";
+import { glassMaterial } from "./kit/glass";
 import { buildLampRow, buildRailing } from "./kit/street";
 import { surface } from "./kit/surface";
 import { buildTowers, layoutTowers, type TowerSpec } from "./kit/towers";
-import { buildStreetTrees } from "./kit/trees";
+import { buildPlanters, buildStreetTrees } from "./kit/trees";
 import { windowMaterial } from "./kit/windows";
 import { buildRiver, wetPaving } from "./kit/water";
 import { rng } from "./rng";
@@ -105,6 +106,9 @@ function build(quality: Quality): Built {
   const slab = (x0: number, x1: number, z0: number, z1: number, y0: number, y1: number) => box(x1 - x0, y1 - y0, z1 - z0).translate((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
   const W = L.water.width / 2;
 
+  // the mobile tier's glow sprites (no bloom there), gathered as we go
+  const glow: { pos: THREE.Vector3; color: string; size: number }[] = [];
+
   // ---- The sky
   const sky = add(buildSkyDome({ seed: 101, radius: 900 }));
   geometries.push(sky.geometry);
@@ -122,15 +126,76 @@ function build(quality: Quality): Built {
   const crest = (x: number) => L.skyline.crest.least + (1 - L.skyline.crest.least) * Math.exp(-(((x - L.skyline.crest.x) / L.skyline.crest.spread) ** 2));
   const shape = (specs: TowerSpec[]) => specs.map((t) => ({ ...t, h: Math.max(2, t.h * crest(t.x)) }));
   const layer = (o: (typeof L.skyline)["front"], extra: { x: number; z: number; r: number }[] = []) => shape(layoutTowers(o.seed, o.area, o.count, o.height, [...keepOut, ...extra]));
-  const front = layer(L.skyline.front, sightlines);
+  const civic = L.civic;
+  const civicOut = [...civic.domes.map(([x, z]) => ({ x, z, r: civic.dome.r + 0.6 })), { x: civic.hall.x, z: civic.hall.z, r: civic.hall.w / 2 }];
+  const front = layer(L.skyline.front, [...sightlines, ...civicOut]);
   const mid = layer(L.skyline.mid);
   const far = layer(L.skyline.far);
-  const nearTowers = buildTowers([...front, ...mid], { far: false });
-  const farTowers = buildTowers(far, { far: true, fogScale: L.skyline.farFog });
+  // each tower in one of the painting's facades (by its seed: glass towers
+  // a glass palette, stone ones a stone palette), one instanced mesh per
+  // shape and facade, the kit's window material in that facade's colours
+  const dressed = (specs: TowerSpec[], isFar: boolean, fogScale?: number) => {
+    const groups = new Map<string, { specs: TowerSpec[]; p: { base: string; glass: string } }>();
+    for (const t of specs) {
+      const set = isFar ? L.palettes.far : t.style === 0 || t.style === 2 ? L.palettes.glass : L.palettes.stone;
+      const p = set[Math.floor(t.seed / 7) % set.length];
+      const key = `${p.base}:${p.glass}`;
+      if (!groups.has(key)) groups.set(key, { specs: [], p });
+      groups.get(key)!.specs.push(t);
+    }
+    return [...groups.values()].flatMap(({ specs: mine, p }) =>
+      buildTowers(mine, { far: isFar, fogScale }).map((m) => {
+        m.material = windowMaterial({ base: p.base, glass: p.glass, far: isFar, fogScale });
+        return m;
+      }),
+    );
+  };
+  const nearTowers = dressed([...front, ...mid], false);
+  const farTowers = dressed(far, true, L.skyline.farFog);
   for (const t of [...nearTowers, ...farTowers]) {
     geometries.push(t.geometry);
     add(t);
   }
+
+  // ---- The waterfront's low pale civic buildings, and at the Pearl's foot
+  // the glass domes and the colonnaded hall between them; floodlit warm
+  // after dark, the domes lit cyan from inside
+  const row = civic.row;
+  const rr = rng(row.seed);
+  const civicParts: THREE.BufferGeometry[][] = [[], []];
+  for (let x = row.x0; x < row.x1; ) {
+    const w = rr.range(row.w[0], row.w[1]);
+    const h = rr.range(row.h[0], row.h[1]) * (0.7 + 0.6 * crest(x));
+    const d = rr.range(row.d[0], row.d[1]);
+    const cx = x + w / 2;
+    if (cx + w / 2 < row.clear[0] || cx - w / 2 > row.clear[1]) civicParts[rr() < 0.65 ? 0 : 1].push(box(w, h, d).translate(cx, LAND + h / 2, row.z - rr.range(0, 0.8)));
+    x += w + rr.range(row.gap[0], row.gap[1]);
+  }
+  const floodlit = { tone: "#ffcf96", strength: 0.14 };
+  const civicStone = surface({ color: "#ded5c4", relief: { kind: "stone", bay: 0.5, floor: 0.6, strength: 0.5 }, glow: floodlit, fogScale: 1.1 });
+  const civicWarm = surface({ color: "#cdb79a", relief: { kind: "stone", bay: 0.5, floor: 0.6, strength: 0.5 }, glow: floodlit, fogScale: 1.1 });
+  civicParts.forEach((parts, k) => parts.length && mesh(merge(parts), k ? civicWarm : civicStone, "civic"));
+  const hall = civic.hall;
+  mesh(
+    merge([
+      box(hall.w, hall.h, hall.d).translate(hall.x, LAND + hall.h / 2, hall.z),
+      box(hall.w + 0.3, 0.25, hall.d + 0.3).translate(hall.x, LAND + hall.h + 0.12, hall.z),
+      box(hall.w * 0.8, 0.5, hall.d * 0.8).translate(hall.x, LAND + hall.h + 0.5, hall.z),
+    ]),
+    surface({ color: "#e4dccb", relief: { kind: "stone", bay: 0.42, floor: 1.2, strength: 0.8 }, glow: { tone: "#ffcf96", strength: 0.3 }, fogScale: 1.1 }),
+    "civic:hall",
+  );
+  const dm = civic.dome;
+  const podiums: THREE.BufferGeometry[] = [];
+  for (const [x, z] of civic.domes) {
+    podiums.push(new THREE.CylinderGeometry(dm.r * 1.25, dm.r * 1.3, dm.podium, 28).translate(x, LAND + dm.podium / 2, z));
+    podiums.push(new THREE.CylinderGeometry(dm.r * 0.92, dm.r * 0.92, dm.drum, 28).translate(x, LAND + dm.podium + dm.drum / 2, z));
+    const y = LAND + dm.podium + dm.drum + dm.r * 0.15;
+    mesh(new THREE.SphereGeometry(dm.r * 0.96, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(x, y, z), surface({ color: "#5d8fae", fogScale: 1.1 }), "civic:dome-core");
+    mesh(new THREE.SphereGeometry(dm.r, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(x, y, z), glassMaterial({ tint: "#b4dcef", opacity: 0.5, sky: 1, glow: { tone: "cyan", strength: 0.35 } }), "civic:dome");
+    glow.push({ pos: new THREE.Vector3(x, y + dm.r * 0.5, z), color: SCENE_TONES.cyan, size: dm.r * 0.9 });
+  }
+  mesh(merge(podiums), surface({ color: "#d8d2c6", relief: { kind: "stone", bay: 0.4, floor: 0.5, strength: 0.6 }, glow: floodlit, fogScale: 1.1 }), "civic:podiums");
 
   // ---- The four landmarks: real proportions, the plates' colours. Their
   // lit parts are shaded by day like the rest and glow softly after dark
@@ -140,13 +205,12 @@ function build(quality: Quality): Built {
   const detail = mobile ? "far" : "near";
   type Maker = (d: "near" | "far", m: { body: THREE.Material; glass: THREE.Material; lit: THREE.Material }) => Landmark;
   const LANDMARKS: [Maker, readonly [number, number], { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone }][] = [
-    [buildPearlTower, lm.pearl, { body: litSurface({ color: "#d6ccc8", tone: "rose", strength: 0.22 }), base: "#bfb2ad", glass: "#8a6f88", lit: litSurface({ color: "#b4728f", tone: "rose", strength: 1.1 }), tone: "rose" }],
-    [buildWorldFinancialCenter, lm.worldFinancialCenter, { body: surface({ color: "#7a93ad", fogScale: 1.1 }), base: "#5f7a95", glass: "#86aacb", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
-    [buildJinMao, lm.jinMao, { body: surface({ color: "#a69a83", fogScale: 1.1 }), base: "#7a705f", glass: "#45607b", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
-    [buildShanghaiTower, lm.shanghaiTower, { body: surface({ color: "#86a0b8", fogScale: 1.1 }), base: "#6b88a4", glass: "#8db3d3", lit: litSurface({ color: "#a9c0d4", tone: "gold", strength: 1.0 }), tone: "gold" }],
+    [buildPearlTower, lm.pearl, { body: litSurface({ color: "#d6ccc8", tone: "rose", strength: 0.22 }), base: "#bfb2ad", glass: "#8a6f88", lit: litSurface({ color: "#dba8c8", tone: "rose", strength: 1.1 }), tone: "rose" }],
+    [buildWorldFinancialCenter, lm.worldFinancialCenter, { body: surface({ color: "#9dbcd8", fogScale: 1.1 }), base: "#7f9fbe", glass: "#a8cbe8", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
+    [buildJinMao, lm.jinMao, { body: surface({ color: "#c7bca7", fogScale: 1.1 }), base: "#a79c87", glass: "#5f7d99", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
+    [buildShanghaiTower, lm.shanghaiTower, { body: surface({ color: "#a6c2da", fogScale: 1.1 }), base: "#87a6c2", glass: "#a9cbe6", lit: litSurface({ color: "#a9c0d4", tone: "gold", strength: 1.0 }), tone: "gold" }],
   ];
   const landmarks: Landmark[] = [];
-  const glow: { pos: THREE.Vector3; color: string; size: number }[] = [];
   for (const [builder, [x, z], c] of LANDMARKS) {
     const landmark = builder(detail, { body: c.body, glass: windowMaterial({ base: c.base, glass: c.glass, fogScale: 1.1 }), lit: c.lit });
     landmark.group.position.set(x, 0, z);
@@ -166,7 +230,7 @@ function build(quality: Quality): Built {
   // roofs of some taller towers, a lit corner edge up a few, and screens
   // on a few fronts; one merged mesh per tone
   const accents = rng(41);
-  const tones: SceneTone[] = ["rose", "cyan", "gold", "rose", "cyan"];
+  const tones: readonly SceneTone[] = L.neon.tones;
   const parts: Record<SceneTone, THREE.BufferGeometry[]> = { cyan: [], rose: [], gold: [] };
   const lights: LightStrip[] = [];
   const screens: TowerSpec[] = [];
@@ -190,7 +254,7 @@ function build(quality: Quality): Built {
       lights.push({ x: t.x, z: t.z + t.d / 2, w: Math.max(0.3, t.w * 0.28), color: accents() < 0.9 ? "#ffc98a" : "#bfe4ff", height: t.h * 0.55 });
     }
   }
-  for (const tone of ["cyan", "rose", "gold"] as SceneTone[]) if (parts[tone].length) mesh(merge(parts[tone]), neonMaterial(dim(tone, 0.5), { dayColor: dim(tone, 0.7) }), `neon:${tone}`);
+  for (const tone of ["cyan", "rose", "gold"] as SceneTone[]) if (parts[tone].length) mesh(merge(parts[tone]), neonMaterial(dim(tone, 0.5), { dayColor: L.neon.day }), `neon:${tone}`);
   for (const t of screens) {
     const w = t.w * 0.78;
     const h = Math.min(t.h * 0.2, w * 0.62);
@@ -211,7 +275,7 @@ function build(quality: Quality): Built {
   // ---- The far bank's trees and lamps
   const tr = rng(61);
   const bankTreeSpots: { x: number; z: number; s: number }[] = [];
-  for (let x = L.bank.trees.from; x <= L.bank.trees.to; x += L.bank.trees.step) bankTreeSpots.push({ x: x + tr.range(-0.5, 0.5), z: L.bank.z - tr.range(0, 1.2), s: tr.range(0.85, 1.25) });
+  for (let x = L.bank.trees.from; x <= L.bank.trees.to; x += L.bank.trees.step) bankTreeSpots.push({ x: x + tr.range(-0.5, 0.5), z: L.bank.z - tr.range(0, 1.2), s: tr.range(L.bank.trees.size[0], L.bank.trees.size[1]) });
   const bankTrees = buildStreetTrees(17, bankTreeSpots);
   const landingTrees = buildStreetTrees(19, L.trees.map(([x, z]) => ({ x, z, s: 0.8 })));
   for (const t of [...bankTrees, ...landingTrees]) {
@@ -242,6 +306,10 @@ function build(quality: Quality): Built {
   mesh(merge([slab(-W, W, L.landing.z0, L.landing.z1, -0.4, LAND - 0.01)]), surface({ color: PAVING }), "landing");
   const railing = add(buildRailing([new THREE.Vector3(L.railing.x0, LAND, L.railing.z), new THREE.Vector3(L.railing.x1, LAND, L.railing.z)]));
   geometries.push(railing.geometry);
+  for (const p of buildPlanters(71, L.planters.map(([x, z]) => ({ x, z, w: 0.7, d: 0.32, h: 0.07, y: LAND })), { stone: "#8f8a82" })) {
+    geometries.push(p.geometry);
+    add(p);
+  }
   const lamps = buildLampRow(L.lamps.map(([x, z]) => ({ x, y: LAND, z })));
   lamps.meshes.forEach((m) => add(m));
   disposers.push(lamps.dispose);
@@ -293,7 +361,7 @@ function build(quality: Quality): Built {
   disposers.push(() => air.object.userData.dispose?.());
 
   // ---- What the planar river reflects (high tier)
-  if (mode === "planar") reflectIn(sky, ...nearTowers, ...farTowers, ...landmarks.map((l) => l.group), bank, ...bankTrees, ...bankLamps.meshes, boat.object, air.object, ...group.children.filter((o) => o.name.startsWith("neon:") || o.name === "screen"));
+  if (mode === "planar") reflectIn(sky, ...nearTowers, ...farTowers, ...landmarks.map((l) => l.group), bank, ...bankTrees, ...bankLamps.meshes, boat.object, air.object, ...group.children.filter((o) => o.name.startsWith("neon:") || o.name.startsWith("civic") || o.name === "screen"));
 
   // ---- The mobile tier has no bloom: soft glow sprites stand in for it
   // on the neon and the landmarks' lit parts
@@ -321,7 +389,7 @@ function build(quality: Quality): Built {
 // signs
 // After dark the landing's lamps light the paving and the boards' posts
 // round them (kit/glow.ts: pools); lamp heads 0.61 up, over their +x
-const POOLS: GlowPool[] = L.lamps.slice(0, 12).map(([x, z]): GlowPool => ({ pos: [x + 0.1, LAND + 0.6, z], reach: 1.4, color: "#ffc98a", strength: 1.0 }));
+const POOLS: GlowPool[] = L.lamps.slice(0, 12).map(([x, z]): GlowPool => ({ pos: [x + 0.1, LAND + 0.6, z], reach: 1.9, color: "#ffc98a", strength: 1.5 }));
 
 const boardsLive = () => document.documentElement.dataset.cityTags === "over";
 

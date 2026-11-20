@@ -32,6 +32,10 @@ const lujiazui: SceneDef = {
   // never closes in nearer than `keep`. The skyline (110+) takes more.
   fog: { color: "#141a24", near: 70, far: 320, keep: { near: 66, far: 260 } },
   background: "#10141c",
+  // The day painting's sun is high on the left and in front of the
+  // skyline, so the fronts facing the river are sunlit, their right sides
+  // in shade
+  sun: [-45, 75, 80],
 };
 
 export default lujiazui;
@@ -75,15 +79,48 @@ export const RIVERSIDE = {
     mid: { seed: 31, area: { x0: -210, x1: 210, z0: -112, z1: -72 }, count: 180, height: [8, 28] } as Layer,
     far: { seed: 29, area: { x0: -280, x1: 280, z0: -195, z1: -112 }, count: 150, height: [12, 32] } as Layer,
     farFog: 1.6,
-    crest: { x: 12, spread: 110, least: 0.6 },
+    // the paintings' band is tall only round the landmarks and falls to
+    // low-rise toward either edge
+    crest: { x: 8, spread: 70, least: 0.3 },
     sightlines: 5,
   },
   // Neon on the skyline, as accents: the share of towers taller than
   // `crownOver` with a lit crown, of all towers with a lit corner edge, and
   // how many carry a screen
-  neon: { crownOver: 9, crowns: 0.5, edges: 0.16, screens: 6 },
+  neon: { crownOver: 9, crowns: 0.62, edges: 0.2, screens: 6, tones: ["rose", "cyan", "rose", "cyan", "gold", "cyan", "rose"] as const, day: "#c3ccd3" },
+  // The towers' facades, as the day painting has them: glass towers in
+  // pale blue, deep blue and teal; stone ones pale, warm and silver; the
+  // far layer pale in the haze. Each tower takes one by its seed (base,
+  // the wall; glass, the panes by day)
+  palettes: {
+    glass: [
+      { base: "#9dbedb", glass: "#c0dcf2" },
+      { base: "#5d8cbb", glass: "#9cc7ec" },
+      { base: "#79aac4", glass: "#a8d4e6" },
+    ],
+    stone: [
+      { base: "#ddd0b8", glass: "#6888a8" },
+      { base: "#cfa983", glass: "#57789a" },
+      { base: "#bcc6cf", glass: "#86a6c2" },
+    ],
+    far: [
+      { base: "#a9bfd2", glass: "#c3d8ea" },
+      { base: "#d3cbbd", glass: "#9db4c8" },
+    ],
+  },
+  // Low pale civic buildings along the far waterfront (the paintings'
+  // podium row under the towers), and at the Pearl's foot the two glass
+  // domes with a colonnaded hall between them
+  civic: {
+    row: { seed: 53, x0: -160, x1: 160, z: -54.6, w: [2.6, 7], h: [0.7, 2.4], d: [1.4, 2.6], gap: [0.3, 2.6], clear: [-3, 19] as const },
+    hall: { x: 8, z: -62, w: 10.5, h: 4.6, d: 4 },
+    domes: [[-0.2, -62], [16.2, -62]] as readonly XZ[],
+    dome: { r: 3.0, drum: 2.4, podium: 1.0 },
+  },
   // The far bank's edge: an embankment, a row of trees and lamps
-  bank: { z: -51.5, trees: { from: -150, to: 150, step: 2 }, lamps: { from: -120, to: 120, step: 5 } },
+  bank: { z: -51.5, trees: { from: -150, to: 150, step: 1.5, size: [1.3, 2.0] as const }, lamps: { from: -120, to: 120, step: 5 } },
+  // The landing's planters, beyond the outer boards, by the railing
+  planters: [[-7.4, -2.2], [-8.4, -0.6], [7.4, -2.2], [8.4, -0.6]] as readonly XZ[],
   // A ferry on the channel
   boat: { seed: 3, z: -38, x0: -90, x1: 90, period: 120 },
 };
