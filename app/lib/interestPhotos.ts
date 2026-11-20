@@ -14,7 +14,10 @@ import path from "node:path";
 export type InterestPhoto = { src: string; alt: string; file: string };
 
 const IMAGE = /\.(jpe?g|png|webp|avif)$/i;
-const PUBLIC_INTERESTS = path.join(process.cwd(), "public", "interests");
+// (turbopackIgnore: the folder is read while the page is prerendered and
+// public/ is served as it is, so the build needn't trace these paths;
+// without it Turbopack traces the whole project into the build output)
+const PUBLIC_INTERESTS = path.join(/* turbopackIgnore: true */ process.cwd(), "public", "interests");
 
 export function interestPhotos(
   scene: string,
@@ -24,7 +27,7 @@ export function interestPhotos(
 ): InterestPhoto[] {
   let files: string[];
   try {
-    files = readdirSync(path.join(baseDir, scene));
+    files = readdirSync(/* turbopackIgnore: true */ path.join(baseDir, scene));
   } catch {
     return [];
   }

@@ -167,3 +167,18 @@ test("under prefers-contrast: more the panel is opaque", () => {
   assert.match(rule[1], /background(-color)?:\s*var\(--panel\)\s*;/);
   assert.match(rule[1], /backdrop-filter:\s*none/);
 });
+
+test("the arcade: one choice, the store's: the panel's open interest follows it, and opening a row chooses it", () => {
+  const src = read("app/components/city3d/panels/ArcadeControls.tsx");
+  assert.match(src, /querySelectorAll<HTMLDetailsElement>\('details\[name="interests"\]'\)/);
+  assert.match(src, /row\.open = index === selected/);
+  assert.match(src, /if \(row\.open\) world\.select\("interest", rows\.indexOf\(row\)\)/);
+  // the list itself is the 2D page's, unchanged
+  assert.match(read("app/components/city2d/sections/Interests.tsx"), /name="interests"/);
+});
+
+test("interestPhotos reads public/interests/ without tracing the whole project (the build's two warnings)", () => {
+  const src = read("app/lib/interestPhotos.ts");
+  assert.match(src, /path\.join\(\/\* turbopackIgnore: true \*\/ process\.cwd\(\), "public", "interests"\)/);
+  assert.match(src, /readdirSync\(\/\* turbopackIgnore: true \*\/ path\.join\(baseDir, scene\)\)/);
+});

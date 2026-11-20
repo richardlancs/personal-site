@@ -55,6 +55,26 @@ export default function ArcadeControls({ items: interests }: { items: Pick<Inter
     world.set({ arcadeStatus: "" });
   }, [selected]);
 
+  // One choice, the store's: the panel's list of interests (its <details>,
+  // city2d/sections/Interests.tsx) keeps the chosen one open, whoever chose
+  // it (a key, the screen, the idle cycle), and opening a row there chooses
+  // it for the machine too
+  useEffect(() => {
+    const rows = [...document.querySelectorAll<HTMLDetailsElement>('details[name="interests"]')];
+    rows.forEach((row, index) => {
+      if (row.open !== (index === selected)) row.open = index === selected;
+    });
+  }, [selected]);
+  useEffect(() => {
+    const rows = [...document.querySelectorAll<HTMLDetailsElement>('details[name="interests"]')];
+    const onToggle = (event: Event) => {
+      const row = event.currentTarget as HTMLDetailsElement;
+      if (row.open) world.select("interest", rows.indexOf(row));
+    };
+    rows.forEach((row) => row.addEventListener("toggle", onToggle));
+    return () => rows.forEach((row) => row.removeEventListener("toggle", onToggle));
+  }, []);
+
   function choose(index: number) {
     world.select("interest", index);
     world.set({ focus: "machine" });
