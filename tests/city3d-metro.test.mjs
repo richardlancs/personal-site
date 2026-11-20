@@ -1,0 +1,79 @@
+// Experience's place (districts/metro.tsx, Task 14): its def, its lights,
+// its mover, what it may import, and the only words it draws (the
+// experience entries, from app/data/portfolio.ts, on the departures board)
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+
+const root = new URL("../", import.meta.url).pathname;
+const read = (path) => readFileSync(`${root}${path}`, "utf8");
+const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
+const src = noComments(read("app/components/city3d/districts/metro.tsx"));
+const defSrc = noComments(read("app/components/city3d/districts/metro.def.ts"));
+
+test("the def has a plateFrame, a home view, and a focus pose for every line on the board", async () => {
+  const { scenes, DISTRICT_LIGHTS } = await import("../app/components/city3d/scenes.ts");
+  const { experience } = await import("../app/data/portfolio.ts");
+  const def = scenes.metro;
+  assert.ok(def.plateFrame && def.plateFrame.fov > 0 && def.plateFrame.pos.length === 3 && def.plateFrame.target.length === 3);
+  for (let i = 0; i < experience.length; i++) assert.ok(def.focus[`line-${i}`], `line-${i}`);
+  assert.equal(def.frame, "right");
+  // the sign on the riverside is unchanged (visibility.mjs was run against it)
+  assert.deepEqual(def.sign, { bearing: -8.8, distance: 16.2, y: 1.1 });
+  const { METRO } = await import("../app/components/city3d/districts/metro.def.ts");
+  assert.equal(METRO.spots.length, DISTRICT_LIGHTS.metro);
+  assert.equal(METRO.train.dwell, 20);
+  assert.equal(METRO.train.cycle, 60);
+  assert.doesNotMatch(defSrc, /from "three"/);
+});
+
+test("exactly DISTRICT_LIGHTS.metro spot lights, through SceneLights, and no other light", () => {
+  assert.match(src, /<SceneLights id="metro" spots=\{METRO\.spots\}/);
+  assert.equal([...src.matchAll(/<SceneLights/g)].length, 1);
+  assert.doesNotMatch(src, /new THREE\.\w*Light\(/);
+  assert.doesNotMatch(src, /<\w*[lL]ight[\s/>]/);
+  assert.doesNotMatch(src, /new THREE\.\w*Material\(/);
+});
+
+test("the train is the kit's mover, run by useMovers; nothing random", () => {
+  assert.match(src, /import \{ buildTrain \} from "\.\.\/kit\/movers";/);
+  assert.match(src, /buildTrain\(/);
+  assert.match(src, /useMovers\(built\.movers, \{ active, still \}\)/);
+  assert.match(src, /park: \(\) => train\.park\(\)/);
+  assert.doesNotMatch(src, /Math\.random|useFrame/);
+});
+
+test("it imports only the kit, the scene contract, the store and data, never another scene", () => {
+  const imports = [...src.matchAll(/from "([^"]+)"/g)].map((m) => m[1]);
+  const allowed = /^(three|react|@react-three\/fiber|\.\.\/kit\/[\w-]+|\.\.\/common|\.\.\/store|\.\.\/rng|\.\.\/tiers|\.\/metro\.def|\.\.\/\.\.\/\.\.\/data\/portfolio|\.\.\/\.\.\/\.\.\/lib\/experience)$/;
+  for (const i of imports) assert.match(i, allowed, i);
+  assert.doesNotMatch(src, /Riverside|districts\/(?!metro)|\.\/(longtang|towers|nanjing-road|bund|lujiazui)/);
+  assert.match(src, /function ExperienceScene\(/);
+  assert.match(src, /export default ExperienceScene;/);
+});
+
+test("the only words drawn are the experience entries; every other sign is a mark sign", () => {
+  assert.match(src, /import \{ experience \} from "\.\.\/\.\.\/\.\.\/data\/portfolio";/);
+  assert.match(src, /const LINES = sortNewestFirst\(experience\);/);
+  const texts = [...src.matchAll(/fillText\(([^,]+),/g)].map((m) => m[1].trim());
+  assert.deepEqual(texts, ["text[i]"]);
+  const flaps = [...src.matchAll(/flaps\(g, ([^,]+(?:\([^)]*\))?[^,]*),/g)].map((m) => m[1].trim());
+  assert.deepEqual(flaps, ["e.role", "`${e.organization} · ${dates(e)}`"]);
+  assert.doesNotMatch(src, /buildSign\(/);
+  for (const m of src.matchAll(/buildMarkSign\(\{([^}]*)\}\)/g)) assert.doesNotMatch(m[1], /text:/);
+  // no place names, no line numbers, no CJK
+  assert.doesNotMatch(read("app/components/city3d/districts/metro.tsx") + read("app/components/city3d/districts/metro.def.ts"), /[　-鿿]|Lujiazui|Longtang|Century Avenue|Line 2|Nanjing Road|The Bund/);
+});
+
+test("the board's rows are Hitboxes that choose a line, as the panel's keys do", () => {
+  const boxes = [...src.matchAll(/<Hitbox[\s\S]*?\/>/g)].map((m) => m[0]);
+  assert.equal(boxes.length, 1);
+  assert.match(boxes[0], /onSelect=\{\(\) => choose\(r\.line\)\}/);
+  assert.match(src, /world\.select\("line", line\);\s*world\.set\(\{ focus: `line-\$\{line\}` \}\);/);
+  assert.match(src, /useWorld\(\(s\) => s\.sel\.line\)/);
+});
+
+test("the paving is fake on every tier", () => {
+  assert.match(src, /wetPaving\(\{[^}]*mode: "fake"/);
+  assert.doesNotMatch(src, /buildRiver|"planar"/);
+});
