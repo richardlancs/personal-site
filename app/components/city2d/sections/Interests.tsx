@@ -1,20 +1,19 @@
-import type { CSSProperties, ReactNode } from "react";
+import Image from "next/image";
+import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
+import { interestPhotos } from "../../../lib/interestPhotos";
 
-// The interests station, on the neon shopping street: one card per
-// interest, in a row (four across on wide screens, two under 1024px, one
-// under 480px). Each card has a thin accent edge along its top,
-// alternating cyan and lantern like the street's signs, and a small line mark
-// for its sport or game in the same colour. The marks are decoration only.
+// The interests: one row per interest, a single column on the ground with
+// hairlines between them. Each row is a native <details> (name="interests",
+// so opening one closes the others where the browser supports it); the
+// first starts open, and the open one's top hairline turns cyan. Inside:
+// the description, then the interest's photos when it has any, read from
+// public/interests/<scene>/ (lib/interestPhotos.ts,
+// docs/adding-interest-photos.md). No photos, no gallery.
 
-// The one list of accents, in order: the edge, the mark and the edge's
-// glow (city.css, .interest-card, from --card-accent) all come from it
-const accents = [
-  { colour: "cyan", edge: "border-t-cyan", mark: "text-cyan" },
-  { colour: "lantern", edge: "border-t-lantern", mark: "text-lantern" },
-];
+const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
-// Line marks on a 24-unit grid, drawn in the card's accent (currentColor)
+// Line marks on a 24-unit grid, in cyan (currentColor). Decoration only.
 const marks: Record<Interest["scene"], ReactNode> = {
   basketball: (
     <>
@@ -46,35 +45,87 @@ const marks: Record<Interest["scene"], ReactNode> = {
   ),
 };
 
+// The gallery: 2 across on phones, 3 from 768px, 4 from 1280px (the
+// column stops at 72rem, so a tile is never wider than about 18rem)
+const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
+
 export default function Interests() {
   return (
-    <ul role="list" className="interests mt-10 grid grid-cols-1 gap-5 min-[480px]:grid-cols-2 lg:grid-cols-4">
+    <div className="interests mt-10 border-b border-line">
       {interests.map((interest, i) => {
-        const { colour, edge, mark } = accents[i % accents.length];
+        const photos = interestPhotos(interest.scene, interest.name, interest.captions);
         return (
-          <li
+          <details
             key={interest.scene}
-            className={`interest-card flex flex-col gap-3 rounded-[var(--radius-lg)] border border-line border-t-2 ${edge} bg-panel p-6`}
-            style={{ "--card-accent": `var(--${colour})` } as CSSProperties}
+            name="interests"
+            open={i === 0}
+            className="interest group border-t border-line open:border-t-cyan"
           >
-            <svg
-              aria-hidden="true"
-              focusable="false"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={`size-8 shrink-0 ${mark}`}
-            >
-              {marks[interest.scene]}
-            </svg>
-            <h3 className="font-display text-xl text-text break-words">{interest.name}</h3>
-            <p className="text-base leading-relaxed text-muted break-words">{interest.description}</p>
-          </li>
+            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-4 py-4 [&::-webkit-details-marker]:hidden">
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-8 shrink-0 text-cyan"
+              >
+                {marks[interest.scene]}
+              </svg>
+              <h3 className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</h3>
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-cyan"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </summary>
+            <div className="pb-8 min-[480px]:pl-12">
+              <p className="max-w-[65ch] text-base leading-relaxed text-text break-words">{interest.description}</p>
+              {photos.length > 0 && (
+                <ul role="list" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                  {photos.map((photo) => {
+                    const caption = interest.captions?.[photo.file];
+                    return (
+                      <li key={photo.file}>
+                        <a
+                          href={photo.src}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block rounded-[var(--radius)] text-muted"
+                        >
+                          <span className="relative block aspect-[4/3] overflow-hidden rounded-[var(--radius)] border border-line bg-panel">
+                            <Image
+                              src={photo.src}
+                              alt={caption ? "" : photo.alt}
+                              fill
+                              sizes={tileSizes}
+                              loading="lazy"
+                              className="object-cover"
+                            />
+                          </span>
+                          {caption && <span className="mt-2 block text-base leading-snug md:text-sm break-words">{caption}</span>}
+                          {newTab}
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </details>
         );
       })}
-    </ul>
+    </div>
   );
 }
