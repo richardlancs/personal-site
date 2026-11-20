@@ -67,7 +67,13 @@ test("the home page is the six stations, with the Skills anchor inside Projects"
   assert.match(page, /stations\.map|<Station /);
   const projects = page.match(/<Station section=\{section\("projects"\)\}>([\s\S]*?)<\/Station>/)?.[1];
   assert.ok(projects, "the projects station");
-  assert.match(projects, /id="skills"/);
+  // Skills is Projects' own <section id="skills">, the page's only one
+  assert.match(projects, /<Projects \/>/);
+  assert.doesNotMatch(page, /id="skills"/, "no second Skills anchor on the page");
+  assert.match(read("app/components/city2d/sections/Projects.tsx"), /<section id="skills"/);
+  for (const [id, name] of [["about", "About"], ["experience", "Experience"], ["interests", "Interests"], ["contact", "Contact"]]) {
+    assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
+  }
   for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) assert.match(page, new RegExp(`section\\("${id}"\\)`), `page renders ${id}`);
   assert.match(page, /<Colophon \/>/);
 });

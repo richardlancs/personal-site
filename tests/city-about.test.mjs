@@ -48,3 +48,9 @@ test("the about station is a server component with no fixed widths", () => {
   assert.match(source, /md:grid-cols-2/);
   assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/);
 });
+
+test("the points' dash and the interests' edge glow are styled, the glow gone under more contrast", () => {
+  const css = readFileSync(new URL("../app/city.css", import.meta.url), "utf8");
+  assert.match(css, /\.points > li::before \{[^}]*background: var\(--amber\)/);
+  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*\.interest-card \{\s*box-shadow: none !important;/);
+});

@@ -37,9 +37,6 @@ async function station(id) {
   return body.slice(start, Math.min(...ends, foot >= 0 ? foot : body.length));
 }
 
-// The sections' own content comes with their tasks (the Shanghai plan,
-// Tasks 8 to 12); until a station is filled its content test is a todo
-const filledLater = (task) => `the station is filled by Task ${task} of the Shanghai plan`;
 
 test("the one page answers 200 with the site's title", { skip }, async () => {
   const { status, body } = await get("/");
@@ -105,7 +102,7 @@ test("the home station names me and links to GitHub, LinkedIn and the résumé",
   for (const href of [profile.githubUrl, profile.linkedinUrl, profile.resumeUrl]) assert.ok(home.includes(`href="${href}"`), `home: ${href}`);
 });
 
-test("every project is in the projects station, the first with its code and demo links", { skip, todo: !skip && filledLater(9) }, async () => {
+test("every project is in the projects station, the first with its code and demo links", { skip }, async () => {
   const body = await station("projects");
   assert.ok(projects.length > 0);
   for (const project of projects) assert.ok(body.includes(html(project.title)), `projects: ${project.title}`);
@@ -114,23 +111,23 @@ test("every project is in the projects station, the first with its code and demo
   if (first.liveUrl) assert.ok(body.includes(`href="${first.liveUrl}"`), `projects: ${first.liveUrl}`);
 });
 
-test("every role is readable in the experience station without scripts", { skip, todo: !skip && filledLater(10) }, async () => {
+test("every role is readable in the experience station without scripts", { skip }, async () => {
   const body = await station("experience");
   for (const stop of experience) assert.ok(body.includes(html(stop.role)), `experience: ${stop.role}`);
 });
 
-test("every interest is readable in the interests station without scripts", { skip, todo: !skip && filledLater(11) }, async () => {
+test("every interest is readable in the interests station without scripts", { skip }, async () => {
   const body = await station("interests");
   for (const interest of interests) assert.ok(body.includes(html(interest.name)), `interests: ${interest.name}`);
 });
 
-test("every contact address and the résumé are in the contact station", { skip, todo: !skip && filledLater(12) }, async () => {
+test("every contact address and the résumé are in the contact station", { skip }, async () => {
   const body = await station("contact");
   for (const email of profile.emails) assert.ok(body.includes(`mailto:${email.address}`), `contact: ${email.address}`);
   assert.ok(body.includes(`href="${profile.resumeUrl}"`), "contact: résumé");
 });
 
-test("the copy feedback is a live region drawn on screen, not screen-reader-only", { skip, todo: !skip && filledLater(12) }, async () => {
+test("the copy feedback is a live region drawn on screen, not screen-reader-only", { skip }, async () => {
   const contact = await station("contact");
   const copyStatus = contact.match(/<p[^>]*role="status"[^>]*>/)?.[0];
   assert.ok(copyStatus, "contact: the copy status");

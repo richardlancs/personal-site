@@ -733,6 +733,43 @@ a[data-resume][data-opening] {
   font-size: 1.125rem;
 }
 
+/* ---------- The sections' shared pieces ---------- */
+
+/* Short points, each with an amber dash in the margin (About) */
+.points {
+  list-style: none;
+  padding: 0;
+}
+
+.points > li {
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.points > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.8em;
+  width: 0.6rem;
+  height: 1px;
+  background: var(--amber);
+}
+
+/* Interests: a faint glow along each card's accent edge (decoration only;
+   gone under prefers-contrast, below) */
+.interest-card:nth-child(3n + 1) {
+  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--cyan) 60%, transparent);
+}
+
+.interest-card:nth-child(3n + 2) {
+  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--magenta) 60%, transparent);
+}
+
+.interest-card:nth-child(3n + 3) {
+  box-shadow: 0 -1px 8px -2px color-mix(in srgb, var(--amber) 60%, transparent);
+}
+
 /* The foot of the page: the colophon */
 .page-foot {
   width: min(72rem, 100%);
@@ -1008,6 +1045,10 @@ a[data-resume][data-opening] {
   :root {
     --glow-cyan: 0 0 #0000;
     --glass-border: var(--muted);
+  }
+
+  .interest-card {
+    box-shadow: none !important;
   }
 
   *,
