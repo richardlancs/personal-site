@@ -35,6 +35,8 @@ const longtang: SceneDef = {
   background: "#1c2232",
   // the plates light the left-hand houses from the right
   sun: [70, 75, 15],
+  // the lane's shaded wall lifted by the sky and the sunlit wall opposite
+  bounce: { color: "#c6d5e6", strength: 0.26 },
 };
 
 export default longtang;
@@ -64,9 +66,10 @@ export const LANE = {
   litHouse: 4,
   // Wall lanterns: [side (-1 left, 1 right), z (m)], one by every gate or
   // so down the lane; the first two hold the scene's two spot lights, the
-  // first `pooled` warm the walls and paving round them after dark
+  // first `pooled` warm the walls and paving round them after dark, each
+  // with a pool of its own (the rest share a line pool down each wall)
   lanterns: [[-1, -3.2], [1, -3.4], [1, -11.4], [-1, -12.5], [1, -16.5], [-1, -21], [1, -25], [-1, -29.5], [1, -33.5], [-1, -38], [1, -41.5]] as readonly (readonly [number, number])[],
-  pooled: 9,
+  pooled: 4,
   // The two lit blade signs (decorative marks): [side, z, height] in metres
   blades: [[-1, -8.0, 3.0], [1, -9.0, 3.6]] as readonly (readonly [number, number, number])[],
   // The bamboo poles across the lane, and what hangs on them

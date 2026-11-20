@@ -46,6 +46,8 @@ import { LANE } from "./longtang.def";
 // streaks on every tier (the plan: About's paving is fake everywhere).
 
 const K = LANE.scale;
+// The plates' trees and plants: bright yellow-green, leafy, lit warm from below
+const TREES = { greens: ["#9cbb48", "#87ad3e", "#a8c454", "#7aa23c"], underGlow: { tone: "#ffc070", strength: 0.75 }, leaves: 0.55 };
 
 // Colours, from the paintings
 const C = {
@@ -473,7 +475,8 @@ function build(quality: Quality) {
   const potted = trees.filter((t) => t.s < 4);
   const behind = trees.filter((t) => t.s >= 4);
   for (const [list, seed, y] of [[potted, 1613, 0.42], [behind, 1617, 0]] as const) {
-    for (const t of buildStreetTrees(seed, list)) {
+    // (the pots' plants the kit's leafy clumps; all the plates' yellow-green, lit from below)
+    for (const t of buildStreetTrees(seed, seed === 1613 ? list.map((p) => ({ ...p, kind: "leafy" as const })) : list, TREES)) {
       geometries.push(t.geometry);
       t.position.y = y;
       add(t, lane);
@@ -483,7 +486,7 @@ function build(quality: Quality) {
   // ---- The blade signs, standing out from the walls (marks, no words)
   const tones: SceneTone[] = ["cyan", "rose"];
   LANE.blades.forEach(([side, z, y], i) => {
-    const sign = buildMarkSign({ seed: 160 + i, tone: tones[i], w: 0.32, h: 0.8, kind: "blade" });
+    const sign = buildMarkSign({ seed: 160 + i, tone: tones[i], w: 0.32, h: 0.8, kind: "panel" });
     sign.position.set(face(side) - side * 0.5, y, z);
     if (side > 0) sign.rotation.y = Math.PI;
     add(sign, lane);
@@ -556,10 +559,16 @@ function build(quality: Quality) {
   // them, the blade signs throw their colour on the walls, and the nearest
   // ground-floor windows their gold (kit/glow.ts: pools)
   const near = windows.filter((w) => w.z < 0).sort((a, b) => b.z - a.z);
+  // (the nearest lanterns each a pool; past them, the lanterns, doorways
+  // and windows down each wall as one line pool, so the warmth runs all
+  // the way down the lane, as painted)
+  const lit = LANE.lanterns.slice(0, LANE.pooled);
+  const far = LANE.lanterns[LANE.lanterns.length - 1][1];
   const pools: GlowPool[] = [
-    ...LANE.lanterns.slice(0, LANE.pooled).map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 1.3) * K, 1.5 * K, z * K], reach: 6 * K, color: "#ffc489", strength: 1.05 })),
+    ...lit.map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 1.3) * K, 1.5 * K, z * K], reach: 6 * K, color: "#ffc489", strength: 1.05 })),
+    ...([-1, 1] as const).map((side): GlowPool => ({ from: [(face(side) - side * 1.2) * K, 1.5 * K, -2 * K], to: [(face(side) - side * 1.2) * K, 1.5 * K, far * K], reach: 3.4 * K, color: "#ffc489", strength: 0.26 })),
     ...LANE.blades.map(([side, z, y], i): GlowPool => ({ pos: [(face(side) - side * 0.6) * K, y * K, z * K], reach: 3.2 * K, color: SCENE_TONES[tones[i]], strength: 0.45 })),
-    ...near.slice(0, POOL_CAP - LANE.pooled - LANE.blades.length).map(({ side, z }): GlowPool => ({ pos: [(face(side) - side * 0.8) * K, 1.6 * K, z * K], reach: 3.4 * K, color: "#ffbf78", strength: 1.3 })),
+    ...near.slice(0, POOL_CAP - LANE.pooled - 2 - LANE.blades.length).map(({ side, z }): GlowPool => ({ pos: [(face(side) - side * 0.8) * K, 1.6 * K, z * K], reach: 3.4 * K, color: "#ffbf78", strength: 1.3 })),
   ];
 
   return {
