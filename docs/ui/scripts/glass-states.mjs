@@ -1,16 +1,17 @@
-// Every button-like control's states (globals.css, .glass): default,
-// hover, chosen, disabled and keyboard focus, photographed and measured,
-// on wide screens (1440) and a phone (390). For each control it checks
-// that it is glass, that the chosen state has the focus-blue edge and is
-// pressed in (no outer shadow), that disabled is dashed with the default
-// cursor and its label is still 4.5:1 on what's behind, and that focus
-// draws the ring on its halo.
+// Every button-like control's states (city.css, .glass): default, hover,
+// chosen, disabled and keyboard focus, photographed and measured, on wide
+// screens (1440) and a phone (390). For each control it checks that it is
+// glass, that the chosen state has the cyan edge and is pressed in (an
+// inset shade), that disabled is dashed with the default cursor and its
+// label is still 4.5:1 on what's behind, and that focus draws the focus
+// ring on its dark halo. Round 2 (20 November 2026): rewritten for the
+// one-page city and its black palette (the park's controls are gone).
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-states.mjs <base> [outDir=docs/ui/screenshots]
 // Sheets: glass2-<view>-<control>.jpg
 import { mkdirSync } from "node:fs";
 import { launch } from "../../audit/scripts/pw.mjs";
 
-const [base = "http://localhost:3201", out = "docs/ui/screenshots"] = process.argv.slice(2);
+const [base = "http://localhost:3100", out = "docs/ui/screenshots"] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 const browser = await launch();
 const failures = [];
@@ -21,8 +22,8 @@ const check = (ok, what) => {
 
 const arrive = async (page, path) => {
   await page.goto(base + path, { waitUntil: "load" });
-  await page.waitForFunction(() => document.querySelector(".world3d")?.getAttribute("data-arrived") === "true", null, { timeout: 30000 }).catch(() => {});
-  await page.waitForTimeout(1800);
+  await page.waitForFunction(() => document.documentElement.hasAttribute("data-landed"), null, { timeout: 30000 }).catch(() => {});
+  await page.waitForTimeout(800);
 };
 
 // The look of one element: what the states are made of
@@ -67,19 +68,20 @@ async function labelContrast(page, locator) {
     g.drawImage(img, 0, 0);
     return Array.from(g.getImageData(0, 0, img.width, img.height).data);
   }, png.toString("base64"));
-  let dark = 1;
   const ls = [];
   for (let i = 0; i < data.length; i += 4) ls.push(lum([data[i], data[i + 1], data[i + 2]]));
   ls.sort((a, b) => a - b);
-  dark = ls[Math.floor(ls.length * 0.01)];
   const ink = lum(rgb(color));
-  return +((Math.max(ink, dark) + 0.05) / (Math.min(ink, dark) + 0.05)).toFixed(2);
+  // Worst for the words: the darkest 1% under dark words, the lightest 1%
+  // under light ones
+  const under = ink < 0.18 ? ls[Math.floor(ls.length * 0.01)] : ls[Math.min(ls.length - 1, Math.floor(ls.length * 0.99))];
+  return +((Math.max(ink, under) + 0.05) / (Math.min(ink, under) + 0.05)).toFixed(2);
 }
 
 async function sheet(shots, file) {
   const p = await browser.newPage({ viewport: { width: 1100, height: 300 }, deviceScaleFactor: 1 });
   const cells = shots.map(([caption, b]) => `<figure style="margin:0"><img style="display:block;max-width:100%" src="data:image/png;base64,${b.toString("base64")}"><figcaption style="margin-top:4px">${caption}</figcaption></figure>`).join("");
-  await p.setContent(`<body style="margin:0;background:#e8e2d9;font:600 13px system-ui;color:#203245"><div style="display:grid;gap:12px;padding:12px">${cells}</div></body>`);
+  await p.setContent(`<body style="margin:0;background:#08090c;font:600 13px system-ui;color:#e6e9ee"><div style="display:grid;gap:12px;padding:12px">${cells}</div></body>`);
   await p.waitForTimeout(150);
   await p.screenshot({ path: file, type: "jpeg", quality: 80, fullPage: true });
   await p.close();
@@ -97,26 +99,31 @@ const shot = async (page, locator, pad = 12) => {
 // one, another to hover, and a disabled one when it has one
 const controls = {
   desktop: [
-    { name: "bench", path: "/projects", group: ".bench-tabs", chosen: '.bench-tab[aria-selected="true"]', other: '.bench-tab[aria-selected="false"]' },
-    { name: "thumbs", path: "/projects#marketlab", group: ".shot-strip", chosen: '.shot-thumb[aria-pressed="true"]', other: '.shot-thumb[aria-pressed="false"]' },
-    { name: "cabinets", path: "/interests", group: ".cabinet-row", chosen: '.cabinet-button[aria-selected="true"]', other: '.cabinet-button[aria-selected="false"]' },
-    { name: "timetable", path: "/experience", group: ".timetable", chosen: '.timetable-line[aria-pressed="true"]', other: '.timetable-line[aria-pressed="false"]' },
-    { name: "notebook", path: "/about", group: ".notebook-controls", other: '.notebook-turn:not([aria-disabled="true"])', disabled: '.notebook-turn[aria-disabled="true"]' },
-    { name: "menu", path: "/projects", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="page"]', other: '#places-menu a.glass:not([aria-current])' },
-    { name: "corner", path: "/projects", group: ".world-controls-end", other: '[popovertarget="places-menu"]' },
-    { name: "copy", path: "/contact", group: ".directory-lines", other: ".directory-copy", copy: true },
+    { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
+    { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
+    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass:not(.glass-primary)" },
+    { name: "project", path: "/#marketlab", group: "#marketlab p:has(> a.glass)", other: "#marketlab a.glass:not(.glass-primary)" },
+    { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
+    { name: "profile", path: "/#contact", group: '#contact ul[aria-label="Links"]', other: "#contact .profile-key" },
     { name: "resume", path: "/", resume: true, group: ".resume-bar", chosen: '.resume-fit[aria-pressed="true"]', other: ".resume-close" },
     { name: "resume-limit", path: "/", resume: true, zoom: true, group: ".resume-bar", other: ".resume-close", disabled: '.resume .glass[aria-disabled="true"]' },
   ],
   phone: [
-    { name: "bench", path: "/projects", group: ".bench-tabs", chosen: '.bench-tab[aria-selected="true"]', other: '.bench-tab[aria-selected="false"]' },
-    { name: "thumbs", path: "/projects#marketlab", group: ".shot-strip", chosen: '.shot-thumb[aria-pressed="true"]', other: '.shot-thumb[aria-pressed="false"]' },
-    { name: "menu", path: "/projects", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="page"]', other: '#places-menu a.glass:not([aria-current])' },
-    { name: "copy", path: "/contact", group: ".directory-lines", other: ".directory-copy", copy: true },
+    { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
+    { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
+    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass:not(.glass-primary)" },
+    { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
+    { name: "profile", path: "/#contact", group: '#contact ul[aria-label="Links"]', other: "#contact .profile-key" },
     { name: "resume", path: "/", resume: true, group: ".resume-bar", chosen: '.resume-fit[aria-pressed="true"]', other: ".resume-close" },
     { name: "resume-limit", path: "/", resume: true, zoom: true, group: ".resume-bar", other: ".resume-close", disabled: '.resume .glass[aria-disabled="true"]' },
   ],
 };
+
+// The city's states (city.css): the chosen edge is --cyan, focus is
+// --focus on a dark halo
+const CYAN = "rgb(79, 216, 238)";
+const FOCUS = "rgb(143, 233, 255)";
+const HALO = "rgba(8, 9, 12, 0.9) 0px 0px 0px 6px";
 
 const views = {
   desktop: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
@@ -165,8 +172,8 @@ for (const [view, opts] of Object.entries(views)) {
     if (c.chosen) {
       const chosen = page.locator(c.chosen).first();
       r.chosen = await look(chosen);
-      check(r.chosen.border.includes("rgb(50, 110, 159)"), `${key}: chosen edge ${r.chosen.border}`);
-      check(/inset/.test(r.chosen.shadow) && !/rgba\(32, 50, 69, 0\.35\) 0px 6px/.test(r.chosen.shadow), `${key}: chosen not pressed in (${r.chosen.shadow})`);
+      check(r.chosen.border.includes(CYAN), `${key}: chosen edge ${r.chosen.border}`);
+      check(/inset/.test(r.chosen.shadow), `${key}: chosen not pressed in (${r.chosen.shadow})`);
       r.chosenContrast = await labelContrast(page, chosen);
       check(r.chosenContrast >= 4.5, `${key}: chosen label ${r.chosenContrast}:1`);
     }
@@ -182,7 +189,7 @@ for (const [view, opts] of Object.entries(views)) {
       await other.click();
       await page.waitForTimeout(350);
       r.copied = await look(other);
-      check(r.copied.border.includes("rgb(50, 110, 159)"), `${key}: copied edge ${r.copied.border}`);
+      check(r.copied.border.includes(CYAN), `${key}: copied edge ${r.copied.border}`);
       shots.push(["Copied (chosen)", await shot(page, group)]);
       await page.waitForTimeout(2200);
     }
@@ -211,7 +218,7 @@ for (const [view, opts] of Object.entries(views)) {
     await focusTarget.focus();
     await page.waitForTimeout(150);
     r.focus = await look(focusTarget);
-    check(/^solid rgb\(50, 110, 159\) [23]px/.test(r.focus.outline) && r.focus.shadow.includes("rgba(255, 249, 242, 0.92) 0px 0px 0px 6px"), `${key}: focus ${r.focus.outline} / ${r.focus.shadow}`);
+    check(new RegExp(`^solid ${FOCUS.replace(/[()]/g, "\\$&")} [23]px`).test(r.focus.outline) && r.focus.shadow.includes(HALO), `${key}: focus ${r.focus.outline} / ${r.focus.shadow}`);
     shots.push([c.chosen ? "keyboard focus on the chosen one" : "keyboard focus", await shot(page, group, 14)]);
 
     // The press reaches it
@@ -224,7 +231,7 @@ for (const [view, opts] of Object.entries(views)) {
         if (document.querySelector(".glass[data-pressed]")) window.__pressed = true;
       }).observe(document, { subtree: true, attributes: true, attributeFilter: ["data-pressed"] });
     });
-    await page.keyboard.press(c.name === "notebook" || c.resume || c.name === "corner" ? "Space" : "Enter").catch(() => {});
+    await page.keyboard.press(c.resume || c.name === "corner" || c.copy ? "Space" : "Enter").catch(() => {});
     r.pressedByKeyboard = await page.evaluate(() => window.__pressed || !!document.querySelector(".glass[data-pressed]"));
     check(r.pressedByKeyboard, `${key}: no press from the keyboard`);
     await page.keyboard.press("Escape").catch(() => {});

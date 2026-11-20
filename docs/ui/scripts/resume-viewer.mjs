@@ -1,5 +1,6 @@
 // The résumé viewer (app/components/resume), checked in a real browser
-// against a production build. Prints one ok/FAIL line per check and a
+// against a production build of the one-page city (round 2: its links
+// are the hero's, About's and Contact's, on /, /#about and /#contact). Prints one ok/FAIL line per check and a
 // total; exits 1 on any failure.
 //
 //   npm run build && npx next start -p 3141
@@ -46,11 +47,10 @@ async function visit(page, route) {
 }
 
 // The résumé link that's showing on this page and layout
-async function trigger(page, route, view) {
-  if (route === "/about" && view === "desktop") {
-    await page.getByRole("button", { name: "Read all the pages at once" }).click();
-  }
-  const link = page.locator("a[data-resume]:visible").first();
+// (the one page: the section the route points at, the hero's for "/")
+async function trigger(page, route) {
+  const section = route.includes("#") ? route.slice(route.indexOf("#")) : "#home";
+  const link = page.locator(`${section} a[data-resume]:visible`).first();
   await link.scrollIntoViewIfNeeded();
   await page.evaluate(() => {
     // Mark it, to recognise it again after closing
@@ -77,12 +77,12 @@ const pageWidth = (page) => page.evaluate(() => document.querySelector("dialog.r
 // ---------- 1. Every trigger, by pointer and by keyboard, on both layouts ----------
 
 for (const view of Object.keys(views)) {
-  for (const route of ["/", "/about", "/contact"]) {
+  for (const route of ["/", "/#about", "/#contact"]) {
     for (const how of ["pointer", "keyboard"]) {
       const tag = `${view} ${route} ${how}`;
       const { ctx, page } = await newPage(view);
       await visit(page, route);
-      const link = await trigger(page, route, view);
+      const link = await trigger(page, route);
       // The narrow layout: the page itself scrolls; scroll it a little
       // further where it can, so a moved page would show
       if (view === "phone") await page.evaluate(() => window.scrollBy(0, 30));
@@ -165,8 +165,8 @@ for (const view of Object.keys(views)) {
 for (const view of Object.keys(views)) {
   const tag = view;
   const { ctx, page } = await newPage(view);
-  await visit(page, "/contact");
-  const link = await trigger(page, "/contact", view);
+  await visit(page, "/#contact");
+  const link = await trigger(page, "/#contact");
   await link.click();
   await waitDrawn(page);
   await page.waitForTimeout(300);
@@ -299,7 +299,7 @@ for (const view of Object.keys(views)) {
   const y1 = await page.evaluate(() => window.scrollY);
   check(st2 > 100 && y1 === y0, `${tag}: Page Down scrolls the document, not the page`, `scrollTop ${st2}, page ${y0} -> ${y1}`);
 
-  // The world holds still under the dialog: count animation frames
+  // The page holds still under the dialog: count animation frames
   const frames = await page.evaluate(async () => {
     let n = 0;
     const raf = window.requestAnimationFrame;
@@ -311,7 +311,7 @@ for (const view of Object.keys(views)) {
     window.requestAnimationFrame = raf;
     return n;
   });
-  check(frames < 5, `${tag}: the 3D world draws nothing while it's open`, `${frames} frames requested in 1 s`);
+  check(frames < 5, `${tag}: nothing behind it animates while it's open`, `${frames} frames requested in 1 s`);
 
   // Contrast of the dialog's words, against what's behind them
   const contrast = await page.evaluate(() => {
@@ -341,7 +341,7 @@ for (const view of Object.keys(views)) {
       const bg = over(parse(getComputedStyle(el).backgroundColor), bar);
       out[name] = ratio(parse(getComputedStyle(el).color), bg).toFixed(1);
     }
-    const ring = parse(getComputedStyle(document.documentElement).getPropertyValue("--focus-blue").trim().replace(/^#/, "").match(/../g).map((h) => parseInt(h, 16)).join(","));
+    const ring = parse(getComputedStyle(document.documentElement).getPropertyValue("--focus").trim().replace(/^#/, "").match(/../g).map((h) => parseInt(h, 16)).join(","));
     out["focus ring"] = ratio(ring, bar).toFixed(1);
     return out;
   });
@@ -373,8 +373,8 @@ async function drawnAgain(page) {
 {
   const { ctx, page } = await newPage("desktop");
   await page.route(`**${PDF}`, (route) => route.fulfill({ status: 200, contentType: "application/pdf", body: twoPages() }));
-  await visit(page, "/contact");
-  await (await trigger(page, "/contact", "desktop")).click();
+  await visit(page, "/#contact");
+  await (await trigger(page, "/#contact")).click();
   await waitDrawn(page);
   await page.waitForTimeout(300);
   const label = () => page.locator("dialog.resume .resume-pageno").innerText();
@@ -403,9 +403,9 @@ for (const view of Object.keys(views)) {
   for (const [name, block] of Object.entries(failures)) {
     const tag = `${view} ${name}`;
     const { ctx, page } = await newPage(view);
-    await visit(page, "/contact");
+    await visit(page, "/#contact");
     await block(page);
-    await (await trigger(page, "/contact", view)).click();
+    await (await trigger(page, "/#contact")).click();
     const shown = await page.waitForSelector("dialog.resume[open] .resume-error", { timeout: 35000 }).then(
       () => true,
       () => false,
@@ -438,13 +438,13 @@ for (const view of Object.keys(views)) {
 // The reader itself (pdf.js) failing to download, then coming back
 {
   const { ctx, page } = await newPage("desktop");
-  await visit(page, "/contact");
+  await visit(page, "/#contact");
   // Every script requested from now on: the viewer's own chunk is warmed
   // on hover, so let it in first
   await page.locator("a[data-resume]:visible").first().hover();
   await page.waitForTimeout(800);
   await page.route(/\/_next\/static\/(immutable\/)?chunks\/.*\.js(\?|$)/, (r) => r.abort("failed"));
-  await (await trigger(page, "/contact", "desktop")).click();
+  await (await trigger(page, "/#contact")).click();
   const shown = await page.waitForSelector("dialog.resume[open] .resume-error", { timeout: 20000 }).then(
     () => true,
     () => false,
@@ -460,8 +460,8 @@ for (const view of Object.keys(views)) {
 
 for (const motion of ["no-preference", "reduce"]) {
   const { ctx, page } = await newPage("desktop", { reducedMotion: motion });
-  await visit(page, "/contact");
-  await (await trigger(page, "/contact", "desktop")).click();
+  await visit(page, "/#contact");
+  await (await trigger(page, "/#contact")).click();
   await page.waitForSelector("dialog.resume[open]");
   const anim = await page.evaluate(() => {
     const s = getComputedStyle(document.querySelector("dialog.resume"));

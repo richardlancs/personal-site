@@ -1506,7 +1506,9 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 /* A large key: the page's one big action ("Email me", 56px) */
 .glass-lg {
   min-height: 56px;
-  padding: 0 2rem;
+  /* Capped by the screen, so very large text on a small phone keeps room
+     for the label */
+  padding: 0 min(2rem, 5vw);
   gap: 0.75rem;
   font-size: 1.125rem;
 }
@@ -1515,6 +1517,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
    reading from the left on phones, as wide as their words from 480px */
 .profile-key {
   justify-content: flex-start;
+  padding-inline: min(1rem, 4vw);
 }
 
 @media (min-width: 480px) {

@@ -1,15 +1,15 @@
-// Composited contrast of the words on the glass buttons (the corner
-// controls, the home page's actions, a project's links, the bench tabs,
-// the cabinets, the timetable's lines and the notebook's page turns, each
-// as it is and chosen or disabled) and of the name,
-// over every weather and daylight (the ?sky= preview: `next dev` only).
-// For each control the words are hidden, the control is
-// photographed as drawn over the live scene, and the darkest pixels under
-// it (1st percentile, so a stray anti-aliased edge doesn't count) are
-// measured against its text colours.
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-contrast.mjs http://localhost:3130 [desktop|phone] [route=/]
-// Each route measures the targets it has: / (corner, name, actions),
-// /projects, /interests, /experience, /about.
+// Composited contrast of the words on the glass keys of the one-page city
+// (the top bar's keys, the hero's two ways in, a project's keys, Contact's
+// "Email me", Copy and profile keys), over every weather and daylight
+// (the ?sky= preview: `next dev` only). For each key the words are hidden,
+// the key is photographed as drawn over the live page, and the pixels
+// under it that are worst for its words (the darkest 1% under dark words,
+// the lightest 1% under light ones, so a stray anti-aliased edge doesn't
+// count) are measured against its text colour. Exits 1 under 4.5:1.
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-contrast.mjs http://localhost:3101 [desktop|phone] [route=/]
+// Round 2 (20 November 2026): rewritten for the black palette; the park's
+// targets (corner controls, bench tabs, cabinets, timetable, notebook)
+// and its slate ink are gone.
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3130", view = "desktop", route = "/"] = process.argv.slice(2);
@@ -20,25 +20,21 @@ const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
 const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 const ratio = (a, b) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
-// The words each target carries, and their colours
+// The words each target carries: --text on the glass, --ink on the
+// lantern of a primary key (city.css)
+const TEXT = { text: "#e6e9ee" };
+const INK = { ink: "#08090c" };
 const targets = [
-  { name: "back", sel: '.world-controls > a.glass', ink: { slate: "#203245" } },
-  { name: "sections", sel: '.world-controls [popovertarget="places-menu"]', ink: { slate: "#203245" } },
-  { name: "still", sel: ".world-controls .glass-icon >> nth=0", ink: { slate: "#203245" } },
-  // Glass on the page: a project's links (the home page's introduction
-  // and the time and weather: intro-contrast.mjs, which measures cream
-  // words too)
-  { name: "project", sel: ".project-links .glass >> nth=0", ink: { slate: "#203245" } },
-  // The tabs and choices over the scene, and the page turns on their paper
-  { name: "bench", sel: '.bench-tab[aria-selected="false"]', ink: { slate: "#203245" } },
-  { name: "bench-chosen", sel: '.bench-tab[aria-selected="true"]', ink: { slate: "#203245" } },
-  { name: "cabinet", sel: '.cabinet-button[aria-selected="false"]', ink: { slate: "#203245" } },
-  { name: "cabinet-chosen", sel: '.cabinet-button[aria-selected="true"]', ink: { slate: "#203245" } },
-  { name: "line", sel: '.timetable-line[aria-pressed="false"]', ink: { slate: "#203245" } },
-  { name: "line-chosen", sel: '.timetable-line[aria-pressed="true"]', ink: { slate: "#203245" } },
-  { name: "turn", sel: '.notebook-turn:not([aria-disabled="true"])', ink: { slate: "#203245" } },
-  { name: "turn-disabled", sel: '.notebook-turn[aria-disabled="true"]', ink: { muted: "#45474a" } },
+  { name: "sections", sel: '.top-bar [popovertarget="places-menu"]', ink: TEXT },
+  { name: "view-projects", sel: ".hero-actions .glass-primary", ink: INK },
+  { name: "contact-key", sel: ".hero-actions .glass:not(.glass-primary)", ink: TEXT },
+  { name: "live-demo", sel: "#projects article .glass-primary >> nth=0", ink: INK },
+  { name: "code", sel: "#projects article a.glass:not(.glass-primary) >> nth=0", ink: TEXT },
+  { name: "email-me", sel: "#contact .glass-lg", ink: INK },
+  { name: "copy", sel: "#contact button.glass >> nth=0", ink: TEXT },
+  { name: "profile-key", sel: "#contact .profile-key >> nth=0", ink: TEXT },
 ];
+const dark = (h) => lum(hex(h)) < 0.18;
 
 const browser = await launch();
 const ctx = await browser.newContext({ viewport: phone ? { width: 390, height: 844 } : { width: 1440, height: 900 }, deviceScaleFactor: 1, isMobile: phone, hasTouch: phone });
@@ -59,10 +55,10 @@ const rows = [];
 for (const preset of presets) {
   for (const phase of phases) {
     await page.goto(`${base}${route}?sky=${preset}-${phase}`, { waitUntil: "load" });
-    await page.waitForFunction(() => document.querySelector(".world3d")?.getAttribute("data-arrived") === "true", null, { timeout: 30000 }).catch(() => {});
-    await page.waitForTimeout(2500);
+    await page.waitForFunction(() => document.documentElement.hasAttribute("data-sky-ready"), null, { timeout: 30000 }).catch(() => {});
+    await page.waitForTimeout(1500);
     // Hide the words (and icons), keep everything behind them
-    await page.addStyleTag({ content: ".glass, .glass *, .park-name { color: transparent !important; } .glass svg, .rh-blank, .bench-tab-lamp, .cabinet-button-screen { visibility: hidden !important; }" });
+    await page.addStyleTag({ content: ".glass, .glass * { color: transparent !important; } .glass svg { visibility: hidden !important; }" });
     await page.waitForTimeout(150);
     const row = { sky: `${preset}-${phase}` };
     for (const t of targets) {
@@ -76,8 +72,9 @@ for (const preset of presets) {
       const ls = [];
       for (let i = 0; i < data.length; i += 4) ls.push(lum([data[i], data[i + 1], data[i + 2]]));
       ls.sort((a, b) => a - b);
-      const dark = ls[Math.floor(ls.length * 0.01)];
-      row[t.name] = Object.fromEntries(Object.entries(t.ink).map(([k, v]) => [k, +ratio(lum(hex(v)), dark).toFixed(2)]));
+      const darkest = ls[Math.floor(ls.length * 0.01)];
+      const lightest = ls[Math.min(ls.length - 1, Math.floor(ls.length * 0.99))];
+      row[t.name] = Object.fromEntries(Object.entries(t.ink).map(([k, v]) => [k, +ratio(lum(hex(v)), dark(v) ? darkest : lightest).toFixed(2)]));
     }
     rows.push(row);
     console.log(JSON.stringify(row));
@@ -94,3 +91,7 @@ for (const row of rows)
         if (!worst[key] || c < worst[key].c) worst[key] = { c, sky: row.sky };
       }
 console.log(`worst (${view} ${route}):`, JSON.stringify(worst));
+const low = Object.entries(worst).filter(([, w]) => w.c < 4.5);
+for (const [k, w] of low) console.log(`FAIL ${k} ${w.c}:1 at ${w.sky}`);
+if (!Object.keys(worst).length) console.log("FAIL nothing measured");
+process.exit(low.length || !Object.keys(worst).length ? 1 : 0);

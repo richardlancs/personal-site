@@ -112,7 +112,7 @@ export default function Projects() {
                 {/* One line each: a long gloss ends in an ellipsis (the
                     whole summary is in the row) */}
                 <span className="flex min-w-0 items-baseline gap-2">
-                  <span className="shrink-0 font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
+                  <span className="max-w-full shrink-0 break-words font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
                     {project.title}
                   </span>
                   <span className="min-w-0 truncate text-muted"> {gloss(project.summary)}</span>

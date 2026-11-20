@@ -35,7 +35,7 @@ const primary = profile.emails[0];
 
 export default function Contact() {
   return (
-    <div className="contact mx-auto mt-10 w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-5 py-8 sm:px-10 sm:py-10">
+    <div className="contact mx-auto mt-10 w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 sm:px-10 sm:py-10">
       <a
         href={`mailto:${primary.address}`}
         className="glass glass-primary glass-lg w-full min-[480px]:w-auto"

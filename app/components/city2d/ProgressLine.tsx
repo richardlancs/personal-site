@@ -101,6 +101,10 @@ export default function ProgressLine() {
       const value = step ? now : shown(p);
       const wasLocked = lock;
       lock = lockedAt(p);
+      // Locked onto a point is reached: the point lights and its label
+      // turns bold as the fill lands on it (reached's dead zone then holds
+      // it while the page eases back off it)
+      if (lock !== null && !step) now = lock;
       const moving = settled && !step && before >= 0;
       // A move this large since the last frame is a fast scroll
       const fast = lastP >= 0 && Math.abs(p - lastP) > FAST;

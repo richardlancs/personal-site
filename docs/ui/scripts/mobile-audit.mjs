@@ -362,7 +362,10 @@ const covers = () => {
     if (!n.textContent.trim() || !el || skip(el)) continue;
     const range = document.createRange();
     range.selectNodeContents(n);
-    if ([...range.getClientRects()].some((r) => r.width > 0 && hit(r))) out.push(`text ${label(el)}`);
+    // Text cut off by its own box (an ellipsis) only counts where it shows
+    const box = getComputedStyle(el).overflowX !== "visible" ? el.getBoundingClientRect() : null;
+    const clip = (r) => (box ? { left: Math.max(r.left, box.left), right: Math.min(r.right, box.right), top: Math.max(r.top, box.top), bottom: Math.min(r.bottom, box.bottom), width: Math.min(r.right, box.right) - Math.max(r.left, box.left) } : r);
+    if ([...range.getClientRects()].map(clip).some((r) => r.width > 0 && hit(r))) out.push(`text ${label(el)}`);
   }
   return out;
 };
