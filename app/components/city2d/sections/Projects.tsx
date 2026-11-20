@@ -132,7 +132,7 @@ export default function Projects() {
         );
       })}
 
-      <section id="skills" aria-labelledby="skills-title" className="mt-6 break-words">
+      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="mt-6 break-words">
         <h3 id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
         </h3>

@@ -447,6 +447,17 @@ button.text-link,
   letter-spacing: 0.02em;
 }
 
+/* Where you are: a filled dot at the end of the entry, as well as the
+   chosen glass (aria-current="location"), so not by colour alone */
+.sections-menu-here {
+  width: 0.5rem;
+  height: 0.5rem;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 0 2px var(--ink), 0 0 0 3px var(--cyan);
+}
+
 /* A section's part (Skills, under Projects): set in under it */
 .sections-menu .sections-menu-sub {
   width: calc(100% - 1.25rem);
@@ -532,8 +543,10 @@ a[data-resume][data-opening] {
   --ground: var(--ink-2);
 }
 
-/* It takes focus only so the Sections menu can hand focus to it */
-.station:focus {
+/* Stations, Skills and the page's content take focus only so a jump can
+   hand focus to them (SectionsMenu, MetroLine): no ring on them, even
+   when Chrome counts a programmatic focus after a key press as visible */
+[tabindex="-1"]:focus {
   outline: none;
 }
 
@@ -801,6 +814,196 @@ a[data-resume][data-opening] {
   font-size: 1.125rem;
 }
 
+/* ---------- The list of stations (components/city2d/StationIndex.tsx) ----------
+   In the hero, under its links: the five stops after home as glass keys,
+   each with its number. */
+
+.station-index {
+  margin-top: 2.25rem;
+}
+
+.station-index ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.station-index .glass {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.station-index-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- The metro line (components/city2d/MetroLine.tsx) ----------
+   Fixed at the bottom right, clear of a home bar and rounded corners. On
+   screens whose right margin holds it (from 97rem: the 72rem column plus
+   two margins of 12.5rem) it is the open line; otherwise a pill that
+   opens the line above it. Hidden under 480px, where the hero's list of
+   stations and the Sections menu serve. On its own near-solid ground,
+   like the top bar, so its names never sit on a painting. */
+
+.metro-line {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  z-index: 30;
+}
+
+@media (max-width: 479px) {
+  .metro-line {
+    display: none;
+  }
+}
+
+.metro-pill {
+  --tint: rgb(12 21 38 / 0.9);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.metro-pill-number {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.metro-stops {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.5rem);
+  width: max-content;
+  max-height: calc(100svh - var(--bar-h) - 5.5rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0.5rem 1rem 0.5rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgb(12 21 38 / 0.92);
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
+  /* Folded: out of sight, and out of the tab order until opened */
+  visibility: hidden;
+  opacity: 0;
+  translate: 0 4px;
+  transition:
+    opacity 0.2s ease,
+    translate 0.2s ease,
+    visibility 0.2s;
+}
+
+/* The gap between the pill and the open line still counts as over it */
+.metro-stops::after {
+  content: "";
+  position: absolute;
+  inset: 100% 0 auto;
+  height: 0.5rem;
+}
+
+.metro-line[data-open] .metro-stops,
+.metro-line:focus-within .metro-stops {
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+}
+
+@media (hover: hover) {
+  .metro-line:hover .metro-stops {
+    visibility: visible;
+    opacity: 1;
+    translate: 0 0;
+  }
+
+  .metro-stop:hover .metro-name {
+    color: var(--text);
+  }
+}
+
+/* The line itself, through the middle of the rings */
+ol.metro-stops::before {
+  content: "";
+  position: absolute;
+  top: calc(0.5rem + 22px);
+  bottom: calc(0.5rem + 22px);
+  left: calc(0.75rem + 0.5rem + 5px);
+  width: 2px;
+  background: var(--line);
+}
+
+.metro-stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 44px;
+  padding: 0 0.5rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.metro-ring {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--muted);
+  border-radius: 50%;
+  background: var(--ink);
+}
+
+.metro-name {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* Where you are: a filled ring, ringed again, and a bolder, brighter name */
+.metro-stop[aria-current="location"] .metro-ring {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  box-shadow:
+    0 0 0 3px var(--ink),
+    0 0 0 4px var(--cyan);
+}
+
+.metro-stop[aria-current="location"] .metro-name {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* A wide screen's margin holds the open line: no pill */
+@media (min-width: 97rem) {
+  .metro-pill {
+    display: none;
+  }
+
+  .metro-stops {
+    position: static;
+    visibility: visible;
+    opacity: 1;
+    translate: none;
+    border-color: transparent;
+    background: rgb(12 21 38 / 0.72);
+    box-shadow: none;
+  }
+}
+
+:root[data-still="on"] .metro-stops {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) .metro-stops {
+    transition: none;
+  }
+}
+
 /* ---------- The sections' shared pieces ---------- */
 
 /* Short points, each with an amber dash in the margin (About) */
@@ -978,7 +1181,7 @@ a[data-resume][data-opening] {
   }
 }
 
-.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
   /* A chosen primary loses its amber fill, so its label goes back to text */
   --glass-ink: var(--text);
   --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
@@ -998,7 +1201,7 @@ a[data-resume][data-opening] {
 
 /* Forced colours drop the fill and the shade: a heavier edge says chosen */
 @media (forced-colors: active) {
-  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [data-copied]) {
+  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
     border-width: 3px;
   }
 }

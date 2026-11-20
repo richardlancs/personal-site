@@ -149,9 +149,12 @@ const shareCard = {
   alt: "Richard Lan, CS student at the University of Waterloo: software engineering portfolio, over a painting of an overgrown park in autumn light.",
 };
 
-// Page metadata, from the registry: its title and description, its
-// canonical address, and the same for share cards.
-export const sectionMetadata = (id: SectionId): Metadata => {
+// The page's metadata, from the registry: its title and description, its
+// canonical address, and the same for share cards. Only for home: every
+// other section is an anchor on the same page, and an anchor ("/#about")
+// is never a canonical address. (The other sections' `metadata` is kept
+// for the 3D city's own pages, a later plan, which will read it.)
+export const sectionMetadata = (id: "home"): Metadata => {
   const s = section(id);
   const title = s.id === "home" ? s.metadata.title : `${s.metadata.title} | ${siteName}`;
   return {

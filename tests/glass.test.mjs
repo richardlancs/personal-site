@@ -68,15 +68,16 @@ test("the Sections menu's entries and the top bar's keys are glass", () => {
   assert.equal((menu.match(/<Link [^>]*className="glass"/g) ?? []).length, 1, "one glass entry per listed section");
   assert.equal((menu.match(/<Link [^>]*className="glass sections-menu-sub"/g) ?? []).length, 1, "and one per section's part (Skills)");
   // One page: an entry is a jump within it, not a route, so nothing is
-  // marked chosen by the address (where you are comes with the metro line)
-  assert.doesNotMatch(menu, /aria-current/);
+  // marked chosen by the address; where you are comes from the scroll
+  assert.doesNotMatch(menu, /aria-current="page"/);
+  assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/);
   assert.equal((menu.match(/onClick=\{go\((s|sub)\.href\)\}/g) ?? []).length, 2, "every entry jumps and hands focus on");
   const bar = readFileSync(`${root}app/components/city2d/TopBar.tsx`, "utf8");
   assert.match(bar, /<button type="button" popoverTarget="places-menu" className="glass top-bar-sections">/);
 });
 
 test("the states: chosen, disabled and focus, the same on every glass control", () => {
-  const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\], \[aria-selected="true"\], \[aria-current="page"\], \[data-copied\]\),?[^{]*\{([^}]*)\}/)?.[1];
+  const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\], \[aria-selected="true"\], \[aria-current="page"\], \[aria-current="location"\], \[aria-expanded="true"\], \[data-copied\]\),?[^{]*\{([^}]*)\}/)?.[1];
   assert.ok(chosen, "one rule for every chosen state");
   assert.match(chosen, /border-color: var\(--cyan\)/);
   // Pressed in: a shade inside, a doubled edge. Not colour alone.

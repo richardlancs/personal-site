@@ -95,15 +95,17 @@ test("the band reserves its height: 21:9 wide, 4:3 on phones", () => {
 
 test("the Sections menu jumps within the page and moves focus there", () => {
   const menu = read("app/components/city2d/SectionsMenu.tsx");
-  assert.doesNotMatch(menu, /aria-current|usePathname/, "no route-based chosen state on a one-page site");
-  assert.match(menu, /\.focus\(/);
+  assert.doesNotMatch(menu, /usePathname|aria-current="page"/, "no route-based chosen state on a one-page site");
+  assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/, "where you are, from the scroll");
+  assert.match(menu, /focusAnchor\(href\)/);
+  assert.match(read("app/components/city2d/jump.ts"), /\.focus\(/);
   assert.match(menu, /hidePopover\(\)/);
 });
 
 test("a tall top bar stops being sticky, and jumps still clear it", () => {
   const menu = read("app/components/city2d/SectionsMenu.tsx");
   assert.match(menu, /data-bar-tall/);
-  assert.match(menu, /innerHeight \/ 4/);
+  assert.match(menu, /innerHeight \* 0\.25/);
   const css = read("app/city.css");
   assert.match(css, /:root\[data-bar-tall\] \.top-bar \{[^}]*position: static/);
   assert.match(css, /:root\[data-bar-tall\] \{[^}]*--scroll-offset:/);

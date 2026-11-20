@@ -1,3 +1,4 @@
+import MetroLine from "./components/city2d/MetroLine";
 import Station from "./components/city2d/Station";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
@@ -36,6 +37,8 @@ export default function Home() {
       <footer className="page-foot">
         <Colophon />
       </footer>
+      {/* Where you are on the line, fixed at the bottom right */}
+      <MetroLine />
     </main>
   );
 }
