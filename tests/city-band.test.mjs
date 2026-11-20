@@ -44,8 +44,11 @@ test("the band keeps its gradient when a plate fails, and has a no-script plate"
   assert.match(src, /alt=""/);
   assert.doesNotMatch(src, /alt="[^"]+"/, "every plate is decorative");
   assert.match(src, /platesNeeded\(/, "only the plates in use are mounted");
-  assert.match(src, /sizes: BAND_SIZES/);
-  // (max-width: 767px) 175vw, 100vw: the phone crop asks for a wide enough plate
+  // The home band: (max-width: 767px) 175vw, 100vw, so the phone crop asks
+  // for a wide enough plate; the bands below ask for the screen's width
+  // (a phone-sized file on a phone)
+  assert.match(src, /sizes: priority \? BAND_SIZES : BELOW_SIZES/);
+  assert.match(read("app/components/city2d/plates.ts"), /export const BELOW_SIZES = "100vw";/);
   assert.match(read("app/components/city2d/plates.ts"), /BAND_WIDTH = \{ phoneMax: 767, phoneScale: 1\.75 \}/);
   // No blurred stand-in to snap out of: the plate fades in once loaded
   assert.doesNotMatch(src, /placeholder="blur"/);

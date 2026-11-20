@@ -46,6 +46,13 @@ export const focal: Record<DistrictId, string> = {
 export const BAND_WIDTH = { phoneMax: 767, phoneScale: 1.75 } as const;
 export const BAND_SIZES = `(max-width: ${BAND_WIDTH.phoneMax}px) ${BAND_WIDTH.phoneScale * 100}vw, 100vw`;
 
+// The bands below the first ask for a file the screen's width, not the
+// crop's, on phones too: a phone's high pixel ratio then picks a file
+// about 1,200px wide (not 1,920), a little softer in the crop and about
+// half the bytes. They are decoration under the page's words; only the
+// home band, the page's largest paint, is drawn at full sharpness.
+export const BELOW_SIZES = "100vw";
+
 // The home band's plate is the page's largest paint, so it is asked for a
 // little lighter: the head script's srcset (layout.tsx) and the band's own
 // <img> both use it (next.config.ts allows it)

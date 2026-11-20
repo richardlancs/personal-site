@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { world } from "../world3d/store";
 import { loadResume, ResumeError, type Resume } from "./pdf";
 import ResumePage from "./ResumePage";
 import "./resume.css";
@@ -143,7 +142,6 @@ export default function ResumeViewer({ open, src, onClosed }: Props) {
       closing.current = false;
       el.removeAttribute("data-closing");
       lockScroll();
-      world.set({ covered: true });
       el.showModal();
       // Into the document itself, so the arrow keys and Page Down scroll it
       doc.current?.scrollTo(0, 0);
@@ -161,11 +159,10 @@ export default function ResumeViewer({ open, src, onClosed }: Props) {
     const onClose = () => {
       el.removeAttribute("data-closing");
       unlockScroll();
-      world.set({ covered: false });
       onClosed();
     };
-    // Escape closes the viewer and nothing else: the site's own Escape
-    // ("back to the park", WorldControls.tsx) mustn't also see it
+    // Escape closes the viewer and nothing else: no other Escape on the
+    // page (the Sections menu's) may also see it
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
@@ -210,7 +207,6 @@ export default function ResumeViewer({ open, src, onClosed }: Props) {
   useEffect(
     () => () => {
       unlockScroll();
-      world.set({ covered: false });
     },
     [],
   );

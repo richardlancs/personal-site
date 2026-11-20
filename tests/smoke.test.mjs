@@ -128,9 +128,11 @@ test("every contact address and the résumé are in the contact station", { skip
   assert.ok(body.includes(`href="${profile.resumeUrl}"`), "contact: résumé");
 });
 
-test("every station's content is in its own station's HTML, not just its titles (review m-11)", { skip }, async () => {
+test("every station's content is in its own station's HTML, not just its titles (review m-11), its figures in bold", { skip }, async () => {
   const where = { about: await station("about"), projects: await station("projects"), experience: await station("experience"), interests: await station("interests"), contact: await station("contact") };
-  const has = (id, text, what) => assert.ok(where[id].includes(html(text)), `${id}: ${what}: ${text}`);
+  // Figures are set in <strong class="figure"> (Figures.tsx): read the text through them
+  const plain = (id) => where[id].replace(/<strong class="figure">([^<]*)<\/strong>/g, "$1");
+  const has = (id, text, what) => assert.ok(plain(id).includes(html(text)), `${id}: ${what}: ${text}`);
   for (const entry of about) {
     has("about", entry.heading, "heading");
     for (const point of entry.points) has("about", point, "point");
@@ -140,7 +142,7 @@ test("every station's content is in its own station's HTML, not just its titles 
     if (project.role) has("projects", project.role, `${project.title} role`);
     for (const feature of project.features) has("projects", feature, `${project.title} feature`);
     for (const contribution of project.contributions ?? []) has("projects", contribution, `${project.title} contribution`);
-    has("projects", project.technologies.join(", "), `${project.title} technologies`);
+    has("projects", project.technologies.join(" · "), `${project.title} technologies`);
     for (const shot of project.screenshots ?? []) has("projects", shot.alt, `${project.title} screenshot`);
     assert.ok(where.projects.includes(`href="${project.githubUrl}"`), `projects: ${project.title} code`);
     if (project.liveUrl) assert.ok(where.projects.includes(`href="${project.liveUrl}"`), `projects: ${project.title} demo`);
@@ -154,6 +156,7 @@ test("every station's content is in its own station's HTML, not just its titles 
     for (const highlight of stop.highlights) has("experience", highlight, `${stop.role} highlight`);
   }
   for (const interest of interests) has("interests", interest.description, `${interest.name} description`);
+  assert.ok(where.projects.includes('<strong class="figure">100,000</strong>'), "a figure is bold in the served HTML");
   for (const email of profile.emails) {
     has("contact", email.label, "email label");
     has("contact", email.address, "email address");

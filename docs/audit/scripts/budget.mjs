@@ -30,8 +30,13 @@ const dir = process.argv[2] || ".next";
 // 198,092 then (finish pass), so this is about 1.4% headroom: growth past
 // the old home is a decision, not an accident.
 const HOME_JS_LIMIT = 200_848;
-// About 5% over the city's measurement (9,646, finish pass, 19 November 2026)
-const TOTAL_CSS_LIMIT = 10_100;
+// About 5% over the city's measurement after round 2 (10,247, round 2's
+// finish pass, 20 November 2026), set only after its dead CSS was gone:
+// the unused interest-card rules, and the utilities Tailwind made for the
+// unloaded park code, docs and tests (city.css, @source not). Round 2 had
+// grown it from 9,646 to 10,653 (the four rebuilt sections, the progress
+// line, figures, the list marker).
+const TOTAL_CSS_LIMIT = 10_760;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;

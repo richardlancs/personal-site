@@ -6,7 +6,7 @@ import { platesNeeded, type Plate } from "../../lib/cityLook";
 import type { DistrictId } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
 import { paintedHomePlate } from "./homePlate";
-import { BAND_SIZES, HOME_QUALITY, focal, plates } from "./plates";
+import { BAND_SIZES, BELOW_SIZES, HOME_QUALITY, focal, plates } from "./plates";
 import { useNear } from "./useNear";
 import WeatherOverlay from "./WeatherOverlay";
 
@@ -59,7 +59,7 @@ export default function DistrictBand({ district, priority = false }: { district:
       {shown.map((plate) => (
         <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
-            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: pair[plate], sizes: BAND_SIZES, quality: priority ? HOME_QUALITY : undefined })}
+            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: pair[plate], sizes: priority ? BAND_SIZES : BELOW_SIZES, quality: priority ? HOME_QUALITY : undefined })}
             alt=""
             fill
             loading={priority ? "eager" : undefined}

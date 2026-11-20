@@ -2,41 +2,44 @@
 
 My personal portfolio site. I'm a Computer Science student at the University of Waterloo looking for software engineering internship and co-op roles. The site covers who I am, what I've built, my experience, and how to reach me.
 
+The site is one dark page in six sections (Home, About, Projects with Skills, Experience, Interests, Contact). Each section opens under a band of painting of a city street, by day or by night as the clock in Richmond Hill, Ontario has it, with that day's weather over it. A line in the margin (or along the top bar on narrower screens) follows the page and marks the section you're at.
+
 ## Tech stack
 
 | Area      | Tools                                                   |
 | --------- | ------------------------------------------------------- |
 | Framework | [Next.js 16](https://nextjs.org) (App Router), React 19 |
 | Language  | TypeScript                                              |
-| Styling   | Tailwind CSS v4 with CSS custom properties for theming  |
-| Tooling   | ESLint, Turbopack                                       |
+| Styling   | Tailwind CSS v4 and one stylesheet of design tokens     |
+| Tests     | `node --test`, plus Playwright-driven audit scripts     |
 
-No UI libraries or icon packs: every component and animation is written by hand.
+No UI libraries or icon packs. There is one theme (dark) and no theme toggle.
 
-## Highlights
-
-- **Content separate from code.** Everything on the page (bio, projects, experience, skills, contact links) lives in [`app/data/portfolio.ts`](app/data/portfolio.ts). Updating the portfolio means editing data, not components.
-- **Light and dark themes with no flash.** A tiny inline script in [`app/layout.tsx`](app/layout.tsx) applies the saved theme before the first paint, so returning visitors never see the wrong theme flicker in. The choice is saved in `localStorage`.
-- **Smooth theme switching.** Colors fade between themes, and the toggle icon morphs from a sun into a crescent moon using SVG masks and CSS transforms ([`ThemeToggle.tsx`](app/components/ThemeToggle.tsx)).
-- **One set of color tokens.** All colors are CSS variables in [`app/globals.css`](app/globals.css), exposed to Tailwind through `@theme`. Restyling the whole site means changing a handful of values.
-- **Subtle motion.** Sections fade in as they scroll into view (an `IntersectionObserver` in [`Reveal.tsx`](app/components/Reveal.tsx)), and buttons grow slightly on hover.
-- **Accessible by default.** Semantic HTML, visible keyboard focus rings, and every animation turns off for visitors whose system asks for reduced motion.
-- **Static and fast.** The page is prerendered to static HTML at build time.
-
-## Project structure
+## Where things are
 
 ```
 app/
-├── components/      # One file per section (Hero, About, Projects, ...) plus shared pieces
-│   ├── Section.tsx  # Shared layout every section uses
-│   ├── Reveal.tsx   # Fade-in-on-scroll wrapper
-│   └── ThemeToggle.tsx
-├── data/
-│   └── portfolio.ts # All site content
-├── globals.css      # Color tokens, themes, and animations
-├── layout.tsx       # HTML shell, metadata, and the no-flash theme script
-└── page.tsx         # Puts the sections together
+├── page.tsx                 # The one page: six sections, in order
+├── layout.tsx               # HTML shell, fonts, metadata, the top bar
+├── city.css                 # Tokens, the bands, the progress line, glass keys
+├── data/portfolio.ts        # All the content: profile, projects, experience, …
+├── sections/registry.ts     # The sections: anchors, titles, which painting
+├── lib/                     # Pure helpers (the sky, the progress line, figures, …)
+├── assets/city/             # The paintings, a day and a night plate per section
+└── components/
+    ├── city2d/              # The page: sections, bands, the top bar, the line
+    │   └── sections/        # One component per section
+    ├── resume/              # The in-page résumé viewer
+    └── weather/             # Richmond Hill's time and weather
+public/
+├── projects/                # Project screenshots
+├── interests/<interest>/    # Photos for an interest (shown by themselves)
+└── resume/                  # The résumé PDF
+docs/                        # How-tos, the style guide, audits and their scripts
+tests/                       # Unit and source-level tests; smoke tests need a server
 ```
+
+The older 3D park (`app/components/world3d/`, `world/`, `locations/`) is still in the tree but is not loaded by the page.
 
 ## Running locally
 
@@ -44,29 +47,42 @@ Requires Node.js 20 or newer.
 
 ```bash
 npm install
-npm run dev
+npm run dev          # then open http://localhost:3000
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+If a style change doesn't show up, stop the server, `rm -rf .next`, and start it again: the dev server can serve an old stylesheet.
 
-Other scripts:
+In development, `?sky=<weather>-<daylight>` previews a sky, for example `/?sky=rain-night` or `/?sky=clear-dusk-0.8`.
+
+## Checking it
 
 ```bash
-npm run build   # production build
-npm run start   # serve the production build
-npm run lint    # run ESLint
+npm run lint
+npm test                 # unit and source tests (smoke tests skip without a server)
+npx tsc --noEmit
+
+rm -rf .next && npm run build && npx next start -p 3100
+SMOKE_URL=http://localhost:3100 npm test                 # the smoke tests, against the build
+node docs/audit/scripts/budget.mjs                       # JavaScript and CSS size budgets
+```
+
+The browser audits need an installed Playwright (see `docs/audit/scripts/pw.mjs`; point `PLAYWRIGHT` at its `index.mjs`):
+
+```bash
+node docs/ui/scripts/palette-contrast.mjs                         # the palette's text contrast
+node docs/ui/scripts/city-contrast.mjs http://localhost:3101      # every word over every sky (next dev)
+node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 out/  # phones to desktop, 200% text
+node docs/audit/scripts/lighthouse.mjs http://localhost:3100/ out/ 3 mobile
 ```
 
 ## Updating content
 
-1. Open [`app/data/portfolio.ts`](app/data/portfolio.ts).
-2. Edit the `profile`, `about`, `projects`, `experience`, or `skillGroups` values.
-3. Save. The dev server reloads the page automatically.
-
-To add a project, add another object to the `projects` array. It shows up in the Projects section with no other changes.
+- Text: edit [`app/data/portfolio.ts`](app/data/portfolio.ts) (`profile`, `about`, `projects`, `experience`, `interests`, `skillGroups`). The page picks it up; no component needs editing. Figures in the text are set in bold by themselves.
+- A project's screenshots go in `public/projects/`; list them on the project, and `cover` picks the one shown first.
+- Photos for an interest: drop them into `public/interests/<interest>/` ([how](docs/adding-interest-photos.md)).
+- The résumé: replace the PDF in `public/resume/`.
+- A new section: [docs/adding-a-section.md](docs/adding-a-section.md).
 
 ## Contact
 
-- Email: [r6lan@uwaterloo.ca](mailto:r6lan@uwaterloo.ca)
-- GitHub: [@richardlancs](https://github.com/richardlancs)
-- LinkedIn: [Richard Lan](https://www.linkedin.com/in/richard-lan-0312072a8)
+GitHub, LinkedIn and email are on the site's Contact section.

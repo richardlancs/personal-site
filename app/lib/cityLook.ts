@@ -30,8 +30,22 @@ export function platesNeeded(blend: number): Plate[] {
 const LANTERN = "#f4b860";
 const CYAN = "#4fd8ee";
 
-// The most a colour grade lies over a plate, at the middle of twilight
+// The most a colour grade lies over a plate: the warm one at golden hour,
+// the blue one at blue hour
 const GRADE_PEAK = 0.35;
+const BLUE_PEAK = 0.3;
+// Where in dusk the golden hour ends and the blue hour begins (dawn runs
+// the other way: blue first, then gold)
+const TURN = 0.55;
+
+/** The twilight grade: golden hour, then blue hour (at dusk; the reverse at dawn), each rising and falling on a half sine, so the colour changes only where the grade is nothing. */
+export function twilightGrade(daylight: Daylight, progress: number): { color: string; mix: number } {
+  if (daylight !== "dawn" && daylight !== "dusk") return { color: CYAN, mix: 0 };
+  // How far from day toward night: dusk runs day to night, dawn night to day
+  const p = daylight === "dusk" ? clamp01(progress) : 1 - clamp01(progress);
+  if (p < TURN) return { color: LANTERN, mix: GRADE_PEAK * Math.sin((Math.PI * p) / TURN) };
+  return { color: CYAN, mix: BLUE_PEAK * Math.sin((Math.PI * (p - TURN)) / (1 - TURN)) };
+}
 
 const HAZE: Record<WeatherPreset, number> = { clear: 0, neutral: 0.1, cloudy: 0.45, rain: 0.55, snow: 0.5 };
 
@@ -40,17 +54,15 @@ export function cityVars(sky: Pick<SkyState, "preset" | "daylight" | "progress">
   data: { daylight: Daylight; weather: WeatherPreset };
   vars: { "--city-night": string; "--city-grade": string; "--city-grade-mix": string; "--city-haze": string };
 } {
-  const twilight = sky.daylight === "dawn" || sky.daylight === "dusk";
-  // Warm through dawn and dusk, rising and falling on a half sine so it
-  // arrives and leaves without a step; nothing over full day or night
-  const mix = twilight ? GRADE_PEAK * Math.sin(Math.PI * clamp01(sky.progress)) : 0;
+  // Warm at golden hour, cyan at blue hour; nothing over full day or night
+  const grade = twilightGrade(sky.daylight, sky.progress);
   const round = (n: number) => String(Math.round(n * 1000) / 1000);
   return {
     data: { daylight: sky.daylight, weather: sky.preset },
     vars: {
       "--city-night": round(nightBlend(sky.daylight, sky.progress)),
-      "--city-grade": twilight ? LANTERN : CYAN,
-      "--city-grade-mix": round(mix),
+      "--city-grade": grade.color,
+      "--city-grade-mix": round(grade.mix),
       "--city-haze": String(HAZE[sky.preset] ?? HAZE.neutral),
     },
   };

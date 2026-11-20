@@ -30,15 +30,6 @@ const read = (path) => readFileSync(root + path, "utf8");
 const finite01 = (c) => c.every((x) => Number.isFinite(x) && x >= 0 && x <= 1);
 const dist = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
 
-// WCAG relative luminance and contrast, on sRGB 0..1
-const lin = (x) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4);
-const L = (c) => 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
-const contrast = (a, b) => {
-  const [hi, lo] = [L(a), L(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-};
-const over = (fg, alpha, bg) => fg.map((x, i) => x * alpha + bg[i] * (1 - alpha));
-
 test("the park's places stay clear of the fog in every weather and at every hour", () => {
   // From the steps (scenes.ts: park.home) to the station's sign, the
   // farthest place, about 63 m, and the arcade's and workshop's, about 46
@@ -133,22 +124,6 @@ test("indoors the weather reaches the room's air less than the sky outside", () 
   const inside = fogColor([0, 0, 0], base, d, w, true);
   const outside = fogColor([0, 0, 0], base, d, w, false);
   assert.ok(dist(inside, base) < dist(outside, base));
-});
-
-test("the words over the open sky keep 4.5:1 on their haze in every sky", () => {
-  // globals.css: the introduction's haze is cream at 0.93 at its middle;
-  // --muted is the quietest text on it
-  const cream = hexToRGB("#fff9f2");
-  const muted = hexToRGB("#45474a");
-  for (const p of WEATHER_PRESETS)
-    for (const ph of DAYLIGHTS) {
-      const d = daylightLook(newDaylight(), ph, 1);
-      const w = weatherLook(newWeather(), p);
-      for (const sky of [skyColor([0, 0, 0], d.top, w), skyColor([0, 0, 0], d.horizon, w)]) {
-        const haze = over(cream, 0.93, sky);
-        assert.ok(contrast(muted, haze) >= 4.5, `${p}/${ph}: ${contrast(muted, haze).toFixed(2)}`);
-      }
-    }
 });
 
 test("the preview's address form", () => {
