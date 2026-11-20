@@ -38,9 +38,10 @@ import { BUND } from "./bund.def";
 //   when the minute changes); trees and planters along the road;
 //   a glass kiosk lit cyan, scenery only (nothing here is clickable);
 //   the paving, wet in the rain, the lamps streaked on it;
-//   the railing on stone piers, a lamp on each, four near the eye carrying
-//   the place's four spot lights (scenes.ts: DISTRICT_LIGHTS.bund), the
-//   rest lit surfaces with a soft pool;
+//   the railing on stone piers, a lantern post on each, four near the eye
+//   carrying the place's four spot lights (scenes.ts: DISTRICT_LIGHTS.bund),
+//   the nearer ones' light pooled on the paving and all of them long in it
+//   after dark;
 //   the river (planar on the high tier, painted streaks of the far
 //   skyline's lights on every tier), a ferry (a mover), and across it the
 //   skyline with its four landmarks, the Pearl right of the middle.
@@ -140,7 +141,7 @@ function build(quality: Quality): Built {
   // the plate's promenade after dark: polished stone holding the night
   // sky's blue-grey everywhere, the lamps' warmth in their pools (the kit's
   // surface, its night glow; wetPaving's own is the same surface without it)
-  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.075 } });
+  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, snow: true, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.075 } });
   add(paving.mesh);
   disposers.push(paving.dispose);
   // ... and the lamps and the kiosk long in it, as the plate paints them in
@@ -210,9 +211,6 @@ function build(quality: Quality): Built {
   // the crowns on top
   const F = B.front;
   const back = 2.6;
-  // (floodlit after dark; the kit's stone relief carves pilasters, a
-  // cornice at every floor and a surround round each window, for the
-  // floodlight and the sun to rake across)
   const trim = litSurface({ color: STONE_TRIM, tone: "gold", strength: 0.5 });
   const roof = surface({ color: "#6d7a74", grime: 0.4 });
   const bodies: THREE.BufferGeometry[] = [];
@@ -225,6 +223,9 @@ function build(quality: Quality): Built {
   const BAY = 0.42;
   const FLOOR = 0.36;
   const GROUND = 0.46;
+  // (floodlit after dark; the kit's stone relief carves pilasters, a
+  // cornice at every floor and a surround round each window, for the
+  // floodlight and the sun to rake across)
   const stone = surface({ color: STONE, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.7 }, glow: { tone: SCENE_TONES.gold, strength: 0.34 } });
   const paneTurn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2); // facing -x, the river
   for (const b of B.buildings) {
