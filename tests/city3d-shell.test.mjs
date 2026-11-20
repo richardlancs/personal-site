@@ -138,10 +138,12 @@ test("arrival is set up again on every route, the previous observer let go, with
   assert.match(press, /const pathname = usePathname\(\);\s*useEffect\(\(\) => watchArrivals\(\), \[pathname\]\);/);
   const arrive = read("app/components/ui/arrive.ts");
   // The cleanup lets go of everything it started
-  assert.match(arrive, /return \(\) => \{\s*io\.disconnect\(\);\s*mo\.disconnect\(\);\s*window\.clearTimeout\(safety\);/);
+  assert.match(arrive, /return \(\) => \{\s*io\.disconnect\(\);\s*mo\.disconnect\(\);\s*window\.clearTimeout\(safety\);\s*window\.clearTimeout\(last\);\s*cancelAnimationFrame\(frame\);/);
   // Late content is taken in; anything on screen still waiting is shown
   assert.match(arrive, /new MutationObserver/);
-  assert.match(arrive, /setTimeout\(\(\) => \{\s*for \(const el of document\.querySelectorAll\("\.reveal:not\(\[data-arrived\]\)"\)\) if \(el\.getBoundingClientRect\(\)\.top < innerHeight\) el\.setAttribute\("data-arrived", ""\);/);
+  assert.match(arrive, /if \(\(all \|\| hydrated\(el\)\) && el\.getBoundingClientRect\(\)\.top < innerHeight\) el\.setAttribute\("data-arrived", ""\);/);
+  assert.match(arrive, /setTimeout\(\(\) => sweep\(false\), SAFETY_MS\)/);
+  assert.match(arrive, /setTimeout\(\(\) => sweep\(true\), LAST_MS\)/);
 });
 
 // Against a running server: each /city page's headings, one h1 and no

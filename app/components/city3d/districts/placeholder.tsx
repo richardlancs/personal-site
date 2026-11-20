@@ -11,7 +11,7 @@ import { scenes, type SceneId } from "../scenes";
 // its own component (standIn(id)), the same build with that place's
 // colour; the five loaders in sceneChunks.ts all come here for now.
 
-const GREYS = ["#4a4f58", "#5d636d", "#383c44"] as const;
+const GREYS = ["#5a606a", "#6f7680", "#4a4f58"] as const;
 
 // Three boxes, placed so the camera's home view (districts/*.def.ts) looks
 // between them: [x, z, w, d, h]
@@ -29,7 +29,7 @@ export function standIn(id: Exclude<SceneId, "lujiazui">): ComponentType<ScenePr
   const threshold = scenes[id].threshold;
   function StandIn() {
     const parts = useMemo(() => {
-      const ground = new THREE.MeshLambertMaterial({ color: "#23262c" });
+      const ground = new THREE.MeshLambertMaterial({ color: "#2c3038" });
       const greys = GREYS.map((color) => new THREE.MeshLambertMaterial({ color }));
       const strip = new THREE.MeshBasicMaterial({ color: new THREE.Color(threshold).multiplyScalar(2.2) });
       return { ground, greys, strip };

@@ -17,6 +17,7 @@
 // (The page scrolls the window on every route, the city's panel included,
 // so the viewport is the observer's root.)
 const SAFETY_MS = 900;
+const LAST_MS = 5000;
 
 export function watchArrivals() {
   const io = new IntersectionObserver(
@@ -29,15 +30,36 @@ export function watchArrivals() {
     },
     { rootMargin: "0px 0px -5% 0px" },
   );
+  // An item React hasn't hydrated yet (a route segment that streams in after
+  // the layout) is left alone until it has: marking it first would make
+  // its server HTML differ from what React expects. React tags each
+  // element it has hydrated with a "__reactFiber…" key; until then it is
+  // looked at again on the next frames (and the safety net has it anyway).
+  const hydrated = (el: Element) => Object.keys(el).some((k) => k.startsWith("__reactFiber"));
+  const waiting = new Set<Element>();
+  let frame = 0;
   const take = (el: Element) => {
+    if (!hydrated(el)) {
+      waiting.add(el);
+      frame ||= requestAnimationFrame(retry);
+      return;
+    }
+    waiting.delete(el);
     if (el.getBoundingClientRect().top < innerHeight) el.setAttribute("data-arrived", "");
     else io.observe(el);
   };
-  const takeAll = () => {
-    for (const el of document.querySelectorAll(".reveal:not([data-arrived])")) take(el);
+  // The page is marked ready (items may wait) only once nothing on the
+  // screen is still waiting to be hydrated, so nothing in view ever hides
+  const ready = () => {
+    if (![...waiting].some((el) => el.getBoundingClientRect().top < innerHeight)) document.documentElement.setAttribute("data-arrive", "");
   };
-  takeAll();
-  document.documentElement.setAttribute("data-arrive", "");
+  const retry = () => {
+    frame = 0;
+    for (const el of [...waiting]) take(el);
+    ready();
+  };
+  for (const el of document.querySelectorAll(".reveal:not([data-arrived])")) take(el);
+  ready();
   // Content that lands after this ran (a streamed or late route segment)
   const mo = new MutationObserver((records) => {
     for (const r of records)
@@ -48,13 +70,21 @@ export function watchArrivals() {
       }
   });
   mo.observe(document.body, { childList: true, subtree: true });
-  // The safety net: anything on screen or above it still waiting is shown
-  const safety = window.setTimeout(() => {
-    for (const el of document.querySelectorAll(".reveal:not([data-arrived])")) if (el.getBoundingClientRect().top < innerHeight) el.setAttribute("data-arrived", "");
-  }, SAFETY_MS);
+  // The safety net: anything on screen or above it still unmarked is
+  // shown. (Not yet hydrated, it is visible anyway: the page isn't marked
+  // ready while it waits in view. Past LAST_MS it is marked regardless.)
+  const sweep = (all: boolean) => {
+    for (const el of document.querySelectorAll(".reveal:not([data-arrived])")) if ((all || hydrated(el)) && el.getBoundingClientRect().top < innerHeight) el.setAttribute("data-arrived", "");
+    if (all) document.documentElement.setAttribute("data-arrive", "");
+    else ready();
+  };
+  const safety = window.setTimeout(() => sweep(false), SAFETY_MS);
+  const last = window.setTimeout(() => sweep(true), LAST_MS);
   return () => {
     io.disconnect();
     mo.disconnect();
     window.clearTimeout(safety);
+    window.clearTimeout(last);
+    cancelAnimationFrame(frame);
   };
 }

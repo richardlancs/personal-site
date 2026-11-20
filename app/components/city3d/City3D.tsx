@@ -3,7 +3,7 @@
 import { Canvas, useFrame, useThree, type RootState } from "@react-three/fiber";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { cityPath, sectionForCityPath } from "../../lib/cityRoutes";
 import { parseSkyParam } from "../../lib/skyParam";
@@ -824,7 +824,7 @@ export default function City3D({ tier }: { tier: Quality }) {
     };
   }, []);
 
-  const navigate = (href: string) => router.push(href);
+  const navigate = useCallback((href: string) => router.push(href), [router]);
   const t = TIERS[tier];
 
   return (
