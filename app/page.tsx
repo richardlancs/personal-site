@@ -5,6 +5,7 @@ import Experience from "./components/city2d/sections/Experience";
 import Hero from "./components/city2d/sections/Hero";
 import Interests from "./components/city2d/sections/Interests";
 import Projects from "./components/city2d/sections/Projects";
+import Arrivals from "./components/ui/Arrivals";
 import Colophon from "./components/ui/Colophon";
 import { section, sectionMetadata } from "./sections/registry";
 
@@ -36,6 +37,7 @@ export default function Home() {
       <footer className="page-foot">
         <Colophon />
       </footer>
+      <Arrivals />
     </main>
   );
 }

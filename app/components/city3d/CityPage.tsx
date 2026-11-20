@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { twoDHref } from "../../lib/cityRoutes";
-import { cityPath } from "../../lib/cityRoutes";
+import { cityPath, twoDHref } from "../../lib/cityRoutes";
 import { listed, section, type SectionId } from "../../sections/registry";
 import DistrictBand from "../city2d/DistrictBand";
 import About from "../city2d/sections/About";
@@ -10,7 +9,9 @@ import Experience from "../city2d/sections/Experience";
 import Hero from "../city2d/sections/Hero";
 import Interests from "../city2d/sections/Interests";
 import Projects from "../city2d/sections/Projects";
+import Arrivals from "../ui/Arrivals";
 import Colophon from "../ui/Colophon";
+import CityFocus from "./CityFocus";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
 // without JavaScript or WebGL: the section's plate as a band where the
@@ -45,21 +46,24 @@ export default function CityPage({ id }: { id: SectionId }) {
       </div>
       <div className="city-panel">
         {id === "home" && (
-          // The riverside's signs as a row of keys, where the canvas can't
-          // fit their tags over the scene (City3D.tsx: TagProjector sets
-          // html[data-city-tags="row"]); hidden otherwise (city-pages.css)
-          <nav aria-label="Sections in the city" className="city-keys">
+          // The five places as a row of keys: where the canvas can't lay
+          // a link over each of the riverside's boards (City3D.tsx:
+          // TagProjector sets html[data-city-tags="row"]), and wherever
+          // the 3D city isn't drawing (no WebGL2, Save-Data, a lost
+          // context, no JavaScript), so Home always lists its places
+          // (city-pages.css)
+          <nav aria-label="Places" className="city-keys">
             {listed
               .filter((s) => s.id !== "home")
               .map((s) => (
-                <Link key={s.id} href={cityPath(s.id)} className="glass city-key" data-anchor={`sign:${s.id}`}>
+                <Link key={s.id} href={cityPath(s.id)} className="glass city-key">
                   {s.title}
                 </Link>
               ))}
           </nav>
         )}
         {id !== "home" && (
-          <h1 id={`${id}-title`} className="city-title">
+          <h1 id={`${id}-title`} className="city-title" tabIndex={-1}>
             {s.title}
           </h1>
         )}
@@ -73,6 +77,8 @@ export default function CityPage({ id }: { id: SectionId }) {
           <Colophon />
         </footer>
       </div>
+      <CityFocus id={id} />
+      <Arrivals />
     </main>
   );
 }

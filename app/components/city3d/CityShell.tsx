@@ -64,6 +64,23 @@ export default function CityShell() {
   // Bumped to remount the canvas after a lost context
   const [generation, setGeneration] = useState(0);
   const [losses, setLosses] = useState(0);
+  // Whether this route is the one showing. Leaving /city doesn't unmount
+  // it (the router keeps a visited route in a hidden React Activity, for
+  // an instant way back): its effects are cleaned up but the tree stays.
+  // So the canvas is let go when that happens, and its renderer, scene and
+  // WebGL context with it (R3F releases them when <Canvas> unmounts; the
+  // kit's shared materials go in City3D's own cleanup); coming back builds
+  // a new one. A context lost while away is then nothing to handle: there
+  // is none.
+  const [showing, setShowing] = useState(false);
+  useEffect(() => {
+    const id = window.setTimeout(() => setShowing(true), 0);
+    return () => {
+      window.clearTimeout(id);
+      setShowing(false);
+    };
+  }, []);
+  const inCity = pathname === "/city" || pathname.startsWith("/city/");
 
   // Decide once, after hydration. Narrow screens give the page's sheet a
   // moment to paint first; wide ones start straight away.
@@ -86,6 +103,14 @@ export default function CityShell() {
     if (mode) html.setAttribute("data-city3d", mode);
     return () => html.removeAttribute("data-city3d");
   }, [mode]);
+
+  // Back on /city after a lost context: the canvas is a new one, so the
+  // loss is over
+  useEffect(() => {
+    if (!showing) return;
+    const id = window.setTimeout(() => setMode((m) => (m === "lost" ? "on" : m)), 0);
+    return () => window.clearTimeout(id);
+  }, [showing]);
 
   // The GPU can drop the context (a driver reset, too many tabs). The
   // canvas's event is cancelled so the browser may give it back; until
@@ -123,7 +148,7 @@ export default function CityShell() {
 
   return (
     <>
-      {(mode === "on" || mode === "lost") && (
+      {showing && inCity && (mode === "on" || mode === "lost") && (
         <Guard key={generation} onError={() => setMode("fallback")}>
           <City3D tier={tier} />
         </Guard>

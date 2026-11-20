@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { profile } from "../../../data/portfolio";
 import { cityPath } from "../../../lib/cityRoutes";
 import type { Where } from "../Heading";
@@ -11,21 +12,37 @@ import { order } from "../Station";
 // no list of sections (the Sections menu and the progress line have them).
 // On first load the four settle in one after another (reveal.css, "The
 // hero"), visible from the first paint. In the 3D city (where="3d") the two
-// ways in go to those sections' pages there, not to anchors on this page.
+// ways in are links to those sections' pages there (next/link, so the page
+// stays and the camera travels), not anchors on this page; and the name,
+// the page's h1, can take focus there (tabIndex -1: a journey back to Home
+// focuses it, city3d/CityFocus.tsx).
 export default function Hero({ where = "2d" }: { where?: Where }) {
   return (
     <div className="hero">
       <div className="hero-backing hero-arrive" style={order(0)}>
-        <h1 id="home-title" className="hero-name">{profile.name}</h1>
+        <h1 id="home-title" className="hero-name" tabIndex={where === "3d" ? -1 : undefined}>{profile.name}</h1>
       </div>
       <p className="hero-headline hero-arrive" style={order(1)}>{profile.headline}</p>
       <div className="hero-actions hero-arrive" style={order(2)}>
-        <a href={where === "3d" ? cityPath("projects") : "#projects"} className="glass glass-primary">
-          View projects
-        </a>
-        <a href={where === "3d" ? cityPath("contact") : "#contact"} className="glass">
-          Contact
-        </a>
+        {where === "3d" ? (
+          <>
+            <Link href={cityPath("projects")} className="glass glass-primary">
+              View projects
+            </Link>
+            <Link href={cityPath("contact")} className="glass">
+              Contact
+            </Link>
+          </>
+        ) : (
+          <>
+            <a href="#projects" className="glass glass-primary">
+              View projects
+            </a>
+            <a href="#contact" className="glass">
+              Contact
+            </a>
+          </>
+        )}
       </div>
       <ul aria-label="Links" className="hero-links hero-arrive" style={order(3)}>
         <ProfileLinks variant="text" />

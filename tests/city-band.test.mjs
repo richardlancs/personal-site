@@ -155,8 +155,11 @@ test("the hero has the name, the headline, two actions and three links, and no p
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
   assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
   assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
-  assert.match(src, /href=\{where === "3d" \? cityPath\("projects"\) : "#projects"\} className="glass glass-primary"/);
-  assert.match(src, /href=\{where === "3d" \? cityPath\("contact"\) : "#contact"\} className="glass"/);
+  // In 2D, anchors on the page; in the 3D city, next/link to the sections' pages
+  assert.match(src, /<a href="#projects" className="glass glass-primary">/);
+  assert.match(src, /<a href="#contact" className="glass">/);
+  assert.match(src, /<Link href=\{cityPath\("projects"\)\} className="glass glass-primary">/);
+  assert.match(src, /<Link href=\{cityPath\("contact"\)\} className="glass">/);
   // GitHub, LinkedIn and the résumé: the shared links, as text links
   assert.match(src, /<ProfileLinks variant="text" \/>/);
 });

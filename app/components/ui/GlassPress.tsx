@@ -1,8 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect } from "react";
-import { watchArrivals } from "./arrive";
 
 // The press on every glass button (.glass in globals.css), from one pair
 // of listeners for the whole page, so any .glass element gets it, however
@@ -20,14 +18,7 @@ import { watchArrivals } from "./arrive";
 // stacking a second one, and it comes off when the light ends. Only one
 // button is pressed at a time. No timers. A pointer let go outside the
 // window (it loses focus) lets go of the key too.
-//
-// The same component starts the page's one-time arrival (arrive.ts), so it
-// needs no client component of its own: again on every route, since a
-// client-side navigation (the 3D city's pages) brings new content without
-// a load; the previous route's observer is let go first.
 export default function GlassPress() {
-  const pathname = usePathname();
-  useEffect(() => watchArrivals(), [pathname]);
 
   useEffect(() => {
     let current: HTMLElement | null = null;

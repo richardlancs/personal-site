@@ -62,12 +62,13 @@ test("the waiting state, the transitions and the lift are behind the guard too",
 test("nothing loops; an item arrives once, and only once the script has marked the page", () => {
   assert.doesNotMatch(css, /infinite/);
   const waiting = all.find((b) => /opacity:\s*0\.001/.test(b.body) && b.prelude.includes(".reveal"));
-  // Only under html[data-arrive] (set by arrive.ts), so with JavaScript off
-  // nothing waits; never in print; never once arrived, focused inside, or
-  // in the section a jump landed on
+  // Only under html[data-arrive] (set by arrive.ts), and only items the
+  // script marked waiting (visible by default), so with JavaScript off
+  // nothing waits; never in print; never focused inside, or in the section
+  // a jump landed on
   assert.ok(waiting.prelude.startsWith(":root[data-arrive]"), waiting.prelude);
   assert.ok(waiting.context.includes("@media screen and (prefers-reduced-motion: no-preference)"), "screen only");
-  assert.match(waiting.prelude, /\.reveal:not\(\[data-arrived\], :focus-within, :target \*\)/);
+  assert.match(waiting.prelude, /\.reveal\[data-arrive-wait\]:not\(:focus-within, :target \*\)/);
   assert.match(waiting.body, /translate: 0 8px/, "a short rise, no turn or scale");
   // The arrival is a transition on the mark, within --t-slow, --stagger apart
   const arriving = all.find((b) => b.prelude.includes('.reveal[data-arrived="in"]'));
@@ -81,7 +82,11 @@ test("nothing loops; an item arrives once, and only once the script has marked t
   assert.match(arrive, /rootMargin: "0px 0px -5% 0px"/, "a tall item arrives as soon as its top edge is a little way in");
   assert.doesNotMatch(arrive, /threshold/, "never waits for a share of a tall item's height");
   assert.ok(arrive.indexOf('setAttribute("data-arrived", "")') < arrive.indexOf('setAttribute("data-arrive", "")'), "in view first, then the page");
-  assert.match(read("app/components/ui/GlassPress.tsx"), /watchArrivals\(\)/, "started from an existing client component");
+  // Started from inside each page, after hydration (Arrivals.tsx, rendered
+  // last in the page), never from the layout
+  assert.match(read("app/components/ui/Arrivals.tsx"), /useEffect\(\(\) => watchArrivals\(\), \[\]\)/);
+  assert.doesNotMatch(read("app/components/ui/GlassPress.tsx"), /watchArrivals/);
+  for (const page of ["app/page.tsx", "app/components/city3d/CityPage.tsx"]) assert.match(read(page), /<Arrivals \/>\s*<\/main>/, page);
 });
 
 test("the resting state is visible: no opacity 0 outside a keyframe's start", () => {

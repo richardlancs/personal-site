@@ -92,7 +92,8 @@ test("each section's headings step down one level at a time", () => {
 });
 
 test("on /city the hero's ways in stay in the city; the Interests link to the 3D city is only in 2D", () => {
-  assert.match(hero, /where === "3d" \? cityPath\("projects"\)/);
-  assert.match(hero, /where === "3d" \? cityPath\("contact"\)/);
+  // next/link, so the page stays and the camera travels (no reload)
+  assert.match(hero, /\{where === "3d" \? \(\s*<>\s*<Link href=\{cityPath\("projects"\)\}[\s\S]*?<Link href=\{cityPath\("contact"\)\}/);
+  assert.match(hero, /^import Link from "next\/link";/m);
   assert.match(sections.Interests, /\{where === "2d" && \(\s*<p[^>]*>\s*<CityLink/);
 });

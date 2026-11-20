@@ -112,20 +112,25 @@ test("the signs and tags say each section's title from the registry, never retyp
   const titles = pageSections.map((s) => s.title);
   const literals = [...noComments(riverside).matchAll(/"([^"\n]*)"|'([^'\n]*)'|`([^`]*)`/g)].map((m) => m[1] ?? m[2] ?? m[3]);
   for (const t of titles) assert.ok(!literals.includes(t), `Riverside.tsx retypes "${t}"`);
-  assert.match(riverside, /section\(s\.id\)\.title/);
-  // The tags: links to each section's /city page, named by its title
-  assert.match(city, /<Link key=\{s\.id\} className="glass city-tag" href=\{cityPath\(s\.id\)\}[^>]*>\s*\{section\(s\.id\)\.title\}/);
-  // The anchors the visibility script and the tags use
-  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}`/);
-  // Each sign's Hitbox goes through cityPath
-  assert.match(riverside, /onSelect=\{\(\) => navigate\(cityPath\(s\.id\)\)\}/);
+  assert.match(riverside, /const title = section\(id\)\.title;/);
+  // One link per board, to its section's /city page, named by its title
+  // (visually the board's painted word: the link is its hit area)
+  assert.match(city, /<Link key=\{s\.id\} className="city-tag" href=\{cityPath\(s\.id\)\} data-anchor=\{`sign:\$\{s\.id\}`\}>\s*<span className="city-tag-name">\{section\(s\.id\)\.title\}<\/span>/);
+  // The anchors the visibility script and the links use: the board's
+  // middle and its four edges
+  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}`, s\.center\)/);
+  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}:\$\{k\}`, v\)/);
+  // Each sign's Hitbox goes through cityPath, and answers only while the
+  // links stand over the boards
+  assert.match(riverside, /onSelect=\{\(\) => navigate\(cityPath\(s\.id\)\)\}\s*enabled=\{boardsLive\}/);
 });
 
-test("the signs stand left to right About, Experience, Projects, Interests, Contact", async () => {
-  // The bearings, read from the table in the source
-  const order = [...riverside.matchAll(/\{ id: "(\w+)", bearing: (-?[\d.]+)/g)].map((m) => [m[1], Number(m[2])]);
-  assert.deepEqual(order.map((o) => o[0]), ["about", "experience", "projects", "interests", "contact"]);
-  for (let i = 1; i < order.length; i++) assert.ok(order[i][1] > order[i - 1][1]);
+test("the signs stand left to right About, Experience, Projects, Interests, Contact, each from its place's def", async () => {
+  const { scenes } = await import("../app/components/city3d/scenes.ts");
+  const order = ["longtang", "metro", "towers", "nanjing-road", "bund"].map((id) => scenes[id].sign.bearing);
+  for (let i = 1; i < order.length; i++) assert.ok(order[i] > order[i - 1], String(order));
+  assert.match(riverside, /const SIGNED[^=]*= \["about", "experience", "projects", "interests", "contact"\]/);
+  assert.match(riverside, /signPlace\(placeOf\(id\)\)/);
 });
 
 test("every /city page passes where=\"3d\" to its section, so the outline runs on", () => {
@@ -133,17 +138,15 @@ test("every /city page passes where=\"3d\" to its section, so the outline runs o
   for (const name of ["Hero", "About", "Projects", "Experience", "Interests", "Contact"]) assert.match(page, new RegExp(`<${name} where="3d" />`), name);
 });
 
-test("arrival is set up again on every route, the previous observer let go, with a safety net", () => {
-  const press = read("app/components/ui/GlassPress.tsx");
-  assert.match(press, /const pathname = usePathname\(\);\s*useEffect\(\(\) => watchArrivals\(\), \[pathname\]\);/);
+test("arrival never touches what React hasn't hydrated, never relies on React's internals, and can't leave anything hidden", () => {
   const arrive = read("app/components/ui/arrive.ts");
-  // The cleanup lets go of everything it started
-  assert.match(arrive, /return \(\) => \{\s*io\.disconnect\(\);\s*mo\.disconnect\(\);\s*window\.clearTimeout\(safety\);\s*window\.clearTimeout\(last\);\s*cancelAnimationFrame\(frame\);/);
-  // Late content is taken in; anything on screen still waiting is shown
-  assert.match(arrive, /new MutationObserver/);
-  assert.match(arrive, /if \(\(all \|\| hydrated\(el\)\) && el\.getBoundingClientRect\(\)\.top < innerHeight\) el\.setAttribute\("data-arrived", ""\);/);
-  assert.match(arrive, /setTimeout\(\(\) => sweep\(false\), SAFETY_MS\)/);
-  assert.match(arrive, /setTimeout\(\(\) => sweep\(true\), LAST_MS\)/);
+  assert.doesNotMatch(arrive, /__react|requestAnimationFrame|MutationObserver/);
+  // Only items below the fold wait; the bound shows anything the observer
+  // never reported on; the cleanup unmarks what's still waiting
+  assert.match(arrive, /if \(el\.getBoundingClientRect\(\)\.top < innerHeight\) \{\s*el\.setAttribute\("data-arrived", ""\);/);
+  assert.match(arrive, /setTimeout\(\(\) => \{\s*for \(const el of \[\.\.\.waiting\]\) if \(!reported\.has\(el\)\) show\(el, ""\);\s*\}, LAST_MS\)/);
+  assert.match(arrive, /return \(\) => \{\s*io\.disconnect\(\);\s*window\.clearTimeout\(last\);\s*for \(const el of waiting\) el\.removeAttribute\(WAIT\);/);
+  assert.match(arrive, /const LAST_MS = \d+;/);
 });
 
 // Against a running server: each /city page's headings, one h1 and no

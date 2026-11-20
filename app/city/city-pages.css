@@ -48,6 +48,12 @@ body:has(.city-page) .top-bar .rh {
   color: var(--text);
 }
 
+/* The heading takes focus on a journey (CityFocus.tsx): a ring only when
+   the journey came from the keyboard */
+.city-panel h1:focus:not(:focus-visible) {
+  outline: none;
+}
+
 .city-panel-foot {
   margin-top: 2.5rem;
 }
@@ -75,6 +81,12 @@ body:has(.city-page) .top-bar .rh {
     border-radius: var(--radius-lg);
     background: color-mix(in srgb, var(--panel) 94%, transparent);
     box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.9);
+  }
+
+  /* Home holds only the name, the headline, two keys and the links: a
+     narrower panel, so more of the riverside shows */
+  .city-page[data-section="home"] .city-panel {
+    width: min(38rem, 100% - 3rem, max(32rem, 42vw));
   }
 }
 
@@ -128,7 +140,11 @@ html:not([data-city3d="on"]) .city3d {
   pointer-events: none;
 }
 
-/* The riverside's tags: links pinned over the signs (TagProjector) */
+/* The riverside's boards as links (City3D.tsx: Tags, TagProjector): each
+   is laid over its board, sized to it (at least 44×44), and is the board's
+   hit area and focus ring; the board's painted title is its visible
+   label, so the link shows nothing of its own but the ring (and, under a
+   pointer, a thin light edge) */
 .city-tags {
   position: absolute;
   inset: 0;
@@ -143,21 +159,46 @@ html:not([data-city3d="on"]) .city3d {
   position: absolute;
   top: 0;
   left: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
   pointer-events: auto;
-  white-space: nowrap;
-  color: var(--text);
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
-/* Where they can't all stand over their signs 8px apart (a small phone, a
-   phone on its side): the same links as a row of keys at the top of the
-   panel, under the scene (CityPage.tsx), and none over it */
+.city-tag:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  box-shadow: var(--focus-halo);
+}
+
+@media (hover: hover) {
+  .city-tag:hover {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--cyan) 70%, transparent);
+  }
+}
+
+/* (the name is for screen readers; the board shows it) */
+.city-tag-name {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The same five places as a row of keys at the top of Home's panel:
+   where the links can't all stand over their boards 8px apart (a small
+   phone, a phone on its side), and wherever the 3D city isn't drawing
+   (no JavaScript: no html[data-still]; or no WebGL2, Save-Data, a lost
+   context). While the canvas is starting they wait, so the panel doesn't
+   move under the reader. */
 .city-keys {
   display: none;
 }
 
+html:not([data-still]) .city-keys,
+html[data-city3d]:not([data-city3d="on"]) .city-keys,
 html[data-city3d="on"][data-city-tags="row"] .city-keys {
   display: flex;
   flex-wrap: wrap;
