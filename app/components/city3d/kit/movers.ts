@@ -4,7 +4,8 @@ import { rng } from "../rng";
 import { box, merge } from "./geometry";
 import { shared } from "./materials";
 import { glowMaterial } from "./street";
-import { surface } from "./surface";
+import { neonMaterial } from "./neon";
+import { surface, type SurfaceOptions } from "./surface";
 import { envUniforms, materialKey } from "./uniforms";
 
 // The few things that move on their own: a metro train, river boats, the
@@ -34,16 +35,101 @@ const disposer = (object: THREE.Object3D) => {
 const CAR = 2; // a car's length, 20 m
 const GAP = 0.06;
 
+/** A train's length, buffer to buffer (its nose not counted) */
+export const trainLength = (cars: number) => cars * (CAR + GAP) - GAP;
+
+// A rounded nose: the car's section (a rounded box, 0.28 wide, 0.02 to
+// 0.34 high) carried `snout` forward of its front at `front`, narrowing a
+// little and sloping back above the windscreen's foot, closed at the tip
+const noseTop = (t: number) => 0.345 - 0.19 * t ** 1.6;
+const noseX = (front: number, snout: number, t: number) => front + snout * Math.sin((t * Math.PI) / 2);
+function noseGeometry(front: number, snout: number): THREE.BufferGeometry {
+  const RING = 16;
+  const STEPS = 6;
+  const pos: number[] = [];
+  const idx: number[] = [];
+  for (let i = 0; i <= STEPS; i++) {
+    const t = i / STEPS;
+    const x = noseX(front, snout, t);
+    const hw = 0.14 * (1 - 0.14 * t * t);
+    const top = noseTop(t);
+    const bottom = 0.02 + 0.015 * t;
+    const cy = (top + bottom) / 2;
+    const hh = (top - bottom) / 2;
+    for (let j = 0; j < RING; j++) {
+      const a = (j / RING) * Math.PI * 2;
+      // a superellipse: square-ish with rounded corners
+      const c = Math.cos(a);
+      const sn = Math.sin(a);
+      pos.push(x, cy + hh * Math.sign(sn) * Math.abs(sn) ** 0.4, hw * Math.sign(c) * Math.abs(c) ** 0.4);
+    }
+  }
+  for (let i = 0; i < STEPS; i++)
+    for (let j = 0; j < RING; j++) {
+      const a = i * RING + j;
+      const b = i * RING + ((j + 1) % RING);
+      idx.push(a, a + RING, b, b, a + RING, b + RING);
+    }
+  // the tip's face
+  const centre = pos.length / 3;
+  const last = STEPS * RING;
+  pos.push(front + snout, (noseTop(1) + 0.035) / 2, 0);
+  for (let j = 0; j < RING; j++) idx.push(last + j, centre, last + ((j + 1) % RING));
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+// the windscreen: dark panes laid on the nose's slope, a hair proud of it,
+// and the cab's side windows
+function windscreen(front: number, snout: number): THREE.BufferGeometry[] {
+  const parts: THREE.BufferGeometry[] = [];
+  const ts = [0.3, 0.5, 0.68, 0.84, 0.97];
+  for (let i = 0; i < ts.length - 1; i++) {
+    const ax = noseX(front, snout, ts[i]);
+    const ay = noseTop(ts[i]);
+    const bx = noseX(front, snout, ts[i + 1]);
+    const by = noseTop(ts[i + 1]);
+    const l = Math.hypot(bx - ax, by - ay);
+    const angle = Math.atan2(by - ay, bx - ax);
+    const hw = 0.14 * (1 - 0.14 * ts[i + 1] ** 2) * 0.82;
+    parts.push(box(l * 1.05, 0.004, hw * 2).rotateZ(angle).translate((ax + bx) / 2 - Math.sin(angle) * 0.003, (ay + by) / 2 + Math.cos(angle) * 0.003, 0));
+  }
+  for (const side of [-1, 1]) parts.push(box(0.05, 0.08, 0.004).translate(front + 0.03, 0.22, side * 0.128));
+  return parts;
+}
+
+export type TrainOptions = {
+  span?: number;
+  period?: number;
+  // the leading (+x) end: "flat" (the cab's glass, as before) or "round" (a
+  // tapered nose `snout` long, 0.11 by default, with a dark windscreen,
+  // headlamps lit after dark and a coupler)
+  nose?: "flat" | "round";
+  snout?: number;
+  shell?: SurfaceOptions; // the cars' body (pale grey by default)
+  stripe?: { day: string; night: string }; // the stripe along each side
+  windows?: "band" | "framed"; // one lit band down each side, or the band with posts between the windows
+};
+
+export type TrainParts = { cars: THREE.Group; shell: THREE.Mesh; windows: THREE.Mesh; stripe: THREE.Mesh; nose: THREE.Mesh | null; screen: THREE.Mesh | null; lamps: THREE.Mesh | null; coupler: THREE.Mesh | null };
+
 /**
  * A metro train of `cars` cars running along +x in its object's frame,
  * from -span/2 to +span/2 (its ends out of sight: the scene places it so),
  * one pass every `period` seconds, then gone until the next. Parked, it
  * stands at x = 0. Its floor is at y = 0: stand the object on the deck.
+ * Its parts are named and returned (`parts`), for a scene that hangs
+ * something of its own on the cars; 3 draw calls, 7 with a round nose.
  */
-export function buildTrain(cars: number, o: { span?: number; period?: number } = {}): Mover {
+export function buildTrain(cars: number, o: TrainOptions = {}): Mover & { parts: TrainParts } {
   const span = o.span ?? 70;
   const period = o.period ?? 26;
-  const length = cars * (CAR + GAP) - GAP;
+  const length = trainLength(cars);
+  const front = length / 2;
+  const round = o.nose === "round";
+  const snout = o.snout ?? 0.11;
   const body: THREE.BufferGeometry[] = [];
   const windows: THREE.BufferGeometry[] = [];
   const stripe: THREE.BufferGeometry[] = [];
@@ -57,22 +143,48 @@ export function buildTrain(cars: number, o: { span?: number; period?: number } =
       stripe.push(box(CAR * 0.98, 0.025, 0.008).translate(x, 0.12, side * 0.143));
     }
   }
-  // the cab's glass at each end
-  for (const end of [-1, 1]) windows.push(box(0.01, 0.1, 0.2).translate(end * (length / 2 + 0.005), 0.23, 0));
+  // posts between the windows, in the body's colour, a hair proud of the band
+  if (o.windows === "framed") for (const side of [-1, 1]) for (let x = -front + 0.08; x < front - 0.04; x += 0.21) body.push(box(0.035, 0.09, 0.006).translate(x, 0.22, side * 0.147));
+  // the cab's glass at each flat end
+  for (const end of round ? [-1] : [-1, 1]) windows.push(box(0.01, 0.1, 0.2).translate(end * (length / 2 + 0.005), 0.23, 0));
   // the object stays where the scene puts it; the cars move inside it
   const object = new THREE.Group();
   object.name = "train";
   const group = new THREE.Group();
+  group.name = "train:cars";
   object.add(group);
-  const shell = new THREE.Mesh(merge(body), surface({ color: "#c7ccd3" }));
+  const shellMaterial = surface(o.shell ?? { color: "#c7ccd3" });
+  const shell = new THREE.Mesh(merge(body), shellMaterial);
+  shell.name = "train:shell";
   shell.castShadow = true;
-  group.add(shell);
-  group.add(new THREE.Mesh(merge(windows), glowMaterial({ day: "#3c4a58", night: "#ffe0b0" })));
-  group.add(new THREE.Mesh(merge(stripe), glowMaterial({ day: "#2f8fb0", night: "#4fd8ee" })));
+  const band = new THREE.Mesh(merge(windows), glowMaterial({ day: "#3c4a58", night: "#ffe0b0" }));
+  band.name = "train:windows";
+  const side = new THREE.Mesh(merge(stripe), glowMaterial(o.stripe ?? { day: "#2f8fb0", night: "#4fd8ee" }));
+  side.name = "train:stripe";
+  group.add(shell, band, side);
+  const parts: TrainParts = { cars: group, shell, windows: band, stripe: side, nose: null, screen: null, lamps: null, coupler: null };
+  if (round) {
+    const tip = front + snout;
+    parts.nose = new THREE.Mesh(noseGeometry(front, snout), shellMaterial);
+    parts.nose.castShadow = true;
+    parts.screen = new THREE.Mesh(merge(windscreen(front, snout)), glowMaterial({ day: "#1c2530", night: "#0b0c10" }));
+    parts.lamps = new THREE.Mesh(merge([-1, 1].map((k) => box(0.006, 0.02, 0.04).translate(tip + 0.001, 0.085, k * 0.08))), neonMaterial(HEADLAMP, { dayColor: "#5a6068" }));
+    parts.coupler = new THREE.Mesh(box(0.03, 0.035, 0.06).translate(tip + 0.01, 0.04, 0), surface({ color: "#3a3e44" }));
+    for (const [m, name] of [
+      [parts.nose, "train:nose"],
+      [parts.screen, "train:screen"],
+      [parts.lamps, "train:lamps"],
+      [parts.coupler, "train:coupler"],
+    ] as const) {
+      m.name = name;
+      group.add(m);
+    }
+  }
   disposer(object);
   const travel = span + length;
   return {
     object,
+    parts,
     update(t) {
       const f = (t % period) / period;
       // a pass takes 70% of the period; the rest, the line is empty
@@ -86,6 +198,9 @@ export function buildTrain(cars: number, o: { span?: number; period?: number } =
     },
   };
 }
+
+// the headlamps' warm white, at 0.55 of the neon's full (just over the bloom)
+const HEADLAMP = `#${new THREE.Color("#fff1d6").multiplyScalar(0.55).getHexString()}`;
 
 // ---------------------------------------------------------------------
 // Boats on the river

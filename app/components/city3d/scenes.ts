@@ -67,6 +67,13 @@ export type SceneDef = {
   // (any length), so the place is lit from the side its plate is; the
   // world's default (common.tsx: WorldLights) when left out
   sun?: V3;
+  // By day, a fill on what faces away from the sun (kit/uniforms.ts:
+  // bounceUniforms): its colour and strength (about 0.2 lifts a shaded
+  // wall to the plates' cool, readable shade); none when left out
+  bounce?: { color: string; strength: number };
+  // The sky dome's moon after dark: false hides it in this place (where
+  // the painting has none in view)
+  moon?: false;
   // A roof the rain and snow don't fall under, in the place's coordinates
   // (atmosphere/Precipitation.tsx), e.g. a platform's canopy
   shelter?: { min: V3; max: V3 };

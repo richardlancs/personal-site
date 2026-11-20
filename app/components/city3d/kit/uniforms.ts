@@ -48,6 +48,7 @@ export const POOLS = 12;
 export const poolUniforms = {
   uPools: { value: Array.from({ length: POOLS }, () => new THREE.Vector4(0, -1e4, 0, 0)) }, // xyz world, w reach (0: none)
   uPoolTones: { value: Array.from({ length: POOLS }, () => new THREE.Color(0, 0, 0)) }, // linear colour × strength
+  uPoolEnds: { value: Array.from({ length: POOLS }, () => new THREE.Vector4(0, 0, 0, 0)) }, // a line pool's other end, xyz world, w 1 (0: a point pool)
   uPoolsOn: { value: 0 },
 };
 
@@ -58,13 +59,27 @@ export const poolUniforms = {
 // the showing place's.
 export const shadeUniforms = {
   uShadeOn: { value: 0 },
-  // kind (0 none, 1 stripes, 2 dapple, 3 edge), depth (0..1), period, duty
+  // kind (0 none, 1 stripes, 2 dapple, 3 edge, 4 lattice), depth (0..1), period, duty
   uShade: { value: new THREE.Vector4() },
   // the region, world x0, z0, x1, z1
   uShadeBox: { value: new THREE.Vector4() },
   // the pattern's direction across the ground (x, z), the highest y it
   // reaches, and how much of it falls on walls (0 only what faces up .. 1)
   uShadeDir: { value: new THREE.Vector4(1, 0, 0, 0) },
+  // a lattice's second period (across `dir`), and the sunlit share's warm
+  // tint (rgb, multiplied in; 1, 1, 1: none)
+  uShadeMore: { value: new THREE.Vector4(1, 1, 1, 1) },
+};
+
+// A day fill on the side away from the sun (SceneDef.bounce): the light the
+// sky and the sunlit walls opposite throw into a lane's shade, which the
+// world's hemisphere light is too even to give. Written by the
+// atmosphere for the showing place (its colour × strength × the sun's
+// share of the light, so it blends with the hour and the weather; none
+// at night); read by the lit surface (surface.ts).
+export const bounceUniforms = {
+  uBounce: { value: new THREE.Color(0, 0, 0) }, // linear colour × strength × the sun's share
+  uBounceDir: { value: new THREE.Vector3(0, 1, 0) }, // toward the sun, world, unit length
 };
 
 // The one naming scheme for a shared material, used both as its key in

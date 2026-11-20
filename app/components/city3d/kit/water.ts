@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { shared } from "./materials";
 import { buildReflection, buildStreaks, WATER_GLSL, type LightStrip, type ReflectionMode } from "./reflection";
-import { surface } from "./surface";
+import { surface, type SurfaceOptions } from "./surface";
 import { envUniforms, materialKey } from "./uniforms";
 
 // The river and the wet paving (reflection.ts says how they reflect).
@@ -111,15 +111,34 @@ export function buildRiver(o: { w: number; d: number; mode: ReflectionMode; ligh
  * Paving that shines in rain: the kit's surface (its own puddles and
  * sheen), and the `lights` streaked on it × the rain (envUniforms.uWet);
  * on the high tier a planar reflection over it in the puddles, drawn only
- * while it's wet
+ * while it's wet.
+ * - `polish` (0..1, 0 by default): polished stone that carries the lights
+ *   when dry too, after dark only: the same streaks, as long fine strokes,
+ *   at `polish` × the night (never by day; in rain the wetter of the two,
+ *   never both). The planar mirror stays off while dry.
+ * - `glow`, `snow`, `grime`: passed to the paving's surface (surface.ts)
  */
-export function wetPaving(o: { w: number; d: number; mode: ReflectionMode; lights: LightStrip[]; map?: THREE.Texture; color?: string; size?: number } & Place): {
+export function wetPaving(
+  o: {
+    w: number;
+    d: number;
+    mode: ReflectionMode;
+    lights: LightStrip[];
+    map?: THREE.Texture;
+    color?: string;
+    size?: number;
+    polish?: number;
+    glow?: SurfaceOptions["glow"];
+    snow?: boolean;
+    grime?: number;
+  } & Place,
+): {
   mesh: THREE.Mesh;
   dispose(): void;
 } {
   const { x = 0, z = 0, y = 0 } = o;
   const geometry = new THREE.PlaneGeometry(o.w, o.d);
-  const mesh = new THREE.Mesh(geometry, surface({ color: o.color ?? "#4b4f57", map: o.map, wet: 1, grime: 0.3 }));
+  const mesh = new THREE.Mesh(geometry, surface({ color: o.color ?? "#4b4f57", map: o.map, wet: 1, grime: o.grime ?? 0.3, glow: o.glow, snow: o.snow }));
   mesh.name = "paving";
   mesh.receiveShadow = true;
   const reflector = buildReflection({ mode: o.mode, kind: "paving", w: o.w, d: o.d, size: o.size, gate: () => envUniforms.uWet.value > 0.02 });
@@ -129,7 +148,7 @@ export function wetPaving(o: { w: number; d: number; mode: ReflectionMode; light
     reflector.renderOrder = 1;
     mesh.add(reflector);
   }
-  const streaks = buildStreaks(o.lights, { kind: "paving", mode: o.mode, x, z, w: o.w, d: o.d });
+  const streaks = buildStreaks(o.lights, { kind: "paving", mode: o.mode, x, z, w: o.w, d: o.d, polish: o.polish });
   lay(mesh, streaks, x, y, z);
   return {
     mesh,

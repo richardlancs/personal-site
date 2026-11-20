@@ -127,7 +127,7 @@ test("the window shader's hash is lib/cityWindows.ts's, constant for constant", 
   assert.deepEqual(hex(glsl), hex(js));
   assert.deepEqual(shifts(glsl), shifts(js));
   // ...and the lit test is the tested one: score < share (windowLit)
-  assert.match(src, /windowScore\(fl, bay, seed\) < uLitShare/);
+  assert.match(src, /float kitShare = max\(uLitShare, uLitFloor\);[\s\S]*windowScore\(fl, bay, seed\) < kitShare/);
 });
 
 test("surface.ts and windows.ts set customProgramCacheKey through materialKey; windows has a near and a far program", () => {
@@ -154,13 +154,13 @@ test("equal options give the same shared material; the cache is emptied on dispo
 test("windows.ts imports windowUniforms from ./uniforms, and reads uNight; surface reads the weather", () => {
   const win = read(`${kit}/windows.ts`);
   assert.match(win, /import \{[^}]*\bwindowUniforms\b[^}]*\} from "\.\/uniforms(\.ts)?";/);
-  assert.match(win, /Object\.assign\(shader\.uniforms, [^)]*windowUniforms[^)]*envUniforms\)/);
+  assert.match(win, /Object\.assign\(shader\.uniforms, [^)]*windowUniforms[^)]*envUniforms, uniforms\)/);
   assert.match(win, /uNight/);
   // the world position, instancing included, from surface.ts's shared chunk
   assert.match(win, /\$\{WORLD_VARYINGS_VERTEX\}/);
   const surf = read(`${kit}/surface.ts`);
   assert.match(surf, /kitWorld = instanceMatrix \* kitWorld;[\s\S]*kitWorld = modelMatrix \* kitWorld;/);
-  assert.match(surf, /Object\.assign\(shader\.uniforms, [^)]*envUniforms, poolUniforms, shadeUniforms/);
+  assert.match(surf, /Object\.assign\(shader\.uniforms, [^)]*envUniforms, poolUniforms, shadeUniforms, bounceUniforms/);
   assert.match(surf, /#include <fog_fragment>", FOG_FRAGMENT/);
   // the shader compiles nothing new at runtime: no #define keyed on an option but `far`
   assert.doesNotMatch(noComments(surf), /#define/);

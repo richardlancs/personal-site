@@ -134,22 +134,15 @@ function build(quality: Quality): Built {
   // each tower in one of the painting's facades (by its seed: glass towers
   // a glass palette, stone ones a stone palette), one instanced mesh per
   // shape and facade, the kit's window material in that facade's colours
-  const dressed = (specs: TowerSpec[], isFar: boolean, fogScale?: number) => {
-    const groups = new Map<string, { specs: TowerSpec[]; p: { base: string; glass: string } }>();
-    for (const t of specs) {
-      const set = isFar ? L.palettes.far : t.style === 0 || t.style === 2 ? L.palettes.glass : L.palettes.stone;
-      const p = set[Math.floor(t.seed / 7) % set.length];
-      const key = `${p.base}:${p.glass}`;
-      if (!groups.has(key)) groups.set(key, { specs: [], p });
-      groups.get(key)!.specs.push(t);
-    }
-    return [...groups.values()].flatMap(({ specs: mine, p }) =>
-      buildTowers(mine, { far: isFar, fogScale }).map((m) => {
-        m.material = windowMaterial({ base: p.base, glass: p.glass, far: isFar, fogScale });
-        return m;
-      }),
-    );
-  };
+  const dressed = (specs: TowerSpec[], isFar: boolean, fogScale?: number) =>
+    buildTowers(specs, {
+      far: isFar,
+      fogScale,
+      palette: (t) => {
+        const set = isFar ? L.palettes.far : t.style === 0 || t.style === 2 ? L.palettes.glass : L.palettes.stone;
+        return set[Math.floor(t.seed / 7) % set.length];
+      },
+    });
   const nearTowers = dressed([...front, ...mid], false);
   const farTowers = dressed(far, true, L.skyline.farFog);
   for (const t of [...nearTowers, ...farTowers]) {

@@ -192,5 +192,5 @@ test("paving, the clock and the screens' release, in the source: seeded, cached,
 test("the atmosphere drives the pools with the lamps and the shade with the sun", () => {
   const src = noComments(read("app/components/city3d/atmosphere/Atmosphere.tsx"));
   assert.match(src, /poolUniforms\.uPoolsOn\.value = lampsOn \* \(1 \+ 0\.25 \* w\.wet\);/);
-  assert.match(src, /shadeUniforms\.uShadeOn\.value = \(1 - step01\(0\.2, 0\.7, night\)\)/);
+  assert.match(src, /const sunShare = \(1 - step01\(0\.2, 0\.7, night\)\)[^;]*;\s*shadeUniforms\.uShadeOn\.value = sunShare;/);
 });

@@ -100,7 +100,8 @@ void main() {
   vec2 side = vec2(-dir.y, dir.x);
   float e = max(cameraPosition.y - foot.y, 0.05);
   float h = aStrip.y;
-  float len = clamp(D * h / (e + h) * uStretch, 0.0, max(D - 1.0, 0.0));
+  // a light near the eye still streaks (at least a quarter of the way)
+  float len = clamp(D * h / (e + h) * uStretch, 0.0, max(D - 1.0, 0.25 * D));
   float w = aStrip.x * 0.5 * (1.0 + position.y * 0.5);
   vec2 xz = foot.xz + dir * (position.y * len) + side * (position.x * w);
   vec4 mvPosition = viewMatrix * vec4(xz.x, foot.y, xz.y, 1.0);
@@ -119,6 +120,8 @@ const STREAK_FRAGMENT = /* glsl */ `
 uniform float uStrength;
 uniform float uGate;  // 0: always (the river); 1: × uWet (paving)
 uniform float uDash;  // ripples per world unit
+uniform float uPolish; // dry paving's own shine after dark (0: none; never by day)
+uniform float uFine;   // 0: the ripples' broken dashes; 1: long fine strokes (polished stone)
 uniform float uNight;
 uniform float uWet;
 varying vec2 vUv;
@@ -139,12 +142,17 @@ void main() {
   float r2 = sHash(id * 39.346 + vSeed * 11.135);
   float r3 = sHash(id * 73.156 + vSeed * 52.235);
   // each ripple a short horizontal dash, shifted and sized at random
-  float x = abs(vUv.x - (r1 - 0.5) * 0.7) / mix(0.3, 1.0, r2);
+  float x = abs(vUv.x - (r1 - 0.5) * 0.7 * (1.0 - uFine)) / mix(mix(0.3, 1.0, r2), 0.45 + 0.2 * r2, uFine);
   float across = 1.0 - smoothstep(0.5, 1.0, x);
-  float dash = smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(0.35, 0.6, f));
-  float along = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(0.3, 1.0, vUv.y));
+  // polished: a stroke with short breaks and a bright core down its middle
+  float dash = mix(smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(0.35, 0.6, f)), 1.0 - 0.6 * smoothstep(0.75, 0.95, f), uFine);
+  across = mix(across, across * (0.55 + 0.45 * (1.0 - smoothstep(0.0, 0.35, abs(vUv.x)))), uFine);
+  float along = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(mix(0.3, 0.45, uFine), 1.0, vUv.y));
   float a = across * dash * along * mix(0.4, 1.0, r3);
-  float level = mix(0.35, 1.0, uNight) * uStrength * mix(1.0, uWet, uGate);
+  // wet: by day pale and soft, at night the lights' colours; dry polish:
+  // at night only (so no switch at dusk), never doubled in rain, and as
+  // strong on high (where the planar mirror stays off while dry) as below
+  float level = max(uStrength * mix(0.35, 1.0, uNight) * mix(1.0, uWet, uGate), uPolish * uNight);
   // by day the reflections are soft and pale; at night, the lights' own colours
   vec3 tone = mix(mix(vColor, vec3(0.75, 0.82, 0.9), 0.7), vColor, uNight);
   vec3 col = tone * a * level * 0.65;
@@ -164,15 +172,18 @@ void main() {
 
 export type StreakKind = "river" | "paving";
 
-function streakMaterial(kind: StreakKind, mode: ReflectionMode) {
-  return shared(materialKey("water", `streaks:${kind}:${mode}`), () => {
+function streakMaterial(kind: StreakKind, mode: ReflectionMode, polish = 0) {
+  // the same program whatever the polish (ShaderMaterials of one source share it)
+  return shared(materialKey("water", `streaks:${kind}:${mode}${polish > 0 ? `:${polish}` : ""}`), () => {
     const m = new THREE.ShaderMaterial({
       uniforms: {
         ...THREE.UniformsUtils.clone(THREE.UniformsLib.fog),
         uStretch: { value: kind === "river" ? 1.6 : 1.1 },
         uStrength: { value: mode === "planar" ? 0.45 : 1 },
         uGate: { value: kind === "river" ? 0 : 1 },
-        uDash: { value: kind === "river" ? 1.5 : 4 },
+        uDash: { value: kind === "river" ? 1.5 : polish > 0 ? 2.2 : 4 },
+        uPolish: { value: polish },
+        uFine: { value: polish > 0 ? 1 : 0 },
       },
       vertexShader: STREAK_VERTEX,
       fragmentShader: STREAK_FRAGMENT,
@@ -197,7 +208,7 @@ function streakMaterial(kind: StreakKind, mode: ReflectionMode) {
  * frame is set to the parent's, at the water). Its geometry is the
  * caller's to dispose.
  */
-export function buildStreaks(lights: LightStrip[], o: { kind: StreakKind; mode: ReflectionMode; x: number; z: number; w: number; d: number }) {
+export function buildStreaks(lights: LightStrip[], o: { kind: StreakKind; mode: ReflectionMode; x: number; z: number; w: number; d: number; polish?: number }) {
   const g = new THREE.InstancedBufferGeometry();
   // one quad: x across (-1..1), y along (0 at the foot .. 1 nearest the eye)
   g.setAttribute("position", new THREE.Float32BufferAttribute([-1, 0, 0, 1, 0, 0, 1, 1, 0, -1, 1, 0], 3));
@@ -220,7 +231,7 @@ export function buildStreaks(lights: LightStrip[], o: { kind: StreakKind; mode: 
   g.setAttribute("aColor", new THREE.InstancedBufferAttribute(color, 3));
   g.setAttribute("aClip", new THREE.InstancedBufferAttribute(clip, 4));
   g.instanceCount = n;
-  const mesh = new THREE.Mesh(g, streakMaterial(o.kind, o.mode));
+  const mesh = new THREE.Mesh(g, streakMaterial(o.kind, o.mode, o.kind === "paving" ? (o.polish ?? 0) : 0));
   // placed in the vertex shader, toward the eye: no bounds to cull by
   mesh.frustumCulled = false;
   mesh.renderOrder = 1;

@@ -42,6 +42,11 @@ export type WindowOptions = {
   glass: string; // the glass by day
   far?: boolean; // one averaged tone, for the skyline seen from far
   fogScale?: number; // fog as if this many times farther away (FOG_FRAGMENT); 1 by default
+  // Per material, as uniforms (the program stays "win:near" / "win:far"):
+  lit?: number; // the least share of its windows lit after dark, whatever the hour (0 by default)
+  warm?: string; // a lit window's warm tone (uniforms.ts: windowUniforms.uWarm by default)
+  cool?: string; // a lit window's cool tone (windowUniforms.uCool by default)
+  coolShare?: number; // the share of lit windows that are cool (0.07 by default): 1 for a glass tower lit cyan
 };
 
 // How much of a window cell is glass: x across the bay, y up the floor
@@ -95,6 +100,8 @@ varying vec2 vWinSpan;
 varying float vWinFace;
 varying float vWinSeed;
 uniform float uLitShare;
+uniform float uLitFloor;
+uniform float uCoolShare;
 uniform vec3 uWarm;
 uniform vec3 uCool;
 uniform float uFloor;
@@ -127,7 +134,8 @@ const FRAGMENT_COLOR = /* glsl */ `
 float kitPane = 0.0;
 vec3 kitEmit = vec3(0.0);
 float kitShade = 1.0;
-vec3 kitAvgTone = mix(uWarm, uCool, 0.07);
+float kitShare = max(uLitShare, uLitFloor);
+vec3 kitAvgTone = mix(uWarm, uCool, uCoolShare);
 // (the grid and its derivatives outside any branch, so fwidth is defined)
 bool fitted = vWinSpan.x > 0.0;
 float bays = fitted ? max(1.0, floor(vWinSpan.x / uBay + 0.5)) : 0.0;
@@ -155,13 +163,13 @@ if (vWinFace >= 0.0) {
     float sharp = sx * sy;
     // one window: lit by its score (mostly its floor's), the tested rule
     // (windowLit), so windows light by floors
-    float lit = windowScore(fl, bay, seed) < uLitShare ? 1.0 : 0.0;
+    float lit = windowScore(fl, bay, seed) < kitShare ? 1.0 : 0.0;
     // one floor whose windows have merged: that floor's own share (the
     // share of its windows windowLit would light: floors with a low hash
     // are mostly lit, the rest mostly dark)
-    float floorShare = windowFloorShare(fl, seed, uLitShare);
-    float litNow = mix(mix(uLitShare, floorShare, sy), lit, sharp);
-    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 0.93 ? uWarm : uCool, sharp);
+    float floorShare = windowFloorShare(fl, seed, kitShare);
+    float litNow = mix(mix(kitShare, floorShare, sy), lit, sharp);
+    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 1.0 - uCoolShare ? uWarm : uCool, sharp);
     float bright = mix(0.75, 0.55 + 0.4 * windowHash(fl, bay, seed + 15887), sharp);
     kitPane = px * py;
     kitEmit = tone * litNow * bright * kitPane;
@@ -180,17 +188,26 @@ if (vWinFace >= 0.0) {
 }
 `;
 
+/** The material's own key: every option that changes a uniform, none that changes the program */
+export const windowVariant = (o: WindowOptions) =>
+  [o.far ? "far" : "near", o.base, o.glass, o.fogScale ?? 1, o.lit ?? 0, o.warm ?? "", o.cool ?? "", o.coolShare ?? 0.07].join(":");
+
 export function windowMaterial(o: WindowOptions): THREE.MeshLambertMaterial {
   const far = !!o.far;
-  return shared(materialKey("win", `${far ? "far" : "near"}:${o.base}:${o.glass}:${o.fogScale ?? 1}`), () => {
+  return shared(materialKey("win", windowVariant(o)), () => {
     const m = new THREE.MeshLambertMaterial({ color: o.base });
     const uniforms = {
       uGlass: { value: new THREE.Color(o.glass) },
       uFogScale: { value: o.fogScale ?? 1 },
+      uLitFloor: { value: o.lit ?? 0 },
+      uCoolShare: { value: o.coolShare ?? 0.07 },
+      // the shared tones by reference unless this material has its own
+      uWarm: o.warm ? { value: new THREE.Color(o.warm) } : windowUniforms.uWarm,
+      uCool: o.cool ? { value: new THREE.Color(o.cool) } : windowUniforms.uCool,
     };
     m.userData.windows = uniforms;
     m.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms, windowUniforms, envUniforms);
+      Object.assign(shader.uniforms, windowUniforms, envUniforms, uniforms);
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `#include <common>\n${VERTEX_HEAD}`)
         .replace("#include <project_vertex>", `#include <project_vertex>\n${WORLD_VARYINGS_VERTEX}\n${VERTEX_BODY}`);

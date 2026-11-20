@@ -262,10 +262,13 @@ export function wash(rect: [number, number], reach: [number, number, number, num
 // brightest at `pos` and gone at `reach`; surfaces facing it take more.
 // `strength` about 1 lights a mid-grey wall beside it like a lamp's pool.
 // The atmosphere turns them on with the night (uniforms.ts: uPoolsOn).
-// Cost: one loop of POOLS in every lit surface's fragment, nothing else.
+// A line pool (`from`, `to`) is the same light along a segment: a row of
+// lamps down a platform, a lane's lit shopfronts, at the cost of one pool.
+// Cost: one loop of POOLS in every lit surface's fragment (a line pool a
+// few operations more), nothing else.
 
 type V3 = readonly [number, number, number];
-export type GlowPool = { pos: V3; reach: number; color: string; strength: number };
+export type GlowPool = { pos: V3; reach: number; color: string; strength: number } | { from: V3; to: V3; reach: number; color: string; strength: number };
 
 let poolOwner: object | null = null;
 
@@ -277,12 +280,17 @@ export function setPools(owner: object, pools: readonly GlowPool[], offset: V3) 
     const p = kept[i];
     const v = poolUniforms.uPools.value[i];
     const c = poolUniforms.uPoolTones.value[i];
+    const end = poolUniforms.uPoolEnds.value[i];
     if (!p) {
       v.set(0, -1e4, 0, 0);
       c.setRGB(0, 0, 0);
+      end.set(0, 0, 0, 0);
       continue;
     }
-    v.set(p.pos[0] + offset[0], p.pos[1] + offset[1], p.pos[2] + offset[2], p.reach);
+    const a = "pos" in p ? p.pos : p.from;
+    v.set(a[0] + offset[0], a[1] + offset[1], a[2] + offset[2], p.reach);
+    if ("to" in p) end.set(p.to[0] + offset[0], p.to[1] + offset[1], p.to[2] + offset[2], 1);
+    else end.set(0, 0, 0, 0);
     c.set(p.color).multiplyScalar(p.strength);
   }
 }
@@ -303,12 +311,15 @@ export function clearPools(owner: object) {
 // - dapple: soft patches `period` across, `duty` the share in sun (trees)
 // - edge: shade on the far side of a line `at` along `dir` from the box's
 //   first corner (one side of a lane)
+// - lattice: stripes both ways, `period` along `dir` and `period2` across
+//   it, `duty` of each in shade: a glazed roof's grid of sunlit panes
+// `warm` (sRGB, optional) tints the sunlit share (a pale gold multiplies it in)
 // `depth` how dark (0..1), `top` the highest y it reaches, `walls` how
 // much falls on what faces sideways (0..1). Cost: a few operations in
 // every lit surface's fragment; no texture, no light, no pass.
 
 export type DayShade = {
-  kind: "stripes" | "dapple" | "edge";
+  kind: "stripes" | "dapple" | "edge" | "lattice";
   box: readonly [number, number, number, number]; // x0, z0, x1, z1, in the place's coordinates
   depth: number;
   top: number;
@@ -317,9 +328,12 @@ export type DayShade = {
   duty?: number;
   at?: number;
   walls?: number;
+  period2?: number;
+  warm?: string;
 };
 
-const SHADE_KIND = { stripes: 1, dapple: 2, edge: 3 } as const;
+const SHADE_KIND = { stripes: 1, dapple: 2, edge: 3, lattice: 4 } as const;
+const warmTint = new THREE.Color();
 let shadeOwner: object | null = null;
 
 export function setShade(owner: object, shade: DayShade, offset: V3) {
@@ -336,10 +350,14 @@ export function setShade(owner: object, shade: DayShade, offset: V3) {
   u.uShadeDir.value.set(dx, dz, shade.top + offset[1], shade.walls ?? 0);
   // an edge is measured from the box's first corner, in the world
   if (kind === 3) u.uShade.value.z = (shade.at ?? 0) + (Math.min(x0, x1) + offset[0]) * dx + (Math.min(z0, z1) + offset[2]) * dz;
+  if (shade.warm) warmTint.set(shade.warm);
+  else warmTint.setRGB(1, 1, 1);
+  u.uShadeMore.value.set(shade.period2 ?? shade.period ?? 1, warmTint.r, warmTint.g, warmTint.b);
 }
 
 export function clearShade(owner: object) {
   if (shadeOwner !== owner) return;
   shadeOwner = null;
   shadeUniforms.uShade.value.x = 0;
+  shadeUniforms.uShadeMore.value.set(1, 1, 1, 1);
 }

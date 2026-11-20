@@ -38,6 +38,9 @@ import { fit, fonts, fontsReady } from "./textures";
 // 512 on mobile (under 1.5 MB with mipmaps, per distinct sign).
 
 export type SignKind = "board" | "blade" | "roof";
+// A mark sign's shape: a sign's, or "panel": a plain glowing rectangle on a
+// wall bracket (both faces, a hair-thin rim, no dark back, no bars)
+export type MarkKind = SignKind | "panel";
 type Tone = keyof typeof SCENE_TONES;
 
 // The interface's tokens (app/city.css): --panel, --text; the frame's grey
@@ -77,9 +80,9 @@ function boxes(list: readonly (readonly [number, number, number, number, number,
 
 // The face: one plane in front, and for a blade a second facing back
 // (turned, not mirrored, so it reads the same from either side)
-function faceGeometry(w: number, h: number, kind: SignKind): THREE.BufferGeometry {
+function faceGeometry(w: number, h: number, kind: MarkKind): THREE.BufferGeometry {
   const front = new THREE.PlaneGeometry(w, h).translate(0, 0, FACE_Z);
-  if (kind !== "blade") return front;
+  if (kind !== "blade" && kind !== "panel") return front;
   const back = new THREE.PlaneGeometry(w, h).rotateY(Math.PI).translate(0, 0, -FACE_Z);
   const out = new THREE.BufferGeometry();
   for (const name of ["position", "normal", "uv"] as const) {
@@ -99,10 +102,15 @@ function faceGeometry(w: number, h: number, kind: SignKind): THREE.BufferGeometr
 }
 
 // What holds the board: its back, and the arms (blade) or legs and rail
-// (roof)
-function frameGeometry(w: number, h: number, kind: SignKind): THREE.BufferGeometry {
-  const list: [number, number, number, number, number, number][] = [[w + BACK_LIP * 2, h + BACK_LIP * 2, BACK_DEPTH, 0, 0, 0]];
+// (roof); a panel's, a thin rim between its faces and the blade's arms
+function frameGeometry(w: number, h: number, kind: MarkKind): THREE.BufferGeometry {
+  const lip = Math.min(0.02, Math.min(w, h) * 0.04);
+  const list: [number, number, number, number, number, number][] = [kind === "panel" ? [w + lip * 2, h + lip * 2, FACE_Z * 1.4, 0, 0, 0] : [w + BACK_LIP * 2, h + BACK_LIP * 2, BACK_DEPTH, 0, 0, 0]];
   const bar = Math.max(0.04, Math.min(w, h) * 0.05);
+  if (kind === "panel") {
+    const reach = 0.3;
+    for (const y of [h * 0.35, -h * 0.35]) list.push([reach, bar * 0.6, bar * 0.6, -(w / 2 + lip + reach / 2), y, 0]);
+  }
   if (kind === "blade") {
     const reach = 0.3;
     for (const y of [h * 0.35, -h * 0.35]) list.push([reach, bar, bar, -(w / 2 + BACK_LIP + reach / 2), y, 0]);
@@ -143,7 +151,7 @@ function glowAlong(w: number, h: number, color: string, strength: number) {
   return out;
 }
 
-function assemble(w: number, h: number, kind: SignKind, tone: Tone, face: THREE.Material, glow: number | null) {
+function assemble(w: number, h: number, kind: MarkKind, tone: Tone, face: THREE.Material, glow: number | null) {
   const group = new THREE.Group();
   const frame = new THREE.Mesh(frameGeometry(w, h, kind), surface({ color: FRAME }));
   frame.name = "sign-frame";
@@ -155,7 +163,10 @@ function assemble(w: number, h: number, kind: SignKind, tone: Tone, face: THREE.
   const lit = `#${new THREE.Color(SCENE_TONES[tone]).multiplyScalar(EDGE_NIGHT).getHexString()}`;
   const edge = new THREE.Mesh(edgeGeometry(w, h), neonMaterial(lit, { dayColor: SCENE_TONES[tone] }));
   edge.name = "sign-edge";
-  group.add(frame, faceMesh, edge);
+  group.add(frame, faceMesh);
+  // a panel is its own light: no edge round it
+  if (kind !== "panel") group.add(edge);
+  else edge.geometry.dispose();
   // (a word's board has none: a glow over it would cost the word its
   // contrast; its edge is bright enough on its own)
   group.userData.glow = glow ? glowAlong(w, h, SCENE_TONES[tone], glow) : [];
@@ -259,7 +270,38 @@ function paintMarks(seed: number, tone: string, vertical: boolean) {
   };
 }
 
-export function buildMarkSign(o: { seed: number; tone: Tone; w: number; h: number; kind: SignKind }): THREE.Group {
+// A panel's face: its tone, brightest (near white) in a soft band down its
+// middle, a little deeper at its ends: a lit box seen from the street
+function paintPanel(tone: string, vertical: boolean) {
+  return (g: CanvasRenderingContext2D, w: number, h: number) => {
+    const c = new THREE.Color(tone);
+    const css = (k: number) => `rgb(${Math.round(Math.min(1, c.r * k) * 255)},${Math.round(Math.min(1, c.g * k) * 255)},${Math.round(Math.min(1, c.b * k) * 255)})`;
+    const across = vertical ? g.createLinearGradient(0, 0, w, 0) : g.createLinearGradient(0, 0, 0, h);
+    across.addColorStop(0, css(0.82));
+    across.addColorStop(0.5, css(1.12));
+    across.addColorStop(1, css(0.82));
+    g.fillStyle = across;
+    g.fillRect(0, 0, w, h);
+    const along = vertical ? g.createLinearGradient(0, 0, 0, h) : g.createLinearGradient(0, 0, w, 0);
+    along.addColorStop(0, "rgba(0,0,0,0.12)");
+    along.addColorStop(0.2, "rgba(255,255,255,0.08)");
+    along.addColorStop(0.8, "rgba(255,255,255,0.08)");
+    along.addColorStop(1, "rgba(0,0,0,0.12)");
+    g.fillStyle = along;
+    g.fillRect(0, 0, w, h);
+  };
+}
+
+export function buildMarkSign(o: { seed: number; tone: Tone; w: number; h: number; kind: MarkKind }): THREE.Group {
+  if (o.kind === "panel") {
+    // no detail at all: a small canvas does
+    const vertical = o.h > o.w;
+    const [pw, ph] = vertical ? [16, 64] : [64, 16];
+    const face = screenMaterial(paintPanel(SCENE_TONES[o.tone], vertical), { w: pw, h: ph, key: `panel:${o.tone}:${vertical ? "v" : "h"}`, glow: 1.6 });
+    const { group } = assemble(o.w, o.h, "panel", o.tone, face, 2.2);
+    group.name = `panel:${o.seed}`;
+    return group;
+  }
   const [cw, ch] = canvasSize(o.w, o.h);
   const [mw, mh] = [Math.max(32, cw >> 2), Math.max(32, ch >> 2)]; // marks need no fine detail: a quarter the size
   const vertical = o.h > o.w * 1.3;

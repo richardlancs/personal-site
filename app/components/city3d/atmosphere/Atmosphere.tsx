@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { SHARE_STEP, litShare } from "../../../lib/cityWindows";
 import type { SkyState } from "../../../lib/sky";
 import { glowUniforms } from "../kit/glow";
-import { envUniforms, neonUniforms, poolUniforms, shadeUniforms, windowUniforms } from "../kit/uniforms";
+import { bounceUniforms, envUniforms, neonUniforms, poolUniforms, shadeUniforms, windowUniforms } from "../kit/uniforms";
 import { scenes, type SceneId } from "../scenes";
 import { world } from "../store";
 import {
@@ -320,7 +320,7 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         setNumber(u, "uHazeAmt", Math.max(0, w.fogGrey) * 0.9);
         setNumber(u, "uCover", w.cover);
         setNumber(u, "uSunDisc", w.sunDisc);
-        setNumber(u, "uMoon", step01(0.6, 1, night));
+        setNumber(u, "uMoon", def.moon === false ? 0 : step01(0.6, 1, night));
         setNumber(u, "uStars", step01(0.5, 1, night) * (1 - step01(0.4, 0.85, w.cover)));
         setNumber(u, "uCityGlow", cityGlowLevel(d, w));
         const dir = u.uSunDir?.value as THREE.Vector3 | undefined;
@@ -338,7 +338,13 @@ export default function Atmosphere({ active }: { active: SceneId }) {
     glowUniforms.uHaze.value = haze;
     poolUniforms.uPoolsOn.value = lampsOn * (1 + 0.25 * w.wet);
     // The day's shade: as much as the sun has of the light
-    shadeUniforms.uShadeOn.value = (1 - step01(0.2, 0.7, night)) * Math.min(1, d.sunScale / 0.75) * Math.min(1, w.sunScale) * w.sunDisc;
+    const sunShare = (1 - step01(0.2, 0.7, night)) * Math.min(1, d.sunScale / 0.75) * Math.min(1, w.sunScale) * w.sunDisc;
+    shadeUniforms.uShadeOn.value = sunShare;
+    // The place's day fill, with the sun (none where the place has none)
+    const sun = def.sun ?? DEFAULT_SUN;
+    bounceUniforms.uBounceDir.value.set(sun[0], sun[1], sun[2]).normalize();
+    if (def.bounce) bounceUniforms.uBounce.value.set(def.bounce.color).multiplyScalar(def.bounce.strength * sunShare);
+    else bounceUniforms.uBounce.value.setRGB(0, 0, 0);
     neonUniforms.uNeon.value = neonLevel(d, w);
     windowUniforms.uLitShare.value = litShareNow(litShare(s.hour), d, SHARE_STEP);
     envUniforms.uWet.value = w.wet;

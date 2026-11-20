@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { shared } from "./materials";
-import { envUniforms, glowOn, materialKey, neonUniforms, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
+import { bounceUniforms, envUniforms, glowOn, materialKey, neonUniforms, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
 
 // The city's one lit material: three's Lambert, plus what the park's paint
 // (world3d/paint.ts) did for weather and distance, kept plain enough for a
@@ -78,9 +78,9 @@ export type SurfaceOptions = {
   relief?: Relief; // a facade's carving, drawn in the shader (below)
   // after dark it glows in `tone` (a colour) × `strength`, rising with the
   // neon (as neon.ts: litSurface does), the relief's carving in the glow:
-  // for floodlit stone
-
-  glow?: { tone: string; strength: number };
+  // for floodlit stone. With `fade` (world units) it is floodlit from the
+  // foot: full at y = `base` (0 by default), falling to a fifth `fade` higher
+  glow?: { tone: string; strength: number; base?: number; fade?: number };
 };
 
 // A facade's relief, drawn in the fragment shader on what faces sideways
@@ -152,11 +152,21 @@ if (uShadeOn > 0.001 && uShade.x > 0.5) {
     } else if (uShade.x < 2.5) {
       float d = kit_noise(vec3(xz / uShade.z, 1.7)) * 0.7 + kit_noise(vec3(xz / uShade.z * 2.7, 5.1)) * 0.3;
       sh = smoothstep(uShade.w - 0.07, uShade.w + 0.07, d);
-    } else {
+    } else if (uShade.x < 3.5) {
       sh = smoothstep(-0.03, 0.03, along - uShade.z);
+    } else {
+      // a lattice: the stripes along dir, and across it at the second period
+      float acrossDir = dot(xz, vec2(-normalize(uShadeDir.xy).y, normalize(uShadeDir.xy).x));
+      float f1 = fract(along / uShade.z);
+      float f2 = fract(acrossDir / uShadeMore.x);
+      float a1 = smoothstep(uShade.w - 0.06, uShade.w + 0.02, f1) * (1.0 - smoothstep(0.96, 1.0, f1));
+      float a2 = smoothstep(uShade.w - 0.06, uShade.w + 0.02, f2) * (1.0 - smoothstep(0.96, 1.0, f2));
+      sh = max(a1, a2);
     }
     float onWalls = mix(uShadeDir.w, 1.0, smoothstep(0.35, 0.9, n.y));
     diffuseColor.rgb *= 1.0 - sh * uShade.y * uShadeOn * onWalls;
+    // the sunlit share, warmed
+    diffuseColor.rgb *= mix(vec3(1.0), uShadeMore.yzw, (1.0 - sh) * uShadeOn * onWalls);
   }
 }`;
 
@@ -167,7 +177,14 @@ if (uPoolsOn > 0.001) {
   for (int i = 0; i < ${POOLS}; i++) {
     vec4 p = uPools[i];
     if (p.w <= 0.0) continue;
-    vec3 d = p.xyz - vKitWorld;
+    // a point pool, or the nearest point of a line pool
+    vec3 src = p.xyz;
+    vec4 e = uPoolEnds[i];
+    if (e.w > 0.5) {
+      vec3 ab = e.xyz - p.xyz;
+      src += ab * clamp(dot(vKitWorld - p.xyz, ab) / max(dot(ab, ab), 1e-6), 0.0, 1.0);
+    }
+    vec3 d = src - vKitWorld;
     float r = length(d);
     float k = 1.0 - smoothstep(0.0, p.w, r);
     float facing = 0.3 + 0.7 * max(dot(pn, d / max(r, 1e-4)), 0.0);
@@ -177,7 +194,7 @@ if (uPoolsOn > 0.001) {
 }`;
 
 export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
-  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1, reliefVector(o.relief).join(","), o.glow ? `${o.glow.tone}*${o.glow.strength}` : ""].join("|");
+  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1, reliefVector(o.relief).join(","), o.glow ? `${o.glow.tone}*${o.glow.strength}${o.glow.fade ? `@${o.glow.base ?? 0}+${o.glow.fade}` : ""}` : ""].join("|");
   return shared(materialKey("surface", variant), () => {
     const m = new THREE.MeshLambertMaterial({ color: o.color, map: o.map ?? null });
     const uniforms = {
@@ -188,10 +205,11 @@ export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
       uRelief: { value: new THREE.Vector4(...reliefVector(o.relief)) },
       uLitTone: { value: new THREE.Color(o.glow?.tone ?? "#000000") },
       uLitStrength: { value: o.glow?.strength ?? 0 },
+      uLitFall: { value: new THREE.Vector2(o.glow?.base ?? 0, o.glow?.fade ?? 0) },
     };
     m.userData.surface = uniforms;
     m.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms, envUniforms, poolUniforms, shadeUniforms, { uGlowOn: glowOn, uNeon: neonUniforms.uNeon });
+      Object.assign(shader.uniforms, uniforms, envUniforms, poolUniforms, shadeUniforms, bounceUniforms, { uGlowOn: glowOn, uNeon: neonUniforms.uNeon });
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `#include <common>\nvarying vec3 vKitWorld;\nvarying vec3 vKitNormal;`)
         .replace("#include <project_vertex>", `#include <project_vertex>\n${WORLD_VARYINGS_VERTEX}`);
@@ -211,15 +229,20 @@ uniform float uNight;
 uniform vec4 uRelief;
 uniform vec3 uLitTone;
 uniform float uLitStrength;
+uniform vec2 uLitFall;
 uniform float uNeon;
 uniform vec4 uPools[${POOLS}];
 uniform vec3 uPoolTones[${POOLS}];
+uniform vec4 uPoolEnds[${POOLS}];
 uniform float uPoolsOn;
 uniform float uGlowOn;
 uniform float uShadeOn;
 uniform vec4 uShade;
 uniform vec4 uShadeBox;
 uniform vec4 uShadeDir;
+uniform vec4 uShadeMore;
+uniform vec3 uBounce;
+uniform vec3 uBounceDir;
 ${NOISE}`,
         )
         .replace(
@@ -257,7 +280,16 @@ float kitRelief = 1.0;
         .replace(
           "#include <opaque_fragment>",
           `${POOLS_GLSL}
-if (uLitStrength > 0.0) outgoingLight += uLitTone * uLitStrength * smoothstep(0.35, 1.0, uNeon) * kitRelief;
+if (uBounce.r + uBounce.g + uBounce.b > 0.0) {
+  // the day fill: on what faces away from the sun, most on walls
+  vec3 bn = normalize(vKitNormal);
+  float away = smoothstep(0.15, -0.55, dot(bn, uBounceDir)) * (1.0 - 0.6 * smoothstep(0.5, 0.95, bn.y));
+  outgoingLight += uBounce * diffuseColor.rgb * away;
+}
+if (uLitStrength > 0.0) {
+  float fall = uLitFall.y > 0.0 ? mix(1.0, 0.2, smoothstep(0.0, 1.0, (vKitWorld.y - uLitFall.x) / uLitFall.y)) : 1.0;
+  outgoingLight += uLitTone * uLitStrength * smoothstep(0.35, 1.0, uNeon) * kitRelief * fall;
+}
 if (kitWet > 0.0) {
   // a wet surface that faces up catches the sky at a glancing angle: a sheen, not a mirror
   float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);

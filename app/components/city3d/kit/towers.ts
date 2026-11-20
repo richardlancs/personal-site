@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { rng } from "../rng";
 import { merge, prism } from "./geometry";
-import { windowMaterial, type WindowOptions } from "./windows";
+import { windowMaterial, windowVariant, type WindowOptions } from "./windows";
 
 // The bulk of every skyline: plain towers, instanced, their windows drawn
 // by the shader (windows.ts), so sixty towers are at most four draw calls
@@ -77,14 +77,20 @@ export function layoutTowers(
   return out;
 }
 
+/** A tower's facade: its window material's colours and light (windows.ts), all but `far` and `fogScale` */
+export type TowerPalette = Omit<WindowOptions, "far" | "fogScale">;
+
 /**
  * The towers as instanced meshes, one per style used (at most four draw
  * calls), each instance carrying its size (`aSize`, vec3) and seed (`aSeed`)
  * for the window shader. `far`: the averaged windows (windows.ts) and no
- * shadows. The caller owns (and disposes) the geometries; the materials are
- * the kit's shared ones.
+ * shadows. `palette` dresses each tower in a facade of its own (by default
+ * its style's, TOWER_STYLES): one mesh per style and facade used, so a
+ * scene's palettes cost a draw call each per shape, nothing else. The
+ * caller owns (and disposes) the geometries; the materials are the kit's
+ * shared ones.
  */
-export function buildTowers(specs: TowerSpec[], o: { far: boolean; fogScale?: number }): THREE.InstancedMesh[] {
+export function buildTowers(specs: TowerSpec[], o: { far: boolean; fogScale?: number; palette?: (t: TowerSpec) => TowerPalette }): THREE.InstancedMesh[] {
   const meshes: THREE.InstancedMesh[] = [];
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -92,28 +98,39 @@ export function buildTowers(specs: TowerSpec[], o: { far: boolean; fogScale?: nu
   const s = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
   for (const style of [0, 1, 2, 3] as const) {
-    const mine = specs.filter((t) => t.style === style);
-    if (!mine.length) continue;
-    const geometry = styleGeometry(style);
-    const size = new Float32Array(mine.length * 3);
-    const seeds = new Float32Array(mine.length);
-    const material = windowMaterial({ ...TOWER_STYLES[style], far: o.far, fogScale: o.fogScale });
-    const mesh = new THREE.InstancedMesh(geometry, material, mine.length);
-    mine.forEach((t, i) => {
-      m.compose(p.set(t.x, 0, t.z), q.setFromAxisAngle(up, t.ry), s.set(t.w, t.h, t.d));
-      mesh.setMatrixAt(i, m);
-      size.set([t.w, t.h, t.d], i * 3);
-      seeds[i] = t.seed;
-    });
-    geometry.setAttribute("aSize", new THREE.InstancedBufferAttribute(size, 3));
-    geometry.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seeds, 1));
-    mesh.instanceMatrix.needsUpdate = true;
-    mesh.computeBoundingBox();
-    mesh.computeBoundingSphere();
-    mesh.castShadow = !o.far;
-    mesh.receiveShadow = !o.far;
-    mesh.name = `towers:${style}${o.far ? ":far" : ""}`;
-    meshes.push(mesh);
+    // this style's towers, by facade, in the order first met (fixed by the specs)
+    const groups = new Map<string, { look: TowerPalette; specs: TowerSpec[] }>();
+    for (const t of specs) {
+      if (t.style !== style) continue;
+      const look = o.palette ? o.palette(t) : TOWER_STYLES[style];
+      const key = windowVariant(look);
+      if (!groups.has(key)) groups.set(key, { look, specs: [] });
+      groups.get(key)!.specs.push(t);
+    }
+    let k = 0;
+    for (const { look, specs: mine } of groups.values()) {
+      const geometry = styleGeometry(style);
+      const size = new Float32Array(mine.length * 3);
+      const seeds = new Float32Array(mine.length);
+      const material = windowMaterial({ ...look, far: o.far, fogScale: o.fogScale });
+      const mesh = new THREE.InstancedMesh(geometry, material, mine.length);
+      mine.forEach((t, i) => {
+        m.compose(p.set(t.x, 0, t.z), q.setFromAxisAngle(up, t.ry), s.set(t.w, t.h, t.d));
+        mesh.setMatrixAt(i, m);
+        size.set([t.w, t.h, t.d], i * 3);
+        seeds[i] = t.seed;
+      });
+      geometry.setAttribute("aSize", new THREE.InstancedBufferAttribute(size, 3));
+      geometry.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seeds, 1));
+      mesh.instanceMatrix.needsUpdate = true;
+      mesh.computeBoundingBox();
+      mesh.computeBoundingSphere();
+      mesh.castShadow = !o.far;
+      mesh.receiveShadow = !o.far;
+      mesh.name = `towers:${style}${o.far ? ":far" : ""}${k ? `:${k}` : ""}`;
+      meshes.push(mesh);
+      k++;
+    }
   }
   return meshes;
 }

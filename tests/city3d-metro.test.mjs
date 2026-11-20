@@ -36,7 +36,7 @@ test("exactly DISTRICT_LIGHTS.metro spot lights, through SceneLights, and no oth
 });
 
 test("the train is the kit's mover, run by useMovers; nothing random", () => {
-  assert.match(src, /import \{ buildTrain \} from "\.\.\/kit\/movers";/);
+  assert.match(src, /import \{ buildTrain, trainLength \} from "\.\.\/kit\/movers";/);
   assert.match(src, /buildTrain\(/);
   assert.match(src, /useMovers\(built\.movers, \{ active, still \}\)/);
   assert.match(src, /park: \(\) => train\.park\(\)/);

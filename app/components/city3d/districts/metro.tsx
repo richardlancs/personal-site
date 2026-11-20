@@ -10,13 +10,13 @@ import { glassMaterial } from "../kit/glass";
 import type { DayShade, GlowPool } from "../kit/glow";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
-import { buildTrain } from "../kit/movers";
+import { buildTrain, trainLength } from "../kit/movers";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
 import type { LightStrip } from "../kit/reflection";
 import { buildMarkSign, disposeSign, glowPoints } from "../kit/signs";
 import { buildStreaks } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
-import { buildLampRow, buildRailing, buildViaduct, glowMaterial } from "../kit/street";
+import { buildLampRow, buildRailing, buildViaduct } from "../kit/street";
 import { surface } from "../kit/surface";
 import { fit, fonts, fontsReady, pavingTexture } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
@@ -127,9 +127,21 @@ function drawBoard(g: CanvasRenderingContext2D, w: number, h: number) {
 function stoppingTrain(): { mover: Mover; length: number } {
   const o = METRO.train;
   const period = o.cycle;
-  const train = buildTrain(o.cars, { span: o.reach * 2, period });
+  // the kit's cars in a paler shell that the platform's lamps warm after
+  // dark, a calmer teal stripe, posts between the windows, and a tapered
+  // nose with a dark windscreen and headlamps lit after dark
+  const train = buildTrain(o.cars, {
+    span: o.reach * 2,
+    period,
+    nose: "round",
+    snout: o.snout,
+    windows: "framed",
+    shell: { color: TRAIN, grime: 0.1, glow: { tone: "#c8d4e4", strength: 0.075 } },
+    stripe: { day: "#2f8fb0", night: "#2f8c9c" },
+  });
   train.park();
-  const length = new THREE.Box3().setFromObject(train.object).getSize(new THREE.Vector3()).x;
+  // buffer to buffer, the flat cab's glass at the back included
+  const length = trainLength(o.cars) + 0.02;
   const travel = o.reach * 2 + length;
   // the kit's time that puts the train's middle at `u` (0: at the stop)
   const at = (u: number) => ((u + travel / 2) / travel) * 0.7 * period;
@@ -156,67 +168,6 @@ function stoppingTrain(): { mover: Mover; length: number } {
       },
     },
   };
-}
-
-// The train's nose: the car's section (a rounded box, 0.28 wide, 0.02 to
-// 0.34 high) carried `snout` forward of its front at `front`, narrowing a
-// little and sloping back above the windscreen's foot, closed at the tip
-const noseTop = (t: number) => 0.345 - 0.19 * t ** 1.6;
-const noseX = (front: number, snout: number, t: number) => front + snout * Math.sin((t * Math.PI) / 2);
-// the windscreen: dark panes laid on the nose's slope, a hair proud of it
-function windscreen(front: number, snout: number): THREE.BufferGeometry[] {
-  const parts: THREE.BufferGeometry[] = [];
-  const ts = [0.3, 0.5, 0.68, 0.84, 0.97];
-  for (let i = 0; i < ts.length - 1; i++) {
-    const ax = noseX(front, snout, ts[i]);
-    const ay = noseTop(ts[i]);
-    const bx = noseX(front, snout, ts[i + 1]);
-    const by = noseTop(ts[i + 1]);
-    const l = Math.hypot(bx - ax, by - ay);
-    const angle = Math.atan2(by - ay, bx - ax);
-    const hw = 0.14 * (1 - 0.14 * ts[i + 1] ** 2) * 0.82;
-    parts.push(box(l * 1.05, 0.004, hw * 2).rotateZ(angle).translate((ax + bx) / 2 - Math.sin(angle) * 0.003, (ay + by) / 2 + Math.cos(angle) * 0.003, 0));
-  }
-  return parts;
-}
-
-function noseGeometry(front: number, snout: number): THREE.BufferGeometry {
-  const RING = 16;
-  const STEPS = 6;
-  const pos: number[] = [];
-  const idx: number[] = [];
-  for (let i = 0; i <= STEPS; i++) {
-    const t = i / STEPS;
-    const x = noseX(front, snout, t);
-    const hw = 0.14 * (1 - 0.14 * t * t);
-    const top = noseTop(t);
-    const bottom = 0.02 + 0.015 * t;
-    const cy = (top + bottom) / 2;
-    const hh = (top - bottom) / 2;
-    for (let j = 0; j < RING; j++) {
-      const a = (j / RING) * Math.PI * 2;
-      // a superellipse: square-ish with rounded corners
-      const c = Math.cos(a);
-      const s = Math.sin(a);
-      pos.push(x, cy + hh * Math.sign(s) * Math.abs(s) ** 0.4, hw * Math.sign(c) * Math.abs(c) ** 0.4);
-    }
-  }
-  for (let i = 0; i < STEPS; i++)
-    for (let j = 0; j < RING; j++) {
-      const a = i * RING + j;
-      const b = i * RING + ((j + 1) % RING);
-      idx.push(a, a + RING, b, b, a + RING, b + RING);
-    }
-  // the tip's face
-  const centre = pos.length / 3;
-  const last = STEPS * RING;
-  pos.push(front + snout, (noseTop(1) + 0.035) / 2, 0);
-  for (let j = 0; j < RING; j++) idx.push(last + j, centre, last + ((j + 1) % RING));
-  const g = new THREE.BufferGeometry();
-  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
-  g.setIndex(idx);
-  g.computeVertexNormals();
-  return g;
 }
 
 // ---------------------------------------------------------------------
@@ -511,37 +462,7 @@ function build(quality: Quality): Built {
   const { mover: train, length } = stoppingTrain();
   train.object.rotation.y = -Math.PI / 2; // its +x along +z: toward the camera
   train.object.position.set(T.x, D - 0.07, METRO.train.nose - length / 2);
-  const cars = train.object.children[0] as THREE.Group;
-  // the kit's cars, in a paler shell that the platform's lamps warm after
-  // dark; a tapered nose with a dark windscreen, posts between the
-  // windows, its headlamps lit after dark
-  const shell = cars.children[0] as THREE.Mesh;
-  shell.material = surface({ color: TRAIN, grime: 0.1, glow: { tone: "#c8d4e4", strength: 0.075 } });
-  // its stripe a calmer teal after dark than the kit's
-  (cars.children[2] as THREE.Mesh).material = glowMaterial({ day: "#2f8fb0", night: "#2f8c9c" });
-  const front = length / 2;
-  const nose = noseGeometry(front, METRO.train.snout);
-  const tip = front + METRO.train.snout;
-  const trim: THREE.BufferGeometry[] = [nose];
-  // the posts between the windows on the platform's side (the object's -z)
-  for (let x = -front + 0.08; x < front - 0.04; x += 0.21) trim.push(box(0.035, 0.09, 0.006).translate(x, 0.22, -0.147));
-  const body = new THREE.Mesh(merge(trim), shell.material);
-  const screen = new THREE.Mesh(
-    merge([...windscreen(front, METRO.train.snout), ...[-1, 1].map((s) => box(0.05, 0.08, 0.004).translate(front + 0.03, 0.22, s * 0.128))]),
-    glowMaterial({ day: "#1c2530", night: "#0b0c10" }),
-  );
-  const lamps = new THREE.Mesh(merge([-1, 1].map((s) => box(0.006, 0.02, 0.04).translate(tip + 0.001, 0.085, s * 0.08))), neonMaterial(dim("#fff1d6", 0.55), { dayColor: "#5a6068" }));
-  const coupler = new THREE.Mesh(box(0.03, 0.035, 0.06).translate(tip + 0.01, 0.04, 0), surface({ color: "#3a3e44" }));
-  for (const [m, name] of [
-    [body, "train-nose"],
-    [screen, "train-screen"],
-    [lamps, "train-lamps"],
-    [coupler, "train-coupler"],
-  ] as const) {
-    m.name = name;
-    geometries.push(m.geometry);
-    cars.add(m);
-  }
+  // (its parts are the kit's, named: buildTrain's `parts`)
   add(train.object);
   disposers.push(() => train.object.userData.dispose?.());
 
