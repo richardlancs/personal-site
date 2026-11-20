@@ -109,11 +109,12 @@ void main() {
     float star = step(0.982, h21(cell)) * smoothstep(0.16, 0.0, length(fract(sg) - jitter));
     col += vec3(0.85, 0.88, 1.0) * star * uStars * smoothstep(0.12, 0.4, h) * 0.5;
   }
-  // the city's glow on the horizon after dark: orange low, violet above it
-  float glowLow = exp(-max(h, 0.0) * 22.0);
-  float glowHigh = exp(-max(h, 0.0) * 6.0);
+  // the city's glow on the horizon after dark: a thin orange band low
+  // (the night plate's), a little violet just above it
+  float glowLow = exp(-max(h, 0.0) * 34.0);
+  float glowHigh = exp(-max(h, 0.0) * 9.0);
   float glowVary = 0.75 + 0.5 * n2(vec2(atan(d.z, d.x) * 3.0, 0.0) + uSeed);
-  col += (uCityGlowColor * glowLow * 0.55 + vec3(0.2, 0.1, 0.36) * glowHigh * 0.3) * uCityGlow * glowVary;
+  col += (uCityGlowColor * glowLow * 0.42 + vec3(0.2, 0.1, 0.36) * glowHigh * 0.1) * uCityGlow * glowVary;
   // clouds: streaks and wisps stretched along one wind, in a band above the
   // skyline; with more cover they thicken, and a grey layer closes over
   float over = smoothstep(0.62, 1.0, uCover);

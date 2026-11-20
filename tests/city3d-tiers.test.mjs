@@ -56,7 +56,7 @@ test("the tiers keep the plan's numbers", () => {
   assert.deepEqual([TIERS.high.frameMs, TIERS.low.frameMs, TIERS.mobile.frameMs], [12, 9, 8]);
   assert.deepEqual(TIERS.low.bloom, { scale: 0.25, levels: 5, threshold: 1, smoothing: 0.05 });
   // Measured from the build (budget.mjs city3dJs), rounded up to a tenth of a MB
-  assert.equal(SAVE_DATA_MB, 0.3);
+  assert.equal(SAVE_DATA_MB, 0.4);
 });
 
 test("the flat query is the narrow layout's, imported from flat.ts", () => {

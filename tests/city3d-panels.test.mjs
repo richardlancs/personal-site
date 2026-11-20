@@ -83,7 +83,9 @@ test("each picker writes its choice and its scene's focus key", () => {
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /id=\{slug\(project\.title\)\}/);
 
   const lines = code(read(`${panels}/BoardLines.tsx`));
-  assert.match(lines, /sortNewestFirst\(experience\)/);
+  // newest first, sorted on the server and handed to the row (CityPage.tsx)
+  assert.match(read("app/components/city3d/CityPage.tsx"), /sortNewestFirst\(experience\)/);
+  assert.match(lines, /lines\.map\(/);
   assert.match(lines, /world\.select\("line", index\)/);
   assert.match(lines, /focus: `line-\$\{index\}`/);
 
@@ -108,8 +110,11 @@ test("the scene keys named in the districts' defs are the ones the pickers write
 test("CityPage keeps the section's words with where=\"3d\" and puts the panel's behaviour after the heading", () => {
   const page = code(read("app/components/city3d/CityPage.tsx"));
   for (const name of ["Hero", "About", "Projects", "Experience", "Interests", "Contact"]) assert.match(page, new RegExp(`<${name} where="3d" />`), name);
-  assert.match(page, /import CityPanel from "\.\/panels\/CityPanel";/);
-  assert.match(page, /<\/h1>\s*\)\}\s*<CityPanel section=\{id\} \/>\s*\{content\[id\]\}/);
+  assert.match(page, /import CityPanel, \{ type Picks \} from "\.\/panels\/CityPanel";/);
+  assert.match(page, /<\/h1>\s*\)\}\s*<CityPanel section=\{id\} picks=\{picks\} \/>\s*\{content\[id\]\}/);
+  // The pickers import no data: the portfolio's data stays out of every
+  // chunk the 2D page shares with them
+  for (const name of ["ScreenPicker", "BoardLines", "ArcadeControls", "CityPanel"]) assert.doesNotMatch(code(read(`${panels}/${name}.tsx`)), /import \{[^}]*\} from "\.\.\/\.\.\/\.\.\/data\/portfolio"/, name);
 });
 
 test("FocusButton turns the camera and is glass", () => {

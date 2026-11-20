@@ -30,16 +30,20 @@ export const SHARE_STEP = 1 / 16;
 
 // The share through the day, hours on a clock that starts at 06:00 (the
 // points after midnight are written past 24). The steepest stretch, the
-// evening, climbs 0.054 a quarter hour, under one step.
+// evening, climbs 0.036 a quarter hour, under one step.
+// Half the windows at the evening's height, not three in four: with
+// windows lighting by floors (windowScore, below), that reads as the night
+// plate's buildings with lit floors; more read as static (tuned against
+// app/assets/city/lujiazui-night.webp, 20 November 2026).
 const CURVE: readonly [number, number][] = [
-  [6, 0.25],
+  [6, 0.2],
   [9, 0.06],
   [17, 0.06],
-  [19.5, 0.6],
-  [21, 0.75],
-  [25, 0.45],
-  [28, 0.2],
-  [30, 0.25],
+  [19.5, 0.42],
+  [21, 0.5],
+  [25, 0.32],
+  [28, 0.16],
+  [30, 0.2],
 ];
 
 /** The share of windows lit at a local hour; any hour wraps onto the clock (one that isn't a number counts as midnight). */

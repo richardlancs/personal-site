@@ -11,7 +11,9 @@ import Interests from "../city2d/sections/Interests";
 import Projects from "../city2d/sections/Projects";
 import Arrivals from "../ui/Arrivals";
 import Colophon from "../ui/Colophon";
-import CityPanel from "./panels/CityPanel";
+import { experience, interests, projects } from "../../data/portfolio";
+import { sortNewestFirst } from "../../lib/experience";
+import CityPanel, { type Picks } from "./panels/CityPanel";
 import { scenes } from "./scenes";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
@@ -42,6 +44,17 @@ const content: Record<SectionId, ReactNode> = {
   experience: <Experience where="3d" />,
   interests: <Interests where="3d" />,
   contact: <Contact where="3d" />,
+};
+
+// What each section's picker lists, read here on the server and handed to
+// it: the pickers import nothing from app/data, so the portfolio's data
+// never joins a chunk the 2D page loads (a client module shared with the
+// 2D page's music key pulled all of it into /'s first load: +4 KB)
+const picks: Picks = {
+  projects: projects.map((p) => p.title),
+  // in the order the board lists them (districts/metro.def.ts: "line-<n>")
+  experience: sortNewestFirst(experience).map((e) => ({ role: e.role, organization: e.organization })),
+  interests: interests.map((i) => ({ name: i.name, scene: i.scene })),
 };
 
 export default function CityPage({ id }: { id: SectionId }) {
@@ -76,7 +89,7 @@ export default function CityPage({ id }: { id: SectionId }) {
             {s.title}
           </h1>
         )}
-        <CityPanel section={id} />
+        <CityPanel section={id} picks={picks} />
         {content[id]}
         <p className="city-panel-foot">
           <Link href={twoDHref(s.city)} className="text-link text-link-solo">

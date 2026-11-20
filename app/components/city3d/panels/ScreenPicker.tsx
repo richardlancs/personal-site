@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { projects } from "../../../data/portfolio";
 import { useWorld, world } from "../store";
 import { onChoiceKey } from "./selector";
 
@@ -21,7 +20,7 @@ function show(index: number) {
 // view and puts the keyboard on its heading. The index's links (#<slug>)
 // choose a screen too. Every key is a tab stop; the arrows also move along
 // the row (selector.ts).
-export default function ScreenPicker() {
+export default function ScreenPicker({ items: titles }: { items: string[] }) {
   const selected = useWorld((s) => s.sel.project);
   // The last choice this row made or followed: any other change of
   // sel.project came from the scene
@@ -34,7 +33,7 @@ export default function ScreenPicker() {
 
   useEffect(() => {
     const fromHash = () => {
-      const index = projects.findIndex((project) => slug(project.title) === location.hash.slice(1));
+      const index = titles.findIndex((title) => slug(title) === location.hash.slice(1));
       if (index < 0) return;
       known.current = index;
       show(index);
@@ -42,19 +41,19 @@ export default function ScreenPicker() {
     fromHash();
     addEventListener("hashchange", fromHash);
     return () => removeEventListener("hashchange", fromHash);
-  }, []);
+  }, [titles]);
 
   useEffect(() => {
     if (selected === known.current) return;
     known.current = selected;
-    const row = document.getElementById(slug(projects[selected].title));
+    const row = document.getElementById(slug(titles[selected]));
     if (!row) return;
     row.scrollIntoView({ block: "start", behavior: world.get().still ? "auto" : "smooth" });
     const heading = row.querySelector<HTMLElement>("h2");
     if (!heading) return;
     if (!heading.hasAttribute("tabindex")) heading.tabIndex = -1;
     heading.focus({ preventScroll: true });
-  }, [selected]);
+  }, [selected, titles]);
 
   return (
     <div
@@ -62,18 +61,18 @@ export default function ScreenPicker() {
       aria-label="Project screens"
       className="city-picker"
       data-picker="screens"
-      onKeyDown={(event) => onChoiceKey(event, selected, projects.length, choose)}
+      onKeyDown={(event) => onChoiceKey(event, selected, titles.length, choose)}
     >
-      {projects.map((project, index) => (
+      {titles.map((title, index) => (
         <button
-          key={project.title}
+          key={title}
           type="button"
           aria-pressed={index === selected}
           data-choice
           className="glass city-picker-key"
           onClick={() => choose(index)}
         >
-          {project.title}
+          {title}
         </button>
       ))}
     </div>

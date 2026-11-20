@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { interests } from "../../../data/portfolio";
+import type { Interest } from "../../../data/portfolio";
 import { ACTIONS } from "../arcade/arcadeLogic";
 import { useWorld, world } from "../store";
 import { onChoiceKey } from "./selector";
@@ -19,7 +19,7 @@ const IDLE_CYCLE_MS = 10000;
 // or a hidden tab. Every key is a tab stop; the arrows also move along the
 // modes (selector.ts). The interests themselves are written out in the
 // panel under this row (city2d/sections/Interests.tsx).
-export default function ArcadeControls() {
+export default function ArcadeControls({ items: interests }: { items: Pick<Interest, "name" | "scene">[] }) {
   const selected = useWorld((s) => s.sel.interest);
   const arrived = useWorld((s) => s.arrived);
   const still = useWorld((s) => s.still);
@@ -48,7 +48,7 @@ export default function ArcadeControls() {
       world.select("interest", (world.get().sel.interest + 1) % interests.length);
     }, IDLE_CYCLE_MS);
     return () => window.clearInterval(id);
-  }, [touched, hovering, still, arrived]);
+  }, [touched, hovering, still, arrived, interests.length]);
 
   // A new mode starts with nothing said about it
   useEffect(() => {

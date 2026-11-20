@@ -7,7 +7,7 @@ import { FLOOR_WEIGHT, litShare, localHour, previewHour, SHARE_STEP, WINDOW_HASH
 test("Richmond Hill's hour, as a number", () => assert.equal(localHour(Date.UTC(2026, 10, 20, 17, 30), "America/Toronto"), 12.5));
 test("few windows by day, most in the evening, fewer before dawn", () => {
   assert.ok(litShare(12) <= 0.08);
-  assert.ok(litShare(21) >= 0.7);
+  assert.ok(litShare(21) >= 0.45 && litShare(21) <= 0.55);
   assert.ok(litShare(4) <= 0.3 && litShare(4) >= 0.15);
 });
 test("the share moves in steps of 1/16, at most one step per quarter hour", () => {
@@ -24,7 +24,7 @@ test("a window's state is its own hash: stable, and lit windows only grow with t
   }
 });
 test("a wild hour is wrapped, not NaN", () => { for (const h of [NaN, -1, 25, Infinity]) assert.ok(Number.isFinite(litShare(h))); });
-test("a previewed night has night windows", () => assert.ok(litShare(previewHour({ preset: "clear", daylight: "night", progress: 0.5, source: "preview" })) >= 0.6));
+test("a previewed night has night windows", () => assert.ok(litShare(previewHour({ preset: "clear", daylight: "night", progress: 0.5, source: "preview" })) >= 0.4));
 
 // Beyond the brief's cases
 
@@ -37,10 +37,10 @@ test("the local hour follows daylight saving and runs 0 up to 24", () => {
 
 test("the curve passes through its points, and wraps", () => {
   const q = (s) => Math.round(s * 16) / 16;
-  assert.equal(litShare(6), q(0.25));
+  assert.equal(litShare(6), q(0.2));
   assert.equal(litShare(13), q(0.06));
-  assert.equal(litShare(21), 0.75);
-  assert.equal(litShare(1), q(0.45));
+  assert.equal(litShare(21), 0.5);
+  assert.equal(litShare(1), q(0.32));
   assert.equal(litShare(-1), litShare(23));
   assert.equal(litShare(25), litShare(1));
   assert.equal(litShare(24), litShare(0));

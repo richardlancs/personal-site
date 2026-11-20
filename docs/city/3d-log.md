@@ -74,3 +74,25 @@ Weakest: Jin Mao, from far. Its identity in the plates is the fine rhythm of the
 - Known until Task 3: on `/city/<section>` the h1 is followed by the
   sections' h3s (no h2); the sections use viewport breakpoints, so a
   half-width panel at 1440 gets their wide layouts in about 720px.
+
+## Task 12: Home, the riverside (20 November 2026)
+
+- Built from the kit (Riverside.tsx); the composition is data in
+  `districts/lujiazui.def.ts: RIVERSIDE`. Production build, `?perf`, the
+  Home pose at night, headless Chrome uncapped (relative figures):
+  high 127 draws, 155k tris, 38 programs, ~10.4 MB textures, p50/p95
+  4.1/6.6 ms (1440×900, planar river); low 95 draws, 80k tris, 38
+  programs, 9.9 MB, 2.9/4.8 ms; mobile (390×844, DPR 1.25) 75 draws, 44k
+  tris, 35 programs, 3.0 MB, 2.6/3.0 ms. All inside the tier table; no
+  cut (the planar reflection, the ferry, the train and the warning lights
+  all stay).
+- Windows light by floors (lib/cityWindows.ts: windowScore); the evening's
+  share peaks at 0.5, not 0.75; about one lit window in eight is cool.
+- visibility.mjs: 0 problems over 10 views × 6 skies. Boards' words on the
+  rendered picture, bloom on: 14.0–14.1:1 at 1440 (high), 12.5–13.4:1 at
+  390 (mobile). Home panel's text over the lit skyline: 6.18:1 at least
+  (the colophon's muted text).
+- Sizes: homeInitialJs 199,820; cityInitialJs 200,848 (at its limit: the
+  pickers' data now comes from the server, which took /'s first load back
+  from 203,829); city3dChunk 298,767; city3dJs 310,914; Save-Data figure
+  0.4 MB.

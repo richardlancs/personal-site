@@ -1,12 +1,7 @@
 "use client";
 
-import { experience } from "../../../data/portfolio";
-import { sortNewestFirst } from "../../../lib/experience";
 import { useWorld, world } from "../store";
 import { onChoiceKey } from "./selector";
-
-// In the order the board lists them (districts/metro.def.ts: "line-<n>")
-const lines = sortNewestFirst(experience);
 
 // The station's departures board, one line per entry, newest first: a key
 // here chooses that line, the board turns its flaps over to it, and the
@@ -14,7 +9,9 @@ const lines = sortNewestFirst(experience);
 // the panel under this row (city2d/sections/Experience.tsx), so the row
 // only chooses; nothing here is read out twice. Every key is a tab stop;
 // the arrows also move along the row (selector.ts).
-export default function BoardLines() {
+// `lines`: in the order the board lists them, newest first (CityPage.tsx:
+// sortNewestFirst(experience); districts/metro.def.ts: "line-<n>")
+export default function BoardLines({ items: lines }: { items: { role: string; organization: string }[] }) {
   const selected = useWorld((s) => s.sel.line);
 
   function choose(index: number) {

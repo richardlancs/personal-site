@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, lazy, useEffect, useSyncExternalStore, type ComponentType } from "react";
+import type { Interest } from "../../../data/portfolio";
 import type { SectionId } from "../../../sections/registry";
 
 // What a /city page's panel does, beyond its words (CityPage.tsx renders
@@ -24,21 +25,26 @@ import type { SectionId } from "../../../sections/registry";
 // then, never in the page's first load (cityInitialJs has little room).
 // Escape back to the riverside is City3D.tsx's, in the 3D chunk.
 
-const PICKERS: Partial<Record<SectionId, ComponentType>> = {
+// What the pickers list, from the server (CityPage.tsx): the pickers
+// import no data of their own
+export type Picks = {
+  projects: string[]; // the projects' titles, in portfolio order
+  experience: { role: string; organization: string }[]; // newest first
+  interests: Pick<Interest, "name" | "scene">[];
+};
+
+const PICKERS = {
   projects: lazy(() => import("./ScreenPicker")),
   experience: lazy(() => import("./BoardLines")),
   interests: lazy(() => import("./ArcadeControls")),
 };
 
-// The address the visit started on (the document's own navigation)
-const startedOn = () => {
-  const entry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-  try {
-    return entry ? new URL(entry.name).pathname : null;
-  } catch {
-    return null;
-  }
-};
+// Each picker takes what it lists as `items` (its own key of Picks)
+type Picker = ComponentType<{ items: Picks[keyof Picks] }>;
+
+// The address the visit started on (the document's own navigation: its
+// name is the document's URL)
+const startedOn = () => new URL(performance.getEntriesByType("navigation")[0]?.name ?? location.href).pathname;
 // Whether the visit has been anywhere but where it started: until then,
 // the page showing is the one loaded, and keeps the focus where it is
 // (however often its effect runs). Module-level: each page mounts its own
@@ -54,18 +60,18 @@ const watchDrawing = (onChange: () => void) => {
 const drawing = () => document.documentElement.dataset.city3d === "on";
 const notYet = () => false;
 
-export default function CityPanel({ section }: { section: SectionId }) {
+export default function CityPanel({ section, picks }: { section: SectionId; picks: Picks }) {
   useEffect(() => {
     if (location.pathname !== startedOn()) moved = true;
     if (!moved) return;
-    document.querySelector<HTMLElement>(`main.city-page[data-section="${section}"] h1`)?.focus({ preventScroll: true });
+    document.querySelector<HTMLElement>(`[data-section="${section}"] h1`)?.focus({ preventScroll: true });
   }, [section]);
 
   const on = useSyncExternalStore(watchDrawing, drawing, notYet);
-  const Picker = PICKERS[section];
+  const Picker = PICKERS[section as keyof Picks] as Picker | undefined;
   if (!Picker) return null;
   // The slot is in the server's HTML, so its height can be kept while the
   // 3D city starts (city-pages.css: .city-picker-slot) and the panel
   // doesn't move when the row arrives
-  return <div className="city-picker-slot">{on && <Suspense fallback={null}><Picker /></Suspense>}</div>;
+  return <div className="city-picker-slot">{on && <Suspense fallback={null}><Picker items={picks[section as keyof Picks]} /></Suspense>}</div>;
 }
