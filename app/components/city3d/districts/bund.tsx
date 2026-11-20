@@ -16,7 +16,7 @@ import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { pavingTexture, setClockHour } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
-import { buildStreetTrees } from "../kit/trees";
+import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { buildRiver, wetPaving } from "../kit/water";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
@@ -57,7 +57,7 @@ const LAND = 0;
 const WATER_Y = B.edge.water;
 
 // Colours, from the plates
-const PAVING = "#cfbea0";
+const PAVING = "#e0cfb0";
 const ROAD = "#5d6066";
 const STONE = "#f0e2c4";
 const STONE_TRIM = "#f6ecd4";
@@ -253,7 +253,7 @@ function build(quality: Quality): Built {
         if (y > b.h - 0.22) break;
         if (y < GROUND + 0.08) continue;
         const m = new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.004), y, Z(a)), paneTurn, new THREE.Vector3(bw * 0.44, FLOOR * 0.48, 1));
-        (wr() < 0.62 ? panesOn : panesOff).push(m);
+        (wr() < 0.8 ? panesOn : panesOff).push(m);
       }
     }
     const mid = (b.a0 + b.a1) / 2;
@@ -318,7 +318,7 @@ function build(quality: Quality): Built {
   mesh(merge(bodies), stone, "facades");
   mesh(merge(trims), trim, "facades:trim");
   mesh(merge([...roofs]), roof, "facades:roofs");
-  mesh(merge([dome, lantern]), litSurface({ color: "#cbbd9f", tone: "gold", strength: 0.75 }), "dome");
+  mesh(merge([dome, lantern]), litSurface({ color: "#cbbd9f", tone: "gold", strength: 0.55 }), "dome");
   instanced(box(1, 1, 1), trim, pilasters, "facades:pilasters");
   const pane = new THREE.PlaneGeometry(1, 1);
   instanced(pane, glowMaterial({ day: GLASS_DAY, night: "#ffcd86" }), panesOn, "facades:windows-lit");
@@ -359,29 +359,37 @@ function build(quality: Quality): Built {
   const Bd = B.bed;
   planterParts.push(slab(Bd.s0, Bd.s1, Bd.a0, Bd.a1, LAND, 0.085));
   flowers(Bd.s0, Bd.s1, Bd.a0, Bd.a1, 0.085, 70);
-  for (let a = B.planters.from; a <= B.planters.to; a += B.planters.step) {
-    if (a > Bd.a0 - 0.4 && a < Bd.a1 + 0.4) continue;
-    const s = B.planters.s;
-    planterParts.push(slab(s - 0.14, s + 0.14, a - 0.22, a + 0.22, LAND, 0.065));
-    flowers(s - 0.14, s + 0.14, a - 0.22, a + 0.22, 0.065, 5);
+  // the planters along the trees: the kit's (a stone box, a shrub, flowers)
+  const planterSpots: { x: number; z: number; w: number; d: number; h: number }[] = [];
+  for (let a = B.planters.from; a <= B.planters.to; a += B.planters.step) if (a < Bd.a0 - 0.4 || a > Bd.a1 + 0.4) planterSpots.push({ x: X(B.planters.s), z: Z(a), w: 0.24, d: 0.44, h: 0.06 });
+  for (const m of buildPlanters(61, planterSpots, { stone: PIER })) {
+    geometries.push(m.geometry);
+    add(m);
   }
-  mesh(merge(planterParts), surface({ color: PIER, grime: 0.5 }), "planters");
-  mesh(merge(leaves), surface({ color: "#4d7a3c" }), "planters:leaves");
-  mesh(merge(blooms[0]), surface({ color: "#9d8fd8" }), "planters:hydrangea-blue");
-  mesh(merge(blooms[1]), surface({ color: "#d99ac4" }), "planters:hydrangea-pink");
+  // (after dark the bed's stone and flowers hold the lamps' and the
+  // facades' light, as the night plate paints them: a little glow each)
+  mesh(merge(planterParts), surface({ color: PIER, grime: 0.5, snow: true, glow: { tone: "#ffc98a", strength: 0.1 } }), "planters");
+  mesh(merge(leaves), surface({ color: "#4d7a3c", snow: true, glow: { tone: "#5f8a3a", strength: 0.08 } }), "planters:leaves");
+  mesh(merge(blooms[0]), surface({ color: "#9d8fd8", glow: { tone: "#9d8fd8", strength: 0.22 } }), "planters:hydrangea-blue");
+  mesh(merge(blooms[1]), surface({ color: "#d99ac4", glow: { tone: "#d99ac4", strength: 0.22 } }), "planters:hydrangea-pink");
 
   // ---- The glass kiosk, lit cyan (scenery): a dark frame, glass that
   // glows cyan after dark, a phone inside, a lit strip under its roof
   const K = B.kiosk;
   const kx = X(K.s);
   const kz = Z(K.a);
-  const frame: THREE.BufferGeometry[] = [box(K.w + 0.02, 0.012, K.d + 0.02).translate(kx, 0.006, kz), box(K.w + 0.06, 0.016, K.d + 0.05).translate(kx, K.h + 0.008, kz)];
+  // its plinth, and a thin roof that overhangs, deeper toward the promenade
+  const frame: THREE.BufferGeometry[] = [box(K.w + 0.02, 0.012, K.d + 0.02).translate(kx, 0.006, kz), box(K.w + 0.07, 0.014, K.d + 0.08).translate(kx, K.h + 0.007, kz - 0.01)];
   for (const [dx, dz] of [[-1, -1], [-1, 1], [1, -1], [1, 1]]) frame.push(box(0.012, K.h, 0.012).translate(kx + (dx * K.w) / 2, K.h / 2, kz + (dz * K.d) / 2));
   frame.push(box(K.w, 0.01, 0.006).translate(kx, K.h * 0.55, kz - K.d / 2), box(0.006, 0.01, K.d).translate(kx - K.w / 2, K.h * 0.55, kz));
   frame.push(box(0.045, 0.07, 0.02).translate(kx + 0.02, K.h * 0.55, kz + K.d / 2 - 0.02));
   mesh(merge(frame), surface({ color: METAL }), "kiosk");
+  // inside, seen through the glass: the back wall's panel round the phone,
+  // the phone's lit screen, and a shelf
+  mesh(merge([box(K.w * 0.7, K.h * 0.62, 0.006).translate(kx, K.h * 0.5, kz + K.d / 2 - 0.008), box(K.w * 0.6, 0.006, 0.03).translate(kx, K.h * 0.36, kz + K.d / 2 - 0.02)]), surface({ color: "#4f6a72" }), "kiosk:inside");
+  mesh(box(0.026, 0.03, 0.004).translate(kx + 0.02, K.h * 0.6, kz + K.d / 2 - 0.031), neonMaterial(dim("cyan", 0.7), { dayColor: "#9fc4cc" }), "kiosk:screen");
   const glass = [box(K.w - 0.01, K.h - 0.02, 0.004).translate(kx, K.h / 2, kz - K.d / 2), box(K.w - 0.01, K.h - 0.02, 0.004).translate(kx, K.h / 2, kz + K.d / 2), box(0.004, K.h - 0.02, K.d - 0.01).translate(kx - K.w / 2, K.h / 2, kz), box(0.004, K.h - 0.02, K.d - 0.01).translate(kx + K.w / 2, K.h / 2, kz)];
-  mesh(merge(glass), glassMaterial({ tint: "#9fcfd6", opacity: 0.3, sky: 0.5, glow: { tone: "cyan", strength: 0.32 }, double: true }), "kiosk:glass");
+  mesh(merge(glass), glassMaterial({ tint: "#9fcfd6", opacity: 0.15, sky: 0.45, glow: { tone: "cyan", strength: 0.08 }, double: true }), "kiosk:glass");
   mesh(box(K.w - 0.02, 0.008, K.d - 0.02).translate(kx, K.h - 0.006, kz), neonMaterial(dim("cyan", 0.55), { dayColor: "#c9dce0" }), "kiosk:light");
   glow.push({ pos: new THREE.Vector3(kx, K.h * 0.6, kz), color: SCENE_TONES.cyan, size: 0.35 });
 
@@ -406,9 +414,9 @@ function build(quality: Quality): Built {
   type Maker = (d: "near" | "far", m: { body: THREE.Material; glass: THREE.Material; lit: THREE.Material }) => Landmark;
   const LANDMARKS: [Maker, readonly [number, number], { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone }][] = [
     [buildPearlTower, lm.pearl, { body: litSurface({ color: "#d6ccc8", tone: "rose", strength: 0.22 }), base: "#bfb2ad", glass: "#8a6f88", lit: litSurface({ color: "#b4728f", tone: "rose", strength: 1.1 }), tone: "rose" }],
-    [buildWorldFinancialCenter, lm.worldFinancialCenter, { body: surface({ color: "#7a93ad", fogScale: 1.1 }), base: "#5f7a95", glass: "#86aacb", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
-    [buildJinMao, lm.jinMao, { body: surface({ color: "#a69a83", fogScale: 1.1 }), base: "#7a705f", glass: "#45607b", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
-    [buildShanghaiTower, lm.shanghaiTower, { body: surface({ color: "#86a0b8", fogScale: 1.1 }), base: "#6b88a4", glass: "#8db3d3", lit: litSurface({ color: "#a9c0d4", tone: "gold", strength: 1.0 }), tone: "gold" }],
+    [buildWorldFinancialCenter, lm.worldFinancialCenter, { body: surface({ color: "#93b0cc", fogScale: 1.1 }), base: "#6f8cab", glass: "#9cc0de", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
+    [buildJinMao, lm.jinMao, { body: surface({ color: "#bcb096", fogScale: 1.1 }), base: "#8a7f6c", glass: "#45607b", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
+    [buildShanghaiTower, lm.shanghaiTower, { body: surface({ color: "#9fbbd4", fogScale: 1.1 }), base: "#7896b2", glass: "#a3c6e2", lit: litSurface({ color: "#a9c0d4", tone: "gold", strength: 1.0 }), tone: "gold" }],
   ];
   const landmarks: Landmark[] = [];
   for (const [builder, [s, a], c] of LANDMARKS) {
