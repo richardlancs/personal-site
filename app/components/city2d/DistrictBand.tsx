@@ -7,6 +7,7 @@ import type { DistrictId } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
 import { BAND_SIZES, focal, plates } from "./plates";
 import { useNear } from "./useNear";
+import WeatherOverlay from "./WeatherOverlay";
 
 // A station's band of painting: its district by day, by night, or one
 // fading into the other, as Richmond Hill's clock has it (CityDriver.tsx
@@ -22,7 +23,8 @@ import { useNear } from "./useNear";
 // loaded, then fades in over the gradient (no blurred placeholder to snap
 // out of; no fade in still view). A plate that fails to load is dropped for
 // good, leaving the gradient: the band is decoration, so it isn't retried.
-// Without scripts, the night plate (lazy below the first band).
+// Over the plates, the weather (WeatherOverlay.tsx). Without scripts, the
+// night plate (lazy below the first band).
 export default function DistrictBand({ district, priority = false }: { district: DistrictId; priority?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const near = useNear(ref, priority);
@@ -48,6 +50,8 @@ export default function DistrictBand({ district, priority = false }: { district:
           />
         </div>
       ))}
+      {/* Haze, rain or snow over the plates (WeatherOverlay.tsx) */}
+      <WeatherOverlay />
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
         <img

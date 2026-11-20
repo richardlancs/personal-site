@@ -565,6 +565,8 @@ a[data-resume][data-opening] {
   aspect-ratio: 21 / 9;
   max-height: 70vh;
   background: linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
+  /* Its layers (plates, weather, grade, fade) stack among themselves only */
+  isolation: isolate;
 }
 
 @media (max-width: 767px) {
@@ -661,6 +663,100 @@ a[data-resume][data-opening] {
   :root:not([data-still]) .band-night,
   :root:not([data-still]) .band::after {
     animation: none;
+    transition: none;
+  }
+}
+
+/* ---------- The band's weather (components/city2d/WeatherOverlay.tsx) ----------
+   Over the plates, under the twilight grade (::after, z 1, later in the
+   band) and the foot's fade (::before, z 2), except rain's sheen, which
+   lies on the fade like light on a wet street. The haze is as thick as the
+   weather (--city-haze, lib/cityLook.ts), heaviest at the top where the
+   towers go into cloud; darker rather than paler at night. The sheen and
+   the wash are CSS alone, so still view keeps them; only the canvas moves,
+   and it isn't there in still view or under reduced motion. */
+
+.band-weather {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* no z-index: its layers take their place among the band's own */
+}
+
+.band-haze,
+.band-wash,
+.band-precip,
+.band-sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.band-haze {
+  --haze: color-mix(in srgb, var(--muted) 55%, var(--ink));
+  background: linear-gradient(
+    to bottom,
+    var(--haze) 0%,
+    color-mix(in srgb, var(--haze) 65%, transparent) 35%,
+    color-mix(in srgb, var(--haze) 20%, transparent) 65%,
+    transparent 90%
+  );
+  opacity: var(--city-haze, 0);
+}
+
+/* At night the cloud is dark, not a pale veil over the lights */
+:root[data-daylight="night"] .band-haze {
+  --haze: color-mix(in srgb, var(--ink) 78%, var(--muted));
+}
+
+.band-precip {
+  width: 100%;
+  height: 100%;
+}
+
+/* Rain: a soft band of light along the foot (the lowest fifth) */
+.band-sheen {
+  inset: 80% 0 0;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--text) 9%, transparent) 45%,
+    color-mix(in srgb, var(--cyan) 5%, transparent) 70%,
+    transparent
+  );
+  opacity: 0;
+}
+
+:root[data-weather="rain"] .band-sheen {
+  opacity: 1;
+}
+
+/* Snow: a pale wash over the whole band, faint */
+.band-wash {
+  background: color-mix(in srgb, var(--text) 100%, transparent);
+  opacity: 0;
+}
+
+:root[data-weather="snow"] .band-wash {
+  opacity: 0.07;
+}
+
+:root[data-daylight="night"][data-weather="snow"] .band-wash {
+  opacity: 0.04;
+}
+
+/* The weather's static parts follow the sky with the band's 3 s fade;
+   still view and reduced motion change them without fading */
+:root[data-sky-ready]:not([data-still="on"]) :is(.band-haze, .band-sheen, .band-wash) {
+  transition: opacity 3s ease;
+}
+:root[data-still="on"] :is(.band-haze, .band-sheen, .band-wash) {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:not([data-still]) :is(.band-haze, .band-sheen, .band-wash) {
     transition: none;
   }
 }

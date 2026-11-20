@@ -75,7 +75,7 @@ export function seedParticles(kind: PrecipKind, width: number, height: number, s
     if (kind === "rain") {
       out.push({ x, y, size: between(10, 22), speed: between(520, 760), sway: 0, freq: 0, phase: 0, alpha: between(0.12, MAX_ALPHA.rain) });
     } else {
-      out.push({ x, y, size: between(0.8, 2.2), speed: between(18, 40), sway: between(6, 16), freq: between(0.15, 0.35), phase: between(0, Math.PI * 2), alpha: between(0.3, MAX_ALPHA.snow) });
+      out.push({ x, y, size: between(1, 2.6), speed: between(18, 40), sway: between(6, 16), freq: between(0.15, 0.35), phase: between(0, Math.PI * 2), alpha: between(0.38, MAX_ALPHA.snow) });
     }
   }
   return out;
