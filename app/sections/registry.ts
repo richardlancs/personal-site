@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import type { SceneId } from "../components/world3d/scenes";
 
 // The sections of the site, and everything the rest of the site needs to
-// know about each one: its anchor on the one page, its name, its station
-// on the metro line and the district painted above it. The Sections menu,
-// the list of stations and the metro line are generated from this list.
+// know about each one: its anchor on the one page, its name and the
+// district painted above it. The Sections menu and the progress line are
+// generated from this list, and both name a section by its title.
 //
 // The words themselves (projects, experience, the notebook) stay in
 // app/data/portfolio.ts; this is only the sections' metadata.
@@ -25,9 +25,7 @@ export type Section = {
   // In the menu and the lists. A section that isn't listed is still on
   // the page; it's just not pointed at.
   listed: boolean;
-  district: DistrictId; // the painting above it
-  station: string; // its stop on the line: "Lujiazui"
-  districtLine: string; // one line naming the place, under the band
+  district: DistrictId; // the painting above it (never named on the page)
   // The 3D city (a later plan): the scene a section belongs to
   scene: { id: SceneId; focus: string | null };
   // Deeper anchors inside the section, for the menu
@@ -35,8 +33,8 @@ export type Section = {
   metadata: { title: string; description: string };
 };
 
-// In page order: the stops are numbered 01 to 06 down the page
-export const stations: Section[] = [
+// In page order: the sections are numbered 01 to 06 down the page
+export const pageSections: Section[] = [
   {
     id: "home",
     hash: "",
@@ -45,8 +43,6 @@ export const stations: Section[] = [
     summary: "My name, what I do, and the way to everything else.",
     listed: true,
     district: "lujiazui",
-    station: "Lujiazui",
-    districtLine: "The skyline across the Huangpu, from the Bund.",
     scene: { id: "park", focus: null },
     metadata: {
       title: "Richard Lan | Software Engineering Portfolio",
@@ -61,8 +57,6 @@ export const stations: Section[] = [
     summary: "Who I am and what I'm working toward.",
     listed: true,
     district: "longtang",
-    station: "Longtang",
-    districtLine: "A lane of shikumen houses, one window lit.",
     scene: { id: "library", focus: "notebook" },
     metadata: { title: "About", description: "About Richard Lan, a Computer Science student at the University of Waterloo." },
   },
@@ -74,8 +68,6 @@ export const stations: Section[] = [
     summary: "The software I've built, and my tools.",
     listed: true,
     district: "towers",
-    station: "Century Avenue",
-    districtLine: "Street level, under the three towers.",
     scene: { id: "workshop", focus: "monitor" },
     subsections: [{ title: "Skills", href: "/#skills" }],
     metadata: { title: "Projects", description: "Software projects by Richard Lan, with screenshots, code and live demos." },
@@ -88,8 +80,6 @@ export const stations: Section[] = [
     summary: "Where I've worked and studied.",
     listed: true,
     district: "metro",
-    station: "Line 2",
-    districtLine: "An elevated platform, the board still running.",
     scene: { id: "station", focus: "timetable" },
     metadata: { title: "Experience", description: "Richard Lan's experience and education." },
   },
@@ -101,8 +91,6 @@ export const stations: Section[] = [
     summary: "What I do away from the keyboard.",
     listed: true,
     district: "nanjing-road",
-    station: "Nanjing Road",
-    districtLine: "The shopping street, signs and all.",
     scene: { id: "arcade", focus: "cabinet" },
     metadata: { title: "Interests", description: "What Richard Lan does away from the keyboard." },
   },
@@ -114,23 +102,21 @@ export const stations: Section[] = [
     summary: "Email, GitHub, LinkedIn and my résumé.",
     listed: true,
     district: "bund",
-    station: "The Bund",
-    districtLine: "The promenade, by the Customs House clock.",
     scene: { id: "booth", focus: null },
     metadata: { title: "Contact", description: "How to reach Richard Lan: email, GitHub, LinkedIn and résumé." },
   },
 ];
 
-// Every section is a station; the older name is kept for its readers
-export const sections = stations;
+// The same array, by the older name its readers use
+export const sections = pageSections;
 
-export const section = (id: SectionId): Section => stations.find((s) => s.id === id)!;
+export const section = (id: SectionId): Section => pageSections.find((s) => s.id === id)!;
 
-// A station's stop number, "01" to "06", in page order
-export const stopNumber = (s: Section): string => String(stations.indexOf(s) + 1).padStart(2, "0");
+// A section's number, "01" to "06", in page order
+export const sectionNumber = (s: Section): string => String(pageSections.indexOf(s) + 1).padStart(2, "0");
 
 // The sections that are pointed at: in the menu and the lists
-export const listed = stations.filter((s) => s.listed);
+export const listed = pageSections.filter((s) => s.listed);
 
 // Where the site is published. Canonical addresses, the sitemap, robots.txt
 // and the share cards are all made absolute from this (layout.tsx sets it

@@ -80,7 +80,6 @@ test("every section in the registry is complete and is a station on the one page
     if (s.scene.focus && !["monitor", "cabinet"].includes(s.scene.focus)) assert.ok(s.scene.focus in scenes[s.scene.id].focus, `${s.id}: scene has no focus "${s.scene.focus}"`);
     assert.ok(s.metadata.title && s.metadata.description, `${s.id}: metadata`);
     assert.ok(isSentence(s.summary), `${s.id}: summary "${s.summary}"`);
-    assert.ok(isSentence(s.districtLine), `${s.id}: districtLine "${s.districtLine}"`);
     assert.equal(section(s.id), s);
     for (const sub of s.subsections ?? []) assert.match(sub.href, /^\/#[a-z-]+$/, `${s.id}: ${sub.title} is an anchor`);
   }

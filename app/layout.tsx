@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 // controls and scrollbars are dark whatever the system appearance
 export const viewport: Viewport = {
   colorScheme: "dark",
-  themeColor: "#0c1526",
+  themeColor: "#08090c",
   // The page may run under a phone's notch and home bar; the layout pads
   // for them with env(safe-area-inset-*)
   viewportFit: "cover",

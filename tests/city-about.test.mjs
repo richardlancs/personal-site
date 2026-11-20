@@ -51,6 +51,6 @@ test("the about station is a server component with no fixed widths", () => {
 
 test("the points' dash and the interests' edge glow are styled, the glow gone under more contrast", () => {
   const css = readFileSync(new URL("../app/city.css", import.meta.url), "utf8");
-  assert.match(css, /\.points > li::before \{[^}]*background: var\(--amber\)/);
+  assert.match(css, /\.points > li::before \{[^}]*background: var\(--lantern\)/);
   assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*\.interest-card \{\s*box-shadow: none !important;/);
 });

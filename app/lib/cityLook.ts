@@ -26,8 +26,8 @@ export function platesNeeded(blend: number): Plate[] {
   return ["day", "night"];
 }
 
-// docs/city/style.md, "Palette": --amber and --cyan
-const AMBER = "#ffb454";
+// docs/city/style.md, "Palette": --lantern and --cyan
+const LANTERN = "#f4b860";
 const CYAN = "#4fd8ee";
 
 // The most a colour grade lies over a plate, at the middle of twilight
@@ -49,7 +49,7 @@ export function cityVars(sky: Pick<SkyState, "preset" | "daylight" | "progress">
     data: { daylight: sky.daylight, weather: sky.preset },
     vars: {
       "--city-night": round(nightBlend(sky.daylight, sky.progress)),
-      "--city-grade": twilight ? AMBER : CYAN,
+      "--city-grade": twilight ? LANTERN : CYAN,
       "--city-grade-mix": round(mix),
       "--city-haze": String(HAZE[sky.preset] ?? HAZE.neutral),
     },

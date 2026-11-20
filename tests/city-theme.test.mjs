@@ -108,3 +108,33 @@ test("every colour and size the résumé viewer uses is defined by the city's st
   // The résumé link's "on its way" state (ResumeHost.tsx) is in city.css too
   assert.match(city, /a\[data-resume\]\[data-opening\] \{[^}]*cursor: progress/);
 });
+
+test("black is the ground and the warm secondary is the lantern: no magenta, no amber left", () => {
+  // The park's unloaded files (world3d, world, locations, globals.css) keep
+  // their own colour names; a later task removes them
+  const skip = ["app/globals.css", "app/components/world3d", "app/components/world", "app/components/locations"];
+  const files = ["app/city.css"];
+  const walk = (dir) => {
+    for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (skip.includes(path)) continue;
+      if (entry.isDirectory()) walk(path);
+      else if (/\.tsx$/.test(entry.name)) files.push(path);
+    }
+  };
+  walk("app");
+  assert.ok(files.length > 10, "the walk reached the components");
+  for (const file of files) assert.doesNotMatch(read(file), /magenta|amber/i, file);
+  const css = read("app/city.css");
+  for (const name of ["--lantern", "--seam", "--seam-2"]) assert.match(css, new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), name);
+  for (const utility of ["lantern"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
+  // The fade under each painting passes through the dark navy seam
+  const fade = css.match(/\.band::before \{([^}]*)\}/)?.[1] ?? "";
+  assert.match(fade, /inset: 58% 0 0;/);
+  assert.match(fade, /var\(--seam\) 62%/);
+  assert.match(fade, /var\(--ground, var\(--ink\)\) 76%/);
+  // The haze is mixed against the plates' navy, not the black ground
+  const haze = css.match(/\.band-haze \{([^}]*)\}/)?.[1] ?? "";
+  assert.match(haze, /#0e1d31/);
+  assert.doesNotMatch(haze, /var\(--ink\)/);
+});

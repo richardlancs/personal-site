@@ -1,14 +1,13 @@
 import { profile } from "../../../data/portfolio";
 import ResumeLink from "../../resume/ResumeLink";
-import StationIndex from "../StationIndex";
 
 const newTab = <span className="sr-only"> (opens in a new tab)</span>;
 
-// The home station's opening (city.css, "The hero"): the name, the page's
+// The home section's opening (city.css, "The hero"): the name, the page's
 // one h1, on its own dark backing (on wide screens it rises over the foot
-// of the Lujiazui band, the one place words sit on a painting); the
-// headline; the two ways in; the links; and the list of stations down
-// the page (StationIndex.tsx). No paragraph.
+// of the first band, the one place words sit on a painting); the
+// headline; the two ways in; and the links. No paragraph, no caption and
+// no list of sections (the Sections menu and the progress line have them).
 export default function Hero() {
   return (
     <div className="hero">
@@ -42,7 +41,6 @@ export default function Hero() {
           <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
         </li>
       </ul>
-      <StationIndex />
     </div>
   );
 }

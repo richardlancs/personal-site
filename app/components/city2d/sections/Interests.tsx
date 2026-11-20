@@ -3,16 +3,15 @@ import { interests, type Interest } from "../../../data/portfolio";
 
 // The interests station, on the neon shopping street: one card per
 // interest, in a row (four across on wide screens, two under 1024px, one
-// under 480px). Each card has a thin accent edge along its top, cycling
-// cyan, magenta and amber like the street's signs, and a small line mark
+// under 480px). Each card has a thin accent edge along its top,
+// alternating cyan and lantern like the street's signs, and a small line mark
 // for its sport or game in the same colour. The marks are decoration only.
 
 // The one list of accents, in order: the edge, the mark and the edge's
 // glow (city.css, .interest-card, from --card-accent) all come from it
 const accents = [
   { colour: "cyan", edge: "border-t-cyan", mark: "text-cyan" },
-  { colour: "magenta", edge: "border-t-magenta", mark: "text-magenta" },
-  { colour: "amber", edge: "border-t-amber", mark: "text-amber" },
+  { colour: "lantern", edge: "border-t-lantern", mark: "text-lantern" },
 ];
 
 // Line marks on a 24-unit grid, drawn in the card's accent (currentColor)

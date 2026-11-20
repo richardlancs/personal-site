@@ -3,36 +3,61 @@
 // anchors. Source-level checks, no server (the smoke tests check the same
 // against a running build).
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { stations, stopNumber } from "../app/sections/registry.ts";
+import { pageSections, sectionNumber, sections } from "../app/sections/registry.ts";
 
 const root = new URL("..", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 
-test("six stations, in order, each with a district and a stop name", () => {
+test("six sections, in order, each with a district painted above it", () => {
+  assert.equal(sections, pageSections, "sections is the same array");
   assert.deepEqual(
-    stations.map((s) => s.id),
+    pageSections.map((s) => s.id),
     ["home", "about", "projects", "experience", "interests", "contact"],
   );
   assert.deepEqual(
-    stations.map((s) => s.district),
+    pageSections.map((s) => s.title),
+    ["Home", "About", "Projects", "Experience", "Interests", "Contact"],
+  );
+  assert.deepEqual(
+    pageSections.map((s) => s.district),
     ["lujiazui", "longtang", "towers", "metro", "nanjing-road", "bund"],
   );
-  assert.equal(new Set(stations.map((s) => s.district)).size, 6, "six distinct districts");
-  assert.deepEqual(
-    stations.map((s) => s.station),
-    ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"],
-  );
-  for (const s of stations) {
+  assert.equal(new Set(pageSections.map((s) => s.district)).size, 6, "six distinct districts");
+  for (const s of pageSections) {
     assert.equal(s.hash, s.id === "home" ? "" : s.id, `${s.id}: hash`);
     assert.equal(s.href, s.id === "home" ? "/" : `/#${s.id}`, `${s.id}: href`);
-    assert.match(s.districtLine, /^[A-Z].*\.$/, `${s.id}: districtLine is one sentence`);
-    // The park's rooms are gone from the registry
-    for (const key of ["place", "intro", "hint", "anchor", "map", "glyph", "side"]) assert.ok(!(key in s), `${s.id} still has "${key}"`);
+    // The places' names are gone: sections are named as sections
+    for (const key of ["station", "districtLine", "place", "intro", "hint", "anchor", "map", "glyph", "side"]) assert.ok(!(key in s), `${s.id} still has "${key}"`);
   }
-  const projects = stations.find((s) => s.id === "projects");
+  const projects = pageSections.find((s) => s.id === "projects");
   assert.deepEqual(projects.subsections?.map((sub) => [sub.title, sub.href]), [["Skills", "/#skills"]]);
+});
+
+test("the registry has no stop names or place lines", () => {
+  const src = read("app/sections/registry.ts");
+  assert.doesNotMatch(src, /station:/);
+  assert.doesNotMatch(src, /districtLine:/);
+});
+
+// Source with its comments taken out (block, JSX and line comments)
+const code = (text) => text.replace(/\{?\/\*[\s\S]*?\*\/\}?/g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+test("the page names no districts: no stop names and no captions, anywhere it renders", () => {
+  const files = ["app/page.tsx", "app/layout.tsx", "app/sections/registry.ts"];
+  const walk = (dir) => {
+    for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`;
+      if (entry.isDirectory()) walk(path);
+      else if (/\.tsx?$/.test(entry.name)) files.push(path);
+    }
+  };
+  walk("app/components/city2d");
+  for (const file of files) {
+    const src = code(read(file));
+    for (const name of ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"]) assert.ok(!src.includes(name), `${file} renders "${name}"`);
+  }
 });
 
 test("every old address redirects to its anchor, temporarily", () => {
@@ -50,30 +75,37 @@ test("the sitemap is the one page", () => {
   assert.match(sitemap, /url: siteUrl/);
 });
 
-test("a station is a labelled section with its band, stop and heading", () => {
+test("a section is a labelled section with its band, its number and its heading, and no caption", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.ok(!src.includes('"use client"'), "Station is a server component");
   assert.match(src, /<section[^>]*id=\{id\}[^>]*aria-labelledby=\{titleId\}[^>]*tabIndex=\{-1\}/);
   assert.match(src, /<DistrictBand district=\{section\.district\}/);
-  assert.match(src, /section\.station/);
-  assert.match(src, /section\.districtLine/);
   assert.match(src, /<h2 id=\{titleId\}/);
-  assert.match(src, /stopNumber\(section\)/);
-  assert.deepEqual(stations.map(stopNumber), ["01", "02", "03", "04", "05", "06"], "stop numbers are two digits, in page order");
+  assert.match(src, /sectionNumber\(section\)/);
+  assert.doesNotMatch(src, /section\.station|districtLine|station-caption|station-line/);
+  assert.deepEqual(pageSections.map(sectionNumber), ["01", "02", "03", "04", "05", "06"], "section numbers are two digits, in page order");
+  // The number sits beside the heading, before it
+  const body = src.match(/<div className="station-body">([\s\S]*?)\{children\}/)?.[1] ?? "";
+  assert.ok(body.indexOf("station-number") >= 0 && body.indexOf("station-number") < body.indexOf("{section.title}"), "number, then title");
+  assert.match(body, /className="station-number" aria-hidden="true"/, "the heading's name is the title alone");
 });
 
-test("home's stop and line are the band's caption, before the hero, with no h2", () => {
+test("home is its band, then the hero: nothing between, and no h2", () => {
   const src = read("app/components/city2d/Station.tsx");
   const home = src.match(/\{heading \? \(([\s\S]*?)\) : \(/)?.[1];
   assert.ok(home, "the home branch");
-  assert.ok(home.indexOf('className="station-caption"') < home.indexOf("{heading}"), "caption first");
-  assert.match(home, /section\.districtLine/);
-  assert.doesNotMatch(home, /<h2/);
+  assert.match(home, /^\s*<div className="station-body station-body-home">\s*\{heading\}/);
+  assert.doesNotMatch(home, /<h2|<p/);
+  // The hero has no list of stops
+  assert.doesNotMatch(read("app/components/city2d/sections/Hero.tsx"), /StationIndex|station-index/);
+  for (const gone of ["StationIndex.tsx", "StationHere.tsx", "MetroLine.tsx"]) assert.ok(!existsSync(`${root}app/components/city2d/${gone}`), `${gone} is still there`);
+  const css = read("app/city.css");
+  for (const gone of [".station-caption", ".station-index", ".metro-line", ".station-line", ".station-stop"]) assert.ok(!css.includes(gone), `${gone} is still styled`);
 });
 
 test("the home page is the six stations, with the Skills anchor inside Projects", () => {
   const page = read("app/page.tsx");
-  assert.match(page, /stations\.map|<Station /);
+  assert.match(page, /<Station /);
   const projects = page.match(/<Station section=\{section\("projects"\)\}>([\s\S]*?)<\/Station>/)?.[1];
   assert.ok(projects, "the projects station");
   // Skills is Projects' own <section id="skills">, the page's only one

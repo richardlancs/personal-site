@@ -9,7 +9,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { about, profile, projects, experience, interests, skillGroups } from "../app/data/portfolio.ts";
-import { listed, siteUrl, stations } from "../app/sections/registry.ts";
+import { listed, pageSections, siteUrl } from "../app/sections/registry.ts";
 
 const base = process.env.SMOKE_URL?.replace(/\/$/, "");
 const skip = base ? false : "set SMOKE_URL to a running build to run the smoke checks";
@@ -33,7 +33,7 @@ async function station(id) {
   const { body } = await get("/");
   const start = body.indexOf(`<section id="${id}"`);
   assert.ok(start >= 0, `no station #${id} on /`);
-  const ends = stations.map((s) => body.indexOf(`<section id="${anchorOf(s)}"`, start + 1)).filter((i) => i > start);
+  const ends = pageSections.map((s) => body.indexOf(`<section id="${anchorOf(s)}"`, start + 1)).filter((i) => i > start);
   const foot = body.indexOf("<footer", start);
   return body.slice(start, Math.min(...ends, foot >= 0 ? foot : body.length));
 }
@@ -46,7 +46,7 @@ test("the one page answers 200 with the site's title", { skip }, async () => {
 });
 
 test("every old address redirects to its station, temporarily", { skip }, async () => {
-  for (const s of stations.filter((s) => s.hash)) {
+  for (const s of pageSections.filter((s) => s.hash)) {
     const { status, location } = await get(`/${s.hash}`);
     assert.equal(status, 307, `/${s.hash}: status`);
     assert.ok(location.endsWith(`/#${s.hash}`), `/${s.hash} goes to ${location}`);
@@ -61,7 +61,7 @@ test("every station, and Skills inside Projects, is on / at its anchor", { skip 
   for (const id of ["about", "projects", "skills", "experience", "interests", "contact"]) assert.ok(body.includes(`id="${id}"`), `no id="${id}"`);
   // In page order, each a labelled section that can take focus
   let last = -1;
-  for (const s of stations) {
+  for (const s of pageSections) {
     const at = body.indexOf(`<section id="${anchorOf(s)}"`);
     assert.ok(at > last, `${s.id} is out of order`);
     last = at;
@@ -175,10 +175,15 @@ test("no plate is in the HTML outside <noscript>; the home band's night plate is
   assert.match(await station("home"), /<noscript><img[^>]*src="\/_next\/static\/media\/lujiazui-night\.[^"]+\.webp"/);
 });
 
-test("the home station's caption comes before the hero, and home has no h2", { skip }, async () => {
+test("home is the band and the hero: no caption, no place names, no h2", { skip }, async () => {
   const home = await station("home");
-  assert.ok(home.indexOf("station-caption") >= 0 && home.indexOf("station-caption") < home.indexOf("<h1"), "caption, then the name");
+  assert.ok(!home.includes("station-caption"), "no caption");
   assert.doesNotMatch(home, /<h2[\s>]/);
+  const { body } = await get("/");
+  assert.ok(!body.includes("The skyline across the Huangpu"), "the home caption is gone");
+  for (const name of ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"]) assert.ok(!body.includes(`>${name}<`), `the page shows "${name}"`);
+  // Old links still land: every section's anchor is there, labelled
+  for (const s of pageSections) assert.ok(body.includes(`aria-labelledby="${anchorOf(s)}-title"`), `${s.id}: labelled`);
 });
 
 test("the music feedback is a live region drawn on screen", { skip }, async () => {

@@ -71,6 +71,9 @@ export default function DistrictBand({ district, priority = false }: { district:
       ))}
       {/* Haze, rain or snow over the plates (WeatherOverlay.tsx) */}
       <WeatherOverlay />
+      {/* Every band but the first comes out of the ground above it
+          (city.css, .band-top) */}
+      {!priority && <div className="band-top" />}
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
         <img

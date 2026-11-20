@@ -5,11 +5,11 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { test } from "node:test";
-import { stations } from "../app/sections/registry.ts";
+import { pageSections } from "../app/sections/registry.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
-const districts = [...new Set(stations.map((s) => s.district))];
+const districts = [...new Set(pageSections.map((s) => s.district))];
 
 // A WebP's pixel size from its header: lossy (VP8), lossless (VP8L) or
 // extended (VP8X)

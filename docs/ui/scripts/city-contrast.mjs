@@ -16,14 +16,14 @@
 //
 // A run fails under 4.5:1, or under 3:1 if it's large (24px and over, or
 // 18.66px and over at weight 700 or more). The hero's name on its backing
-// and the home caption under the band must be measured in every sky: if
+// and the sections' headings must be measured in every sky: if
 // either isn't, that's a failure too. The page is photographed a screen at
 // a time from top to foot, in still view (nothing moves; the bands' rain
 // and snow canvases don't exist then, and no words sit on a band anyway),
 // after one pass down the page so every band has mounted its plates.
 //
 // Prints, per sky, the lowest reading in each station (and the bar, the
-// metro line and the page's foot), then every failing run with its text,
+// progress line and the page's foot), then every failing run with its text,
 // a selector and its reading. Exits 1 on any failure, 2 if the page isn't
 // what this script expects (the sky override ignored, no stations).
 import { launch } from "../../audit/scripts/pw.mjs";
@@ -33,7 +33,7 @@ const WEATHERS = ["clear", "cloudy", "rain", "snow", "neutral"];
 const DAYLIGHTS = ["dawn", "day", "dusk", "night"];
 // Dawn and dusk at their middle, where the grade is strongest
 const skies = skyArg ? skyArg.split(",") : WEATHERS.flatMap((w) => DAYLIGHTS.map((d) => `${w}-${d}-0.5`));
-// 1600 wide too: the metro line shows only from 97rem (1552px)
+// 1600 wide too: the progress line's labels show only from 97rem (1552px)
 const sizes = (sizeArg || "1440x900,1600x900,390x844").split(",").map((s) => {
   const [width, height] = s.split("x").map(Number);
   return { name: s, width, height };
@@ -41,7 +41,7 @@ const sizes = (sizeArg || "1440x900,1600x900,390x844").split(",").map((s) => {
 // Must be measured on every screen size in every sky
 const REQUIRED = [
   { sel: ".hero-name", what: "the hero's name on its backing" },
-  { sel: ".station-caption", what: "the home caption under the band" },
+  { sel: ".station-title", what: "the sections' headings" },
 ];
 const NORMAL = 4.5;
 const LARGE = 3;
@@ -125,9 +125,9 @@ const collect = (page) =>
       for (let e = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
       return o;
     };
-    // The fixed and sticky layers (the top bar, the metro line, an open
+    // The fixed and sticky layers (the top bar, the progress line, an open
     // menu): words under them aren't on screen, and theirs are their own
-    const layers = [...document.querySelectorAll(".top-bar, .metro-line, :popover-open, dialog[open]")]
+    const layers = [...document.querySelectorAll(".top-bar, .progress-line, :popover-open, dialog[open]")]
       .filter((e) => e.checkVisibility())
       .map((e) => {
         const r = e.getBoundingClientRect();
@@ -135,7 +135,7 @@ const collect = (page) =>
       });
     const where = (el) => {
       if (el.closest(".top-bar")) return "top bar";
-      if (el.closest(".metro-line")) return "metro line";
+      if (el.closest(".progress-line")) return "progress line";
       const station = el.closest("section.station");
       if (station) return `#${station.id}`;
       if (el.closest("footer")) return "foot";
@@ -162,7 +162,7 @@ const collect = (page) =>
       out.push({
         text: text.slice(0, 40),
         sel: describe(el),
-        required: [".hero-name", ".station-caption"].filter((s) => el.closest(s)),
+        required: [".hero-name", ".station-title"].filter((s) => el.closest(s)),
         where: where(el),
         color: cs.color,
         opacity: opacityOf(el),

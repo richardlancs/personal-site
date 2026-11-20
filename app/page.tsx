@@ -1,4 +1,3 @@
-import MetroLine from "./components/city2d/MetroLine";
 import Station from "./components/city2d/Station";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
@@ -11,9 +10,9 @@ import { section, sectionMetadata } from "./sections/registry";
 
 export const metadata = sectionMetadata("home");
 
-// The whole site, one page: six stations down the line, in the registry's
-// order. Each has its anchor (/#about, …); the old addresses redirect
-// here (next.config.ts). The home station is the hero; Skills is part of
+// The whole site, one page: six sections, in the registry's order. Each
+// has its anchor (/#about, …); the old addresses redirect here
+// (next.config.ts). The home section is the hero; Skills is part of
 // Projects (its own section, inside Projects.tsx).
 export default function Home() {
   return (
@@ -37,8 +36,6 @@ export default function Home() {
       <footer className="page-foot">
         <Colophon />
       </footer>
-      {/* Where you are on the line, fixed at the bottom right */}
-      <MetroLine />
     </main>
   );
 }

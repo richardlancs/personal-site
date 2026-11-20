@@ -64,7 +64,7 @@ const serverPrecipitation = () => null;
 function inkOf(el: Element): string {
   const hex = getComputedStyle(el).getPropertyValue("--text").trim();
   const m = /^#([0-9a-f]{6})$/i.exec(hex);
-  if (!m) return "238 242 251";
+  if (!m) return "230 233 238";
   const n = parseInt(m[1], 16);
   return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
 }

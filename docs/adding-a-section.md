@@ -1,16 +1,16 @@
 # Adding a section
 
-The site is one page, `/`: six stations down a metro line, each a section
-under a band of painting of its district (`app/page.tsx`,
+The site is one page, `/`: six sections, each under a band of painting
+of its district (never named on the page) (`app/page.tsx`,
 `app/components/city2d/`). A section is two things:
 
 - one entry in `app/sections/registry.ts`, and
 - one component in `app/components/city2d/sections/`, mounted inside its
   `<Station>` in `app/page.tsx`.
 
-The Sections menu, the list of stations under the hero, the metro line,
-the stop shown in the top bar and the stops' numbers (01 to 06) are all
-generated from the registry, so none of them need editing.
+The Sections menu, the progress line, the section shown in the top bar
+and the sections' numbers (01 to 06) are all generated from the
+registry, so none of them need editing.
 
 The starter is `docs/development/section-template/Greenhouse.tsx`. It
 lives in `docs/` so it is never built or served; `npm test` checks that
@@ -20,9 +20,8 @@ follow the steps below.
 
 ## 1. Register it
 
-Add an entry to `stations` in `app/sections/registry.ts`, at its place in
-the page's order (the order is the line's, and the stops are numbered by
-it):
+Add an entry to `pageSections` in `app/sections/registry.ts`, at its
+place in the page's order (the sections are numbered by it):
 
 ```ts
 {
@@ -33,8 +32,6 @@ it):
   summary: "What I'm reading.",     // one line, for lists
   listed: false,                    // true once it's ready to be pointed at
   district: "yuyuan",               // the painting above it (DistrictId)
-  station: "Yuyuan",                // its stop on the line
-  districtLine: "…",                // one line naming the place, under the band
   scene: { id: "park", focus: null },  // the 3D city's (Plan B); any SceneId for now
   metadata: { title: "Reading", description: "…" },
 }
@@ -45,12 +42,12 @@ What each field is for is commented in the registry. A section that is
 lists. `subsections` adds deeper anchors to the menu (as Projects has
 Skills).
 
-The words in `title`, `summary` and `districtLine` are interface words;
+The words in `title` and `summary` are interface words;
 anything about Richard belongs in `app/data/portfolio.ts`.
 
 ## 2. Give it a district and its plates
 
-Each station has its own district: add it to `DistrictId` in the
+Each section has its own district: add it to `DistrictId` in the
 registry, then:
 
 1. Paint a day and a night plate of one composition, following

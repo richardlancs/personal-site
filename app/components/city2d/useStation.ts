@@ -1,12 +1,12 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { stations, type SectionId } from "../../sections/registry";
+import { pageSections as stations, type SectionId } from "../../sections/registry";
 
 // Which station you're at: the one whose <section> crosses a line a third
 // of the way down the screen (the stations are stacked, so it is one at a
-// time; between two, the last one seen stays). Read by the metro line
-// (MetroLine.tsx) and the Sections menu (SectionsMenu.tsx).
+// time; between two, the last one seen stays). Read by the Sections menu
+// (SectionsMenu.tsx).
 //
 // One IntersectionObserver for the page, whoever is reading: it starts
 // with the first reader and is disconnected when the last one goes. On the

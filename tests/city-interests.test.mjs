@@ -35,7 +35,10 @@ test("no fixed pixel widths and no emoji", () => {
   assert.doesNotMatch(source, /\p{Extended_Pictographic}/u);
 });
 
-test("each card has an accent edge, cycling cyan, magenta and amber", () => {
-  for (const colour of ["cyan", "magenta", "amber"]) assert.match(source, new RegExp(`border-t-${colour}\\b`));
+test("each card has an accent edge, alternating cyan and lantern from one list", () => {
+  const list = source.match(/const accents = \[([\s\S]*?)\];/)?.[1] ?? "";
+  assert.deepEqual([...list.matchAll(/colour: "([a-z]+)"/g)].map((m) => m[1]), ["cyan", "lantern"], "the one list of accents, in order");
+  for (const colour of ["cyan", "lantern"]) assert.match(source, new RegExp(`border-t-${colour}\\b`));
+  assert.match(source, /accents\[i % accents\.length\]/, "the rotation reads the list");
   assert.match(source, /bg-panel/);
 });

@@ -20,9 +20,14 @@ const contrast = (a, b) => {
 };
 
 const grounds = ["--ink", "--ink-2", "--panel"];
+// The primary key: its ink label on the lantern fill, and on the fill's hover
+const primary = [
+  ["--ink", "--lantern", 4.5],
+  ["--ink", "#f8c97f", 4.5],
+];
 const checks = [
   ...["--text", "--muted"].map((name) => ({ name, min: 4.5 })),
-  ...["--cyan", "--magenta", "--amber", "--focus"].map((name) => ({ name, min: 3 })),
+  ...["--cyan", "--lantern", "--focus"].map((name) => ({ name, min: 3 })),
 ];
 
 let failed = false;
@@ -40,6 +45,16 @@ if (!failed) {
       if (!ok) failed = true;
       console.log(`${ok ? "ok  " : "FAIL"} ${name} ${palette[name]} on ${ground} ${palette[ground]}: ${ratio.toFixed(2)}:1 (needs ${min})`);
     }
+  }
+}
+if (!failed) {
+  for (const [label, fill, min] of primary) {
+    const fg = palette[label];
+    const bg = palette[fill] ?? fill;
+    const ratio = contrast(fg, bg);
+    const ok = ratio >= min;
+    if (!ok) failed = true;
+    console.log(`${ok ? "ok  " : "FAIL"} ${label} ${fg} on ${fill} ${bg}: ${ratio.toFixed(2)}:1 (needs ${min})`);
   }
 }
 process.exit(failed ? 1 : 0);

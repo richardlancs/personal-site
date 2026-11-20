@@ -11,9 +11,8 @@ import { profile } from "../../../data/portfolio";
 //     <Greenhouse />
 //   </Station>
 //
-// The <Station> gives it its band of painting, the stop's number and
-// station, the section's h2 (the registry's title) and the line naming the
-// place. So the component starts at h3, is a server component unless it
+// The <Station> gives it its band of painting and the section's h2 (the
+// registry's title, with its number beside it). So the component starts at h3, is a server component unless it
 // truly needs the browser, and takes its words from app/data/portfolio.ts:
 // the lines below are placeholders to replace, not content.
 export default function Greenhouse() {

@@ -35,7 +35,7 @@ export default function Experience() {
               </ul>
             </div>
             <p className="order-first flex items-start gap-3 font-display text-2xl font-semibold leading-tight text-text tabular-nums sm:order-none sm:col-start-1 sm:row-start-1">
-              <span aria-hidden="true" className="mt-[0.35em] h-[0.6em] w-1 shrink-0 rounded-sm bg-amber" />
+              <span aria-hidden="true" className="mt-[0.35em] h-[0.6em] w-1 shrink-0 rounded-sm bg-lantern" />
               <span className="break-words">
                 <When value={entry.startDate} />
                 {entry.endDate && (
