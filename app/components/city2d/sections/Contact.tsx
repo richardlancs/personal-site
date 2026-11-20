@@ -1,5 +1,6 @@
 import { profile } from "../../../data/portfolio";
 import ProfileLinks from "../ProfileLinks";
+import Heading, { type Where } from "../Heading";
 import CopyButton from "./CopyButton";
 
 // The mail icon on "Email me", drawn in the label's colour
@@ -33,12 +34,16 @@ const mailIcon = (
 // profile.emails to change it).
 const primary = profile.emails[0];
 
-export default function Contact() {
+// Its paddings and rows follow the section's own column (@container), not
+// the window, so it fits the 3D city's half-width panel; its heading takes
+// its level from where it is drawn (Heading.tsx).
+export default function Contact({ where = "2d" }: { where?: Where }) {
   return (
-    <div className="contact mx-auto mt-10 w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 sm:px-10 sm:py-10">
+    <div className="@container mt-10">
+    <div className="contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10">
       <a
         href={`mailto:${primary.address}`}
-        className="glass glass-primary glass-lg w-full min-[480px]:w-auto"
+        className="glass glass-primary glass-lg w-full @min-[27.5rem]:w-auto"
       >
         {mailIcon}
         Email me
@@ -54,7 +59,7 @@ export default function Contact() {
       </div>
 
       <div className="mt-8 border-t border-line pt-8">
-        <h3 className="font-display text-xl text-text">Other ways to reach me</h3>
+        <Heading level={3} where={where} className="font-display text-xl text-text">Other ways to reach me</Heading>
 
         {profile.emails.length > 1 && (
           <ul aria-label="Other email" className="mt-5 flex flex-col gap-4">
@@ -73,10 +78,11 @@ export default function Contact() {
           </ul>
         )}
 
-        <ul aria-label="Links" className="mt-6 flex flex-col gap-3 min-[480px]:flex-row min-[480px]:flex-wrap">
+        <ul aria-label="Links" className="mt-6 flex flex-col gap-3 @min-[27.5rem]:flex-row @min-[27.5rem]:flex-wrap">
           <ProfileLinks variant="keys" />
         </ul>
       </div>
+    </div>
     </div>
   );
 }

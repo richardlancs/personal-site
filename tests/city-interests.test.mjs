@@ -60,7 +60,7 @@ test("every interest is a <details name=\"interests\">, only the first open", ()
   assert.match(details[0], /name="interests"/);
   assert.match(details[0], /open=\{i === 0\}/);
   assert.match(source, /<summary\b[^>]*min-h-14/, "the summary is at least 56px tall");
-  assert.match(source, /<h3[^>]*>\s*\{interest\.name\}\s*<\/h3>/);
+  assert.match(source, /<Heading level=\{3\}[^>]*>\s*\{interest\.name\}\s*<\/Heading>/);
   assert.match(source, /\{interest\.description\}/);
   assert.match(source, /^export default function Interests\(\{ where = "2d" \}/m);
   assert.doesNotMatch(source, /^["']use client["']/m, "a server component");

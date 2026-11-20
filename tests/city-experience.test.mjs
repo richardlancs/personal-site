@@ -75,12 +75,12 @@ test("the section: two labelled groups of ordered rows, sorted and grouped by th
   assert.match(source, /\.filter\(\(group\) => group\.entries\.length > 0\)/, "an empty group is not rendered");
   assert.match(source, /<ol[\s>]/);
   assert.match(source, /<article[\s>]/);
-  assert.match(source, /<h3[\s>][\s\S]*?entry\.role/);
+  assert.match(source, /<Heading level=\{3\}[\s\S]*?entry\.role/);
   assert.match(source, /entry\.highlights\.map\(/);
   assert.match(source, /entry\.location &&/);
   assert.doesNotMatch(source, /<h2[\s>]/, "the station supplies the h2");
   assert.doesNotMatch(source, /"use client"/);
-  assert.match(source, /sm:grid-cols-\[10rem_minmax\(0,1fr\)\]/);
+  assert.match(source, /@min-\[37\.5rem\]:grid-cols-\[10rem_minmax\(0,1fr\)\]/);
 });
 
 test("dates: <time>, tabular figures, \"Present\" never in a <time>, \"Current\" only when running", () => {

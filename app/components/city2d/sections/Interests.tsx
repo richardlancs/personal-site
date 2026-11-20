@@ -5,6 +5,7 @@ import { interestPhotos } from "../../../lib/interestPhotos";
 import CityLink from "../CityLink";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
+import Heading, { type Where } from "../Heading";
 import { order } from "../Station";
 
 // The interests: one row per interest, a single column on the ground with
@@ -55,11 +56,14 @@ const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 
 // On the 2D page (where="2d") the list is followed by a link to the arcade
 // in the 3D city (CityLink: shown only where WebGL2 exists); in the city
-// itself, not.
-export default function Interests({ where = "2d" }: { where?: "2d" | "3d" }) {
+// itself, not. The rows lay themselves out by the list's own width
+// (@container: the indent from 27.5rem, the gallery 3 across from 45.5rem
+// and 4 from 69.5rem), so the 3D city's half-width panel gets the narrow
+// rows; the names take their heading level from where it is drawn.
+export default function Interests({ where = "2d" }: { where?: Where }) {
   return (
     <>
-    <div className="interests mt-10 border-b border-line">
+    <div className="@container interests mt-10 border-b border-line">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
         return (
@@ -84,7 +88,7 @@ export default function Interests({ where = "2d" }: { where?: "2d" | "3d" }) {
               >
                 {marks[interest.scene]}
               </svg>
-              <h3 className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</h3>
+              <Heading level={3} where={where} className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
               <svg
                 aria-hidden="true"
                 focusable="false"
@@ -99,10 +103,10 @@ export default function Interests({ where = "2d" }: { where?: "2d" | "3d" }) {
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </summary>
-            <div className="pb-8 min-[480px]:pl-12">
+            <div className="pb-8 @min-[27.5rem]:pl-12">
               <p className="max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
               {photos.length > 0 && (
-                <ul role="list" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                <ul role="list" className="mt-6 grid grid-cols-2 gap-3 @min-[45.5rem]:grid-cols-3 @min-[69.5rem]:grid-cols-4">
                   {photos.map((photo) => {
                     const caption = interest.captions?.[photo.file];
                     return (

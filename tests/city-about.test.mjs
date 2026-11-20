@@ -1,5 +1,5 @@
 // The about station's content (components/city2d/sections/About.tsx):
-// every entry in `about` as an h3 and a list of points, then where to find
+// every entry in `about` as an h3 (a Heading at level 3) and a list of points, then where to find
 // me, built from `profile`.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -12,7 +12,7 @@ const source = readFileSync(`${root}app/components/city2d/sections/About.tsx`, "
 test("the about station maps every entry, its heading in an h3", () => {
   assert.ok(about.length > 0);
   assert.match(source, /about\.map\(/);
-  assert.match(source, /<h3[^>]*>\{entry\.heading\}<\/h3>/);
+  assert.match(source, /<Heading level=\{3\}[^>]*>\{entry\.heading\}<\/Heading>/);
   assert.match(source, /entry\.points\.map\(/);
 });
 
@@ -41,9 +41,9 @@ test("where to find me is built from profile", () => {
 
 test("the about station is a server component with no fixed widths", () => {
   assert.doesNotMatch(source, /^["']use client["']/m);
-  assert.match(source, /export default function About\(\)/);
+  assert.match(source, /export default function About\(\{ where = "2d" \}/);
   assert.doesNotMatch(source, /w-\[\d+px\]|width:\s*\d+px/);
-  assert.match(source, /md:grid-cols-2/);
+  assert.match(source, /@min-\[45\.5rem\]:grid-cols-2/);
   assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/);
 });
 

@@ -43,8 +43,8 @@ test("the index's gloss is the summary up to its first colon, comma or full stop
   }
 });
 
-test("every row is an article with an h3, never a boxed rounded panel", () => {
-  assert.match(row, /<h3\b/);
+test("every row is an article with a level-3 heading, never a boxed rounded panel", () => {
+  assert.match(row, /<Heading level=\{3\}/);
   const opening = row.match(/<article\b[\s\S]*?>/)[0];
   assert.doesNotMatch(opening, /rounded|bg-panel|\bp-\d/);
   assert.match(source, /divide-y divide-line/);
@@ -65,8 +65,8 @@ test("My part is shown only with contributions, under a cyan rule; features take
   assert.match(source, /const part = project\.contributions \?\? \[\]/);
   assert.match(row, /part\.length > 0 \? \(/);
   assert.match(row, /border-l-2 border-cyan/);
-  assert.match(row, /<h4[^>]*>My part<\/h4>/);
-  assert.match(row, /<h4[^>]*>What it does<\/h4>/);
+  assert.match(row, /<Heading level=\{4\}[^>]*>My part<\/Heading>/);
+  assert.match(row, /<Heading level=\{4\}[^>]*>What it does<\/Heading>/);
   assert.match(source, /project\.role && /);
 });
 
@@ -75,13 +75,13 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(row, /part\.slice\(0, SHOWN_PART\)\.map/);
   assert.match(source, /const morePart = part\.slice\(SHOWN_PART\)/);
   const details = row.slice(row.indexOf("<details"));
-  assert.match(details, /morePart\.length > 0 && \([\s\S]*?<h4[^>]*>More of my part<\/h4>[\s\S]*?morePart\.map/);
+  assert.match(details, /morePart\.length > 0 && \([\s\S]*?<Heading level=\{4\}[^>]*>More of my part<\/Heading>[\s\S]*?morePart\.map/);
   assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
 });
 
-test("from 1280px text and picture share the row half and half", () => {
-  assert.match(row, /<header className="[^"]*lg:col-span-5[^"]*xl:col-span-6/);
-  assert.match(row, /lg:col-span-7 lg:col-start-6[^"]*xl:col-span-6 xl:col-start-7/);
+test("on the full 72rem column (69.5rem of content) text and picture share the row half and half", () => {
+  assert.match(row, /<header className="[^"]*@min-\[61\.5rem\]:col-span-5[^"]*@min-\[69\.5rem\]:col-span-6/);
+  assert.match(row, /@min-\[61\.5rem\]:col-span-7 @min-\[61\.5rem\]:col-start-6[^"]*@min-\[69\.5rem\]:col-span-6 @min-\[69\.5rem\]:col-start-7/);
 });
 
 test("the index's glosses stay on one line", () => {
@@ -106,13 +106,13 @@ test("the cover is screenshots[cover ?? 0]; a portrait pair shares the frame; no
   assert.match(source, /object-contain/);
   assert.doesNotMatch(source, /object-cover/);
   assert.match(source, /tall\(cover\) && next && tall\(next\)/);
-  assert.match(source, /lg:sticky/);
+  assert.match(source, /@min-\[61\.5rem\]:sticky/);
 });
 
-test("Skills is a section with id skills, an h3 and an h4 per group", () => {
+test("Skills is a section with id skills, a level-3 heading and a level-4 one per group", () => {
   assert.match(source, /<section id="skills" aria-labelledby="skills-title"/);
-  assert.match(source, /<h3 id="skills-title"[^>]*>\s*Skills\s*<\/h3>/);
-  assert.match(source, /<h4[^>]*>\{group\.category\}<\/h4>/);
+  assert.match(source, /<Heading level=\{3\} where=\{where\} id="skills-title"[^>]*>\s*Skills\s*<\/Heading>/);
+  assert.match(source, /<Heading level=\{4\}[^>]*>\{group\.category\}<\/Heading>/);
   assert.match(source, /group\.skills\.map\(/);
 });
 

@@ -42,15 +42,16 @@ test("the primary address is printed under the button, wrapping, with its label 
   assert.match(between, /<span\b[^>]*(break-all|overflow-wrap:anywhere)[^>]*>\s*\{primary\.address\}/, "the address as wrapping text");
 });
 
-test("the other addresses are compact rows: label, a mailto link and Copy; no h3 per email", () => {
+test("the other addresses are compact rows: label, a mailto link and Copy; no heading per email", () => {
   assert.match(contact, /profile\.emails\.slice\(1\)\.map\(/, "maps the rest of profile.emails");
   assert.doesNotMatch(contact, /profile\.emails\[1\]/, "never hard-codes the second email");
   assert.match(contact, /href=\{`mailto:\$\{email\.address\}`\}/, "a mailto link per address");
   assert.match(contact, /\{email\.label\}/, "each address's label");
   assert.match(contact, /<CopyButton value=\{email\.address\}/, "a Copy key per address");
-  const h3s = [...markup.matchAll(/<h3\b[^>]*>([\s\S]*?)<\/h3>/g)];
-  assert.equal(h3s.length, 1, "one h3 in the section");
-  assert.match(h3s[0][1], /^\s*Other ways to reach me\s*$/, "the h3 is 'Other ways to reach me'");
+  const h3s = [...markup.matchAll(/<Heading level=\{3\}[^>]*>([\s\S]*?)<\/Heading>/g)];
+  assert.doesNotMatch(markup, /<h[1-6][\s>]/, "no literal heading tags");
+  assert.equal(h3s.length, 1, "one level-3 heading in the section");
+  assert.match(h3s[0][1], /^\s*Other ways to reach me\s*$/, "the heading is 'Other ways to reach me'");
   assert.match(h3s[0][0], /font-display/, "in the display face");
 });
 
@@ -64,8 +65,8 @@ test("GitHub, LinkedIn and the résumé are the shared profile links, as glass k
   for (const match of contact.matchAll(/<svg\b[^>]*>/g)) assert.match(match[0], /aria-hidden="true"/, "every icon aria-hidden");
 });
 
-test("the keys sit in a row, stacked under 480px", () => {
-  assert.match(markup, /<ul\b[^>]*className="[^"]*\bflex-col\b[^"]*\bmin-\[480px\]:flex-row\b/, "a column, a row from 480px");
+test("the keys sit in a row, stacked in a column under 27.5rem (a 480px window on the 2D page)", () => {
+  assert.match(markup, /<ul\b[^>]*className="[^"]*\bflex-col\b[^"]*@min-\[27\.5rem\]:flex-row\b/, "a column, a row from 27.5rem");
 });
 
 test("the contact section is a server component; only the copy key is a client one", () => {

@@ -1,5 +1,6 @@
 import { profile } from "../../../data/portfolio";
 import { cityPath } from "../../../lib/cityRoutes";
+import type { Where } from "../Heading";
 import ProfileLinks from "../ProfileLinks";
 import { order } from "../Station";
 
@@ -11,7 +12,7 @@ import { order } from "../Station";
 // On first load the four settle in one after another (reveal.css, "The
 // hero"), visible from the first paint. In the 3D city (where="3d") the two
 // ways in go to those sections' pages there, not to anchors on this page.
-export default function Hero({ where = "2d" }: { where?: "2d" | "3d" }) {
+export default function Hero({ where = "2d" }: { where?: Where }) {
   return (
     <div className="hero">
       <div className="hero-backing hero-arrive" style={order(0)}>

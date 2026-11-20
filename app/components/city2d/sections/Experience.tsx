@@ -3,6 +3,7 @@ import { groupByKind, isCurrent, sortNewestFirst } from "../../../lib/experience
 import { machineDate } from "../../../lib/machineDate";
 import ResumeLink from "../../resume/ResumeLink";
 import Figures from "../Figures";
+import Heading, { type Where } from "../Heading";
 import { order } from "../Station";
 
 // A date as written in the data, in a <time> only when it is a real date
@@ -17,17 +18,17 @@ function When({ value }: { value: string }) {
 // column of their own, so they read straight down the section; on phones
 // they follow the organisation. The role comes first in the document so
 // heading navigation lands on it.
-function Row({ entry }: { entry: Entry }) {
+function Row({ entry, where }: { entry: Entry; where: Where }) {
   return (
-    <article className="grid gap-y-1 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-x-10">
-      <h3 className="font-display text-2xl font-bold leading-tight text-text break-words sm:col-start-2 sm:row-start-1">
+    <article className="grid gap-y-1 @min-[37.5rem]:grid-cols-[10rem_minmax(0,1fr)] @min-[37.5rem]:gap-x-10">
+      <Heading level={3} where={where} className="font-display text-2xl font-bold leading-tight text-text break-words @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-1">
         {entry.role}
-      </h3>
-      <p className="text-[1.0625rem] font-semibold text-text break-words sm:col-start-2 sm:row-start-2">
+      </Heading>
+      <p className="text-[1.0625rem] font-semibold text-text break-words @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-2">
         {entry.organization}
         {entry.location && <span className="font-normal text-muted"> · {entry.location}</span>}
       </p>
-      <div className="mt-2 sm:col-start-1 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:pt-1">
+      <div className="mt-2 @min-[37.5rem]:col-start-1 @min-[37.5rem]:row-span-2 @min-[37.5rem]:row-start-1 @min-[37.5rem]:mt-0 @min-[37.5rem]:pt-1">
         <p className="font-display text-lg font-semibold leading-snug text-muted tabular-nums break-words">
           <When value={entry.startDate} />
           {entry.endDate && (
@@ -46,7 +47,7 @@ function Row({ entry }: { entry: Entry }) {
       </div>
       <ul
         role="list"
-        className="points mt-4 space-y-2 text-[1.0625rem] leading-relaxed text-text sm:col-start-2 sm:row-start-3"
+        className="points mt-4 space-y-2 text-[1.0625rem] leading-relaxed text-text @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-3"
       >
         {entry.highlights.map((highlight) => (
           <li key={highlight} className="max-w-[62ch] break-words">
@@ -61,8 +62,12 @@ function Row({ entry }: { entry: Entry }) {
 // Plain dated rows, newest first, work and education apart, each group
 // under a small label on a hairline. No card, no board and no timeline
 // line (the page's progress line is the one line). Ends with the résumé.
-// Each label and row arrives as it scrolls in (reveal.css).
-export default function Experience() {
+// Each label and row arrives as it scrolls in (reveal.css). The rows lay
+// themselves out by the section's own width (@container: the dates' column
+// from 37.5rem, a 640px window on the 2D page), so the 3D city's
+// half-width panel gets the stacked rows; the roles take their heading
+// level from where it is drawn (Heading.tsx).
+export default function Experience({ where = "2d" }: { where?: Where }) {
   const { work, education } = groupByKind(sortNewestFirst(experience));
   const groups = [
     { id: "experience-work", label: "Work", entries: work },
@@ -70,7 +75,7 @@ export default function Experience() {
   ].filter((group) => group.entries.length > 0);
 
   return (
-    <div className="mt-10">
+    <div className="@container mt-10">
       {groups.map((group) => (
         <div key={group.id} className="mb-14">
           <p id={group.id} className="reveal border-b border-line pb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">
@@ -79,7 +84,7 @@ export default function Experience() {
           <ol role="list" aria-labelledby={group.id} className="mt-8 space-y-12">
             {group.entries.map((entry, i) => (
               <li key={`${entry.role}-${entry.organization}`} className="reveal" style={order(i + 1)}>
-                <Row entry={entry} />
+                <Row entry={entry} where={where} />
               </li>
             ))}
           </ol>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
+import Heading, { type Where } from "../Heading";
 import { order } from "../Station";
 import Tilt from "../Tilt";
 
@@ -103,12 +104,19 @@ const h5 = "font-display text-lg font-semibold text-text";
 // The index, each row's header, picture and text, and Skills arrive as
 // they scroll in (reveal.css); the pictures' tilt is Tilt.tsx, mounted
 // here once for the whole page.
-export default function Projects() {
+// The rows lay themselves out by the section's own width, not the window's
+// (@container; the column is the window less 2.5rem, up to 72rem): the
+// index two across from 45.5rem, the row's columns and the sticky picture
+// from 61.5rem (a 1024px window), half and half from 69.5rem (the full
+// 72rem column, from a 1152px window). In the 3D city's half-width panel
+// the rows stay stacked, the picture above the text. Its headings take
+// their level from where it is drawn (Heading.tsx).
+export default function Projects({ where = "2d" }: { where?: Where }) {
   return (
-    <div className="mt-10">
+    <div className="@container mt-10">
       <Tilt />
       <nav aria-label="Projects" className="reveal">
-        <ol className="grid grid-cols-1 border-t border-line md:grid-cols-2 md:gap-x-10">
+        <ol className="grid grid-cols-1 border-t border-line @min-[45.5rem]:grid-cols-2 @min-[45.5rem]:gap-x-10">
           {projects.map((project, index) => (
             <li key={project.title} className="min-w-0 border-b border-line">
               <a
@@ -162,31 +170,31 @@ export default function Projects() {
               key={project.title}
               id={slug(project.title)}
               aria-labelledby={titleId}
-              className="py-10 sm:py-14 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-12 xl:gap-x-10"
+              className="py-10 @min-[37.5rem]:py-14 @min-[61.5rem]:grid @min-[61.5rem]:grid-cols-12 @min-[61.5rem]:grid-rows-[auto_1fr] @min-[61.5rem]:gap-x-12 @min-[69.5rem]:gap-x-10"
             >
-              <header className="reveal min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-6">
-                <h3 id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
+              <header className="reveal min-w-0 break-words @min-[61.5rem]:col-span-5 @min-[61.5rem]:col-start-1 @min-[61.5rem]:row-start-1 @min-[69.5rem]:col-span-6">
+                <Heading level={3} where={where} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
                   </span>
                   {project.title}
-                </h3>
+                </Heading>
                 <p className="mt-3 max-w-[65ch] text-lg text-text"><Figures>{project.summary}</Figures></p>
                 {project.role && <p className="mt-2 max-w-[65ch] text-muted"><Figures>{project.role}</Figures></p>}
               </header>
 
               {cover && (
-                <div className="reveal mt-6 min-w-0 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)] lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start xl:col-span-6 xl:col-start-7" style={order(1)}>
+                <div className="reveal mt-6 min-w-0 @min-[61.5rem]:sticky @min-[61.5rem]:top-[calc(var(--bar-h)+1.5rem)] @min-[61.5rem]:col-span-7 @min-[61.5rem]:col-start-6 @min-[61.5rem]:row-span-2 @min-[61.5rem]:row-start-1 @min-[61.5rem]:mt-0 @min-[61.5rem]:self-start @min-[69.5rem]:col-span-6 @min-[69.5rem]:col-start-7" style={order(1)}>
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className="reveal mt-6 min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-6" style={order(2)}>
+              <div className="reveal mt-6 min-w-0 break-words @min-[61.5rem]:col-span-5 @min-[61.5rem]:col-start-1 @min-[61.5rem]:row-start-2 @min-[69.5rem]:col-span-6" style={order(2)}>
                 <Keys project={project} />
 
                 {part.length > 0 ? (
                   <section className="mt-6 border-l-2 border-cyan pl-5">
-                    <h4 className={h4}>My part</h4>
+                    <Heading level={4} where={where} className={h4}>My part</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {part.slice(0, SHOWN_PART).map((contribution) => (
                         <li key={contribution}><Figures>{contribution}</Figures></li>
@@ -195,7 +203,7 @@ export default function Projects() {
                   </section>
                 ) : (
                   <section className="mt-6">
-                    <h4 className={h4}>What it does</h4>
+                    <Heading level={4} where={where} className={h4}>What it does</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {project.features.map((feature) => (
                         <li key={feature}><Figures>{feature}</Figures></li>
@@ -225,7 +233,7 @@ export default function Projects() {
                     </summary>
                     {morePart.length > 0 && (
                       <section className="mt-3 border-l-2 border-cyan pl-5">
-                        <h4 className={h5}>More of my part</h4>
+                        <Heading level={4} where={where} className={h5}>More of my part</Heading>
                         <ul role="list" className="points points-quiet mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
                             <li key={contribution}><Figures>{contribution}</Figures></li>
@@ -235,7 +243,7 @@ export default function Projects() {
                     )}
                     {foldedFeatures && (
                       <section className={subheads ? "mt-6" : undefined}>
-                        {subheads && <h4 className={h5}>What it does</h4>}
+                        {subheads && <Heading level={4} where={where} className={h5}>What it does</Heading>}
                         <ul role="list" className={`points points-quiet space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
                           {project.features.map((feature) => (
                             <li key={feature}><Figures>{feature}</Figures></li>
@@ -276,14 +284,14 @@ export default function Projects() {
         })}
       </div>
 
-      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="reveal mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 min-[400px]:p-5 sm:p-8">
-        <h3 id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
+      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="reveal mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 @min-[22.5rem]:p-5 @min-[37.5rem]:p-8">
+        <Heading level={3} where={where} id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
-        </h3>
-        <div className="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        </Heading>
+        <div className="mt-6 grid gap-8 @min-[37.5rem]:grid-cols-2 @min-[61.5rem]:grid-cols-3">
           {skillGroups.map((group) => (
             <div key={group.category} className="border-t border-line pt-4">
-              <h4 className="text-base font-semibold text-muted">{group.category}</h4>
+              <Heading level={4} where={where} className="text-base font-semibold text-muted">{group.category}</Heading>
               <ul className="mt-3 space-y-1.5 text-lg text-text">
                 {group.skills.map((skill) => (
                   <li key={skill}>{skill}</li>
