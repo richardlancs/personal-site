@@ -8,7 +8,7 @@ import { anchors } from "./anchors";
 import { useDisposeOnUnmount, useGlowPools, Hitbox, useMovers, type Mover, type SceneProps } from "./common";
 import type { GlowPool } from "./kit/glow";
 import lujiazui, { RIVERSIDE } from "./districts/lujiazui.def";
-import { box, merge } from "./kit/geometry";
+import { box, merge, tube } from "./kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "./kit/landmarks";
 import { aircraftLights, buildBoat } from "./kit/movers";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenArt, screenMaterial, type SceneTone } from "./kit/neon";
@@ -171,30 +171,52 @@ function build(quality: Quality): Built {
     if (cx + w / 2 < row.clear[0] || cx - w / 2 > row.clear[1]) civicParts[rr() < 0.65 ? 0 : 1].push(box(w, h, d).translate(cx, LAND + h / 2, row.z - rr.range(0, 0.8)));
     x += w + rr.range(row.gap[0], row.gap[1]);
   }
-  const floodlit = { tone: "#ffcf96", strength: 0.14 };
+  const floodlit = { tone: "#ffcf96", strength: 0.08 };
   const civicStone = surface({ color: "#ded5c4", relief: { kind: "stone", bay: 0.5, floor: 0.6, strength: 0.5 }, glow: floodlit, fogScale: 1.1 });
   const civicWarm = surface({ color: "#cdb79a", relief: { kind: "stone", bay: 0.5, floor: 0.6, strength: 0.5 }, glow: floodlit, fogScale: 1.1 });
   civicParts.forEach((parts, k) => parts.length && mesh(merge(parts), k ? civicWarm : civicStone, "civic"));
   const hall = civic.hall;
+  // the hall: a pale block, its river front a colonnade (pale columns
+  // before a recessed glazed wall, warm-lit after dark), a cornice and an
+  // attic storey
+  const hallFront = hall.z + hall.d / 2;
+  const colH = hall.h * 0.72;
+  const colN = 15;
+  const columns = Array.from({ length: colN }, (_, i) => box(0.24, colH, 0.24).translate(hall.x - hall.w * 0.45 + (i * hall.w * 0.9) / (colN - 1), LAND + 0.35 + colH / 2, hallFront + 0.3));
+  mesh(box(hall.w * 0.92, colH, 0.1).translate(hall.x, LAND + 0.35 + colH / 2, hallFront + 0.02), litSurface({ color: "#7f8288", tone: "gold", strength: 0.6 }), "civic:hall-glazing");
   mesh(
     merge([
-      box(hall.w, hall.h, hall.d).translate(hall.x, LAND + hall.h / 2, hall.z),
-      box(hall.w + 0.3, 0.25, hall.d + 0.3).translate(hall.x, LAND + hall.h + 0.12, hall.z),
-      box(hall.w * 0.8, 0.5, hall.d * 0.8).translate(hall.x, LAND + hall.h + 0.5, hall.z),
+      box(hall.w, 0.35, hall.d + 0.7).translate(hall.x, LAND + 0.175, hall.z + 0.35),
+      box(hall.w, hall.h, hall.d).translate(hall.x, LAND + hall.h / 2, hall.z - 0.05),
+      box(hall.w + 0.3, 0.3, hall.d + 0.8).translate(hall.x, LAND + 0.35 + colH + 0.15, hall.z + 0.35),
+      box(hall.w * 0.8, 0.6, hall.d * 0.8).translate(hall.x, LAND + hall.h + 0.3, hall.z),
+      ...columns,
     ]),
     surface({ color: "#e4dccb", relief: { kind: "stone", bay: 0.42, floor: 1.2, strength: 0.8 }, glow: { tone: "#ffcf96", strength: 0.3 }, fogScale: 1.1 }),
     "civic:hall",
   );
   const dm = civic.dome;
   const podiums: THREE.BufferGeometry[] = [];
+  const lattice: THREE.BufferGeometry[] = [];
   for (const [x, z] of civic.domes) {
     podiums.push(new THREE.CylinderGeometry(dm.r * 1.25, dm.r * 1.3, dm.podium, 28).translate(x, LAND + dm.podium / 2, z));
     podiums.push(new THREE.CylinderGeometry(dm.r * 0.92, dm.r * 0.92, dm.drum, 28).translate(x, LAND + dm.podium + dm.drum / 2, z));
     const y = LAND + dm.podium + dm.drum + dm.r * 0.15;
-    mesh(new THREE.SphereGeometry(dm.r * 0.96, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(x, y, z), surface({ color: "#5d8fae", fogScale: 1.1 }), "civic:dome-core");
+    mesh(new THREE.SphereGeometry(dm.r * 0.96, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(x, y, z), surface({ color: "#4a7c9e", fogScale: 1.1 }), "civic:dome-core");
     mesh(new THREE.SphereGeometry(dm.r, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.62).translate(x, y, z), glassMaterial({ tint: "#b4dcef", opacity: 0.5, sky: 1, glow: { tone: "cyan", strength: 0.35 } }), "civic:dome");
+    // its lattice: meridians and rings, pale by day, lit cyan after dark
+    for (let k = 0; k < 12; k++) {
+      const th = (k / 12) * Math.PI * 2;
+      const pts = Array.from({ length: 9 }, (_, i) => {
+        const ph = (i / 8) * Math.PI * 0.62;
+        return new THREE.Vector3(x + dm.r * 1.01 * Math.sin(ph) * Math.cos(th), y + dm.r * 1.01 * Math.cos(ph), z + dm.r * 1.01 * Math.sin(ph) * Math.sin(th));
+      });
+      lattice.push(tube(pts, () => 0.045, 8, 3));
+    }
+    for (const ph of [0.22, 0.4, 0.58].map((f) => f * Math.PI)) lattice.push(new THREE.TorusGeometry(dm.r * 1.01 * Math.sin(ph), 0.045, 3, 32).rotateX(Math.PI / 2).translate(x, y + dm.r * 1.01 * Math.cos(ph), z));
     glow.push({ pos: new THREE.Vector3(x, y + dm.r * 0.5, z), color: SCENE_TONES.cyan, size: dm.r * 0.9 });
   }
+  mesh(merge(lattice), litSurface({ color: "#e4eef4", tone: "cyan", strength: 0.9 }), "civic:lattice");
   mesh(merge(podiums), surface({ color: "#d8d2c6", relief: { kind: "stone", bay: 0.4, floor: 0.5, strength: 0.6 }, glow: floodlit, fogScale: 1.1 }), "civic:podiums");
 
   // ---- The four landmarks: real proportions, the plates' colours. Their
@@ -205,7 +227,7 @@ function build(quality: Quality): Built {
   const detail = mobile ? "far" : "near";
   type Maker = (d: "near" | "far", m: { body: THREE.Material; glass: THREE.Material; lit: THREE.Material }) => Landmark;
   const LANDMARKS: [Maker, readonly [number, number], { body: THREE.Material; base: string; glass: string; lit: THREE.Material; tone: SceneTone }][] = [
-    [buildPearlTower, lm.pearl, { body: litSurface({ color: "#d6ccc8", tone: "rose", strength: 0.22 }), base: "#bfb2ad", glass: "#8a6f88", lit: litSurface({ color: "#dba8c8", tone: "rose", strength: 1.1 }), tone: "rose" }],
+    [buildPearlTower, lm.pearl, { body: litSurface({ color: "#d6ccc8", tone: "rose", strength: 0.32 }), base: "#bfb2ad", glass: "#8a6f88", lit: litSurface({ color: "#dba8c8", tone: "rose", strength: 1.1 }), tone: "rose" }],
     [buildWorldFinancialCenter, lm.worldFinancialCenter, { body: surface({ color: "#9dbcd8", fogScale: 1.1 }), base: "#7f9fbe", glass: "#a8cbe8", lit: litSurface({ color: "#a7bfd4", tone: "cyan", strength: 1.05 }), tone: "cyan" }],
     [buildJinMao, lm.jinMao, { body: surface({ color: "#c7bca7", fogScale: 1.1 }), base: "#a79c87", glass: "#5f7d99", lit: litSurface({ color: "#b9ab8e", tone: "gold", strength: 0.95 }), tone: "gold" }],
     [buildShanghaiTower, lm.shanghaiTower, { body: surface({ color: "#a6c2da", fogScale: 1.1 }), base: "#87a6c2", glass: "#a9cbe6", lit: litSurface({ color: "#a9c0d4", tone: "gold", strength: 1.0 }), tone: "gold" }],

@@ -118,7 +118,7 @@ export const RIVERSIDE = {
     dome: { r: 3.0, drum: 2.4, podium: 1.0 },
   },
   // The far bank's edge: an embankment, a row of trees and lamps
-  bank: { z: -51.5, trees: { from: -150, to: 150, step: 1.5, size: [1.3, 2.0] as const }, lamps: { from: -120, to: 120, step: 5 } },
+  bank: { z: -51.5, trees: { from: -150, to: 150, step: 0.9, size: [1.4, 2.2] as const }, lamps: { from: -120, to: 120, step: 5 } },
   // The landing's planters, beyond the outer boards, by the railing
   planters: [[-7.4, -2.2], [-8.4, -0.6], [7.4, -2.2], [8.4, -0.6]] as readonly XZ[],
   // A ferry on the channel
