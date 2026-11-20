@@ -14,7 +14,7 @@ import { envUniforms, materialKey, windowUniforms } from "./uniforms";
 // share) says, a window keeps its state, and the lit ones only grow as the
 // share rises.
 //
-// - A lit window glows warm (uWarm) or, about one in eight, cool (uCool), by
+// - A lit window glows warm (uWarm) or, about one in fourteen, cool (uCool), by
 //   a second hash, each a little brighter or dimmer by a third; its glow is
 //   × envUniforms.uNight, so by day lit windows don't show. It stays under
 //   1.0, below the bloom threshold: windows never bloom, neon does.
@@ -127,7 +127,7 @@ const FRAGMENT_COLOR = /* glsl */ `
 float kitPane = 0.0;
 vec3 kitEmit = vec3(0.0);
 float kitShade = 1.0;
-vec3 kitAvgTone = mix(uWarm, uCool, 0.12);
+vec3 kitAvgTone = mix(uWarm, uCool, 0.07);
 // (the grid and its derivatives outside any branch, so fwidth is defined)
 bool fitted = vWinSpan.x > 0.0;
 float bays = fitted ? max(1.0, floor(vWinSpan.x / uBay + 0.5)) : 0.0;
@@ -161,7 +161,7 @@ if (vWinFace >= 0.0) {
     // are mostly lit, the rest mostly dark)
     float floorShare = windowFloorShare(fl, seed, uLitShare);
     float litNow = mix(mix(uLitShare, floorShare, sy), lit, sharp);
-    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 0.88 ? uWarm : uCool, sharp);
+    vec3 tone = mix(kitAvgTone, windowHash(fl, bay, seed + 7919) < 0.93 ? uWarm : uCool, sharp);
     float bright = mix(0.75, 0.55 + 0.4 * windowHash(fl, bay, seed + 15887), sharp);
     kitPane = px * py;
     kitEmit = tone * litNow * bright * kitPane;

@@ -1,11 +1,12 @@
 // The 3D city's addresses (app/city/, app/lib/cityRoutes.ts), its metadata
-// (registry: cityMetadata), and the switch between the two views
+// (sections/metadata.ts: cityMetadata), and the switch between the two views
 // (city2d/ViewSwitch.tsx, CityLink.tsx). docs/superpowers/plans/2026-11-19-shanghai-3d.md, Task 2.
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { cityPath, sectionForCityPath, twoDHref } from "../app/lib/cityRoutes.ts";
-import { cityMetadata, pageSections } from "../app/sections/registry.ts";
+import { cityMetadata } from "../app/sections/metadata.ts";
+import { pageSections } from "../app/sections/registry.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
@@ -75,7 +76,9 @@ test("a /city page is the band, one panel with its h1, the 2D link and the credi
   // is up (CityLoader.tsx), with the sky driver
   assert.match(read("app/city/layout.tsx"), /<CityLoader \/>/);
   const loader = read("app/components/city3d/CityLoader.tsx");
-  assert.match(loader, /lazy\(\(\) => import\("\.\/CityShell"\)\)/);
-  assert.match(loader, /lazy\(\(\) => import\("\.\.\/weather\/SkyDriver"\)\)/);
+  assert.match(loader, /lazy\(\(\) => import\("\.\/CityAfter"\)\)/);
+  const after = read("app/components/city3d/CityAfter.tsx");
+  assert.match(after, /import CityShell from "\.\/CityShell";/);
+  assert.match(after, /import SkyDriver from "\.\.\/weather\/SkyDriver";/);
   assert.doesNotMatch(read("app/layout.tsx"), /CityShell|CityLoader/);
 });

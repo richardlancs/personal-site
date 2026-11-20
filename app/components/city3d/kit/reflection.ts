@@ -54,7 +54,7 @@ float wNoise(vec2 p) {
   f = f * f * (3.0 - 2.0 * f);
   return mix(mix(wHash(i), wHash(i + vec2(1.0, 0.0)), f.x), mix(wHash(i + vec2(0.0, 1.0)), wHash(i + vec2(1.0, 1.0)), f.x), f.y);
 }
-// The river's body: blue-grey by day, deep blue at night, greyer in rain,
+// The river's body: blue-grey by day (the day plate's, not a saturated blue), deep blue at night, greyer in rain,
 // with pale ripple strokes running across the view that fade with
 // distance; fres (out) is how glancing the view is: 0 looking down, 1 at
 // the horizon
@@ -62,7 +62,7 @@ vec3 waterBody(vec3 world, vec3 toEye, float night, float wet, out float fres) {
   float d = length(toEye);
   vec3 v = toEye / max(d, 1e-4);
   fres = pow(1.0 - clamp(v.y, 0.0, 1.0), 5.0);
-  vec3 deep = mix(vec3(0.075, 0.19, 0.36), vec3(0.01, 0.022, 0.07), night);
+  vec3 deep = mix(vec3(0.09, 0.16, 0.25), vec3(0.01, 0.022, 0.07), night);
   float lum = dot(deep, vec3(0.3, 0.5, 0.2));
   deep = mix(deep, vec3(lum) * vec3(0.9, 0.97, 1.05), wet * 0.4);
   float n = wNoise(vec2(world.x * 0.12, world.z * 1.8)) + 0.5 * wNoise(vec2(world.x * 0.4 + 3.0, world.z * 4.5));
@@ -271,7 +271,7 @@ void main() {
   r *= 0.2 * color * mix(0.35, 1.15, band);
   ${
     kind === "river"
-      ? `float amt = mix(0.3, 0.85, fres) * (1.0 - uWet * 0.3);
+      ? `float amt = mix(0.3, 0.85, fres) * (1.0 - uWet * 0.3) * mix(0.75, 1.0, uNight);
   gl_FragColor = vec4(mix(body, r, amt), 1.0);`
       : `float puddle = smoothstep(0.5, 0.68, wNoise(vWorld.xz * 0.6 + 4.0) * 0.7 + wNoise(vWorld.xz * 2.1) * 0.3);
   float amt = uWet * (0.15 + 0.6 * puddle) * mix(0.4, 1.0, fres);

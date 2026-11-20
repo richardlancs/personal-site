@@ -51,7 +51,10 @@ export type SceneDef = {
   // On a portrait screen, at the place's home view: the middle of the view
   // is `yaw` degrees right of where the camera looks, and the lens widens
   // if it must to show `half` degrees either side of that
-  portrait?: { yaw: number; half: number };
+  // `lift`: the point that many degrees above where the camera looks goes
+  // to the middle of the strip (phones: the band over the sheet), and the
+  // lens shows at least `cover` degrees top to bottom in that strip
+  portrait?: { yaw: number; half: number; lift?: number; cover?: number };
   // On a short landscape screen (a phone on its side), at the home view:
   // how many degrees under where the camera looks the place's fronts are,
   // lifted to the middle of the strip between the bar and the sheet

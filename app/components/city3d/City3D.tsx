@@ -395,7 +395,12 @@ function Director({
     // show `half` degrees either side, the middle turned by `yaw`
     const portrait = narrow && aspect < 1 ? def.portrait : undefined;
     let fov = aspect < 1 ? def.fov * 1.2 : def.fov;
+    const ceiling = barBottom(size.width, size.height);
     if (portrait) fov = Math.max(fov, lens(tan(portrait.half) / aspect));
+    // …and on a portrait tablet (a phone's lens is already wide from its
+    // narrowness) at least `cover` degrees top to bottom in the strip
+    // between the bar and the sheet
+    if (portrait?.cover && size.width >= 600) fov = Math.max(fov, lens(tan(portrait.cover / 2) / Math.max(0.36, (heroHeight(size.height) - SHEET_OVERLAP - ceiling) / size.height)));
     let want = 0;
     const edge = narrow ? 0 : panelRight(size.width, size.height);
     if (!narrow && def.frame !== "center" && edge > 0) {
@@ -408,12 +413,13 @@ function Director({
     } else if (portrait) {
       want = tan(portrait.yaw) / (2 * tan(fov / 2) * aspect);
     }
-    const ceiling = barBottom(size.width, size.height);
     let wantY = narrow ? narrowLift(size.height, ceiling) : 0;
     // A phone on its side: the place's fronts (`short`, degrees under the
-    // aim) go to the middle of the strip
-    if (narrow && aspect >= 1 && size.height <= 480 && def.short !== undefined) {
-      const fronts = (Math.tan(THREE.MathUtils.degToRad(def.short)) * size.height) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
+    // aim) go to the middle of the strip; a portrait one: the point
+    // `portrait.lift` degrees over the aim does
+    const under = narrow && aspect >= 1 && size.height <= 480 ? def.short : portrait?.lift !== undefined ? -portrait.lift : undefined;
+    if (under !== undefined) {
+      const fronts = (Math.tan(THREE.MathUtils.degToRad(under)) * size.height) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
       const aim = (ceiling + heroHeight(size.height) - SHEET_OVERLAP) / 2 - fronts;
       wantY = 0.5 - aim / size.height;
     }

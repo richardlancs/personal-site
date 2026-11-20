@@ -7,7 +7,8 @@ import Interests from "./components/city2d/sections/Interests";
 import Projects from "./components/city2d/sections/Projects";
 import Arrivals from "./components/ui/Arrivals";
 import Colophon from "./components/ui/Colophon";
-import { section, sectionMetadata } from "./sections/registry";
+import { sectionMetadata } from "./sections/metadata";
+import { section } from "./sections/registry";
 
 export const metadata = sectionMetadata("home");
 

@@ -29,12 +29,17 @@ place in the page's order (the sections are numbered by it):
   hash: "reading",                  // its anchor: /#reading
   href: "/#reading",
   title: "Reading",                 // the section's h2, and its name in lists
-  summary: "What I'm reading.",     // one line, for lists
   listed: false,                    // true once it's ready to be pointed at
   district: "yuyuan",               // the painting above it (DistrictId)
   scene: { id: "park", focus: null },  // the 3D city's (Plan B); any SceneId for now
-  metadata: { title: "Reading", description: "…" },
 }
+```
+
+and its words to `sectionWords` in `app/sections/metadata.ts` (read only on
+the server, so they stay out of every page's first load):
+
+```ts
+reading: { summary: "What I'm reading.", metadata: { title: "Reading", description: "…" } },
 ```
 
 What each field is for is commented in the registry. A section that is

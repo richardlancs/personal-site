@@ -110,8 +110,14 @@ test("the scene keys named in the districts' defs are the ones the pickers write
 test("CityPage keeps the section's words with where=\"3d\" and puts the panel's behaviour after the heading", () => {
   const page = code(read("app/components/city3d/CityPage.tsx"));
   for (const name of ["Hero", "About", "Projects", "Experience", "Interests", "Contact"]) assert.match(page, new RegExp(`<${name} where="3d" />`), name);
-  assert.match(page, /import CityPanel, \{ type Picks \} from "\.\/panels\/CityPanel";/);
-  assert.match(page, /<\/h1>\s*\)\}\s*<CityPanel section=\{id\} picks=\{picks\} \/>\s*\{content\[id\]\}/);
+  // The picker's slot, with what it lists, straight after the heading; the
+  // panel's behaviour comes after the page is up, with the 3D city's shell
+  // (CityLoader.tsx), never in /city's first load
+  assert.match(page, /import type \{ Picks \} from "\.\/panels\/CityPanel";/);
+  assert.doesNotMatch(page, /import CityPanel/);
+  assert.match(page, /<\/h1>\s*\)\}\s*\{id in picks && \([\s\S]*?<div className="city-picker-slot" data-picks=\{JSON\.stringify\(picks\[id as keyof Picks\]\)\} \/>\s*\)\}\s*\{content\[id\]\}/);
+  assert.match(read("app/components/city3d/CityLoader.tsx"), /const CityAfter = lazy\(\(\) => import\("\.\/CityAfter"\)\);/);
+  assert.match(read("app/components/city3d/CityAfter.tsx"), /import CityPanel from "\.\/panels\/CityPanel";/);
   // The pickers import no data: the portfolio's data stays out of every
   // chunk the 2D page shares with them
   for (const name of ["ScreenPicker", "BoardLines", "ArcadeControls", "CityPanel"]) assert.doesNotMatch(code(read(`${panels}/${name}.tsx`)), /import \{[^}]*\} from "\.\.\/\.\.\/\.\.\/data\/portfolio"/, name);

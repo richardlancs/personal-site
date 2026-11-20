@@ -18,7 +18,7 @@ import { windowMaterial, type WindowOptions } from "./windows";
 export type TowerSpec = { x: number; z: number; w: number; d: number; h: number; ry: number; style: 0 | 1 | 2 | 3; seed: number };
 
 export const TOWER_STYLES: readonly Omit<WindowOptions, "far">[] = [
-  { base: "#24364f", glass: "#5d8fc4" },
+  { base: "#3f5a7a", glass: "#6f9cc9" },
   { base: "#cdbb9c", glass: "#33506f" },
   { base: "#7f97b0", glass: "#4a79aa" },
   { base: "#b9a68a", glass: "#2c4664" },

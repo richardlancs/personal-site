@@ -96,3 +96,31 @@ Weakest: Jin Mao, from far. Its identity in the plates is the fine rhythm of the
   pickers' data now comes from the server, which took /'s first load back
   from 203,829); city3dChunk 298,767; city3dJs 310,914; Save-Data figure
   0.4 MB.
+
+## Task 12, second pass: Home composed as the painting (20 November 2026)
+
+- Layout (lead's call): the boards move off the skyline onto the near
+  landing, low in the frame, each word backed by the water; the camera
+  rises to 60 m and looks a little up (home pos [0, 6, 14]), the waterline
+  at about 69% of the height; the landmarks spread as in the paintings
+  (bearings -5°, +6°, +11°, +16.5°); the skyline is three layers of
+  instanced towers across the whole far bank (450 asked for). The section
+  vignettes (lane houses, viaduct and train, facades, clock tower, walkway
+  ring) are gone from Home. Portrait screens widen the lens until the band
+  holds the skyline and the boards (`portrait.cover`, `lift`).
+- Production, `?perf`, night, every frame drawn (headless, relative):
+  high 117 draws, 199k tris, 40 programs, 10.9 MB, p50/p95 4.0/6.4 ms;
+  low 80, 102k, 40, 10.3 MB, 2.8/4.2 ms; mobile (390×844) 63, 66k, 36,
+  3.5 MB, 2.2/2.8 ms. No cut.
+- The ferry is the only mover; the warning lights stand steady (their
+  blink is cut: it would keep the canvas drawing every frame at Home).
+  The loop draws only while the ferry is in view (common.tsx: useMovers).
+- Windows: FLOOR_WEIGHT 0.86, the evening's share peaks at 0.4, 1 in 14
+  cool. Landmarks' lit parts are `litSurface` (shaded by day, a soft glow
+  after dark).
+- Sizes: homeInitialJs 199,429; cityInitialJs 199,820 (1,028 B of room):
+  the panel's behaviour and pickers moved into the chunk loaded after the
+  page is up (CityAfter.tsx), and the sections' summaries and metadata
+  moved out of the registry into server-only app/sections/metadata.ts.
+- visibility.mjs: 0 problems, 10 views × 6 skies; board words 14.1:1
+  (1440, bloom on) and 13.0–13.5:1 (390); panel text ≥ 6.18:1.

@@ -1,7 +1,7 @@
 "use client";
 
-import { useFrame, type ThreeEvent } from "@react-three/fiber";
-import { useEffect, useMemo } from "react";
+import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { invisibleMaterial } from "./kit/materials";
 import { DISTRICT_LIGHTS, type SceneId, type V3 } from "./scenes";
@@ -61,18 +61,50 @@ export function useLive(on: boolean): void {
   useEffect(() => (on ? holdLive() : undefined), [on]);
 }
 
-// Runs a scene's movers: each frame while the place is showing and still
-// view is off (and holds the canvas live meanwhile); parked otherwise
+// Runs a scene's movers: each frame while the place is showing, still
+// view is off and at least one of them is in view (holding the canvas
+// live meanwhile); parked otherwise. When none is in view the canvas stops
+// drawing: they are moved on, unseen, twice a second (no frame drawn), and
+// the loop starts again the moment one comes into view. Their clock is
+// the page's (performance.now), so a mover is where it would have been.
+const box = new THREE.Box3();
+const frustum = new THREE.Frustum();
+const viewProjection = new THREE.Matrix4();
+const seconds = () => performance.now() / 1000;
+function anyInView(movers: readonly Mover[], camera: THREE.Camera) {
+  camera.updateMatrixWorld();
+  frustum.setFromProjectionMatrix(viewProjection.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+  return movers.some((m) => {
+    m.object.updateWorldMatrix(true, true);
+    return frustum.intersectsBox(box.setFromObject(m.object));
+  });
+}
 export function useMovers(movers: readonly Mover[], { active, still }: { active: boolean; still: boolean }): void {
-  const running = active && !still && movers.length > 0;
-  useLive(running);
+  const wanted = active && !still && movers.length > 0;
+  const [seen, setSeen] = useState(true);
+  const camera = useThree((s) => s.camera);
+  useLive(wanted && seen);
   useEffect(() => {
-    if (!running) for (const m of movers) m.park();
-  }, [running, movers]);
-  useFrame(({ clock }) => {
-    if (!running) return;
-    const t = clock.elapsedTime;
-    for (const m of movers) m.update(t);
+    if (!wanted) for (const m of movers) m.park();
+  }, [wanted, movers]);
+  // Out of view: move them on without drawing, and watch for one coming in
+  useEffect(() => {
+    if (!wanted || seen) return;
+    const id = window.setInterval(() => {
+      for (const m of movers) m.update(seconds());
+      if (anyInView(movers, camera)) setSeen(true);
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [wanted, seen, movers, camera]);
+  const frames = useRef(0);
+  useFrame(({ camera: cam }) => {
+    if (!wanted) return;
+    for (const m of movers) m.update(seconds());
+    // (every fifteenth frame, and on any frame drawn while they're out of view)
+    if (!seen || ++frames.current % 15 === 0) {
+      const inView = anyInView(movers, cam);
+      if (inView !== seen) setSeen(inView);
+    }
   });
 }
 

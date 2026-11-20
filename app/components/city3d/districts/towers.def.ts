@@ -13,7 +13,7 @@ const towers: SceneDef = {
   enter: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   exit: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   focus: {},
-  sign: { bearing: -1.2, distance: 64, y: 9.5 },
+  sign: { bearing: 0, distance: 16.8, y: 1.15 },
   fov: 50,
   plateFrame: { fov: 50, pos: [5, 3.2, 17], target: [0, 2.4, -2] },
   frame: "right",

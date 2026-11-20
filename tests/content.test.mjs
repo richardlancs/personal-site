@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { about, experience, interests, profile, projects, skillGroups } from "../app/data/portfolio.ts";
+import { sectionWords } from "../app/sections/metadata.ts";
 import { section, sections, siteUrl } from "../app/sections/registry.ts";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -75,8 +76,10 @@ test("every section in the registry is complete and is a station on the one page
   for (const s of sections) {
     assert.equal(s.href, s.hash ? `/#${s.hash}` : "/", `${s.id}: its address is its anchor`);
     assert.match(page, new RegExp(`<Station\\s+section=\\{section\\("${s.id}"\\)\\}`), `${s.id} has no station on the page`);
-    assert.ok(s.metadata.title && s.metadata.description, `${s.id}: metadata`);
-    assert.ok(isSentence(s.summary), `${s.id}: summary "${s.summary}"`);
+    // (its summary and metadata live apart, read only on the server)
+    const w = sectionWords[s.id];
+    assert.ok(w.metadata.title && w.metadata.description, `${s.id}: metadata`);
+    assert.ok(isSentence(w.summary), `${s.id}: summary "${w.summary}"`);
     assert.equal(section(s.id), s);
     for (const sub of s.subsections ?? []) assert.match(sub.href, /^\/#[a-z-]+$/, `${s.id}: ${sub.title} is an anchor`);
   }

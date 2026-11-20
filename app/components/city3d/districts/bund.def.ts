@@ -13,7 +13,7 @@ const bund: SceneDef = {
   enter: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   exit: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   focus: {},
-  sign: { bearing: 19.6, distance: 24, y: 6.4 },
+  sign: { bearing: 17.6, distance: 17.4, y: 1.15 },
   fov: 50,
   plateFrame: { fov: 50, pos: [5, 3.2, 17], target: [0, 2.4, -2] },
   frame: "right",

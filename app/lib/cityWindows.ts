@@ -30,20 +30,21 @@ export const SHARE_STEP = 1 / 16;
 
 // The share through the day, hours on a clock that starts at 06:00 (the
 // points after midnight are written past 24). The steepest stretch, the
-// evening, climbs 0.036 a quarter hour, under one step.
-// Half the windows at the evening's height, not three in four: with
-// windows lighting by floors (windowScore, below), that reads as the night
-// plate's buildings with lit floors; more read as static (tuned against
-// app/assets/city/lujiazui-night.webp, 20 November 2026).
+// evening, climbs 0.028 a quarter hour, under one step.
+// Under half the windows at the evening's height (0.4), not three in four:
+// with windows lighting by floors (windowScore, below), that reads as the
+// night plate's buildings with lit floors and dark ones; more read as
+// static (tuned against app/assets/city/lujiazui-night.webp, 20 November
+// 2026).
 const CURVE: readonly [number, number][] = [
-  [6, 0.2],
+  [6, 0.18],
   [9, 0.06],
   [17, 0.06],
-  [19.5, 0.42],
-  [21, 0.5],
-  [25, 0.32],
+  [19.5, 0.34],
+  [21, 0.4],
+  [25, 0.26],
   [28, 0.16],
-  [30, 0.2],
+  [30, 0.18],
 ];
 
 /** The share of windows lit at a local hour; any hour wraps onto the clock (one that isn't a number counts as midnight). */
@@ -99,7 +100,7 @@ float windowHash(int floorIndex, int bay, int seed) {
 // windows, the floors whose hash is low first, and a window's state only
 // grows with the share. Written once here and once in GLSL
 // (WINDOW_LIT_GLSL); keep the two in step.
-export const FLOOR_WEIGHT = 0.72;
+export const FLOOR_WEIGHT = 0.86;
 
 /** A window's place in the order windows light in, 0 up to 1, evenly spread: its floor's hash mostly, its own a little. */
 export function windowScore(floor: number, bay: number, seed: number): number {

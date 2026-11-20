@@ -91,6 +91,29 @@ vec3 untone(vec3 o) {
 }
 `;
 
+/**
+ * A lit surface that is also a surface: shaded by the sun and the sky like
+ * the city's walls (Lambert) by day, and after dark it glows in `tone` ×
+ * `strength`, rising with the neon (neonUniforms.uNeon: nothing by day).
+ * For the landmarks' lit parts: the Pearl's rose glass spheres, the
+ * towers' gold bands. A strength a little over 1 just crosses the bloom's
+ * threshold, so it glows softly without blowing out. One program for all.
+ */
+export function litSurface(o: { color: string; tone: SceneTone | string; strength: number }): THREE.MeshLambertMaterial {
+  return shared(materialKey("lit", `${o.color}:${toneColor(o.tone)}:${o.strength}`), () => {
+    const m = new THREE.MeshLambertMaterial({ color: o.color });
+    const uniforms = { uGlowTone: { value: new THREE.Color(toneColor(o.tone)) }, uGlowStrength: { value: o.strength } };
+    m.onBeforeCompile = (shader) => {
+      Object.assign(shader.uniforms, uniforms, { uNeon: neonUniforms.uNeon });
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nuniform vec3 uGlowTone;\nuniform float uGlowStrength;\nuniform float uNeon;")
+        .replace("#include <emissivemap_fragment>", "#include <emissivemap_fragment>\ntotalEmissiveRadiance += uGlowTone * uGlowStrength * smoothstep(0.35, 1.0, uNeon);");
+    };
+    m.customProgramCacheKey = () => materialKey("lit", "surface");
+    return m;
+  });
+}
+
 // A face drawn on a canvas (a sign's board, a screen): `draw` paints it at
 // w × h pixels, again whenever the material's userData.redraw() is called
 // (e.g. once the display face has loaded). One material per `key`. As

@@ -23,5 +23,5 @@ test("the Sections menu marks where you are and leaves modified clicks to the br
 });
 
 test("only home makes page metadata: no anchor can become a canonical address", () => {
-  assert.match(read("app/sections/registry.ts"), /export const sectionMetadata = \(id: "home"\): Metadata =>/);
+  assert.match(read("app/sections/metadata.ts"), /export const sectionMetadata = \(id: "home"\): Metadata =>/);
 });

@@ -13,7 +13,7 @@ import Arrivals from "../ui/Arrivals";
 import Colophon from "../ui/Colophon";
 import { experience, interests, projects } from "../../data/portfolio";
 import { sortNewestFirst } from "../../lib/experience";
-import CityPanel, { type Picks } from "./panels/CityPanel";
+import type { Picks } from "./panels/CityPanel";
 import { scenes } from "./scenes";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
@@ -32,11 +32,11 @@ import { scenes } from "./scenes";
 // (city2d/Heading.tsx), so each page's outline runs h1, h2, h3 with
 // nothing skipped.
 //
-// After the heading, the panel's behaviour (panels/CityPanel.tsx): focus
-// on the heading after a journey, and on Projects, Experience and
-// Interests the row of keys that chooses what the scene shows, loaded with
-// the 3D city. The panel's markup stays here, on the server, so none of
-// it adds to the page's first load.
+// After the heading, on Projects, Experience and Interests, the slot for
+// the row of keys that chooses what the scene shows, with what it lists;
+// the row itself, and focus on the heading after a journey, are
+// panels/CityPanel.tsx's, loaded once the page is up (CityLoader.tsx), so
+// none of it adds to the page's first load.
 const content: Record<SectionId, ReactNode> = {
   home: <Hero where="3d" />,
   about: <About where="3d" />,
@@ -89,7 +89,11 @@ export default function CityPage({ id }: { id: SectionId }) {
             {s.title}
           </h1>
         )}
-        <CityPanel section={id} picks={picks} />
+        {id in picks && (
+          // The section's picker goes here (panels/CityPanel.tsx, loaded
+          // after the page), with what it lists
+          <div className="city-picker-slot" data-picks={JSON.stringify(picks[id as keyof Picks])} />
+        )}
         {content[id]}
         <p className="city-panel-foot">
           <Link href={twoDHref(s.city)} className="text-link text-link-solo">

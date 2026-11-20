@@ -13,7 +13,7 @@ const nanjingRoad: SceneDef = {
   enter: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   exit: { pos: [2, 4, 26], target: [0, 2.4, 0] },
   focus: {},
-  sign: { bearing: 10.6, distance: 32, y: 5.7 },
+  sign: { bearing: 8.8, distance: 16.2, y: 1.1 },
   fov: 50,
   plateFrame: { fov: 50, pos: [5, 3.2, 17], target: [0, 2.4, -2] },
   frame: "right",

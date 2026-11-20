@@ -70,8 +70,8 @@ test("at most one planar reflection, and no spot light", async () => {
 
 test("the composition is data in the riverside's def, not numbers in the scene", async () => {
   const { RIVERSIDE } = await import("../app/components/city3d/districts/lujiazui.def.ts");
-  assert.match(src, /import \{ RIVERSIDE \} from "\.\/districts\/lujiazui\.def";/);
-  for (const k of ["water", "quays", "landmarks", "skyline", "viaduct", "boat"]) assert.ok(RIVERSIDE[k], k);
+  assert.match(src, /import lujiazui, \{ RIVERSIDE \} from "\.\/districts\/lujiazui\.def";/);
+  for (const k of ["water", "landing", "landmarks", "skyline", "neon", "boat"]) assert.ok(RIVERSIDE[k], k);
   // the landmarks' places are the def's
   assert.doesNotMatch(src, /buildPearlTower, -?\d/);
   // movers are the kit's, run by useMovers
