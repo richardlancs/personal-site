@@ -49,8 +49,8 @@ const K = LANE.scale;
 
 // Colours, from the paintings
 const C = {
-  stone: "#9d9893",
-  stoneDark: "#857f7c",
+  stone: "#b9b3ab",
+  stoneDark: "#948d88",
   door: "#4a2c2e",
   roof: "#7e4535",
   wood: "#4f3428",
@@ -321,7 +321,7 @@ function build(quality: Quality) {
       // door's head)
       if (z1 > -24 && z0 < 3 && (index === nearIndex || r() < 0.85)) {
         const leaf = (y: number, u: number, s: number) => {
-          const b = blob(r, s, 0.85, 0.32, 1).scale(0.45, 1, 1);
+          const b = blob(r, s, 0.85, 0.4, 1).scale(0.4, 0.9, 1.35).rotateX(r.range(-0.5, 0.5));
           (r() < 0.38 ? parts.ivyLight : parts.ivy).push(b.translate(f - side * 0.2, y, u));
         };
         for (let u = z0 + 0.2; u < z1; u += r.range(0.4, 0.6)) leaf(H - r.range(0.2, 0.7), u, r.range(0.35, 0.6));
@@ -429,7 +429,7 @@ function build(quality: Quality) {
   // ---- The lane's materials, one merged mesh each
   // after dark the whole lane holds a little warm light (the plate's
   // lanterns all the way down), the brick's courses in it
-  const brickWall = surface({ color: "#96594a", grime: 0.2, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 }, glow: { tone: "#64382a", strength: 0.28 } });
+  const brickWall = surface({ color: "#ad7260", grime: 0.2, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 }, glow: { tone: "#64382a", strength: 0.28 } });
   const MATERIALS: Record<string, THREE.Material> = {
     brick: brickWall,
     stone: surface({ color: C.stone, grime: 0.1, glow: { tone: "#5a5258", strength: 0.26 } }),
