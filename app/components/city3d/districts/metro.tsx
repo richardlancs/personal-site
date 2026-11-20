@@ -280,6 +280,16 @@ function build(quality: Quality): Built {
     const rail = add(buildRailing([new THREE.Vector3(x, y, P.z0), new THREE.Vector3(x, y, P.z1)]));
     geometries.push(rail.geometry);
   }
+  // glass panes in both railings, facing the platform
+  const paneLength = P.z0 - P.z1;
+  mesh(
+    merge([
+      new THREE.PlaneGeometry(paneLength, 0.1).rotateY(-Math.PI / 2).translate(P.x1 - 0.032, D + 0.055, (P.z0 + P.z1) / 2),
+      new THREE.PlaneGeometry(paneLength, 0.1).rotateY(Math.PI / 2).translate(T.x0 + 0.032, D + 0.075, (P.z0 + P.z1) / 2),
+    ]),
+    glassMaterial({ tint: "#9cc0d2", opacity: 0.16, sky: 0.7 }),
+    "glass:railing",
+  );
 
   // ---- The canopy: arches, purlins between them, the edge beams, the
   // columns; lamps under the arches
@@ -339,7 +349,7 @@ function build(quality: Quality): Built {
   for (const x of [C.x0 + 0.03, C.x1 - 0.02]) ribs.push(box(0.05, 0.06, len).translate(x, D + C.spring, zc));
   ribs.push(box(0.03, 0.04, len).translate(C.x1 + 0.33, D + C.spring - 0.03, zc));
   // (after dark the lamps light them from below: a faint warm glow)
-  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: LAMP, strength: 0.03 } }), "canopy");
+  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: LAMP, strength: 0.016 } }), "canopy");
   mesh(merge(posts), surface({ color: CONCRETE, grime: 0.3, glow: { tone: LAMP, strength: 0.025 } }), "columns");
   mesh(merge(lampParts), neonMaterial(dim(LAMP, 0.42), { dayColor: "#d9dcdf" }), "neon:lamps");
   // the glazing over the arches: one curved sheet, the arch's profile run
@@ -357,7 +367,7 @@ function build(quality: Quality): Built {
     sheet.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     sheet.setIndex(idx);
     sheet.computeVertexNormals();
-    mesh(sheet, glassMaterial({ tint: "#2c4766", opacity: 0.55, sky: 0.9, double: true }), "glass:canopy");
+    mesh(sheet, glassMaterial({ tint: "#2c4766", opacity: 0.55, sky: 0.9, glow: { tone: "#7d97b8", strength: 0.06 }, double: true }), "glass:canopy");
   }
 
   // ---- The departures board, hanging from the canopy on two rods
@@ -507,6 +517,8 @@ function build(quality: Quality): Built {
   // windows, its headlamps lit after dark
   const shell = cars.children[0] as THREE.Mesh;
   shell.material = surface({ color: TRAIN, grime: 0.1, glow: { tone: "#c8d4e4", strength: 0.075 } });
+  // its stripe a calmer teal after dark than the kit's
+  (cars.children[2] as THREE.Mesh).material = glowMaterial({ day: "#2f8fb0", night: "#2f8c9c" });
   const front = length / 2;
   const nose = noseGeometry(front, METRO.train.snout);
   const tip = front + METRO.train.snout;
@@ -516,7 +528,7 @@ function build(quality: Quality): Built {
   const body = new THREE.Mesh(merge(trim), shell.material);
   const screen = new THREE.Mesh(
     merge([...windscreen(front, METRO.train.snout), ...[-1, 1].map((s) => box(0.05, 0.08, 0.004).translate(front + 0.03, 0.22, s * 0.128))]),
-    glowMaterial({ day: "#1c2530", night: "#262019" }),
+    glowMaterial({ day: "#1c2530", night: "#0b0c10" }),
   );
   const lamps = new THREE.Mesh(merge([-1, 1].map((s) => box(0.006, 0.02, 0.04).translate(tip + 0.001, 0.085, s * 0.08))), neonMaterial(dim("#fff1d6", 0.55), { dayColor: "#5a6068" }));
   const coupler = new THREE.Mesh(box(0.03, 0.035, 0.06).translate(tip + 0.01, 0.04, 0), surface({ color: "#3a3e44" }));
@@ -567,7 +579,7 @@ const SHADE: DayShade = {
   dir: [0.6, 1],
   period: METRO.canopy.step / 2,
   duty: 0.42,
-  depth: 0.5,
+  depth: 0.6,
   top: METRO.deck + 0.05,
 };
 
