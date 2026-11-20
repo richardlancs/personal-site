@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import { useDayShade, useDisposeOnUnmount, useGlowPools, SceneLights, type SceneProps } from "../common";
 import type { DayShade, GlowPool } from "../kit/glow";
+import { POOLS as POOL_CAP } from "../kit/uniforms";
 import { box, blob, merge, wire } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, SCENE_TONES, type SceneTone } from "../kit/neon";
@@ -48,9 +49,9 @@ const K = LANE.scale;
 
 // Colours, from the paintings
 const C = {
-  stone: "#b9b0a1",
-  stoneDark: "#8f877b",
-  door: "#6b2c2a",
+  stone: "#9d9893",
+  stoneDark: "#857f7c",
+  door: "#4a2c2e",
   roof: "#7e4535",
   wood: "#4f3428",
   glass: "#2f3746",
@@ -60,8 +61,8 @@ const C = {
   metal: "#2c3338",
   scooter: "#93bba6",
   seat: "#5a3b2e",
-  ivy: "#5f8a3e",
-  ivyLight: "#86a94c",
+  ivy: "#4b6e34",
+  ivyLight: "#7d9a44",
   pink: "#e6a6b9",
   lilac: "#a497d9",
   cloth: ["#e9e1cf", "#3c4a6b", "#d8a2b4", "#55617c"],
@@ -187,6 +188,8 @@ function build(quality: Quality) {
   };
   const trees: { x: number; z: number; s: number }[] = [];
   const glow: { pos: THREE.Vector3; color: string; size: number }[] = [];
+  // the ground-floor windows, nearest first, for their pools of light
+  const windows: { side: number; z: number }[] = [];
 
   // A box on a facade, in the facade's terms: `side` -1 left, 1 right; u0..u1
   // along the lane (z), v0..v1 up, w0..w1 out from the wall into the lane
@@ -200,12 +203,24 @@ function build(quality: Quality) {
   let litPlaced = false;
   for (const side of [-1, 1]) {
     const eaves = side < 0 ? LANE.eaveLeft : LANE.eaveRight;
-    let z = LANE.near;
-    let index = 0;
-    while (z > LANE.end + 0.6) {
+    // the houses' spans: the near gate house where the plate shows it
+    // (LANE.nearGate), the others laid out from it both ways
+    const anchor = side < 0 ? LANE.nearGate[0] : LANE.nearGate[1];
+    const spans: [number, number][] = [[anchor - LANE.gateUnit / 2, anchor + LANE.gateUnit / 2]];
+    for (let z = anchor + LANE.gateUnit / 2; z < LANE.near; ) {
+      const len = r.range(LANE.unit[0], LANE.unit[1]);
+      spans.unshift([z, z + len]);
+      z += len;
+    }
+    for (let z = anchor - LANE.gateUnit / 2; z > LANE.end + 0.6; ) {
       const len = Math.min(r.range(LANE.unit[0], LANE.unit[1]), z - LANE.end);
-      const z0 = z - len;
-      const z1 = z;
+      spans.push([z - len, z]);
+      z -= len;
+    }
+    const nearIndex = spans.findIndex(([, z1]) => z1 === anchor + LANE.gateUnit / 2);
+    let index = 0;
+    for (const [z0, z1] of spans) {
+      const len = z1 - z0;
       const mid = (z0 + z1) / 2;
       const H = r.range(eaves[0], eaves[1]);
       // the wall, 7 m deep, and its stone plinth, corner, string course and cornice
@@ -229,7 +244,7 @@ function build(quality: Quality) {
       // gables between houses of different heights stay brick: a back wall to the ridge
       parts.brick.push(fbox(side, z0 + 0.1, z1 - 0.1, H, H + run * Math.tan(pitch) - 0.1, ridgeW - 0.2, ridgeW - 0.1));
 
-      const gate = index % 2 === 0 ? r() < 0.8 : r() < 0.35;
+      const gate = index === nearIndex || ((index - nearIndex) % 2 === 0 ? r() < 0.8 : r() < 0.35);
       if (gate) {
         // pilasters, lintel, a half-round pediment and its keystone, the
         // step, and the two leaves of the door, recessed in the frame
@@ -252,6 +267,7 @@ function build(quality: Quality) {
         parts.stone.push(fbox(side, wz0 - 0.14, wz1 + 0.14, 2.6, 2.78, 0, 0.12));
         parts.stone.push(fbox(side, wz0 - 0.14, wz0, 1.05, 2.6, 0, 0.1), fbox(side, wz1, wz1 + 0.14, 1.05, 2.6, 0, 0.1));
         parts.shop.push(fbox(side, wz0, wz1, 1.05, 2.6, 0, 0.02));
+        windows.push({ side, z: mid });
         parts.wood.push(fbox(side, mid - 0.04, mid + 0.04, 1.05, 2.6, 0, 0.05), fbox(side, wz0, wz1, 1.78, 1.85, 0, 0.05));
         // a window box of flowers
         if (r() < 0.6) {
@@ -286,7 +302,7 @@ function build(quality: Quality) {
       for (let k = 0; k < pots; k++) {
         const big = r() < 0.3;
         const u = z0 + 0.6 + r() * (len - 1.2);
-        if (gate && Math.abs(u - mid) < 1.6) continue;
+        if ((gate && Math.abs(u - mid) < 1.6) || u > -2) continue;
         const w = big ? 0.55 : r.range(0.35, 0.5);
         const x = face(side) - side * w;
         const { top, rad } = pot(parts, r, x, u, big);
@@ -300,18 +316,47 @@ function build(quality: Quality) {
         }
       }
       // ivy on the near houses' upper walls
-      if (z1 > -12 && r() < 0.8) {
-        const n = 14 + Math.floor(r() * 12);
-        const u0 = z0 + r() * len * 0.4;
-        for (let k = 0; k < n; k++) {
-          const b = blob(r, r.range(0.22, 0.45), 0.85, 0.3, 1).scale(0.4, 1, 1);
-          const target = k % 3 === 0 ? parts.ivyLight : parts.ivy;
-          target.push(b.translate(f - side * 0.18, H - 0.3 - r() * 3.8 * (k / n), u0 + r.range(-0.6, 1.8)));
+      // (as the plates: a curtain of leaves along the eaves, strands
+      // trailing down the brick, and on the near gate houses down to the
+      // door's head)
+      if (z1 > -24 && z0 < 3 && (index === nearIndex || r() < 0.85)) {
+        const leaf = (y: number, u: number, s: number) => {
+          const b = blob(r, s, 0.85, 0.32, 1).scale(0.45, 1, 1);
+          (r() < 0.38 ? parts.ivyLight : parts.ivy).push(b.translate(f - side * 0.2, y, u));
+        };
+        for (let u = z0 + 0.2; u < z1; u += r.range(0.4, 0.6)) leaf(H - r.range(0.2, 0.7), u, r.range(0.35, 0.6));
+        const strands = index === nearIndex ? 4 : 1 + Math.floor(r() * 3);
+        for (let k = 0; k < strands; k++) {
+          const u = z0 + r() * len;
+          const low = index === nearIndex ? r.range(3.2, 4.4) : r.range(2.4, 5.2);
+          for (let y = H - 0.6; y > low; y -= r.range(0.35, 0.5)) leaf(y, u + r.range(-0.25, 0.25), r.range(0.22, 0.42));
         }
       }
-      z = z0;
       index++;
     }
+  }
+
+  // ---- The near plants the plates paint: a tall plant in a big glazed pot
+  // on the right, flowers and a leafy pot under the left window
+  for (const [side, z, kind] of LANE.nearPots) {
+    const x = face(side) - side * (kind === "big" ? 0.6 : 0.45);
+    const { top, rad } = pot(parts, r, x, z, kind === "big");
+    if (kind === "flowers") {
+      for (let j = 0; j < 9; j++) {
+        const target = j % 4 === 0 ? parts.ivyLight : j % 2 ? parts.pink : parts.ivy;
+        target.push(blob(r, rad * r.range(0.45, 0.65), 0.8, 0.3, 1).translate(x + r.range(-0.18, 0.18), top + 0.12 + (j % 3) * 0.08, z + r.range(-0.2, 0.2)));
+      }
+    } else if (kind === "big") {
+      // a tall leafy plant: stalks of leaves from the pot to 2.4 m
+      for (let k = 0; k < 5; k++) {
+        const a = (k / 5) * Math.PI * 2 + r() * 0.6;
+        const lean = r.range(0.06, 0.16);
+        for (let y = top + 0.25; y < top + r.range(1.3, 1.7); y += r.range(0.22, 0.3)) {
+          const out = (y - top) * lean;
+          (r() < 0.45 ? parts.ivyLight : parts.ivy).push(blob(r, r.range(0.16, 0.26), 0.75, 0.35, 1).translate(x + Math.cos(a) * out, y, z + Math.sin(a) * out));
+        }
+      }
+    } else trees.push({ x, z, s: 1.5 });
   }
 
   // ---- The house across the lane's end: a gate and its doors, a window
@@ -382,18 +427,20 @@ function build(quality: Quality) {
   }
 
   // ---- The lane's materials, one merged mesh each
-  const brickWall = surface({ color: "#a2604a", grime: 0.15, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 } });
+  // after dark the whole lane holds a little warm light (the plate's
+  // lanterns all the way down), the brick's courses in it
+  const brickWall = surface({ color: "#96594a", grime: 0.2, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 }, glow: { tone: "#64382a", strength: 0.28 } });
   const MATERIALS: Record<string, THREE.Material> = {
     brick: brickWall,
-    stone: surface({ color: C.stone, grime: 0.1 }),
-    stoneDark: surface({ color: C.stoneDark, grime: 0.1 }),
-    door: surface({ color: C.door }),
+    stone: surface({ color: C.stone, grime: 0.1, glow: { tone: "#5a5258", strength: 0.26 } }),
+    stoneDark: surface({ color: C.stoneDark, grime: 0.1, glow: { tone: "#3a3640", strength: 0.2 } }),
+    door: surface({ color: C.door, glow: { tone: "#3a1612", strength: 0.25 } }),
     roof: surface({ color: C.roof, snow: true }),
     wood: surface({ color: C.wood }),
     // the ground floors' windows: dark glass by day, a dim warm gold after dark
     // (under the bloom); upstairs, only the one lit window glows
     glass: surface({ color: C.glass, wet: 0 }),
-    shop: glowMaterial({ day: C.glass, night: "#6a4a30" }),
+    shop: glowMaterial({ day: C.glass, night: "#d39250" }),
     lit: litSurface({ color: C.glass, tone: "gold", strength: 1.15 }),
     pot: surface({ color: C.pot }),
     glazed: surface({ color: C.glazed }),
@@ -505,9 +552,20 @@ function build(quality: Quality) {
     disposers.push(() => sprites.dispose());
   }
 
+  // After dark the lanterns warm the brick, the stone and the paving round
+  // them, the blade signs throw their colour on the walls, and the nearest
+  // ground-floor windows their gold (kit/glow.ts: pools)
+  const near = windows.filter((w) => w.z < 0).sort((a, b) => b.z - a.z);
+  const pools: GlowPool[] = [
+    ...LANE.lanterns.slice(0, LANE.pooled).map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 1.3) * K, 1.5 * K, z * K], reach: 6 * K, color: "#ffc489", strength: 1.05 })),
+    ...LANE.blades.map(([side, z, y], i): GlowPool => ({ pos: [(face(side) - side * 0.6) * K, y * K, z * K], reach: 3.2 * K, color: SCENE_TONES[tones[i]], strength: 0.45 })),
+    ...near.slice(0, POOL_CAP - LANE.pooled - LANE.blades.length).map(({ side, z }): GlowPool => ({ pos: [(face(side) - side * 0.8) * K, 1.6 * K, z * K], reach: 3.4 * K, color: "#ffbf78", strength: 1.3 })),
+  ];
+
   return {
     group,
     spots,
+    pools,
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       disposers.forEach((d) => d());
@@ -515,15 +573,6 @@ function build(quality: Quality) {
   };
 }
 
-const face = (side: number) => (side < 0 ? LANE.left : LANE.right);
-
-// After dark the lanterns warm the brick and the stones round them, and the
-// blade signs throw their colour on the walls (kit/glow.ts: pools)
-const SIGN_TONES: SceneTone[] = ["cyan", "rose"];
-const POOLS: GlowPool[] = [
-  ...LANE.lanterns.map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 0.75) * K, 2.6 * K, z * K], reach: 3.6 * K, color: "#ffb873", strength: 1.1 })),
-  ...LANE.blades.map(([side, z, y], i): GlowPool => ({ pos: [(face(side) - side * 0.5) * K, y * K, z * K], reach: 2.6 * K, color: SCENE_TONES[SIGN_TONES[i]], strength: 0.5 })),
-];
 // By day the right-hand houses shade the right side of the lane (the sun
 // is on the right, as in the plate: longtang.def.ts: sun)
 const SHADE: DayShade = {
@@ -537,13 +586,15 @@ const SHADE: DayShade = {
 
 function AboutScene({ quality, active }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
+  // the pools are laid out with the lane (the nearest windows among them)
+  const POOLS = built.pools;
   useGlowPools("longtang", POOLS, active);
   useDayShade("longtang", SHADE, active);
   useDisposeOnUnmount(built);
   return (
     <>
       <primitive object={built.group} />
-      <SceneLights id="longtang" spots={built.spots} distance={3} angle={1.1} night={0.8} />
+      <SceneLights id="longtang" spots={built.spots} distance={3} angle={1.1} night={0.06} />
     </>
   );
 }
