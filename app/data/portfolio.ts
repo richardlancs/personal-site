@@ -20,6 +20,7 @@ export type Project = {
   githubUrl: string;
   liveUrl?: string; // optional: leave it out if there is no live demo
   screenshots?: Screenshot[]; // optional; the first one is shown largest
+  cover?: number; // optional: which screenshot leads (its place in the list, from 0)
 };
 
 export type Experience = {
@@ -28,6 +29,7 @@ export type Experience = {
   location?: string; // optional
   startDate: string;
   endDate?: string; // optional, e.g. "Present"; leave out for a single date
+  kind?: "work" | "education"; // optional; work unless it says education
   highlights: string[];
 };
 
@@ -42,6 +44,9 @@ export type Interest = {
   name: string;
   description: string;
   scene: "basketball" | "badminton" | "chess" | "poker";
+  // Photos go in public/interests/<scene>/ and show up by themselves.
+  // Optional: a caption for a photo, by its file name
+  captions?: Record<string, string>;
 };
 
 export const profile = {
@@ -350,7 +355,7 @@ export const experience: Experience[] = [
     role: "Machine Learning Intern",
     organization: "FlyRank AI",
     location: "Remote",
-    startDate: "Oct. 2026",
+    startDate: "Oct 2026",
     endDate: "Present",
     highlights: [
       "Working through FlyRank AI's self-paced Machine Learning track: technical assignments and practical AI/ML coursework.",
@@ -374,6 +379,7 @@ export const experience: Experience[] = [
     location: "Waterloo, ON",
     startDate: "2026",
     endDate: "Present",
+    kind: "education",
     highlights: [
       "Expected graduation: 2031.",
       "Awards: John Platter Scholarship; University of Waterloo Merit Scholarship.",
