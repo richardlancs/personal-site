@@ -32,6 +32,9 @@ const bund: SceneDef = {
   portrait: { yaw: 3, half: 27 },
   short: 3,
   threshold: "#0f1418",
+  // the sun from over the river and a little behind the eye, full on the
+  // facades' river fronts as the day plate has it
+  sun: [-60, 60, -25],
   // The facades and lamps are within 90 units; the landmarks 130 to 230
   // off, so the fog keeps well clear of them (the far layer takes more)
   fog: { color: "#161c22", near: 60, far: 640, keep: { near: 45, far: 480 } },

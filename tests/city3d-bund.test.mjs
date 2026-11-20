@@ -60,9 +60,8 @@ test("exactly its four spot lights, through SceneLights, and no other light", ()
   assert.equal(DISTRICT_LIGHTS.bund, 4);
   assert.equal([...src.matchAll(/<SceneLights /g)].length, 1);
   assert.match(src, /<SceneLights id="bund" spots=\{built\.spots\} \/>/);
-  // four of the lamps are the spot lamps; their heads are the spots
-  assert.match(src, /buildLampRow\(lampSpots\.slice\(L\.spots, L\.spots \+ 4\), \{ light: "spot" \}\)/);
-  assert.match(src, /const spots = lit\.heads\.map/);
+  // four of the lanterns are the spot lamps; their lanterns are the spots
+  assert.match(src, /const spots = heads\.slice\(L\.spots, L\.spots \+ 4\)\.map/);
   assert.ok(def.BUND.lamps.count >= def.BUND.lamps.spots + 4);
   // the spot lamps stand ahead of the painting's eye (along > 0)
   assert.ok(def.BUND.lamps.from + def.BUND.lamps.spots * def.BUND.lamps.step > 0);
@@ -104,10 +103,13 @@ test("the clock shows Richmond Hill's hour from the store, redrawn when the minu
   assert.doesNotMatch(src, /paintClock|function pavingTiles\(w: number, d: number\) \{/);
 });
 
-test("the kit's new pieces: glass kiosk, paving, ashlar relief on the floodlit stone, light pools", () => {
+test("the kit's new pieces: glass kiosk, paving, stone relief on the floodlit stone, light pools, day shade", () => {
   assert.match(src, /glassMaterial\(\{ tint: "#9fcfd6"[^)]*glow: \{ tone: "cyan"/);
   assert.match(src, /pavingTexture\(\{ seed: 37, kind: "grid"/);
-  assert.match(src, /surface\(\{ color: STONE, relief: \{ kind: "brick"[^}]*\}, glow: \{ tone: SCENE_TONES\.gold/);
+  assert.match(src, /surface\(\{ color: STONE, relief: \{ kind: "stone"[^}]*\}, glow: \{ tone: SCENE_TONES\.gold/);
+  assert.match(src, /useDayShade\("bund", SHADE, active\)/);
+  // the lamps' reflections on the paving in every weather after dark
+  assert.match(src, /buildStreaks\(/);
   assert.match(src, /useGlowPools\("bund", POOLS, active\)/);
   assert.match(src, /useDisposeOnUnmount\(built\)/);
 });

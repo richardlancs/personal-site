@@ -3,16 +3,16 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { useDisposeOnUnmount, useGlowPools, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDayShade, useDisposeOnUnmount, useGlowPools, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { glassMaterial } from "../kit/glass";
-import type { GlowPool } from "../kit/glow";
+import type { DayShade, GlowPool } from "../kit/glow";
 import { blob, box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { aircraftLights, buildBoat } from "../kit/movers";
 import { clockMaterial, glowSprites, litSurface, neonMaterial, SCENE_TONES, type SceneTone } from "../kit/neon";
-import { reflectIn, type LightStrip } from "../kit/reflection";
+import { buildStreaks, reflectIn, type LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
-import { buildLampRow, buildRailing, glowMaterial } from "../kit/street";
+import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { pavingTexture, setClockHour } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
@@ -57,7 +57,7 @@ const LAND = 0;
 const WATER_Y = B.edge.water;
 
 // Colours, from the plates
-const PAVING = "#a49a8c";
+const PAVING = "#cfbea0";
 const ROAD = "#5d6066";
 const STONE = "#f0e2c4";
 const STONE_TRIM = "#f6ecd4";
@@ -75,14 +75,19 @@ const pavingTiles = (w: number, d: number) => pavingTexture({ seed: 37, kind: "g
 // near the eye, and the kiosk's cyan on the stones round it (kit/glow.ts:
 // pools)
 const POOLS: GlowPool[] = [
-  ...Array.from({ length: 9 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.1), LAND + BUND.lamps.pier + 0.6, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.1, color: "#ffc98a", strength: 1.0 })),
+  ...Array.from({ length: 10 }, (_, i): GlowPool => ({ pos: [X(BUND.lamps.s - 0.25), LAND + BUND.lamps.pier + 0.5, Z(BUND.lamps.from + i * BUND.lamps.step)], reach: 1.35, color: "#ffc98a", strength: 1.3 })),
   { pos: [X(BUND.kiosk.s), BUND.kiosk.h * 0.6, Z(BUND.kiosk.a)], reach: 0.6, color: SCENE_TONES.cyan, strength: 0.9 },
   { pos: [X(BUND.front + 0.6), 0.5, Z(BUND.clock.a)], reach: 1.6, color: "#ffd9a0", strength: 0.5 },
 ];
 
 
+// By day: the trees' dappled shade over the near promenade, as the day
+// plate paints it (kit/glow.ts: DayShade, no shadow map)
+const SHADE: DayShade = { kind: "dapple", box: [X(BUND.promenade.s1), -16, X(BUND.road.s0), 6], depth: 0.32, top: 0.1, period: 0.55, duty: 0.5, walls: 0 };
+
 type Built = {
   group: THREE.Group;
+  sheen: THREE.Object3D;
   spots: V3[];
   movers: Mover[];
   dispose: () => void;
@@ -130,22 +135,30 @@ function build(quality: Quality): Built {
   const P = B.promenade;
   const tiles = pavingTiles(P.s1 - P.s0, P.a1 - P.a0);
   disposers.push(() => tiles.dispose());
-  const paving = wetPaving({
-    w: P.s1 - P.s0,
-    d: P.a1 - P.a0,
-    x: (X(P.s0) + X(P.s1)) / 2,
-    z: (Z(P.a0) + Z(P.a1)) / 2,
-    y: LAND,
-    mode: "fake",
-    color: PAVING,
-    map: tiles,
-    lights: [
-      ...lampAlong.slice(0, 24).map((a) => ({ x: X(B.lamps.s - 0.1), z: Z(a), w: 0.12, color: "#ffc98a", height: 0.75 })),
-      { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.08, color: SCENE_TONES.cyan, height: 0.3 },
-    ],
-  });
+  const pavingPlace = { w: P.s1 - P.s0, d: P.a1 - P.a0, x: (X(P.s0) + X(P.s1)) / 2, z: (Z(P.a0) + Z(P.a1)) / 2 };
+  const paving = wetPaving({ ...pavingPlace, y: LAND, mode: "fake", color: PAVING, map: tiles, lights: [] });
+  // the plate's promenade after dark: polished stone holding the night
+  // sky's blue-grey everywhere, the lamps' warmth in their pools (the kit's
+  // surface, its night glow; wetPaving's own is the same surface without it)
+  paving.mesh.material = surface({ color: PAVING, map: tiles, wet: 1, grime: 0.3, glow: { tone: "#7d93bd", strength: 0.06 } });
   add(paving.mesh);
   disposers.push(paving.dispose);
+  // ... and the lamps and the kiosk long in it, as the plate paints them in
+  // every weather (the kit's streaks of the river kind, which aren't gated
+  // on rain), laid on the paving
+  const sheen = buildStreaks(
+    [
+      ...lampAlong.slice(0, 26).flatMap((a) => [
+        { x: X(B.lamps.s - 0.1), z: Z(a), w: 0.16, color: "#ffc98a", height: 0.8 },
+        { x: X(B.lamps.s - 0.16), z: Z(a + 0.02), w: 0.1, color: "#ffd9a0", height: 0.7 },
+      ]),
+      { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.12, color: SCENE_TONES.cyan, height: 0.3 },
+    ],
+    { kind: "river", mode: "fake", ...pavingPlace },
+  );
+  sheen.position.y = LAND + 0.002;
+  add(sheen);
+  geometries.push(sheen.geometry);
   mesh(
     merge([
       slab(B.road.s0 - 4, B.road.s1, P.a0, P.a1, LAND - 0.3, LAND - 0.004),
@@ -169,17 +182,27 @@ function build(quality: Quality): Built {
   const one = new THREE.Vector3(1, 1, 1);
   const q = new THREE.Quaternion();
   instanced(merge([pierGeo, pierCap]), surface({ color: PIER, grime: 0.4 }), lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND, Z(a)), q, one)), "piers");
-  // heads over the promenade (the lamp's head is over its +x; the
-  // promenade is +x of the railing)
-  const lampSpots = lampAlong.map((a) => ({ x: X(L.s), y: LAND + L.pier + 0.015, z: Z(a), ry: 0 }));
-  const lit = buildLampRow(lampSpots.slice(L.spots, L.spots + 4), { light: "spot" });
-  const rest = buildLampRow([...lampSpots.slice(0, L.spots), ...lampSpots.slice(L.spots + 4)]);
-  for (const row of [lit, rest]) {
-    row.meshes.forEach((m) => add(m));
-    disposers.push(row.dispose);
-  }
-  const spots = lit.heads.map((h) => [h.x, h.y - 0.01, h.z] as V3);
-  for (const h of [...lit.heads, ...rest.heads.slice(0, 20)]) glow.push({ pos: h, color: "#ffc98a", size: 0.12 });
+  // on each pier a lantern post as the plates paint them: a cast-iron post
+  // on a fluted base, a collar, a six-sided glass lantern lit warm, a
+  // hooded roof and a finial (two instanced meshes for all of them); the
+  // four from L.spots on carry the place's four spot lights, just inside
+  // their lanterns, toward the promenade
+  const POST = 0.36;
+  const lanternY = 0.05 + POST + 0.012 + 0.037;
+  const postGeo = merge([
+    new THREE.CylinderGeometry(0.016, 0.024, 0.05, 8).translate(0, 0.025, 0),
+    new THREE.CylinderGeometry(0.008, 0.012, POST, 8).translate(0, 0.05 + POST / 2, 0),
+    new THREE.CylinderGeometry(0.02, 0.014, 0.012, 8).translate(0, 0.05 + POST + 0.006, 0),
+    new THREE.ConeGeometry(0.042, 0.032, 6).translate(0, lanternY + 0.037 + 0.016, 0),
+    new THREE.SphereGeometry(0.009, 6, 4).translate(0, lanternY + 0.037 + 0.04, 0),
+  ]);
+  const lanternGeo = new THREE.CylinderGeometry(0.03, 0.021, 0.074, 6).translate(0, lanternY, 0);
+  const lampFeet = lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND + L.pier + 0.015, Z(a)), q, one));
+  instanced(postGeo, surface({ color: METAL }), lampFeet, "lamps:posts");
+  instanced(lanternGeo, glowMaterial({ day: "#e4ddcc", night: "#ffd49a" }), lampFeet, "lamps:lanterns");
+  const heads = lampAlong.map((a) => new THREE.Vector3(X(L.s), LAND + L.pier + 0.015 + lanternY, Z(a)));
+  const spots = heads.slice(L.spots, L.spots + 4).map((h) => [h.x + 0.06, h.y - 0.02, h.z] as V3);
+  for (const h of heads.slice(0, 27)) glow.push({ pos: h, color: "#ffc98a", size: 0.12 });
   for (const a of lampAlong.slice(0, 20)) waterLights.push({ x: X(L.s + 0.15), z: Z(a), w: 0.1, color: "#ffc98a", height: 0.9 });
 
   // ---- The facades: stone bodies along the road, their fronts toward
@@ -187,9 +210,9 @@ function build(quality: Quality): Built {
   // the crowns on top
   const F = B.front;
   const back = 2.6;
-  // (floodlit after dark; the kit's relief lays ashlar courses in it for
-  // the light to catch)
-  const stone = surface({ color: STONE, relief: { kind: "brick", course: 0.055, length: 0.16, strength: 0.4 }, glow: { tone: SCENE_TONES.gold, strength: 0.34 } });
+  // (floodlit after dark; the kit's stone relief carves pilasters, a
+  // cornice at every floor and a surround round each window, for the
+  // floodlight and the sun to rake across)
   const trim = litSurface({ color: STONE_TRIM, tone: "gold", strength: 0.5 });
   const roof = surface({ color: "#6d7a74", grime: 0.4 });
   const bodies: THREE.BufferGeometry[] = [];
@@ -202,6 +225,7 @@ function build(quality: Quality): Built {
   const BAY = 0.42;
   const FLOOR = 0.36;
   const GROUND = 0.46;
+  const stone = surface({ color: STONE, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.7 }, glow: { tone: SCENE_TONES.gold, strength: 0.34 } });
   const paneTurn = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 2); // facing -x, the river
   for (const b of B.buildings) {
     const len = b.a1 - b.a0;
@@ -212,27 +236,31 @@ function build(quality: Quality): Built {
     trims.push(slab(F, F + 0.04, b.a0, b.a1, GROUND - 0.02, GROUND + 0.02));
     trims.push(slab(F, F + 0.07, b.a0 - 0.03, b.a1 + 0.03, b.h - 0.12, b.h - 0.06));
     trims.push(slab(F - 0.04, F + 0.02, b.a0, b.a1, b.h - 0.06, b.h + 0.08));
-    const bays = Math.max(3, Math.round(len / BAY));
-    const bw = len / bays;
-    const floors = Math.max(3, Math.floor((b.h - GROUND - 0.2) / FLOOR));
+    // the bays on the relief's own grid (a bay's middle where z / BAY is a
+    // half), so each window sits in its carved surround
+    const j0 = Math.ceil(b.a0 / BAY + 0.15);
+    const j1 = Math.floor(b.a1 / BAY - 1.15);
+    const bays = Math.max(0, j1 - j0 + 1);
+    const bw = BAY;
     for (let i = 0; i < bays; i++) {
-      const a = b.a0 + (i + 0.5) * bw;
-      if (i > 0) pilasters.push(new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.015), (GROUND + b.h - 0.12) / 2, Z(b.a0 + i * bw)), q, new THREE.Vector3(0.03, b.h - 0.12 - GROUND, 0.05)));
+      const a = (j0 + i + 0.5) * BAY;
+      if (i > 0) pilasters.push(new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.015), (GROUND + b.h - 0.12) / 2, Z(a - BAY / 2)), q, new THREE.Vector3(0.03, b.h - 0.12 - GROUND, 0.05)));
       // the ground floor's tall arched openings
       const door = new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.004), 0.22, Z(a)), paneTurn, new THREE.Vector3(bw * 0.5, 0.3, 1));
       (wr() < 0.75 ? panesOn : panesOff).push(door);
-      for (let f = 0; f < floors; f++) {
-        const y = GROUND + 0.1 + f * FLOOR + FLOOR * 0.42;
+      for (let f = 1; ; f++) {
+        const y = (f + 0.55) * FLOOR;
         if (y > b.h - 0.22) break;
-        const m = new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.004), y, Z(a)), paneTurn, new THREE.Vector3(bw * 0.42, FLOOR * 0.55, 1));
+        if (y < GROUND + 0.08) continue;
+        const m = new THREE.Matrix4().compose(new THREE.Vector3(X(F + 0.004), y, Z(a)), paneTurn, new THREE.Vector3(bw * 0.44, FLOOR * 0.48, 1));
         (wr() < 0.62 ? panesOn : panesOff).push(m);
       }
     }
     const mid = (b.a0 + b.a1) / 2;
     if (b.crown === "colonnade") {
       // a colonnade of round columns over the first floors, a pediment
-      for (let i = 1; i < bays; i++) trims.push(new THREE.CylinderGeometry(0.032, 0.036, b.h - GROUND - 0.55, 8).translate(X(F + 0.07), (GROUND + b.h - 0.55) / 2 + 0.02, Z(b.a0 + i * bw)));
-      trims.push(slab(F, F + 0.1, b.a0 + bw, b.a1 - bw, b.h - 0.58, b.h - 0.5));
+      for (let i = 1; i < bays; i++) trims.push(new THREE.CylinderGeometry(0.032, 0.036, b.h - GROUND - 0.55, 8).translate(X(F + 0.07), (GROUND + b.h - 0.55) / 2 + 0.02, Z((j0 + i) * BAY)));
+      trims.push(slab(F, F + 0.1, (j0 + 1) * BAY, (j1 + 0) * BAY, b.h - 0.58, b.h - 0.5));
     } else if (b.crown === "cupola" || b.crown === "pyramid") {
       // a small tower in the middle, a dome or a steep pyramid roof on it
       const w = b.crown === "pyramid" ? 1.1 : 0.7;
@@ -465,6 +493,7 @@ function build(quality: Quality): Built {
 
   return {
     group,
+    sheen,
     spots,
     movers: [boat],
     dispose: () => {
@@ -477,11 +506,19 @@ function build(quality: Quality): Built {
 function ContactScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useMovers(built.movers, { active, still });
+  const invalidate = useThree((s) => s.invalidate);
   useDisposeOnUnmount(built);
   useGlowPools("bund", POOLS, active);
+  useDayShade("bund", SHADE, active);
+  // the lamps' long reflections on the paving: from dusk to dawn (by day the
+  // plate's paving holds none)
+  const daylight = useWorld((s) => s.sky.daylight);
+  useEffect(() => {
+    built.sheen.visible = daylight !== "day";
+    invalidate();
+  }, [daylight, built, invalidate]);
   // The clock follows Richmond Hill's hour, redrawn when the minute changes
   const hour = useWorld((s) => s.hour);
-  const invalidate = useThree((s) => s.invalidate);
   useEffect(() => {
     if (setClockHour(hour)) invalidate();
   }, [hour, built, invalidate]);
