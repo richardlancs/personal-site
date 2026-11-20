@@ -35,37 +35,42 @@
   overscroll-behavior: contain;
 }
 
+/* It grows out of the link that opened it (ResumeViewer sets
+   --resume-from to that link's centre, in the dialog's own coordinates;
+   the middle otherwise), over --t-slow, and goes faster than it came.
+   A large, rare moment: the one flourish here. */
 .resume[open] {
   display: flex;
   flex-direction: column;
-  animation: resume-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: var(--resume-from, 50% 50%);
+  animation: resume-in var(--t-slow) var(--ease-out);
 }
 
 .resume::backdrop {
   /* No blur: a plain wash of the ground over the page */
   background: color-mix(in srgb, var(--ink) 78%, transparent);
-  animation: resume-fade 200ms ease-out;
+  animation: resume-fade var(--t-slow) var(--ease-out);
 }
 
 .resume[data-closing] {
-  animation: resume-out 140ms ease-in forwards;
+  animation: resume-out var(--t-fast) var(--ease-in-out) forwards;
 }
 
 .resume[data-closing]::backdrop {
-  animation: resume-fade-out 140ms ease-in forwards;
+  animation: resume-fade-out var(--t-fast) var(--ease-in-out) forwards;
 }
 
 @keyframes resume-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.99);
+    transform: scale(0.96);
   }
 }
 
 @keyframes resume-out {
   to {
     opacity: 0;
-    transform: translateY(4px) scale(0.995);
+    transform: scale(0.98);
   }
 }
 
@@ -81,25 +86,16 @@
   }
 }
 
-/* Still view and reduced motion: a brief fade, nothing moves */
-:root[data-still="on"] .resume[open],
+/* Still view and reduced motion: there and gone at once (the animations
+   still run, for no time, so the viewer hears that they ended) */
+:root[data-still="on"] .resume,
 :root[data-still="on"] .resume::backdrop {
-  animation-name: resume-fade;
-  animation-duration: 100ms;
-}
-:root[data-still="on"] .resume[data-closing],
-:root[data-still="on"] .resume[data-closing]::backdrop {
-  animation: resume-fade-out 80ms ease-in forwards;
+  animation-duration: 0s;
 }
 @media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) .resume[open],
+  :root:not([data-still]) .resume,
   :root:not([data-still]) .resume::backdrop {
-    animation-name: resume-fade;
-    animation-duration: 100ms;
-  }
-  :root:not([data-still]) .resume[data-closing],
-  :root:not([data-still]) .resume[data-closing]::backdrop {
-    animation: resume-fade-out 80ms ease-in forwards;
+    animation-duration: 0s;
   }
 }
 

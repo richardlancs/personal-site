@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { loadResume, ResumeError, type Resume } from "./pdf";
 import ResumePage from "./ResumePage";
 import "./resume.css";
@@ -22,9 +22,11 @@ type Props = {
   open: boolean;
   src: string;
   onClosed: () => void;
+  // The link that opened it: the dialog grows out of its centre
+  from?: RefObject<HTMLElement | null>;
 };
 
-export default function ResumeViewer({ open, src, onClosed }: Props) {
+export default function ResumeViewer({ open, src, onClosed, from }: Props) {
   const dialog = useRef<HTMLDialogElement>(null);
   const doc = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>({ kind: "loading" });
@@ -143,13 +145,19 @@ export default function ResumeViewer({ open, src, onClosed }: Props) {
       el.removeAttribute("data-closing");
       lockScroll();
       el.showModal();
+      // Where the link is, in the dialog's own coordinates (resume.css):
+      // the dialog grows out of it. Without one, from the middle.
+      const link = from?.current?.getBoundingClientRect();
+      const box = el.getBoundingClientRect();
+      if (link?.width) el.style.setProperty("--resume-from", `${link.x + link.width / 2 - box.x}px ${link.y + link.height / 2 - box.y}px`);
+      else el.style.removeProperty("--resume-from");
       // Into the document itself, so the arrow keys and Page Down scroll it
       doc.current?.scrollTo(0, 0);
       doc.current?.focus({ preventScroll: true });
     } else if (!open && el.open) {
       requestClose();
     }
-  }, [open, requestClose]);
+  }, [open, requestClose, from]);
 
   // However it closed (Close, Escape, the backdrop, a phone's back
   // gesture): put the page back as it was

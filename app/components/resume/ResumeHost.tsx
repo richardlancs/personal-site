@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useEffect, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentType, type RefObject } from "react";
 
 // The résumé viewer, mounted once for the whole site (layout.tsx). Every
 // résumé link (ResumeLink.tsx) is a real link to the PDF; a plain click on
@@ -15,7 +15,7 @@ import { useCallback, useEffect, useRef, useState, type ComponentType } from "re
 // While the viewer's chunk is on its way the link says so (data-opening,
 // globals.css). If it can't be fetched (offline, blocked, or a new deploy
 // replaced it), the link does what it would without JavaScript: the PDF.
-type Viewer = ComponentType<{ open: boolean; src: string; onClosed: () => void }>;
+type Viewer = ComponentType<{ open: boolean; src: string; onClosed: () => void; from: RefObject<HTMLElement | null> }>;
 let loading: Promise<Viewer> | null = null;
 const load = () =>
   (loading ??= import("./ResumeViewer").then(
@@ -87,5 +87,6 @@ export default function ResumeHost() {
   }, []);
 
   if (!Viewer || !src) return null;
-  return <Viewer open={open} src={src} onClosed={onClosed} />;
+  // It opens out of the link that opened it (ResumeViewer, --resume-from)
+  return <Viewer open={open} src={src} onClosed={onClosed} from={trigger} />;
 }
