@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { interests } from "../../../data/portfolio";
 import { anchors } from "../anchors";
 import { createMachine } from "../arcade/arcadeMachine";
-import { useDisposeOnUnmount, useGlowPools, anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDayShade, useDisposeOnUnmount, useGlowPools, anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
@@ -15,11 +15,12 @@ import { buildMarkSign, disposeSign, glowPoints } from "../kit/signs";
 import { buildSkyDome } from "../kit/sky";
 import { buildLampRow, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
+import { glassMaterial } from "../kit/glass";
 import { buildTowers, layoutTowers, type TowerSpec } from "../kit/towers";
 import { pavingTexture } from "../kit/textures";
 import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
-import type { GlowPool } from "../kit/glow";
+import type { DayShade, GlowPool } from "../kit/glow";
 import { windowMaterial } from "../kit/windows";
 import { rng } from "../rng";
 import type { V3 } from "../scenes";
@@ -57,13 +58,17 @@ import def from "./nanjing-road.def";
 
 const XL = -1.3; // the left facades' fronts
 const XR = 2.4; // the right facades' fronts
+const GROUND = 0.5; // the shops' storey; the floors over it
+const FLOOR = 0.36; // a storey (the carving's cornices, the windows)
+const BAY = 0.34; // a window bay (the carving's pilasters)
+const RECESS = 0.12; // how far the shop fronts stand back of the facades
 const FAR_Z = -62; // where the street's buildings end
 const LAMP_L = -0.62;
 const LAMP_R = 1.72;
 const TREE_L = -0.86;
 const TREE_R = 1.98;
 const RAIL_X = 1.25;
-const TRAM_Z = 2.6; // the tram's front, parked just down the street, right of the painting's middle
+const TRAM_Z = 4.0; // the tram's front, parked just down the street, right of the painting's middle
 
 // The arcade: its building's length along the street, and the open
 // shopfront in it (z), the room's depth and height
@@ -85,12 +90,12 @@ const SPOT_R = 6; // z 3.4
 const LAMPS_R = Array.from({ length: 40 }, (_, i) => 13.6 - i * 1.7).filter((z) => z > FAR_Z + 2);
 
 // The colours, from the plates
-const PAVING = "#a49c90";
+const PAVING = "#c2b6a4";
 const STONE = "#cdbb9c";
-const STONE_DARK = "#a8987c";
 const FRAME = "#2a2d33";
 const BODY = "#14161c"; // the cabinet: the interface's soft black, a little lifted
-const FLOOD = "#ffb873"; // the warm light on the old stone after dark
+const FLOOD = "#ffb873";
+const STEEL = "#8c99a6"; // the right side's frames and spandrels // the warm light on the old stone after dark
 const TRAM_GREEN = "#2f5a40";
 const TRAM_CREAM = "#d6c9a2";
 
@@ -119,6 +124,7 @@ type Built = {
   machine: ReturnType<typeof createMachine>;
   repaint: () => void;
   movers: Mover[];
+  pools: GlowPool[];
   dispose: () => void;
 };
 
@@ -147,18 +153,21 @@ function build(quality: Quality): Built {
   geometries.push(sky.geometry);
 
   // ---- The facades. Left: old stone, a row of buildings each 14 to 26 m
-  // along the street, the arcade's the nearest (its ground floor is the
-  // shopfront below, its upper floors a tower lifted onto it)
+  // along the street, the arcade's the nearest; right: glass and steel.
+  // Each is a block of the kit's surface (the left's carved: pilasters, a
+  // cornice at every floor, window surrounds, floodlit warm after dark),
+  // its ground floor set back behind glazed, lit shopfronts, its windows
+  // panes of glow (lit by floors after dark, dark glass by day)
   const r = rng(1507);
   const left: TowerSpec[] = [];
   const shopsL: [number, number][] = [];
   // (behind the arcade, toward and past the camera: the street goes on)
-  left.push({ x: XL - 0.7, z: 13.4, w: 1.4, d: 13, h: 3.2, ry: 0, style: 1, seed: 1998 });
+  left.push({ x: XL - 0.7, z: 13.4, w: 1.4, d: 13, h: 3.6, ry: 0, style: 1, seed: 1998 });
   for (let z = ARCADE.z0 - 0.04; z > FAR_Z; ) {
     const d = r.range(1.4, 2.6);
     const w = 1.4;
-    left.push({ x: XL - w / 2, z: z - d / 2, w, d: d - 0.04, h: r.range(2.2, 3.6) * (z < -30 ? 0.85 : 1), ry: 0, style: r() < 0.6 ? 1 : 3, seed: 2000 + left.length });
-    shopsL.push([z - d + 0.2, z - 0.2]);
+    left.push({ x: XL - w / 2, z: z - d / 2, w, d: d - 0.04, h: r.range(3.0, 4.2) * (z < -30 ? 0.85 : 1), ry: 0, style: 1, seed: 2000 + left.length });
+    shopsL.push([z - d + 0.12, z - 0.12]);
     z -= d;
   }
   const right: TowerSpec[] = [];
@@ -166,41 +175,119 @@ function build(quality: Quality): Built {
   for (let z = 20; z > FAR_Z; ) {
     const d = r.range(1.8, 3.2);
     const w = 1.8;
-    // tall near the camera (the round glass tower over the tram), lower
-    // down the street so the landmarks show over them
-    const near = z < 9 && z > 2;
-    const h = near ? 9 : z > -12 ? r.range(4, 7) : r.range(2.2, 3.8);
-    right.push({ x: XR + w / 2, z: z - d / 2, w, d: d - 0.05, h, ry: 0, style: near || r() < 0.35 ? 2 : 0, seed: 3000 + right.length });
-    shopsR.push([z - d + 0.2, z - 0.2]);
+    // tall near the camera, lower down the street so the landmarks show
+    // over them
+    const h = z > 2 ? r.range(5.5, 7) : z > -12 ? r.range(3.6, 5.5) : r.range(2.4, 3.8);
+    right.push({ x: XR + w / 2, z: z - d / 2, w, d: d - 0.05, h, ry: 0, style: 0, seed: 3000 + right.length });
+    shopsR.push([z - d + 0.15, z - 0.15]);
     z -= d;
   }
-  const arcadeUpper = buildTowers([{ x: XL - 0.7, z: (ARCADE.z0 + ARCADE.z1) / 2, w: 1.4, d: ARCADE.z1 - ARCADE.z0, h: 3.1, ry: 0, style: 1, seed: 1999 }], { far: false });
-  for (const t of arcadeUpper) t.position.y = ARCADE.band;
-  const nearTowers = [...buildTowers([...left, ...right], { far: false }), ...arcadeUpper];
-  for (const t of nearTowers) {
-    geometries.push(t.geometry);
-    add(t);
+  // the arcade's building: its upper floors over the open shopfront
+  const arcadeBlock: TowerSpec = { x: XL - 0.7, z: (ARCADE.z0 + ARCADE.z1) / 2, w: 1.4, d: ARCADE.z1 - ARCADE.z0, h: 3.8, ry: 0, style: 1, seed: 1999 };
+  // the round glass tower down the right side (as painted, past the tram)
+  const roundAt = right.findIndex((t) => t.z < -2.5);
+  const round = right[roundAt];
+  // (the domed corner building, taller than its row)
+  const domed = left.find((t) => t.z < -6) ?? left[left.length - 1];
+  domed.h = 4.4;
+  const stoneParts: THREE.BufferGeometry[] = [];
+  const steelParts: THREE.BufferGeometry[] = [];
+  const litPanes: THREE.BufferGeometry[] = [];
+  const darkPanes: THREE.BufferGeometry[] = [];
+  const ribbonLit: THREE.BufferGeometry[] = [];
+  const ribbonDark: THREE.BufferGeometry[] = [];
+  const wr = rng(1511);
+  // a pane facing the street: +x on the left, -x on the right
+  const pane = (side: -1 | 1, x: number, y0: number, y1: number, z0: number, z1: number) =>
+    new THREE.PlaneGeometry(z1 - z0, y1 - y0).rotateY(side < 0 ? Math.PI / 2 : -Math.PI / 2).translate(x, (y0 + y1) / 2, (z0 + z1) / 2);
+  for (const t of [arcadeBlock, ...left]) {
+    const z0 = t.z - t.d / 2;
+    const z1 = t.z + t.d / 2;
+    const back = XL - t.w;
+    const arcade = t === arcadeBlock;
+    // the ground floor (set back behind the shop glass; the arcade's is its own), the floors over it
+    if (!arcade) stoneParts.push(slab(back, XL - RECESS, 0, GROUND, z0, z1), slab(XL - RECESS, XL, 0, GROUND, z0, z0 + 0.1), slab(XL - RECESS, XL, 0, GROUND, z1 - 0.1, z1));
+    stoneParts.push(
+      slab(back, XL, arcade ? ARCADE.band : GROUND, t.h, z0, z1),
+      // a cornice over the shops (the arcade has its own), one at the roof, and an attic set back
+      slab(XL, XL + (arcade ? 0 : 0.035), GROUND - 0.02, GROUND + 0.03, z0, z1),
+      slab(XL, XL + 0.06, t.h - 0.06, t.h, z0, z1),
+      slab(back + 0.1, XL - 0.18, t.h, t.h + 0.22, z0 + 0.12, z1 - 0.12),
+    );
+    // its windows, in the carving's recesses, lit by floors after dark
+    for (let f = Math.ceil((GROUND + 0.1) / FLOOR - 0.37); (f + 0.75) * FLOOR < t.h - 0.1; f++) {
+      if ((f + 0.37) * FLOOR < GROUND + 0.06) continue;
+      const share = wr() < 0.6 ? 0.85 : 0.3;
+      for (let k = Math.ceil(z0 / BAY + 0.1); (k + 1) * BAY < z1 - 0.05; k++) {
+        (wr() < share ? litPanes : darkPanes).push(pane(-1, XL + 0.003, (f + 0.37) * FLOOR, (f + 0.73) * FLOOR, (k + 0.3) * BAY, (k + 0.7) * BAY));
+      }
+    }
+  }
+  for (const t of right) {
+    if (t === round) continue;
+    const z0 = t.z - t.d / 2;
+    const z1 = t.z + t.d / 2;
+    const back = XR + t.w;
+    steelParts.push(slab(XR + RECESS, back, 0, GROUND, z0, z1), slab(XR, XR + RECESS, 0, GROUND, z0, z0 + 0.08), slab(XR, XR + RECESS, 0, GROUND, z1 - 0.08, z1), slab(XR, back, GROUND, t.h, z0, z1), slab(XR - 0.04, XR, GROUND - 0.03, GROUND + 0.02, z0, z1));
+    // ribbon windows, floor by floor, broken by mullions
+    for (let f = 2; (f + 0.85) * FLOOR < t.h - 0.1; f++) {
+      const share = wr() < 0.65 ? 0.9 : 0.25;
+      for (let s0 = z0 + 0.06; s0 < z1 - 0.1; s0 += 0.32) {
+        const s1 = Math.min(s0 + 0.3, z1 - 0.06);
+        (wr() < share ? ribbonLit : ribbonDark).push(pane(1, XR - 0.003, (f + 0.25) * FLOOR, (f + 0.85) * FLOOR, s0, s1));
+      }
+    }
+  }
+  if (round) {
+    // a drum of glass ribbons over a stone base, its curve toward the street
+    const rad = Math.max(round.d / 2, 1.05);
+    const cx = XR + rad;
+    const cz = round.z;
+    const h = 7.2;
+    steelParts.push(
+      new THREE.CylinderGeometry(rad, rad, h - GROUND, 32).translate(cx, (h + GROUND) / 2, cz),
+      new THREE.CylinderGeometry(rad - RECESS, rad - RECESS, GROUND, 32).translate(cx, GROUND / 2, cz),
+      new THREE.CylinderGeometry(rad + 0.04, rad + 0.04, 0.05, 32).translate(cx, GROUND, cz),
+    );
+    for (let f = 2; (f + 0.85) * FLOOR < h - 0.1; f++) {
+      const share = wr() < 0.7 ? 0.9 : 0.3;
+      for (let a = 0; a < 8; a++) {
+        const g = new THREE.CylinderGeometry(rad + 0.004, rad + 0.004, FLOOR * 0.6, 4, 1, true, Math.PI * (0.92 + a * 0.145), Math.PI * 0.14).translate(cx, (f + 0.55) * FLOOR, cz);
+        (wr() < share ? ribbonLit : ribbonDark).push(g);
+      }
+    }
+    shopsR.splice(roundAt, 1, [cz - rad * 0.8, cz + rad * 0.8]);
   }
 
   // The domed corner building down the left side, as in the paintings: a
-  // drum, a dome and a small lantern on its corner
-  const domed = left.find((t) => t.z < -9) ?? left[left.length - 1];
+  // square tower on its corner, a drum, a dome and a small lantern, the
+  // whole floodlit after dark
   {
-    const cx = domed.x;
-    const cz = domed.z + domed.d * 0.25;
+    const k = 1.35;
+    const cx = XL - 0.42 * k;
+    const cz = domed.z + domed.d * 0.5 - 0.42 * k;
     const y = domed.h;
+    stoneParts.push(slab(cx - 0.42 * k, cx + 0.42 * k, y - 0.1, y + 0.8 * k, cz - 0.42 * k, cz + 0.42 * k), slab(cx - 0.47 * k, cx + 0.47 * k, y + 0.8 * k, y + 0.88 * k, cz - 0.47 * k, cz + 0.47 * k));
     mesh(
       merge([
-        new THREE.CylinderGeometry(0.36, 0.38, 0.5, 16).translate(cx, y + 0.25, cz),
-        new THREE.CylinderGeometry(0.4, 0.4, 0.05, 16).translate(cx, y + 0.52, cz),
-        new THREE.SphereGeometry(0.33, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2).translate(cx, y + 0.54, cz),
-        new THREE.CylinderGeometry(0.07, 0.08, 0.2, 8).translate(cx, y + 0.95, cz),
-        new THREE.ConeGeometry(0.06, 0.16, 8).translate(cx, y + 1.13, cz),
-      ]),
-      surface({ color: STONE, grime: 0.2 }),
+        new THREE.CylinderGeometry(0.34, 0.36, 0.55, 20).translate(0, 1.15, 0),
+        new THREE.CylinderGeometry(0.4, 0.4, 0.05, 20).translate(0, 1.45, 0),
+        new THREE.SphereGeometry(0.34, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2).scale(1, 1.25, 1).translate(0, 1.47, 0),
+        new THREE.CylinderGeometry(0.08, 0.09, 0.22, 10).translate(0, 1.98, 0),
+        new THREE.ConeGeometry(0.07, 0.2, 10).translate(0, 2.19, 0),
+      ]).scale(k, k, k).translate(cx, y, cz),
+      surface({ color: STONE, grime: 0.15, glow: { tone: FLOOD, strength: 0.55 } }),
       "dome",
     );
   }
+  // (the stone and the steel, carved and floodlit; the panes)
+  mesh(merge(stoneParts), surface({ color: STONE, grime: 0.2, relief: { kind: "stone", bay: BAY, floor: FLOOR, strength: 0.8 }, glow: { tone: FLOOD, strength: 0.34 } }), "facades:stone");
+  mesh(merge(steelParts), surface({ color: STEEL, grime: 0.1, glow: { tone: FLOOD, strength: 0.12 } }), "facades:glass");
+  mesh(merge(litPanes), glowMaterial({ day: "#3d5266", night: "#f1b866" }), "windows:lit");
+  mesh(merge(darkPanes), glowMaterial({ day: "#3d5266", night: "#3a3029" }), "windows:dark");
+  mesh(merge(ribbonLit), glowMaterial({ day: "#8eaecb", night: "#f4c27a" }), "ribbons:lit");
+  mesh(merge(ribbonDark), glowMaterial({ day: "#8eaecb", night: "#28313d" }), "ribbons:dark");
+  const nearTowers = group.children.filter((o) => o.name.startsWith("facades:") || o.name.startsWith("windows:") || o.name.startsWith("ribbons:") || o.name === "dome");
 
   // ---- The arcade's shopfront: stone piers and a band over the open
   // front, the room behind (its back wall and ceiling lit warm after dark)
@@ -292,25 +379,55 @@ function build(quality: Quality): Built {
   const screenPos = screen.getWorldPosition(new THREE.Vector3());
   glow.push({ pos: screenPos.clone(), color: SCENE_TONES.cyan, size: 0.08 });
 
-  // ---- Shopfronts along the facades' feet, lit warm after dark
-  const shopGlass = glowMaterial({ day: "#33414b", night: "#eab36c" });
-  const shopParts: THREE.BufferGeometry[] = [];
-  const shopFrames: THREE.BufferGeometry[] = [];
+  // ---- Shopfronts along the facades' feet: glass over a lit room (its
+  // back wall warm after dark), mullions and a transom; on the left a
+  // fanlight over each
+  const rooms: THREE.BufferGeometry[] = [];
+  const counters: THREE.BufferGeometry[] = [];
+  const glazing: THREE.BufferGeometry[] = [];
+  const mullions: THREE.BufferGeometry[] = [];
+  const shopFront = (side: -1 | 1, z0: number, z1: number, top: number) => {
+    const face = side < 0 ? XL - RECESS : XR + RECESS;
+    const glassX = side < 0 ? XL - 0.01 : XR + 0.01;
+    rooms.push(pane(side, face - side * 0.002, 0.004, top, z0, z1));
+    counters.push(pane(side, face - side * 0.004, 0.004, 0.09, z0, z1));
+    glazing.push(pane(side, glassX, 0.004, top, z0, z1));
+    const n = Math.max(1, Math.round((z1 - z0) / 0.32));
+    for (let i = 0; i <= n; i++) {
+      const zz = z0 + ((z1 - z0) * i) / n;
+      mullions.push(slab(glassX - 0.008, glassX + 0.008, 0, top, zz - 0.007, zz + 0.007));
+    }
+    mullions.push(slab(glassX - 0.008, glassX + 0.008, top * 0.72, top * 0.72 + 0.012, z0, z1), slab(glassX - 0.01, glassX + 0.01, top - 0.012, top, z0, z1));
+  };
   for (const [z0, z1] of shopsL) {
-    shopParts.push(slab(XL, XL + 0.006, 0.02, 0.36, z0, z1));
-    shopFrames.push(slab(XL, XL + 0.02, 0.36, 0.42, z0 - 0.06, z1 + 0.06));
-    lights.push({ x: XL + 0.03, z: (z0 + z1) / 2, w: 0.35, color: "#ffc98a", height: 0.2 });
+    shopFront(-1, z0, z1, GROUND - 0.03);
+    lights.push({ x: XL + 0.03, z: (z0 + z1) / 2, w: 0.4, color: "#ffc98a", height: 0.22 });
   }
   for (const [z0, z1] of shopsR) {
-    shopParts.push(slab(XR - 0.006, XR, 0.02, 0.4, z0, z1));
-    shopFrames.push(slab(XR - 0.02, XR, 0.4, 0.46, z0 - 0.06, z1 + 0.06));
-    lights.push({ x: XR - 0.03, z: (z0 + z1) / 2, w: 0.4, color: "#ffd9a0", height: 0.22 });
+    shopFront(1, z0, z1, GROUND - 0.03);
+    lights.push({ x: XR - 0.03, z: (z0 + z1) / 2, w: 0.45, color: "#ffd9a0", height: 0.24 });
   }
-  mesh(merge(shopParts), shopGlass, "shops");
-  mesh(merge(shopFrames), litSurface({ color: STONE_DARK, tone: FLOOD, strength: 0.28 }), "shops:frames");
-  // A floodlit band along the old fronts over their shops (a cornice,
-  // standing out a little), warm after dark like the plates' facades
-  mesh(merge(left.map((t) => slab(XL, XL + 0.025, 0.42, 0.52, t.z - t.d / 2, t.z + t.d / 2))), litSurface({ color: STONE, tone: FLOOD, strength: 0.3 }), "cornice");
+  // the shops' light on the polished paving before them: kit glass laid
+  // flat in three widening layers (a soft edge), catching the sky by day
+  // and holding the shops' warmth after dark
+  const sheen: THREE.BufferGeometry[] = [];
+  for (const [side, shops] of [[-1, [...shopsL, [ARCADE.open0 + 0.2, ARCADE.open1 - 0.2]]], [1, shopsR]] as const) {
+    const x0 = side < 0 ? XL : XR;
+    for (const [z0, z1] of shops) {
+      if (z0 < -24) continue;
+      // (each layer narrower along the street too, so no edge is hard)
+      [0.16, 0.3, 0.46, 0.64, 0.85].forEach((reach, i) => {
+        const x1 = x0 - side * reach;
+        const inset = Math.min(0.04 + i * 0.07, (z1 - z0) * 0.3);
+        sheen.push(new THREE.PlaneGeometry(Math.abs(x1 - x0), z1 - z0 + 0.16 - inset * 2).rotateX(-Math.PI / 2).translate((x0 + x1) / 2, 0.002 + i * 0.0005, (z0 + z1) / 2));
+      });
+    }
+  }
+  mesh(merge(sheen), glassMaterial({ tint: "#b9ae9d", opacity: 0.03, sky: 0.12, glow: { tone: "#ffb45e", strength: 0.75 } }), "shops:sheen");
+  mesh(merge(rooms), glowMaterial({ day: "#38424a", night: "#f0b062" }), "shops");
+  mesh(merge(counters), glowMaterial({ day: "#2a3036", night: "#a8693a" }), "shops:counters");
+  mesh(merge(glazing), glassMaterial({ tint: "#55697a", opacity: 0.32, sky: 0.6, glow: { tone: "#ffb45e", strength: 0.18 } }), "shops:glass");
+  mesh(merge(mullions), surface({ color: FRAME }), "shops:frames");
 
   // ---- Neon: blades out from the walls and boards flat on them, abstract
   // (bars and dots, no words), in the plates' pink, cyan and gold
@@ -334,7 +451,7 @@ function build(quality: Quality): Built {
   };
   // the arcade's board over its open front, cyan as in the plates
   board(401, "cyan", -1, (A.open0 + A.open1) / 2, A.height + 0.17, 1.7, 0.15);
-  blade(402, "rose", -1, 1.6, 1.15, 0.2, 0.62);
+  blade(402, "rose", -1, 1.6, 1.35, 0.26, 1.0);
   board(403, "gold", -1, -0.2, 0.52, 1.2, 0.16);
   blade(404, "cyan", -1, -4.6, 0.95, 0.16, 0.34);
   blade(405, "rose", -1, -9.5, 1.05, 0.16, 0.5);
@@ -444,6 +561,7 @@ function build(quality: Quality): Built {
     tramMesh(roof, surface({ color: "#2b2f33" }), "tram:roof");
     tramMesh(panes, glowMaterial({ day: "#26343a", night: "#f2c27a" }), "tram:windows");
     tramMesh([new THREE.CylinderGeometry(0.025, 0.025, 0.01, 12).rotateX(Math.PI / 2).translate(0, 0.12, 0.006)], neonMaterial(dim("gold", 0.6), { dayColor: "#e9dcb0" }), "tram:lamp");
+    tram.scale.setScalar(1.15);
     tram.position.set(RAIL_X, 0.01, TRAM_Z);
     add(tram);
     lights.push({ x: RAIL_X, z: TRAM_Z, w: 0.2, color: SCENE_TONES.gold, height: 0.12 });
@@ -517,6 +635,7 @@ function build(quality: Quality): Built {
     machine,
     repaint,
     movers: [screenMover],
+    pools: poolsFor(shopsL, shopsR),
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       disposers.forEach((d) => d());
@@ -527,13 +646,25 @@ function build(quality: Quality): Built {
   };
 }
 
-// After dark: the lamps' light on the facades and the paving near the
-// eye, and the arcade's cyan board on its stone (kit/glow.ts: pools)
-const POOLS: GlowPool[] = [
-  ...LAMPS_L.filter((z) => z < 6.5 && z > -3).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
-  ...LAMPS_R.filter((z) => z < 6.5 && z > -2).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
-  { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 },
-];
+// After dark (kit/glow.ts: pools, at most 12): the lamps' light on the
+// facades and the paving near the eye (not the three spot lamps, which
+// light their own), the arcade's cyan board on its stone, and the shops'
+// warm light spilling out over the paving
+function poolsFor(shopsL: [number, number][], shopsR: [number, number][]): GlowPool[] {
+  const near = (shops: [number, number][], z0: number, z1: number) => shops.map(([a, b]) => (a + b) / 2).filter((z) => z < z1 && z > z0);
+  return [
+    ...LAMPS_L.filter((z, i) => z < 2 && z > -1.5 && i !== SPOT_L && i !== SPOT_L + 1).map((z): GlowPool => ({ pos: [LAMP_L + 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
+    ...LAMPS_R.filter((z, i) => z < 6 && z > 1 && i !== SPOT_R).map((z): GlowPool => ({ pos: [LAMP_R - 0.1, 0.6, z], reach: 1.1, color: "#ffc98a", strength: 0.9 })),
+    { pos: [XL + 0.3, ARCADE.height + 0.17, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.2, color: SCENE_TONES.cyan, strength: 0.6 } as GlowPool,
+    // (the arcade's warm room, out over the paving in front of it)
+    { pos: [XL + 0.35, 0.12, (ARCADE.open0 + ARCADE.open1) / 2], reach: 1.3, color: "#ffb866", strength: 0.9 } as GlowPool,
+    ...near(shopsL, -4.5, 2.4).map((z): GlowPool => ({ pos: [XL + 0.25, 0.18, z], reach: 0.95, color: "#ffb866", strength: 1.8 })),
+    ...near(shopsR, -4, 8).map((z): GlowPool => ({ pos: [XR - 0.25, 0.18, z], reach: 0.95, color: "#ffc47a", strength: 1.8 })),
+  ].slice(0, 12);
+}
+
+// By day: the trees' dappled shade over the paving, as the day plate paints it
+const SHADE: DayShade = { kind: "dapple", box: [XL, FAR_Z, XR, 22], depth: 0.38, top: 0.04, period: 0.32, duty: 0.55 };
 
 function InterestsScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
@@ -549,7 +680,9 @@ function InterestsScene({ quality, active, still }: SceneProps) {
   const arrived = useWorld((s) => s.arrived);
   const press = useWorld((s) => s.arcadePress);
   const on = active && arrived;
+  const POOLS = built.pools;
   useGlowPools("nanjing-road", POOLS, active);
+  useDayShade("nanjing-road", SHADE, active);
   useMovers(built.movers, { active: on, still });
 
   // A mode chosen (a key in the panel, or the idle cycle there): the
