@@ -150,7 +150,7 @@ test("the hero has the name, the headline, two actions and three links, and no p
   assert.ok(!src.includes('"use client"'), "the hero is a server component");
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
   assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
-  assert.match(src, /<p className="[^"]*headline[^"]*">\{profile\.headline\}<\/p>/);
+  assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
   assert.match(src, /href="#projects" className="glass glass-primary"/);
   assert.match(src, /href="#contact" className="glass"/);
   // GitHub, LinkedIn and the résumé: the shared links, as text links
