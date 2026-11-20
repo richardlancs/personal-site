@@ -2,6 +2,7 @@ import { experience, type Experience as Entry } from "../../../data/portfolio";
 import { groupByKind, isCurrent, sortNewestFirst } from "../../../lib/experience";
 import { machineDate } from "../../../lib/machineDate";
 import ResumeLink from "../../resume/ResumeLink";
+import Figures from "../Figures";
 
 // A date as written in the data, in a <time> only when it is a real date
 // ("Present" is plain words: a <time> must hold a valid date)
@@ -48,7 +49,7 @@ function Row({ entry }: { entry: Entry }) {
       >
         {entry.highlights.map((highlight) => (
           <li key={highlight} className="max-w-[62ch] break-words">
-            {highlight}
+            <Figures>{highlight}</Figures>
           </li>
         ))}
       </ul>

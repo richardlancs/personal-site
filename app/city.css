@@ -1293,6 +1293,15 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   background: var(--muted);
 }
 
+/* A figure in content text (components/city2d/Figures.tsx): bold, in the
+   text's own colour (never an accent: it sits in body text), with
+   figures of even width */
+.figure {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 /* A point that is a link standing alone (44px tall): the dash at the
    middle of its first line */
 .points > li:has(> .text-link-solo)::before {

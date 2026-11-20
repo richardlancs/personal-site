@@ -92,7 +92,7 @@ export const about: AboutPage[] = [
     heading: "Building and learning",
     points: [
       "MarketLab, a stock market simulator.",
-      "Scrollganizer, a Chrome extension for searching saved TikToks, with a team of three.",
+      "Scrollganizer, a Chrome extension for searching saved TikToks, with a team of 3.",
       "Next: digging into AI and machine learning.",
       "Looking for a software engineering internship or co‑op.",
     ],
@@ -161,7 +161,7 @@ export const projects: Project[] = [
   {
     title: "Empyrean",
     summary: "Camera glasses that tell a blind or low-vision wearer what they're pointing at, down to the brand when the label is readable.",
-    role: "Led a team of four at HackUMass XIV (November 2026). I owned Grok naming and the data layer.",
+    role: "Led a team of 4 at HackUMass XIV (November 2026). I owned Grok naming and the data layer.",
     features: [
       "A webcam on a pair of glasses watches the wearer's hands: YOLO tracks objects, MediaPipe finds the fingers.",
       "Point at something and a Bluetooth speaker says its name; Grok vision reads the label for the brand.",
@@ -172,9 +172,9 @@ export const projects: Project[] = [
     contributions: [
       "Built the naming service: a rate-limited worker that sends crops to Grok vision, largest first, off the camera loop.",
       "Built the history store on Tiger Data (Postgres): writes never block, and an outage costs one warning, not a stall.",
-      "Proposed the shared message contracts all four modules use, with tests that check them against the spec.",
+      "Proposed the shared message contracts all 4 modules use, with tests that check them against the spec.",
       "Switched announcements from touching to pointing: a ray cast along the finger from MediaPipe's hand landmarks.",
-      "Added offline Piper voices in five languages: English, Mandarin, Spanish, French and Hindi.",
+      "Added offline Piper voices in 5 languages: English, Mandarin, Spanish, French and Hindi.",
       "Rebuilt the dashboard as a layered app, and built the landing and How It Works pages around three.js models of the kit.",
     ],
     technologies: [
@@ -216,7 +216,7 @@ export const projects: Project[] = [
   {
     title: "Scrollganizer",
     summary: "A Chrome side-panel extension that makes saved TikTok videos and photo posts searchable.",
-    role: "Lead developer on a team of three.",
+    role: "Lead developer on a team of 3.",
     features: [
       "Builds a library of saved videos and photo posts, right in the browser.",
       "Search by caption, creator, hashtag, or collection instead of scrolling through Favorites.",
@@ -302,8 +302,8 @@ export const projects: Project[] = [
     summary: "A free real-time poker web app for private home games: share a link and friends join, with no accounts.",
     role: "Lead developer.",
     features: [
-      "Eight variants, from Hold'em and Omaha to Short Deck, with bomb pots, double board and run it twice.",
-      "A pure TypeScript engine, tested on every five-card hand and 100,000 random ones.",
+      "8 variants, from Hold'em and Omaha to Short Deck, with bomb pots, double board and run it twice.",
+      "A pure TypeScript engine, tested on every 5-card hand and 100,000 random ones.",
       "One Cloudflare Durable Object per table runs the game and sends each player only the cards they may see.",
       "A provably fair shuffle, and a ledger that works out who owes whom at the end.",
     ],
@@ -311,7 +311,7 @@ export const projects: Project[] = [
       "Designed and built Tic-Tac-Toe Hold'em: a 3×3 board, played with both hole cards and one row, column or diagonal.",
       "Made the board's shape a per-variant setting, so dealing, replays and rabbit hunt all handle the grid.",
       "Fixed a bug that left the table blank on phones for viewers without a seat.",
-      "Not yet released: a product audit and six stages of fixes from it, among them reliability, chat and hand history.",
+      "Not yet released: a product audit and 6 stages of fixes from it, among them reliability, chat and hand history.",
     ],
     technologies: [
       "TypeScript",

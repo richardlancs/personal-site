@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
 import { newTab } from "../ProfileLinks";
+import Figures from "../Figures";
 
 // The interests: one row per interest, a single column on the ground with
 // hairlines between them. Each row is a native <details> (name="interests",
@@ -90,7 +91,7 @@ export default function Interests() {
               </svg>
             </summary>
             <div className="pb-8 min-[480px]:pl-12">
-              <p className="max-w-[65ch] text-base leading-relaxed text-text break-words">{interest.description}</p>
+              <p className="max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
               {photos.length > 0 && (
                 <ul role="list" className="mt-6 grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
                   {photos.map((photo) => {

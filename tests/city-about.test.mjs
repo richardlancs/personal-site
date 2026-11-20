@@ -18,7 +18,7 @@ test("the about station maps every entry, its heading in an h3", () => {
 
 test("points are list items in a list with the class points", () => {
   assert.match(source, /<ul[^>]*className="points[ "]/);
-  assert.match(source, /<li key=\{point\}>\{point\}<\/li>/);
+  assert.match(source, /<li key=\{point\}><Figures>\{point\}<\/Figures><\/li>/);
   // No paragraph holds copy from the data
   assert.doesNotMatch(source, /<p[\s>]/);
   for (const entry of about) {

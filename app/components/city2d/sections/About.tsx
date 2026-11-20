@@ -1,5 +1,6 @@
 import { about, githubNote, profile } from "../../../data/portfolio";
 import ProfileLinks from "../ProfileLinks";
+import Figures from "../Figures";
 
 // The about station, in the lane of old houses: each entry in `about` is a
 // heading and a few short points set straight on the ground under a
@@ -14,7 +15,7 @@ export default function About() {
           <h3 className="font-display text-2xl font-semibold text-text">{entry.heading}</h3>
           <ul role="list" className="points mt-4 space-y-2 break-words text-text">
             {entry.points.map((point) => (
-              <li key={point}>{point}</li>
+              <li key={point}><Figures>{point}</Figures></li>
             ))}
           </ul>
         </section>

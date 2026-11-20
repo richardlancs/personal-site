@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
+import Figures from "../Figures";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -161,8 +162,8 @@ export default function Projects() {
                   </span>
                   {project.title}
                 </h3>
-                <p className="mt-3 max-w-[65ch] text-lg text-text">{project.summary}</p>
-                {project.role && <p className="mt-2 max-w-[65ch] text-muted">{project.role}</p>}
+                <p className="mt-3 max-w-[65ch] text-lg text-text"><Figures>{project.summary}</Figures></p>
+                {project.role && <p className="mt-2 max-w-[65ch] text-muted"><Figures>{project.role}</Figures></p>}
               </header>
 
               {cover && (
@@ -179,7 +180,7 @@ export default function Projects() {
                     <h4 className={h4}>My part</h4>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {part.slice(0, SHOWN_PART).map((contribution) => (
-                        <li key={contribution}>{contribution}</li>
+                        <li key={contribution}><Figures>{contribution}</Figures></li>
                       ))}
                     </ul>
                   </section>
@@ -188,7 +189,7 @@ export default function Projects() {
                     <h4 className={h4}>What it does</h4>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {project.features.map((feature) => (
-                        <li key={feature}>{feature}</li>
+                        <li key={feature}><Figures>{feature}</Figures></li>
                       ))}
                     </ul>
                   </section>
@@ -218,7 +219,7 @@ export default function Projects() {
                         <h4 className={h5}>More of my part</h4>
                         <ul role="list" className="points mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
-                            <li key={contribution}>{contribution}</li>
+                            <li key={contribution}><Figures>{contribution}</Figures></li>
                           ))}
                         </ul>
                       </section>
@@ -228,7 +229,7 @@ export default function Projects() {
                         {subheads && <h4 className={h5}>What it does</h4>}
                         <ul role="list" className={`points space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
                           {project.features.map((feature) => (
-                            <li key={feature}>{feature}</li>
+                            <li key={feature}><Figures>{feature}</Figures></li>
                           ))}
                         </ul>
                       </section>
