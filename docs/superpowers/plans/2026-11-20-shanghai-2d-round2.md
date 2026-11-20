@@ -176,6 +176,50 @@ Open for Richard, not blocking: MarketLab has no `role`, and Scrollganizer has n
 - [ ] **Step 4:** Tests pass. In the browser: panels open and close by mouse, keyboard (Enter/Space) and with JavaScript off; with no photos there is no gap where a gallery would be; drop one test image into `public/interests/chess/`, confirm it appears, then remove it.
 - [ ] **Step 5:** Commit `feat: interests open to show their photos`.
 
+## Task 5b: Numbers, in bold (one subagent, after Tasks 3–5)
+
+Richard, 20 November: "Try to implement numbers and have them bolded when represented." Today only 5 of the 62 content points contain a figure (95 stocks, 100 puzzles across 15 repositories, 15 puzzles, 100,000 hands, a 3×3 board).
+
+**Two parts:**
+1. **Bold every figure wherever content is shown** (project summaries, roles, features, "My part", experience highlights, About points, interest descriptions). Done at render time, so the data stays plain text.
+2. **More figures in the content.** Only real ones: (a) spelled-out quantities already in the data become digits ("a team of three" → "a team of 3", "every five-card hand" → "every 5-card hand"), idioms left alone; (b) Richard supplies new figures; the subagent writes him a list of the points where a number would say more (how many users, tests, files, hours, percent faster), per project and role, as questions. Nothing is added to the site until he answers. No figure is ever invented or estimated.
+
+**Files:**
+- Create: `app/lib/figures.ts` (pure), `app/components/city2d/Figures.tsx` (server), `tests/city-figures.test.mjs`
+- Modify: `app/data/portfolio.ts` (spelled-out quantities to digits only), every section component that prints content points (wrap the text in `<Figures>`), `app/city.css` (one rule)
+
+**Interfaces:**
+- `splitFigures(text: string): { text: string; figure: boolean }[]` — a figure is a number with what is attached to it: thousands separators, decimals, a leading `$`, a trailing `+`, `%`, `×`, `k`, `M`, a ratio (`54/60`), a dimension (`3×3`), and a range (`10–12`). Not a figure: a number inside a word or name (`YOLO11`, `CS135`, `Next.js 16`, `GPT-4`), a year (1900–2099), a date's day, a version (`v2.1`), an ordinal used as a name ("Line 2").
+- `<Figures>{text}</Figures>` renders the pieces, each figure in `<strong className="figure">`. `.figure` is weight 700 in `--text` (never an accent colour: figures sit in body text), with tabular numerals.
+
+- [ ] **Step 1: Failing tests** in `tests/city-figures.test.mjs`:
+
+```js
+const figs = (t) => splitFigures(t).filter((p) => p.figure).map((p) => p.text);
+test("counts, with their signs and separators", () => {
+  assert.deepEqual(figs("Screened 6,000+ companies and sent 300+ emails."), ["6,000+", "300+"]);
+  assert.deepEqual(figs("Cut load time by 40% for $7,500."), ["40%", "$7,500"]);
+  assert.deepEqual(figs("100 puzzles across 15 repositories"), ["100", "15"]);
+});
+test("ratios, dimensions, decimals and ranges stay whole", () => {
+  assert.deepEqual(figs("54/60 named, 0.885 mAP50, a 3×3 board, 10–12 players"), ["54/60", "0.885", "3×3", "10–12"]);
+});
+test("names, years and versions are not figures", () => {
+  assert.deepEqual(figs("Built with YOLO11 and Next.js 16 for CS135 in 2026, v2.1."), []);
+});
+test("the pieces join back to the original text", () => {
+  const t = "About 95 US stocks, tested on 100,000 hands.";
+  assert.equal(splitFigures(t).map((p) => p.text).join(""), t);
+});
+test("every figure in the real data is found, and nothing else", () => { /* snapshot of figs() over every point in portfolio.ts, reviewed by hand once and stored in the test */ });
+```
+
+  plus source-level: `.figure` in `city.css` sets `font-weight: 700` and no `color` other than `var(--text)`; every section component that maps content points imports `Figures`.
+- [ ] **Step 2:** Run; they fail.
+- [ ] **Step 3:** Implement; convert the spelled-out quantities in the data; write the list of questions for Richard to `docs/city/figures-to-add.md`.
+- [ ] **Step 4:** Tests pass; in the browser, figures are bold and still read as part of the sentence at 1440 and 390; contrast unchanged.
+- [ ] **Step 5:** Commit `feat: figures in bold, wherever content is shown`.
+
 ## Task 6: Whole-branch review fixes, audits, and Richard's look (lead, then one subagent)
 
 - [ ] **Step 1:** Fold in every Critical and Important finding from the whole-branch review of Plan A (`.superpowers/sdd/2026-11-19-shanghai-2d/final-review.md`) that Tasks 1–5 did not already remove.
