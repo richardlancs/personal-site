@@ -1,2 +1,157 @@
 /* Page motion and depth: arrival on scroll, picture depth (docs/ui/ux-motion-principles.md).
    Tokens live in city.css. */
+
+/* ---------- Arrival (principles 3, 9, 11, 12) ----------
+   As a section scrolls in, its items arrive in order: the section's number
+   and heading (Station.tsx), then its blocks (About's groups, each project
+   row's header, picture and text, Experience's rows, the interests). Each
+   `.reveal` carries its place in its group as --i (Station.tsx: order(),
+   0 to 5, so later items share the last step).
+
+   CSS only, driven by the scroll (animation-timeline: view()), no script.
+   An item starts arriving as its top edge comes up over the foot of the
+   screen and has fully arrived by the time it is about halfway in, or 12
+   to 27vh of scrolling, whichever comes first: never later than the
+   moment it is wholly on the screen (entry 100%), so anything wholly in
+   view is at rest, even at the very foot of the page (/#contact), and
+   anything above the screen stays arrived. Later items in a group start
+   and finish a little later (--i). A scroll-driven animation has no
+   duration: the range is its timing, and --ease-out its curve.
+
+   Its resting state is the normal one: where scroll-driven animations
+   aren't supported, in still view and with reduced motion, nothing is
+   hidden or moved. Focus moving into an item (the keyboard, the find bar)
+   shows it at once, and print shows everything. */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-still="on"]) .reveal {
+      transform-origin: 0 100%;
+      animation: arrive both var(--ease-out);
+      animation-timeline: view();
+      animation-range: entry calc(var(--i, 0) * 6%) entry min(calc(45% + var(--i, 0) * 10%), calc(12vh + var(--i, 0) * 3vh));
+    }
+
+    :root:not([data-still="on"]) .reveal:focus-within {
+      animation: none;
+    }
+  }
+}
+
+/* A small rise on a soft arc: up from 12px below, turned a degree about
+   its lower left corner and a touch small, all three resolving together,
+   so its far edge swings in on a curve rather than sliding straight. From
+   nearly clear (--from: the hero's starts at 0.6) */
+@keyframes arrive {
+  from {
+    opacity: var(--from, 0.001);
+    transform: translateY(12px) rotate(1deg) scale(0.985);
+  }
+}
+
+/* ---------- The hero, on first load ----------
+   Not scroll-driven: the name, the headline, the two keys and the links
+   settle in one after another, once (Hero.tsx sets --i, 0 to 3). There
+   from the first paint (from 0.6, never invisible) and usable throughout;
+   all four at rest by 460ms (3 × --stagger + --t-slow). */
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .hero-arrive {
+    --from: 0.6;
+    transform-origin: 0 100%;
+    animation: arrive var(--t-slow) var(--ease-out) calc(var(--i) * var(--stagger)) both;
+  }
+}
+
+/* ---------- The bands, settling in ----------
+   Every band below the first settles as it comes up the screen: its
+   plates from 1.02 to their size over the band's entry, then still (no
+   parallax through the rest of the scroll). The plates' own fade-in
+   (city.css, "The band") is on their <img>; this is on the plate. */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-still="on"]) .band:not([data-home]) {
+      view-timeline: --band;
+    }
+
+    :root:not([data-still="on"]) .band:not([data-home]) .band-plate {
+      animation: settle both var(--ease-out);
+      animation-timeline: --band;
+      animation-range: entry;
+    }
+  }
+}
+
+@keyframes settle {
+  from {
+    transform: scale(1.02);
+  }
+}
+
+/* ---------- Depth (principles 17, 7, 11) ----------
+   The project pictures and the interest photos (`.depth`, around each
+   frame, with its frame's corner radius) lift toward a fine pointer: up
+   3px, a soft shadow under them (its own layer, faded in, so only opacity
+   and transform move), tilted toward the pointer by at most 3° each way
+   (Tilt.tsx writes --tilt-x and --tilt-y, -0.5 to 0.5), and the picture
+   inside eases to 1.015 a beat after the frame. Keyboard focus inside
+   gets the lift, not the tilt. Flat on touch, in still view and with
+   reduced motion. A transform, so nothing around it moves. */
+
+.depth {
+  position: relative;
+  isolation: isolate;
+  transform: var(--lift, none);
+}
+
+.depth::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: 0 16px 32px -14px rgb(0 0 0 / 0.75);
+  opacity: var(--lit, 0);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .depth,
+  :root:not([data-still="on"]) .depth::after {
+    transition: transform var(--t-base) var(--ease-out), opacity var(--t-base);
+  }
+
+  :root:not([data-still="on"]) .depth img {
+    transition: transform var(--t-slow) var(--ease-out);
+  }
+
+  /* The lifted state, as --lift (the frame's transform, above) and --lit
+     (its shadow's opacity): keyboard focus inside, or a fine pointer over
+     it. Set only here, so flat in still view and with reduced motion */
+  :root:not([data-still="on"]) :is(.depth:has(:focus-visible), :focus-visible > .depth) {
+    --lift: translateY(-3px);
+    --lit: 1;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :root:not([data-still="on"]) .depth:hover {
+      --lift: perspective(60rem) translateY(-3px) rotateX(calc(var(--tilt-y, 0) * -6deg)) rotateY(calc(var(--tilt-x, 0) * 6deg));
+      --lit: 1;
+    }
+
+    :root:not([data-still="on"]) .depth:hover img {
+      transform: scale(1.015);
+    }
+  }
+}
+
+/* ---------- Print: everything, at rest ---------- */
+
+@media print {
+  .reveal,
+  .hero-arrive,
+  .band-plate {
+    animation: none !important;
+  }
+}

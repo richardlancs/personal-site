@@ -3,6 +3,7 @@ import { groupByKind, isCurrent, sortNewestFirst } from "../../../lib/experience
 import { machineDate } from "../../../lib/machineDate";
 import ResumeLink from "../../resume/ResumeLink";
 import Figures from "../Figures";
+import { order } from "../Station";
 
 // A date as written in the data, in a <time> only when it is a real date
 // ("Present" is plain words: a <time> must hold a valid date)
@@ -60,6 +61,7 @@ function Row({ entry }: { entry: Entry }) {
 // Plain dated rows, newest first, work and education apart, each group
 // under a small label on a hairline. No card, no board and no timeline
 // line (the page's progress line is the one line). Ends with the résumé.
+// Each label and row arrives as it scrolls in (reveal.css).
 export default function Experience() {
   const { work, education } = groupByKind(sortNewestFirst(experience));
   const groups = [
@@ -71,19 +73,19 @@ export default function Experience() {
     <div className="mt-10">
       {groups.map((group) => (
         <div key={group.id} className="mb-14">
-          <p id={group.id} className="border-b border-line pb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">
+          <p id={group.id} className="reveal border-b border-line pb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">
             {group.label}
           </p>
           <ol role="list" aria-labelledby={group.id} className="mt-8 space-y-12">
-            {group.entries.map((entry) => (
-              <li key={`${entry.role}-${entry.organization}`}>
+            {group.entries.map((entry, i) => (
+              <li key={`${entry.role}-${entry.organization}`} className="reveal" style={order(i + 1)}>
                 <Row entry={entry} />
               </li>
             ))}
           </ol>
         </div>
       ))}
-      <p>
+      <p className="reveal">
         {/* Opens the résumé over the page (components/resume) */}
         <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
       </p>

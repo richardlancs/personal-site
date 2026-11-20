@@ -2,6 +2,8 @@ import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
+import { order } from "../Station";
+import Tilt from "../Tilt";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -47,35 +49,38 @@ function Keys({ project }: { project: Project }) {
 // ground), the cover inside it whole. When the cover and the screenshot
 // after it are both portrait, the two share the frame side by side; a
 // lone portrait cover sits in the middle. Each picture opens the full
-// image in a new tab. Nothing is cropped.
+// image in a new tab. Nothing is cropped. Around the frame, its depth on
+// a fine pointer (reveal.css, "Depth"; Tilt.tsx).
 function Picture({ shots }: { shots: Screenshot[] }) {
   return (
-    <figure
-      className={`flex aspect-[16/10] items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-line bg-ink-2 ${
-        tall(shots[0]) ? "p-3" : ""
-      }`}
-    >
-      {shots.map((shot) => (
-        <a
-          key={shot.src}
-          href={shot.src}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex min-h-0 min-w-0 flex-1 items-center justify-center"
-        >
-          <Image
-            src={shot.src}
-            alt={shot.alt}
-            width={shot.width}
-            height={shot.height}
-            sizes={shots.length > 1 ? pairSizes : coverSizes}
-            loading="lazy"
-            className="h-full w-full object-contain"
-          />
-          {newTab}
-        </a>
-      ))}
-    </figure>
+    <div className="depth rounded-[var(--radius-lg)]" data-tilt="">
+      <figure
+        className={`flex aspect-[16/10] items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-line bg-ink-2 ${
+          tall(shots[0]) ? "p-3" : ""
+        }`}
+      >
+        {shots.map((shot) => (
+          <a
+            key={shot.src}
+            href={shot.src}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex min-h-0 min-w-0 flex-1 items-center justify-center"
+          >
+            <Image
+              src={shot.src}
+              alt={shot.alt}
+              width={shot.width}
+              height={shot.height}
+              sizes={shots.length > 1 ? pairSizes : coverSizes}
+              loading="lazy"
+              className="h-full w-full object-contain"
+            />
+            {newTab}
+          </a>
+        ))}
+      </figure>
+    </div>
   );
 }
 
@@ -95,10 +100,14 @@ const h5 = "font-display text-lg font-semibold text-text";
 // of my part, the team's features (when my part took their place) and the
 // other screenshots fold into a <details>.
 // Then Skills, on its own edged panel. Everything is in the HTML.
+// The index, each row's header, picture and text, and Skills arrive as
+// they scroll in (reveal.css); the pictures' tilt is Tilt.tsx, mounted
+// here once for the whole page.
 export default function Projects() {
   return (
     <div className="mt-10">
-      <nav aria-label="Projects">
+      <Tilt />
+      <nav aria-label="Projects" className="reveal">
         <ol className="grid grid-cols-1 border-t border-line md:grid-cols-2 md:gap-x-10">
           {projects.map((project, index) => (
             <li key={project.title} className="min-w-0 border-b border-line">
@@ -155,7 +164,7 @@ export default function Projects() {
               aria-labelledby={titleId}
               className="py-10 sm:py-14 lg:grid lg:grid-cols-12 lg:grid-rows-[auto_1fr] lg:gap-x-12 xl:gap-x-10"
             >
-              <header className="min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-6">
+              <header className="reveal min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-1 xl:col-span-6">
                 <h3 id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
@@ -167,12 +176,12 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className="mt-6 min-w-0 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)] lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start xl:col-span-6 xl:col-start-7">
+                <div className="reveal mt-6 min-w-0 lg:sticky lg:top-[calc(var(--bar-h)+1.5rem)] lg:col-span-7 lg:col-start-6 lg:row-span-2 lg:row-start-1 lg:mt-0 lg:self-start xl:col-span-6 xl:col-start-7" style={order(1)}>
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className="mt-6 min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-6">
+              <div className="reveal mt-6 min-w-0 break-words lg:col-span-5 lg:col-start-1 lg:row-start-2 xl:col-span-6" style={order(2)}>
                 <Keys project={project} />
 
                 {part.length > 0 ? (
@@ -267,7 +276,7 @@ export default function Projects() {
         })}
       </div>
 
-      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 min-[400px]:p-5 sm:p-8">
+      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="reveal mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 min-[400px]:p-5 sm:p-8">
         <h3 id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
         </h3>

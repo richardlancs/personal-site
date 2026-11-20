@@ -4,6 +4,7 @@ import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
+import { order } from "../Station";
 
 // The interests: one row per interest, a single column on the ground with
 // hairlines between them. Each row is a native <details> (name="interests",
@@ -11,7 +12,9 @@ import Figures from "../Figures";
 // first starts open, and the open one's top hairline turns cyan. Inside:
 // the description, then the interest's photos when it has any, read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
-// docs/adding-interest-photos.md). No photos, no gallery.
+// docs/adding-interest-photos.md). No photos, no gallery. The rows arrive
+// in order as they scroll in, and each photo's frame has depth on a fine
+// pointer (reveal.css; the tilt is Tilt.tsx, mounted in Projects.tsx).
 
 // Line marks on a 24-unit grid, in cyan (currentColor). Decoration only.
 const marks: Record<Interest["scene"], ReactNode> = {
@@ -59,7 +62,8 @@ export default function Interests() {
             key={interest.scene}
             name="interests"
             open={i === 0}
-            className="interest group border-t border-line open:border-t-cyan"
+            className="interest reveal group border-t border-line open:border-t-cyan"
+            style={order(i)}
           >
             <summary className="flex min-h-14 cursor-pointer list-none items-center gap-4 py-4 [&::-webkit-details-marker]:hidden">
               <svg
@@ -104,15 +108,17 @@ export default function Interests() {
                           rel="noopener noreferrer"
                           className="block rounded-[var(--radius)] text-muted"
                         >
-                          <span className="relative block aspect-[4/3] overflow-hidden rounded-[var(--radius)] border border-line bg-panel">
-                            <Image
-                              src={photo.src}
-                              alt={caption ? "" : photo.alt}
-                              fill
-                              sizes={tileSizes}
-                              loading="lazy"
-                              className="object-cover"
-                            />
+                          <span className="depth block rounded-[var(--radius)]" data-tilt="">
+                            <span className="relative block aspect-[4/3] overflow-hidden rounded-[var(--radius)] border border-line bg-panel">
+                              <Image
+                                src={photo.src}
+                                alt={caption ? "" : photo.alt}
+                                fill
+                                sizes={tileSizes}
+                                loading="lazy"
+                                className="object-cover"
+                              />
+                            </span>
                           </span>
                           {caption && <span className="mt-2 block text-base leading-snug md:text-sm break-words">{caption}</span>}
                           {newTab}
