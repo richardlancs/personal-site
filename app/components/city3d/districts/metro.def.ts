@@ -34,7 +34,7 @@ export const METRO = {
   // The train: its cars, where it stops (the nose), and how far off it
   // comes from and goes to (units); one arrival every `cycle` seconds,
   // `dwell` seconds at the platform
-  train: { cars: 6, nose: 1.0, reach: 42, cycle: 60, arrive: 11, dwell: 20, leave: 11 },
+  train: { cars: 6, nose: 1.12, snout: 0.11, reach: 42, cycle: 60, arrive: 11, dwell: 20, leave: 11 },
   // The three spot lights (scenes.ts: DISTRICT_LIGHTS.metro), under the
   // canopy over the platform
   spots: [
