@@ -5,7 +5,7 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { projects } from "../../../data/portfolio";
 import { anchors } from "../anchors";
-import { anchorKey, Hitbox, SceneLights, type SceneProps } from "../common";
+import { useDisposeOnUnmount, anchorKey, Hitbox, SceneLights, type SceneProps } from "../common";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenArt, screenMaterial, type SceneTone } from "../kit/neon";
@@ -443,9 +443,9 @@ function ProjectsScene({ quality, active }: SceneProps) {
     for (let n = 0; n < built.screens.length; n++) anchors.set(anchorKey("towers", `screen-${n}`), new THREE.Vector3(...screenMiddle(n)));
     return () => {
       for (let n = 0; n < built.screens.length; n++) anchors.delete(anchorKey("towers", `screen-${n}`));
-      built.dispose();
     };
   }, [built]);
+  useDisposeOnUnmount(built);
 
   // The words on the screens wait for the display face
   useEffect(() => {

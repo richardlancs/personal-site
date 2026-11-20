@@ -100,7 +100,21 @@ const panelRight = (width: number, height: number) => {
 
 const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
-const restPose = (scene: SceneId) => inWorld(scene, scenes[scene].home);
+// Where the camera rests in a place: the focus pose the panel or a click
+// chose (the store's `focus`, districts/<id>.def.ts: focus), else home
+const focusPose = (scene: SceneId) => {
+  const key = world.get().focus;
+  return key ? scenes[scene].focus[key] : undefined;
+};
+const restPose = (scene: SceneId) => inWorld(scene, focusPose(scene) ?? scenes[scene].home);
+
+// The plates' shape (app/assets/city/*.webp, 2400 × 1032)
+export const PLATE_ASPECT = 2400 / 1032;
+// Development only, for matching a place to its painting: ?frame=plate
+// holds the camera at the place's plateFrame (districts/<id>.def.ts), the
+// view cut to the painting's shape, the panel and the bar hidden. The
+// whole switch is behind NODE_ENV, so a production build has none of it.
+const plateWanted = () => process.env.NODE_ENV === "development" && new URLSearchParams(location.search).get("frame") === "plate";
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -112,6 +126,7 @@ type Move = {
   ease: (t: number) => number;
   to: { pos: THREE.Vector3; target: THREE.Vector3 }[];
   iris?: { to: number; from: number; until: number };
+  focus?: boolean; // a turn toward (or back from) something chosen in the place
 };
 type Swap = { kind: "swap"; scene: SceneId; pose: { pos: THREE.Vector3; target: THREE.Vector3 } };
 type Seg = Move | Swap;
@@ -126,6 +141,7 @@ function Director({
   iris,
   still,
   tier,
+  plate,
 }: {
   target: SceneId;
   active: SceneId;
@@ -133,6 +149,7 @@ function Director({
   iris: React.RefObject<HTMLDivElement | null>;
   still: boolean;
   tier: Quality;
+  plate: boolean;
 }) {
   const { camera, gl, invalidate, scene } = useThree();
   const st = useRef({
@@ -165,7 +182,8 @@ function Director({
     const s = st.current;
     const to = target;
     const from = s.started ? s.active : null;
-    if (from !== to) world.set({ arrived: false, hover: null });
+    // (a focus belongs to the place it was chosen in)
+    if (from !== to) world.set({ arrived: false, hover: null, focus: null });
     if (iris.current) iris.current.style.background = scenes[to === RIVERSIDE && from ? from : to].threshold;
     s.running = null;
     const final = restPose(to);
@@ -224,6 +242,40 @@ function Director({
       s.queue = [{ kind: "move", dur: 0.4, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
     }
   }, [target, iris, invalidate]);
+
+  // Something chosen in the place (a screen, a line, the machine), or the
+  // choice let go: the camera turns to its focus pose, or back home, on a
+  // short gentle arc, eased; a new choice on the way turns from wherever
+  // the camera is. Never in the middle of a journey (the journey's end
+  // settles on it); a cut in still view (the rest below takes it at once).
+  // Keyboard focus stays where the visitor put it: nothing here touches
+  // the page.
+  useEffect(() => {
+    let last = world.get().focus;
+    const off = world.subscribe(() => {
+      const key = world.get().focus;
+      if (key === last) return;
+      last = key;
+      const s = st.current;
+      invalidate();
+      if (!s.started || holdingStill()) return;
+      const journey = s.queue.length > 0 || (s.running && !s.running.seg.focus);
+      if (journey) return;
+      const to = restPose(s.active);
+      const d = s.pos.distanceTo(to.pos) + 0.25 * s.look.distanceTo(to.target);
+      if (d < 0.01) return;
+      // the arc: through a point a little above the way between
+      const mid = {
+        pos: s.pos.clone().lerp(to.pos, 0.5).add(new THREE.Vector3(0, Math.min(0.6, 0.08 * s.pos.distanceTo(to.pos)), 0)),
+        target: s.look.clone().lerp(to.target, 0.5),
+      };
+      s.running = null;
+      s.queue = [{ kind: "move", dur: THREE.MathUtils.clamp(0.55 + 0.03 * d, 0.6, 1.1), ease: easeInOut, to: [mid, to], focus: true }];
+    });
+    return () => {
+      off();
+    };
+  }, [invalidate]);
 
   // Still view turned on in the middle of a journey: cut to where it was
   // going, at once
@@ -428,6 +480,15 @@ function Director({
     s.shift += (want - s.shift) * glide;
     s.shiftY += (wantY - s.shiftY) * glide;
     if (Math.abs(want - s.shift) > 0.0005 || Math.abs(wantY - s.shiftY) > 0.0005) busy = true;
+    if (plate) {
+      // ?frame=plate (development): the painting's pose and lens, nothing else
+      const pf = def.plateFrame;
+      const p = inWorld(s.active, pf);
+      camera.position.copy(p.pos);
+      camera.lookAt(p.target);
+      fov = pf.fov;
+      s.shift = s.shiftY = 0;
+    }
     if (cam.fov !== fov) cam.fov = fov;
     if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
     else cam.clearViewOffset();
@@ -738,6 +799,23 @@ export default function City3D({ tier }: { tier: Quality }) {
   // The first frame waits for the first place's shaders
   const [warm, setWarm] = useState(false);
   const [handle] = useState(handleWanted);
+  const [plate] = useState(plateWanted);
+  // ?frame=plate (development): the view at the painting's shape, the
+  // page's words and the bar out of the way
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development" || !plate) return;
+    const style = document.createElement("style");
+    style.dataset.cityPlate = "";
+    style.textContent = `.city-page, .top-bar, .city-tags, .city-skip { visibility: hidden !important; }
+html, body { background: #000 !important; }
+.city3d { inset: 0 !important; margin: auto !important; width: min(100vw, calc(100vh * ${PLATE_ASPECT})) !important; height: min(100vh, calc(100vw / ${PLATE_ASPECT})) !important; z-index: 40 !important; }`;
+    document.head.append(style);
+    document.documentElement.dataset.cityPlate = "on";
+    return () => {
+      style.remove();
+      delete document.documentElement.dataset.cityPlate;
+    };
+  }, [plate]);
   const iris = useRef<HTMLDivElement>(null);
   const arrived = useWorld((s) => s.arrived);
   // Something is moving (common.tsx: useLive, useMovers): only then, and
@@ -869,11 +947,11 @@ export default function City3D({ tier }: { tier: Quality }) {
         }}
         aria-hidden="true"
       >
-        <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} tier={tier} />
+        <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} tier={tier} plate={plate} />
         <Demand pathname={pathname} />
         <Contrast />
         <Atmosphere active={active} />
-        <Precipitation quality={tier} />
+        <Precipitation quality={tier} active={active} />
         <WorldLights />
         <TagProjector active={active} />
         {built.map((id) => {

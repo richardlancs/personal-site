@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { cityPath } from "../../lib/cityRoutes";
 import { section, type SectionId } from "../../sections/registry";
 import { anchors } from "./anchors";
-import { Hitbox, useMovers, type Mover, type SceneProps } from "./common";
+import { useDisposeOnUnmount, Hitbox, useMovers, type Mover, type SceneProps } from "./common";
 import lujiazui, { RIVERSIDE } from "./districts/lujiazui.def";
 import { box, merge } from "./kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "./kit/landmarks";
@@ -335,9 +335,9 @@ export default function Riverside({ navigate, quality, active, still }: ScenePro
         anchors.delete(`sign:${s.id}`);
         for (const k of Object.keys(s.corners)) anchors.delete(`sign:${s.id}:${k}`);
       }
-      built.dispose();
     };
   }, [built]);
+  useDisposeOnUnmount(built);
   return (
     <>
       <primitive object={built.group} />

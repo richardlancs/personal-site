@@ -92,6 +92,7 @@ const metro: SceneDef = {
   // fog, which never closes in on the platform
   fog: { color: "#1a1f2a", near: 40, far: 520, keep: { near: 24, far: 300 } },
   background: "#181b22",
+  shelter: METRO.shelter,
 };
 
 export default metro;

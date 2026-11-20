@@ -63,6 +63,13 @@ export type SceneDef = {
   threshold: string;
   fog: { color: string } & FogBase;
   background: string;
+  // Where the sun (the moon at night) stands, as a direction toward it
+  // (any length), so the place is lit from the side its plate is; the
+  // world's default (common.tsx: WorldLights) when left out
+  sun?: V3;
+  // A roof the rain and snow don't fall under, in the place's coordinates
+  // (atmosphere/Precipitation.tsx), e.g. a platform's canopy
+  shelter?: { min: V3; max: V3 };
 };
 
 export const scenes: Record<SceneId, SceneDef> = {

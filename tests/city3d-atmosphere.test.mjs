@@ -115,7 +115,13 @@ test("Atmosphere.tsx drives the shared uniforms and the lights' intensities, and
   assert.doesNotMatch(src, /new THREE\.\w*Light\(/);
   assert.doesNotMatch(src, /<\w*[lL]ight[\s/>]/);
   assert.doesNotMatch(src, /\.dispose\(\)/);
-  assert.doesNotMatch(src, /\bglowUniforms\b|\bwaterUniforms\b|\bOUTDOORS\b|\bindoor\b/);
+  assert.doesNotMatch(src, /\bwaterUniforms\b|\bOUTDOORS\b|\bindoor\b/);
+  // the light after dark that isn't a light: the lamps' beams, the signs'
+  // wash and the light pools with the lamps; the day shade with the sun;
+  // the sun's direction per place
+  assert.match(src, /import \{[^}]*\bglowUniforms\b[^}]*\} from "\.\.\/kit\/glow"/);
+  for (const u of ["glowUniforms.uLamps", "glowUniforms.uSigns", "glowUniforms.uHaze", "poolUniforms.uPoolsOn", "shadeUniforms.uShadeOn"]) assert.match(src, new RegExp(`${u.replace(".", "\\.")}\\.value =`), u);
+  assert.match(src, /const sun = def\.sun \?\? DEFAULT_SUN;\s*l\.position\.set\(/);
 });
 
 test("Precipitation.tsx draws in the scene itself: no overlay, no depth hand-over, no wind", () => {

@@ -110,7 +110,7 @@ export default function KitPreview() {
         <Camera view={p.view} />
         <WorldLights />
         <Atmosphere active="lujiazui" />
-        <Precipitation quality={p.tier} />
+        <Precipitation quality={p.tier} active="lujiazui" />
         <Riverside active quality={p.tier} navigate={() => {}} still={!p.move} />
         <Post tier={p.tier} />
       </Canvas>

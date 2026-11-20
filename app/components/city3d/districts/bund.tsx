@@ -3,7 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDisposeOnUnmount, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { blob, box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { aircraftLights, buildBoat } from "../kit/movers";
@@ -540,7 +540,7 @@ function build(quality: Quality): Built {
 function ContactScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useMovers(built.movers, { active, still });
-  useEffect(() => () => built.dispose(), [built]);
+  useDisposeOnUnmount(built);
   // The clock follows Richmond Hill's hour, redrawn when the minute changes
   const hour = useWorld((s) => s.hour);
   const invalidate = useThree((s) => s.invalidate);

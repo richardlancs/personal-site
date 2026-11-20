@@ -96,8 +96,10 @@ export function buildRiver(o: { w: number; d: number; mode: ReflectionMode; ligh
   lay(mesh, streaks, x, y, z);
   return {
     mesh,
+    // GPU resources only: the mesh stays where it is (a scene that is
+    // still showing, e.g. after development's double effect, draws it
+    // again, re-uploaded); common.tsx: useDisposeOnUnmount
     dispose() {
-      mesh.removeFromParent();
       streaks.geometry.dispose();
       geometry?.dispose();
       reflector?.dispose();
@@ -131,8 +133,10 @@ export function wetPaving(o: { w: number; d: number; mode: ReflectionMode; light
   lay(mesh, streaks, x, y, z);
   return {
     mesh,
+    // GPU resources only: the mesh stays where it is (a scene that is
+    // still showing, e.g. after development's double effect, draws it
+    // again, re-uploaded); common.tsx: useDisposeOnUnmount
     dispose() {
-      mesh.removeFromParent();
       geometry.dispose();
       streaks.geometry.dispose();
       reflector?.dispose();

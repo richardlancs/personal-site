@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import * as THREE from "three";
-import { SceneLights, type SceneProps } from "../common";
+import { useDisposeOnUnmount, SceneLights, type SceneProps } from "../common";
 import { box, blob, merge, wire } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, SCENE_TONES, type SceneTone } from "../kit/neon";
@@ -441,7 +441,7 @@ function build(quality: Quality) {
     door: surface({ color: C.door }),
     roof: surface({ color: C.roof, snow: true }),
     wood: surface({ color: C.wood }),
-    // the ground floors' windows: dark glass by day, a dim amber after dark
+    // the ground floors' windows: dark glass by day, a dim warm gold after dark
     // (under the bloom); upstairs, only the one lit window glows
     glass: surface({ color: C.glass, wet: 0 }),
     shop: glowMaterial({ day: C.glass, night: "#6a4a30" }),
@@ -512,10 +512,7 @@ function build(quality: Quality) {
     ],
   });
   add(paving.mesh);
-  // (its geometry only: wetPaving's own dispose also takes the mesh out of
-  // the group, and a scene built once may be shown again after its effect's
-  // cleanup, as React's strict mode does in development)
-  disposers.push(() => paving.mesh.traverse((o) => (o as THREE.Mesh).geometry?.dispose()));
+  disposers.push(paving.dispose);
 
   // ---- The skyline beyond the lane's end, on ground `lift` up (hidden
   // behind the lane's end): lower towers, and the four landmarks
@@ -572,7 +569,7 @@ function build(quality: Quality) {
 
 function AboutScene({ quality }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
-  useEffect(() => () => built.dispose(), [built]);
+  useDisposeOnUnmount(built);
   return (
     <>
       <primitive object={built.group} />

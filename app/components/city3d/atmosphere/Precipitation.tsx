@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { useLive } from "../common";
 import { dropMaterial } from "../kit/precip";
 import { rng } from "../rng";
+import { scenes, type SceneId } from "../scenes";
 import type { Quality } from "../tiers";
 import { useWorld, world } from "../store";
 import { precip } from "./state";
@@ -94,7 +95,7 @@ function release(scene: THREE.Scene, f: Field) {
   f.material.dispose();
 }
 
-export default function Precipitation({ quality }: { quality: Quality }) {
+export default function Precipitation({ quality, active }: { quality: Quality; active: SceneId }) {
   const { camera, scene, invalidate } = useThree();
   const fields = useRef<Record<Kind, Field | null>>({ rain: null, snow: null });
   const tmp = useRef({ dir: new THREE.Vector3(), time: 0 });
@@ -157,6 +158,18 @@ export default function Precipitation({ quality }: { quality: Quality }) {
       const center = u.uCenter.value as THREE.Vector3;
       center.copy(camera.position).addScaledVector(t.dir, box.x * 0.32);
       center.y = camera.position.y + box.y * 0.22;
+      // The showing place's roof, in the world
+      const shelter = scenes[active].shelter;
+      const lo = u.uShelterMin.value as THREE.Vector3;
+      const hi = u.uShelterMax.value as THREE.Vector3;
+      if (shelter) {
+        const o = scenes[active].offset;
+        lo.set(shelter.min[0] + o[0], shelter.min[1] + o[1], shelter.min[2] + o[2]);
+        hi.set(shelter.max[0] + o[0], shelter.max[1] + o[1], shelter.max[2] + o[2]);
+      } else {
+        lo.set(1, 1, 1);
+        hi.set(0, 0, 0);
+      }
     }
   });
 

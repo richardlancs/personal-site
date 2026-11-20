@@ -160,7 +160,7 @@ test("windows.ts imports windowUniforms from ./uniforms, and reads uNight; surfa
   assert.match(win, /\$\{WORLD_VARYINGS_VERTEX\}/);
   const surf = read(`${kit}/surface.ts`);
   assert.match(surf, /kitWorld = instanceMatrix \* kitWorld;[\s\S]*kitWorld = modelMatrix \* kitWorld;/);
-  assert.match(surf, /Object\.assign\(shader\.uniforms, [^)]*envUniforms\)/);
+  assert.match(surf, /Object\.assign\(shader\.uniforms, [^)]*envUniforms, poolUniforms, shadeUniforms/);
   assert.match(surf, /#include <fog_fragment>", FOG_FRAGMENT/);
   // the shader compiles nothing new at runtime: no #define keyed on an option but `far`
   assert.doesNotMatch(noComments(surf), /#define/);

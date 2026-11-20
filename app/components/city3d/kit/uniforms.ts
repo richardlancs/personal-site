@@ -38,6 +38,35 @@ export const windowUniforms = {
 
 export { envUniforms } from "../environment";
 
+// Light after dark on the surfaces round a lamp, a lantern or a sign
+// (kit/glow.ts: pools, common.tsx: useGlowPools), added in the city's lit
+// surface (kit/surface.ts) as light, not drawn by a light: a fixed number
+// of pools, so every place compiles the same program. The showing place
+// writes its pools (world positions, reach, colour × strength); the
+// atmosphere writes uPoolsOn (0 by day .. 1 at night, × glowOn).
+export const POOLS = 12;
+export const poolUniforms = {
+  uPools: { value: Array.from({ length: POOLS }, () => new THREE.Vector4(0, -1e4, 0, 0)) }, // xyz world, w reach (0: none)
+  uPoolTones: { value: Array.from({ length: POOLS }, () => new THREE.Color(0, 0, 0)) }, // linear colour × strength
+  uPoolsOn: { value: 0 },
+};
+
+// The shade the day plates paint without a shadow map (kit/glow.ts:
+// shade, common.tsx: useDayShade): one pattern per place, laid on the lit
+// surface where the place says, by day only. uShadeOn is the atmosphere's
+// (the sun's share of the light: none at night or under cloud); the rest
+// the showing place's.
+export const shadeUniforms = {
+  uShadeOn: { value: 0 },
+  // kind (0 none, 1 stripes, 2 dapple, 3 edge), depth (0..1), period, duty
+  uShade: { value: new THREE.Vector4() },
+  // the region, world x0, z0, x1, z1
+  uShadeBox: { value: new THREE.Vector4() },
+  // the pattern's direction across the ground (x, z), the highest y it
+  // reaches, and how much of it falls on walls (0 only what faces up .. 1)
+  uShadeDir: { value: new THREE.Vector4(1, 0, 0, 0) },
+};
+
 // The one naming scheme for a shared material, used both as its key in
 // kit/materials.ts (equal materials are one object) and as its
 // customProgramCacheKey (so equal shaders are one program): the kind of

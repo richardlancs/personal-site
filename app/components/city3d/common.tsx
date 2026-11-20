@@ -3,8 +3,9 @@
 import { useFrame, useThree, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { clearPools, clearShade, setPools, setShade, type DayShade, type GlowPool } from "./kit/glow";
 import { invisibleMaterial } from "./kit/materials";
-import { DISTRICT_LIGHTS, type SceneId, type V3 } from "./scenes";
+import { DISTRICT_LIGHTS, scenes, type SceneId, type V3 } from "./scenes";
 import { holdLive, world, type Quality } from "./store";
 
 // The contract every place's scene keeps (the riverside, Riverside.tsx, and
@@ -36,6 +37,12 @@ import { holdLive, world, type Quality } from "./store";
 // - Anything that moves on its own is a Mover, run by useMovers: it is
 //   parked in still view and while the place isn't showing, and the canvas
 //   draws every frame only while one is running (useLive).
+// - What a scene builds (useMemo) it lets go with useDisposeOnUnmount, so
+//   development's double effect never disposes a scene still on screen;
+//   a kit dispose() frees GPU resources only and never takes a mesh out
+//   of its parent.
+// - Light after dark on the walls and paving round its lamps and signs:
+//   useGlowPools; the shade its day plate paints: useDayShade (kit/glow.ts).
 
 // What every place's scene component is given
 export type SceneProps = {
@@ -108,6 +115,12 @@ export function useMovers(movers: readonly Mover[], { active, still }: { active:
   });
 }
 
+// Where a Hitbox was hit: `uv` on the face that was hit (three's box
+// faces: 0..1 across, 0 at the bottom), and `point` in the box's own
+// frame, each axis -0.5..0.5 of its size (x across, y up, z toward the
+// front), so a scene can aim a click on a screen
+export type Hit = { uv: THREE.Vector2 | null; point: THREE.Vector3 };
+
 // A volume around something that can be chosen: pointing at it shows the
 // pointer, a click (not a drag) chooses it. Pointer only: every Hitbox
 // has an HTML control for the same choice (a link or a key), the
@@ -125,7 +138,7 @@ export function Hitbox({
   position: readonly [number, number, number];
   rotation?: number;
   size: readonly [number, number, number];
-  onSelect: () => void;
+  onSelect: (hit: Hit) => void;
   enabled?: () => boolean;
 }) {
   const material = useMemo(() => invisibleMaterial(), []);
@@ -139,7 +152,8 @@ export function Hitbox({
       onClick={(e: ThreeEvent<MouseEvent>) => {
         if (e.delta > 8 || !on()) return;
         e.stopPropagation();
-        onSelect();
+        const local = e.object.worldToLocal(e.point.clone());
+        onSelect({ uv: e.uv ? e.uv.clone() : null, point: local.set(local.x / size[0], local.y / size[1], local.z / size[2]) });
       }}
       onPointerOver={(e) => {
         if (!on()) return;
@@ -222,4 +236,58 @@ export function SceneLights({
       ))}
     </>
   );
+}
+
+// Lets go of what a scene built (its geometry, textures, render targets)
+// when the scene really goes: development runs every effect twice
+// (StrictMode reaches the canvas), and a cleanup that disposed at once
+// would leave the memoised scene drawing from freed resources and, where a
+// dispose took meshes out, without them. The cleanup only schedules the
+// dispose; the second run of the effect takes it back.
+const pendingDispose = new WeakMap<object, number>();
+export function useDisposeOnUnmount(owner: { dispose(): void }): void {
+  useEffect(() => {
+    const waiting = pendingDispose.get(owner);
+    if (waiting !== undefined) {
+      window.clearTimeout(waiting);
+      pendingDispose.delete(owner);
+    }
+    return () => {
+      pendingDispose.set(
+        owner,
+        window.setTimeout(() => {
+          pendingDispose.delete(owner);
+          owner.dispose();
+        }, 0),
+      );
+    };
+  }, [owner]);
+}
+
+// The light pools round a place's lamps, lanterns and signs (kit/glow.ts:
+// GlowPool, in the place's coordinates), on the lit surfaces while the
+// place is showing; the atmosphere brings them up after dark. At most
+// POOLS (kit/uniforms.ts); past that the strongest are kept.
+export function useGlowPools(id: SceneId, pools: readonly GlowPool[], active: boolean): void {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (!active) return;
+    const owner = {};
+    setPools(owner, pools, scenes[id].offset);
+    invalidate();
+    return () => clearPools(owner);
+  }, [id, pools, active, invalidate]);
+}
+
+// The shade a place's day plate paints (kit/glow.ts: DayShade), while the
+// place is showing; the atmosphere lays it on with the sun
+export function useDayShade(id: SceneId, shade: DayShade | null, active: boolean): void {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (!active || !shade) return;
+    const owner = {};
+    setShade(owner, shade, scenes[id].offset);
+    invalidate();
+    return () => clearShade(owner);
+  }, [id, shade, active, invalidate]);
 }

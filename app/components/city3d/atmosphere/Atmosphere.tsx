@@ -5,7 +5,8 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { SHARE_STEP, litShare } from "../../../lib/cityWindows";
 import type { SkyState } from "../../../lib/sky";
-import { envUniforms, neonUniforms, windowUniforms } from "../kit/uniforms";
+import { glowUniforms } from "../kit/glow";
+import { envUniforms, neonUniforms, poolUniforms, shadeUniforms, windowUniforms } from "../kit/uniforms";
 import { scenes, type SceneId } from "../scenes";
 import { world } from "../store";
 import {
@@ -51,6 +52,12 @@ import { precip } from "./state";
 //   uTop, uHorizon, uSun, uCloudLit, uCloudShade, uHaze, uHazeAmt, uCover,
 //   uSunDisc, uMoon, uStars, uCityGlow and uSunDir (from its own
 //   `userData.sunDir`) its material has
+// - the sun's direction, per place (its def's `sun`; WorldLights' own
+//   where it sets none), so a place is lit from the side its plate is
+// - the light after dark that isn't a light (kit/glow.ts): the lamps'
+//   beams and the signs' wash (glowUniforms), and the light pools on the
+//   surfaces (poolUniforms.uPoolsOn), with the lamps; the day shade
+//   (shadeUniforms.uShadeOn), with the sun
 // - neonUniforms.uNeon (the look's neon), windowUniforms.uLitShare (the
 //   hour's share, lib/cityWindows.ts, never under the daylight's least),
 //   envUniforms (uWet, uSnow, uNight), and `precip` (Precipitation.tsx)
@@ -70,6 +77,8 @@ const OPENING = 2500; // ms after the first frame in which a first reading still
 // head h units up lights the ground under it to albedo × I / (π h^1.6)
 // (SceneLights' decay), under 1.0 for a lamp at 0.6 units (6 m) and up
 export const SPOT_NIGHT = 2;
+// Where the sun stands when a place's def doesn't say (WorldLights')
+const DEFAULT_SUN = [-40, 80, 30] as const;
 
 type Kind = "sun" | "hemi" | "sky" | "spot";
 type Base = { color: RGB; ground: RGB; intensity: number; dir?: THREE.Vector3 };
@@ -283,6 +292,8 @@ export default function Atmosphere({ active }: { active: SceneId }) {
         lightColor(c, base.color, d.sun, d.sunMix, w);
         l.color.setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
         l.intensity = base.intensity * d.sunScale * w.sunScale;
+        const sun = def.sun ?? DEFAULT_SUN;
+        l.position.set(sun[0], sun[1], sun[2]);
       } else if (kind === "hemi") {
         const l = obj as THREE.HemisphereLight;
         lightColor(c, base.color, d.hemiSky, d.hemiMix, w);
@@ -322,6 +333,12 @@ export default function Atmosphere({ active }: { active: SceneId }) {
     }
 
     // The city's shared uniforms
+    glowUniforms.uLamps.value = lampsOn * (1 + 0.4 * haze);
+    glowUniforms.uSigns.value = lampsOn;
+    glowUniforms.uHaze.value = haze;
+    poolUniforms.uPoolsOn.value = lampsOn * (1 + 0.25 * w.wet);
+    // The day's shade: as much as the sun has of the light
+    shadeUniforms.uShadeOn.value = (1 - step01(0.2, 0.7, night)) * Math.min(1, d.sunScale / 0.75) * Math.min(1, w.sunScale) * w.sunDisc;
     neonUniforms.uNeon.value = neonLevel(d, w);
     windowUniforms.uLitShare.value = litShareNow(litShare(s.hour), d, SHARE_STEP);
     envUniforms.uWet.value = w.wet;

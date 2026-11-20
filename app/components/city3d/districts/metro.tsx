@@ -5,7 +5,7 @@ import { useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { experience } from "../../../data/portfolio";
 import { sortNewestFirst } from "../../../lib/experience";
-import { Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDisposeOnUnmount, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { box, merge, tube } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { buildTrain } from "../kit/movers";
@@ -422,7 +422,7 @@ function ExperienceScene({ quality, active, still }: SceneProps) {
   useMovers(built.movers, { active, still });
   const invalidate = useThree((s) => s.invalidate);
   const line = useWorld((s) => s.sel.line);
-  useEffect(() => () => built.dispose(), [built]);
+  useDisposeOnUnmount(built);
   // The board shows the chosen line (and again once the display face is in)
   useEffect(() => {
     let live = true;

@@ -20,6 +20,8 @@ const vertexShader = /* glsl */ `
   uniform vec2 uSize;
   uniform float uAlpha;
   uniform vec2 uNear;
+  uniform vec3 uShelterMin;
+  uniform vec3 uShelterMax;
   varying vec2 vUv;
   varying float vAlpha;
   void main() {
@@ -43,6 +45,8 @@ const vertexShader = /* glsl */ `
     gl_Position = projectionMatrix * mv;
     float near = smoothstep(uNear.x, uNear.y, -mv.z);
     vAlpha = uAlpha * edge * near * (0.55 + 0.45 * aSeed.w);
+    // Nothing falls under the place's roof (its def's shelter)
+    if (all(greaterThan(p, uShelterMin)) && all(lessThan(p, uShelterMax))) vAlpha = 0.0;
     vUv = vec2(position.x + 0.5, position.y);
   }`;
 
@@ -78,6 +82,9 @@ export function dropMaterial(kind: PrecipKind, look: PrecipLook, color: THREE.Co
       uSize: { value: new THREE.Vector2(...look.size) },
       uAlpha: { value: 0 },
       uNear: { value: new THREE.Vector2(...near) },
+      // an empty box: no shelter
+      uShelterMin: { value: new THREE.Vector3(1, 1, 1) },
+      uShelterMax: { value: new THREE.Vector3(0, 0, 0) },
       uColor: { value: color },
       uRound: { value: look.round },
     },

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { shared } from "./materials";
-import { envUniforms, materialKey } from "./uniforms";
+import { envUniforms, glowOn, materialKey, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
 
 // The city's one lit material: three's Lambert, plus what the park's paint
 // (world3d/paint.ts) did for weather and distance, kept plain enough for a
@@ -75,10 +75,102 @@ export type SurfaceOptions = {
   snow?: boolean; // whether snow lies on what faces up
   grime?: number; // 0 (the default) .. 1
   fogScale?: number; // fog as if this many times farther away (far scenery > 1); 1 by default
+  relief?: Relief; // a facade's carving, drawn in the shader (below)
 };
 
+// A facade's relief, drawn in the fragment shader on what faces sideways
+// (no geometry, so no triangles): enough for a floodlight or the sun to
+// have something to catch.
+// - stone: pilasters every `bay` (lighter, edged by a dark seam), a
+//   cornice at every `floor` (a lit top, a shadow under it), and a
+//   lighter surround round a darker recess between the pilasters
+// - brick: courses `course` high of bricks `length` long, staggered,
+//   each a little different, in lighter mortar
+// All world units; it fades out where it would be finer than a pixel.
+// `strength` 0..1 (0.6 by default).
+export type Relief = { kind: "stone"; bay: number; floor: number; strength?: number } | { kind: "brick"; course: number; length: number; strength?: number };
+const reliefVector = (r?: Relief): [number, number, number, number] =>
+  !r ? [0, 0, 0, 0] : r.kind === "stone" ? [1, r.bay, r.floor, r.strength ?? 0.6] : [2, r.length, r.course, r.strength ?? 0.6];
+
+// The relief, the day shade and the light pools, in GLSL: after the
+// colour (relief, shade), and added to the outgoing light (pools)
+const RELIEF_GLSL = /* glsl */ `
+if (uRelief.x > 0.5 && abs(n.y) < 0.5) {
+  vec2 tng = normalize(vec2(-n.z, n.x) + 1e-5);
+  float s = dot(vKitWorld.xz, tng);
+  float y = vKitWorld.y;
+  float k = uRelief.w;
+  if (uRelief.x < 1.5) {
+    float bay = uRelief.y;
+    float fl = uRelief.z;
+    float fade = 1.0 - smoothstep(0.08, 0.3, fwidth(s) / bay);
+    float px = fract(s / bay);
+    float edge = min(px, 1.0 - px) * bay;
+    float pil = 1.0 - smoothstep(0.05 * bay, 0.07 * bay, edge);
+    float seam = smoothstep(0.06 * bay, 0.075 * bay, edge) * (1.0 - smoothstep(0.08 * bay, 0.1 * bay, edge));
+    float fy = fract(y / fl);
+    float cornice = 1.0 - smoothstep(0.03, 0.06, fy);
+    float under = smoothstep(0.9, 0.97, fy);
+    vec2 wq = vec2(abs(px - 0.5) / 0.3, abs(fy - 0.55) / 0.26);
+    float win = max(wq.x, wq.y);
+    float surround = (1.0 - smoothstep(0.98, 1.0, win)) * smoothstep(0.78, 0.82, win);
+    float recess = 1.0 - smoothstep(0.76, 0.8, win);
+    float lift = pil * 0.16 + cornice * 0.22 + surround * 0.14 - seam * 0.3 - under * 0.32 - recess * 0.12;
+    diffuseColor.rgb *= 1.0 + lift * k * fade;
+  } else {
+    float len = uRelief.y;
+    float course = uRelief.z;
+    float fade = 1.0 - smoothstep(0.12, 0.45, fwidth(y) / course);
+    float row = floor(y / course);
+    float bx = s / len + 0.5 * mod(row, 2.0);
+    float col = floor(bx);
+    float my = fract(y / course);
+    float mx = fract(bx);
+    float mortar = max(1.0 - smoothstep(0.0, 0.14, min(my, 1.0 - my) * 2.0), 1.0 - smoothstep(0.0, 0.07, min(mx, 1.0 - mx) * 2.0));
+    float tone = kit_hash(vec3(col, row, 7.0)) - 0.5;
+    vec3 brick = diffuseColor.rgb * (1.0 + tone * 0.22);
+    vec3 lime = mix(diffuseColor.rgb, vec3(0.62, 0.6, 0.56), 0.55);
+    diffuseColor.rgb = mix(diffuseColor.rgb, mix(brick, lime, mortar), k * fade);
+  }
+}
+if (uShadeOn > 0.001 && uShade.x > 0.5) {
+  vec2 xz = vKitWorld.xz;
+  vec4 b = uShadeBox;
+  if (xz.x > b.x && xz.x < b.z && xz.y > b.y && xz.y < b.w && vKitWorld.y < uShadeDir.z) {
+    float along = dot(xz, normalize(uShadeDir.xy));
+    float sh;
+    if (uShade.x < 1.5) {
+      float f = fract(along / uShade.z);
+      sh = smoothstep(uShade.w - 0.06, uShade.w + 0.02, f) * (1.0 - smoothstep(0.96, 1.0, f));
+    } else if (uShade.x < 2.5) {
+      float d = kit_noise(vec3(xz / uShade.z, 1.7)) * 0.7 + kit_noise(vec3(xz / uShade.z * 2.7, 5.1)) * 0.3;
+      sh = smoothstep(uShade.w - 0.07, uShade.w + 0.07, d);
+    } else {
+      sh = smoothstep(-0.03, 0.03, along - uShade.z);
+    }
+    float onWalls = mix(uShadeDir.w, 1.0, smoothstep(0.35, 0.9, n.y));
+    diffuseColor.rgb *= 1.0 - sh * uShade.y * uShadeOn * onWalls;
+  }
+}`;
+
+const POOLS_GLSL = /* glsl */ `
+if (uPoolsOn > 0.001) {
+  vec3 pn = normalize(vKitNormal);
+  vec3 glowAdd = vec3(0.0);
+  for (int i = 0; i < ${POOLS}; i++) {
+    vec4 p = uPools[i];
+    if (p.w <= 0.0) continue;
+    vec3 d = p.xyz - vKitWorld;
+    float r = length(d);
+    float k = 1.0 - smoothstep(0.0, p.w, r);
+    float facing = 0.3 + 0.7 * max(dot(pn, d / max(r, 1e-4)), 0.0);
+    glowAdd += uPoolTones[i] * k * k * facing;
+  }
+  outgoingLight += glowAdd * diffuseColor.rgb * uPoolsOn * uGlowOn;
+}`;
+
 export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
-  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1].join("|");
+  const variant = [o.color, o.map?.uuid ?? "", o.wet ?? 1, o.snow ? 1 : 0, o.grime ?? 0, o.fogScale ?? 1, reliefVector(o.relief).join(",")].join("|");
   return shared(materialKey("surface", variant), () => {
     const m = new THREE.MeshLambertMaterial({ color: o.color, map: o.map ?? null });
     const uniforms = {
@@ -86,10 +178,11 @@ export function surface(o: SurfaceOptions): THREE.MeshLambertMaterial {
       uSnowAmt: { value: o.snow ? 1 : 0 },
       uGrime: { value: o.grime ?? 0 },
       uFogScale: { value: o.fogScale ?? 1 },
+      uRelief: { value: new THREE.Vector4(...reliefVector(o.relief)) },
     };
     m.userData.surface = uniforms;
     m.onBeforeCompile = (shader) => {
-      Object.assign(shader.uniforms, uniforms, envUniforms);
+      Object.assign(shader.uniforms, uniforms, envUniforms, poolUniforms, shadeUniforms, { uGlowOn: glowOn });
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", `#include <common>\nvarying vec3 vKitWorld;\nvarying vec3 vKitNormal;`)
         .replace("#include <project_vertex>", `#include <project_vertex>\n${WORLD_VARYINGS_VERTEX}`);
@@ -106,6 +199,15 @@ uniform float uFogScale;
 uniform float uWet;
 uniform float uSnow;
 uniform float uNight;
+uniform vec4 uRelief;
+uniform vec4 uPools[${POOLS}];
+uniform vec3 uPoolTones[${POOLS}];
+uniform float uPoolsOn;
+uniform float uGlowOn;
+uniform float uShadeOn;
+uniform vec4 uShade;
+uniform vec4 uShadeBox;
+uniform vec4 uShadeDir;
 ${NOISE}`,
         )
         .replace(
@@ -118,6 +220,7 @@ float kitWet = 0.0;
   float v1 = kit_noise(vKitWorld * 0.9);
   float v2 = kit_noise(vKitWorld * 4.3 + 3.1);
   diffuseColor.rgb *= 1.0 + (v1 - 0.5) * 0.14 + (v2 - 0.5) * 0.05;
+  ${RELIEF_GLSL}
   if (uGrime > 0.0) {
     float low = 1.0 - smoothstep(0.0, 1.2, vKitWorld.y);
     float streak = kit_noise(vec3(vKitWorld.x * 4.0, vKitWorld.y * 0.35, vKitWorld.z * 4.0));
@@ -140,7 +243,8 @@ float kitWet = 0.0;
         )
         .replace(
           "#include <opaque_fragment>",
-          `if (kitWet > 0.0) {
+          `${POOLS_GLSL}
+if (kitWet > 0.0) {
   // a wet surface that faces up catches the sky at a glancing angle: a sheen, not a mirror
   float facing = clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0);
   vec3 skyLight = vec3(0.5, 0.55, 0.62);

@@ -6,7 +6,7 @@ import * as THREE from "three";
 import { interests } from "../../../data/portfolio";
 import { anchors } from "../anchors";
 import { createMachine } from "../arcade/arcadeMachine";
-import { anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
+import { useDisposeOnUnmount, anchorKey, Hitbox, SceneLights, useMovers, type Mover, type SceneProps } from "../common";
 import { box, merge } from "../kit/geometry";
 import { buildJinMao, buildPearlTower, buildShanghaiTower, buildWorldFinancialCenter, type Landmark } from "../kit/landmarks";
 import { glowSprites, litSurface, neonMaterial, SCENE_TONES, screenMaterial, type SceneTone } from "../kit/neon";
@@ -117,7 +117,6 @@ type Built = {
   machine: ReturnType<typeof createMachine>;
   repaint: () => void;
   movers: Mover[];
-  attach: () => void;
   dispose: () => void;
 };
 
@@ -507,11 +506,6 @@ function build(quality: Quality): Built {
     machine,
     repaint,
     movers: [screenMover],
-    attach: () => {
-      if (!paving.mesh.parent) group.add(paving.mesh);
-      current.screen = machine.canvas;
-      current.marquee = machine.marqueeCanvas;
-    },
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       disposers.forEach((d) => d());
@@ -525,16 +519,12 @@ function build(quality: Quality): Built {
 function InterestsScene({ quality, active, still }: SceneProps) {
   const built = useMemo(() => build(quality), [quality]);
   useEffect(() => {
-    // (attach: development runs this effect twice, StrictMode reaching the
-    // canvas, and the cleanup between takes the paving off; disposed
-    // geometry is uploaded again when it's next drawn)
-    built.attach();
     anchors.set(anchorKey("nanjing-road", "machine"), built.screen.pos.clone().add(new THREE.Vector3(...def.offset)));
     return () => {
       anchors.delete(anchorKey("nanjing-road", "machine"));
-      built.dispose();
     };
   }, [built]);
+  useDisposeOnUnmount(built);
   const invalidate = useThree((s) => s.invalidate);
   const interest = useWorld((s) => s.sel.interest);
   const arrived = useWorld((s) => s.arrived);

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { world } from "../store";
-import { glowOn } from "./uniforms";
+import { glowOn, poolUniforms, POOLS, shadeUniforms } from "./uniforms";
 
 // Light after dark that isn't a light: the street lamps' beams in the
 // air, and the wash a sign or a screen throws on the wall round it.
@@ -253,3 +253,93 @@ export function wash(rect: [number, number], reach: [number, number, number, num
   return quad;
 }
 
+
+// ---------------------------------------------------------------------
+// Light pools: what a lamp, a lantern or a sign does to the walls and the
+// paving round it after dark, as light added in the lit surface
+// (surface.ts), not as a light: POOLS of them for the showing place, a
+// fixed array, so no program changes and no light is counted. A pool is
+// brightest at `pos` and gone at `reach`; surfaces facing it take more.
+// `strength` about 1 lights a mid-grey wall beside it like a lamp's pool.
+// The atmosphere turns them on with the night (uniforms.ts: uPoolsOn).
+// Cost: one loop of POOLS in every lit surface's fragment, nothing else.
+
+type V3 = readonly [number, number, number];
+export type GlowPool = { pos: V3; reach: number; color: string; strength: number };
+
+let poolOwner: object | null = null;
+
+/** The showing place's pools, in its own coordinates (`offset` is its place in the world); past POOLS, the strongest are kept */
+export function setPools(owner: object, pools: readonly GlowPool[], offset: V3) {
+  poolOwner = owner;
+  const kept = pools.length <= POOLS ? pools : [...pools].sort((a, b) => b.strength * b.reach - a.strength * a.reach).slice(0, POOLS);
+  for (let i = 0; i < POOLS; i++) {
+    const p = kept[i];
+    const v = poolUniforms.uPools.value[i];
+    const c = poolUniforms.uPoolTones.value[i];
+    if (!p) {
+      v.set(0, -1e4, 0, 0);
+      c.setRGB(0, 0, 0);
+      continue;
+    }
+    v.set(p.pos[0] + offset[0], p.pos[1] + offset[1], p.pos[2] + offset[2], p.reach);
+    c.set(p.color).multiplyScalar(p.strength);
+  }
+}
+
+/** Takes the pools down, if `owner` still holds them */
+export function clearPools(owner: object) {
+  if (poolOwner !== owner) return;
+  poolOwner = null;
+  for (let i = 0; i < POOLS; i++) poolUniforms.uPools.value[i].w = 0;
+}
+
+// ---------------------------------------------------------------------
+// Day shade: the shadow pattern a day plate paints, without a shadow map,
+// laid on the lit surface (surface.ts) inside a box, by day only (the
+// atmosphere's uShadeOn: the sun's share of the light). One per place.
+// - stripes: bands across `dir`, `period` apart, `duty` of each in shade
+//   (a canopy's ribs on a platform)
+// - dapple: soft patches `period` across, `duty` the share in sun (trees)
+// - edge: shade on the far side of a line `at` along `dir` from the box's
+//   first corner (one side of a lane)
+// `depth` how dark (0..1), `top` the highest y it reaches, `walls` how
+// much falls on what faces sideways (0..1). Cost: a few operations in
+// every lit surface's fragment; no texture, no light, no pass.
+
+export type DayShade = {
+  kind: "stripes" | "dapple" | "edge";
+  box: readonly [number, number, number, number]; // x0, z0, x1, z1, in the place's coordinates
+  depth: number;
+  top: number;
+  dir?: readonly [number, number];
+  period?: number;
+  duty?: number;
+  at?: number;
+  walls?: number;
+};
+
+const SHADE_KIND = { stripes: 1, dapple: 2, edge: 3 } as const;
+let shadeOwner: object | null = null;
+
+export function setShade(owner: object, shade: DayShade, offset: V3) {
+  shadeOwner = owner;
+  const [x0, z0, x1, z1] = shade.box;
+  const u = shadeUniforms;
+  const kind = SHADE_KIND[shade.kind];
+  u.uShade.value.set(kind, shade.depth, kind === 3 ? (shade.at ?? 0) : (shade.period ?? 1), shade.duty ?? 0.5);
+  u.uShadeBox.value.set(Math.min(x0, x1) + offset[0], Math.min(z0, z1) + offset[2], Math.max(x0, x1) + offset[0], Math.max(z0, z1) + offset[2]);
+  const [ax, az] = shade.dir ?? [1, 0];
+  const len = Math.hypot(ax, az) || 1;
+  const dx = ax / len;
+  const dz = az / len;
+  u.uShadeDir.value.set(dx, dz, shade.top + offset[1], shade.walls ?? 0);
+  // an edge is measured from the box's first corner, in the world
+  if (kind === 3) u.uShade.value.z = (shade.at ?? 0) + (Math.min(x0, x1) + offset[0]) * dx + (Math.min(z0, z1) + offset[2]) * dz;
+}
+
+export function clearShade(owner: object) {
+  if (shadeOwner !== owner) return;
+  shadeOwner = null;
+  shadeUniforms.uShade.value.x = 0;
+}
