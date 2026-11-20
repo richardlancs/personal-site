@@ -4,10 +4,12 @@ import MusicToggle from "../MusicToggle";
 import WeatherClock from "../weather/WeatherClock";
 import StillViewToggle from "../world/StillViewToggle";
 import SectionsMenu from "./SectionsMenu";
+import StationHere from "./StationHere";
 
 // The bar along the top of every page (city.css, "The top bar"): the
 // name, the way home; Richmond Hill's time and weather, only to read;
-// the Sections menu, built from the registry; Still view; and the music
+// the stop you're at, on mid-width screens (StationHere.tsx); the
+// Sections menu, built from the registry; Still view; and the music
 // (its note, if the song can't load, hangs under its key). It stays
 // at the top while the page scrolls under it, clear of a notch.
 export default function TopBar() {
@@ -16,6 +18,7 @@ export default function TopBar() {
       <Link href="/" className="top-bar-name">
         {profile.name}
       </Link>
+      <StationHere />
       <WeatherClock />
       <div className="top-bar-end">
         {/* A popover button: the browser exposes it as expanded or

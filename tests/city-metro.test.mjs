@@ -25,7 +25,9 @@ test("the metro line names where you are, by shape as well as colour", () => {
   assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
   assert.match(src, /stations\.map\(/);
   assert.match(src, /s\.station/, "stops are named as the stations are");
-  assert.match(src, /aria-expanded=\{open\}/, "the pill is a disclosure");
+  // Always open where it shows: nothing to expand or collapse, so it can't
+  // be left open over the page or say one thing and show another
+  assert.doesNotMatch(src, /aria-expanded|useState|data-open|<button/);
   const css = read("app/city.css");
   assert.match(css, /\.metro-stop\[aria-current="location"\] \.metro-ring \{[^}]*background: var\(--cyan\)[^}]*box-shadow/, "a filled, ringed stop");
   assert.match(css, /\.metro-stop\[aria-current="location"\] \.metro-name \{[^}]*font-weight: 700/);
@@ -33,14 +35,27 @@ test("the metro line names where you are, by shape as well as colour", () => {
   assert.equal((read("app/page.tsx").match(/<MetroLine \/>/g) ?? []).length, 1);
 });
 
-test("the metro line hides on phones, clears the safe areas, and opens in the margin only when it fits", () => {
+test("the metro line shows only where the margin holds it, on a near-solid ground; the bar has the stop between", () => {
   const css = read("app/city.css");
-  assert.match(css, /@media \(max-width: 479px\) \{\s*\.metro-line \{\s*display: none;/);
-  assert.match(css, /\.metro-line \{[^}]*right: max\([^)]*env\(safe-area-inset-right\)\)[^}]*bottom: max\([^)]*env\(safe-area-inset-bottom\)\)/);
-  assert.match(css, /@media \(min-width: 97rem\) \{\s*\.metro-pill \{\s*display: none;/);
-  // Hover opens it only where there is hover
-  assert.match(css, /@media \(hover: hover\) \{\s*\.metro-line:hover \.metro-stops/);
-  assert.match(css, /\.metro-line:focus-within \.metro-stops/);
+  // Hidden by default; from 97rem fixed in the margin, clear of the safe areas
+  assert.match(css, /\.metro-line \{\s*display: none;\s*\}/);
+  assert.match(css, /@media \(min-width: 97rem\) \{\s*\.metro-line \{\s*display: block;\s*position: fixed;\s*right: max\([^)]*env\(safe-area-inset-right\)\);\s*bottom: max\([^)]*env\(safe-area-inset-bottom\)\);/);
+  // No folded state left, no hover or focus opening
+  assert.doesNotMatch(css, /metro-pill|\.metro-line\[data-open\]|\.metro-line:focus-within|\.metro-line:hover/);
+  // Its own ground: near-opaque ink with a hairline (no text on a painting)
+  const stops = /\.metro-stops \{([^}]*)\}/.exec(css)[1];
+  assert.match(stops, /background: rgb\(12 21 38 \/ 0\.9[0-9]\)/);
+  assert.match(stops, /border: 1px solid var\(--line\)/);
+  // Between 53rem and 97rem (where the bar has room on one row): the stop
+  // in the top bar, quiet and hidden from
+  // assistive technology (the Sections menu marks it with aria-current)
+  const here = read("app/components/city2d/StationHere.tsx");
+  assert.match(here, /aria-hidden="true"/);
+  assert.match(here, /useStation\(\)/);
+  assert.doesNotMatch(here, /<(a|button)[\s>]/, "not a control");
+  assert.match(read("app/components/city2d/TopBar.tsx"), /<StationHere \/>/);
+  assert.match(css, /\.top-bar-here \{\s*display: none;\s*color: var\(--muted\)/);
+  assert.match(css, /@media \(min-width: 53rem\) and \(max-width: 96\.99rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
 });
 
 test("useStation: one IntersectionObserver for the page, disconnected when no one reads it", () => {
@@ -49,7 +64,7 @@ test("useStation: one IntersectionObserver for the page, disconnected when no on
   assert.match(src, /\.disconnect\(\)/);
   assert.match(src, /useSyncExternalStore\(/);
   assert.match(src, /getServerSnapshot = \(\): SectionId => "home"/);
-  for (const f of ["MetroLine.tsx", "SectionsMenu.tsx"]) assert.match(read(`app/components/city2d/${f}`), /useStation\(\)/, f);
+  for (const f of ["MetroLine.tsx", "SectionsMenu.tsx", "StationHere.tsx"]) assert.match(read(`app/components/city2d/${f}`), /useStation\(\)/, f);
 });
 
 test("the Sections menu marks where you are and leaves modified clicks to the browser", () => {

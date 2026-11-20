@@ -215,6 +215,44 @@ button.text-link,
   text-decoration: none;
 }
 
+/* The stop you're at (StationHere.tsx), beside the name, on screens
+   whose margin can't hold the metro line. The bar is full on one row up
+   to about 52rem (the name, the time and weather, three keys), so it
+   starts at 53rem, as its number alone until 64rem; narrower, the
+   Sections menu (which marks the stop) and the hero's list of stations
+   serve. Quiet words, not a control. */
+.top-bar-here {
+  display: none;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.top-bar-here-number {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 53rem) and (max-width: 96.99rem) {
+  .top-bar-name {
+    margin-right: 0;
+  }
+
+  .top-bar-here {
+    display: block;
+    margin-right: auto;
+  }
+}
+
+/* Where the bar is short of room, the stop's number alone */
+@media (min-width: 53rem) and (max-width: 63.99rem) {
+  .top-bar-here-name {
+    display: none;
+  }
+}
+
 .top-bar-end {
   display: flex;
   align-items: center;
@@ -958,85 +996,41 @@ a[data-resume][data-opening] {
 }
 
 /* ---------- The metro line (components/city2d/MetroLine.tsx) ----------
-   Fixed at the bottom right, clear of a home bar and rounded corners. On
-   screens whose right margin holds it (from 97rem: the 72rem column plus
-   two margins of 12.5rem) it is the open line; otherwise a pill that
-   opens the line above it. Hidden under 480px, where the hero's list of
-   stations and the Sections menu serve. On its own near-solid ground,
-   like the top bar, so its names never sit on a painting. */
+   Fixed at the bottom right, clear of a home bar and rounded corners,
+   and only where the screen's right margin holds it whole: from 97rem
+   (the 72rem column plus two margins of 12.5rem; the line is at most
+   11.5rem with its gap to the edge). Always open; nothing to expand. On
+   its own near-solid ground with a hairline edge, like the top bar, so
+   its names never sit on a painting as the bands scroll under it.
+   Narrower screens have the stop in the top bar (StationHere.tsx). */
 
 .metro-line {
-  position: fixed;
-  right: max(1rem, env(safe-area-inset-right));
-  bottom: max(1rem, env(safe-area-inset-bottom));
-  z-index: 30;
+  display: none;
 }
 
-@media (max-width: 479px) {
+@media (min-width: 97rem) {
   .metro-line {
-    display: none;
+    display: block;
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 30;
+    max-width: 10.5rem;
   }
-}
-
-.metro-pill {
-  --tint: rgb(12 21 38 / 0.9);
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-}
-
-.metro-pill-number {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .metro-stops {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 0.5rem);
-  width: max-content;
-  max-height: calc(100svh - var(--bar-h) - 5.5rem);
+  position: relative;
+  max-height: calc(100svh - var(--bar-h) - 2rem);
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 0.5rem 1rem 0.5rem 0.75rem;
+  padding: 0.5rem 0.75rem 0.5rem 0.5rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
-  background: rgb(12 21 38 / 0.92);
-  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
-  /* Folded: out of sight, and out of the tab order until opened */
-  visibility: hidden;
-  opacity: 0;
-  translate: 0 4px;
-  transition:
-    opacity 0.2s ease,
-    translate 0.2s ease,
-    visibility 0.2s;
-}
-
-/* The gap between the pill and the open line still counts as over it */
-.metro-stops::after {
-  content: "";
-  position: absolute;
-  inset: 100% 0 auto;
-  height: 0.5rem;
-}
-
-.metro-line[data-open] .metro-stops,
-.metro-line:focus-within .metro-stops {
-  visibility: visible;
-  opacity: 1;
-  translate: 0 0;
+  background: rgb(12 21 38 / 0.94);
 }
 
 @media (hover: hover) {
-  .metro-line:hover .metro-stops {
-    visibility: visible;
-    opacity: 1;
-    translate: 0 0;
-  }
-
   .metro-stop:hover .metro-name {
     color: var(--text);
   }
@@ -1048,7 +1042,7 @@ ol.metro-stops::before {
   position: absolute;
   top: calc(0.5rem + 22px);
   bottom: calc(0.5rem + 22px);
-  left: calc(0.75rem + 0.5rem + 5px);
+  left: calc(0.5rem + 0.5rem + 5px);
   width: 2px;
   background: var(--line);
 }
@@ -1093,32 +1087,6 @@ ol.metro-stops::before {
 .metro-stop[aria-current="location"] .metro-name {
   color: var(--text);
   font-weight: 700;
-}
-
-/* A wide screen's margin holds the open line: no pill */
-@media (min-width: 97rem) {
-  .metro-pill {
-    display: none;
-  }
-
-  .metro-stops {
-    position: static;
-    visibility: visible;
-    opacity: 1;
-    translate: none;
-    border-color: transparent;
-    background: rgb(12 21 38 / 0.72);
-    box-shadow: none;
-  }
-}
-
-:root[data-still="on"] .metro-stops {
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) .metro-stops {
-    transition: none;
-  }
 }
 
 /* ---------- The sections' shared pieces ---------- */
