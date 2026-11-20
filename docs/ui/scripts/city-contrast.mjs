@@ -134,8 +134,9 @@ const collect = (page) =>
         return { el: e, box: { x: r.x, y: r.y, w: r.width, h: r.height } };
       });
     const where = (el) => {
-      if (el.closest(".top-bar")) return "top bar";
+      // The line is mounted in the bar, but is its own layer on wide screens
       if (el.closest(".progress-line")) return "progress line";
+      if (el.closest(".top-bar")) return "top bar";
       const station = el.closest("section.station");
       if (station) return `#${station.id}`;
       if (el.closest("footer")) return "foot";
