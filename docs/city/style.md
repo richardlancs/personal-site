@@ -4,9 +4,9 @@ The one description both versions of the site are tuned to: the 2D
 paintings (made in ChatGPT) and, later, the 3D city. Concept frames are in
 `docs/city/concepts/`; every prompt used is in `docs/city/prompts.md`.
 
-Status: provisional until Richard accepts the concept frames. The palette
-below was chosen by eye from the frames on screen; resample it from the
-saved files once they are downloaded.
+Status: frames and palette accepted by Richard, 19 November 2026. The grounds
+(`--ink`, `--ink-2`, `--panel`, `--line`) were sampled from the bottom edge of
+the six frames (mean `#111c2e`), so a painting fades into the page without a seam.
 
 ## Style paragraph
 
@@ -26,10 +26,10 @@ Reuse this text verbatim at the start of every image prompt.
 
 | Token | Hex | Use |
 |---|---|---|
-| `--ink` | `#0b1020` | The page's ground; what every painting fades into |
-| `--ink-2` | `#111831` | Alternate ground for a section |
-| `--panel` | `#172042` | Cards and panels that hold text |
-| `--line` | `#2c3a66` | Hairlines and panel edges |
+| `--ink` | `#0c1526` | The page's ground; what every painting fades into |
+| `--ink-2` | `#111c30` | Alternate ground for a section |
+| `--panel` | `#17253f` | Cards and panels that hold text |
+| `--line` | `#2b3d5e` | Hairlines and panel edges |
 | `--text` | `#eef2fb` | Body text and headings |
 | `--muted` | `#a9b4d0` | Secondary text |
 | `--cyan` | `#4fd8ee` | Accent: edges, links' underline, chosen state |
@@ -43,7 +43,7 @@ never body text. `docs/ui/scripts/palette-contrast.mjs` checks the pairs.
 ## Type
 
 Display: Rajdhani (OFL), weights 500 to 700, for headings and station
-names. Text: Nunito, as before. To be confirmed against the frames.
+names. Text: Nunito, as before.
 
 ## Composition rules
 
