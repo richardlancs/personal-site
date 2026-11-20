@@ -64,4 +64,46 @@ the shopping street.
 
 ## Plates
 
-Added as each day and night plate is made (Tasks 5 and 7).
+Made in the same chat, 19 November 2026; converted to the site's files by
+`scripts/city-plates.mjs` (2400×1032 WebP in `app/assets/city/`).
+
+What works: paint the DAY plate fresh (the scene's description from above,
+plus the day light below), then ask for the NIGHT plate as an edit of
+"this exact image you just made". Asking for an edit of an older image in
+the chat gives a new composition; it must be the latest image, or attached.
+So each pair's composition differs from its dusk concept frame; the style
+is the same.
+
+**Day light, every district.** Clear late-morning daylight: soft blue sky
+with a few thin high clouds, sunlit surfaces, no lit windows, lamps and
+train lights off, signs and screens switched off and reading as plain pale
+or dark panels. Same style, very wide format, lower fifth falling into
+deep ink-navy shadow, the subject within the middle 60% of the width. No
+writing, no people.
+
+**Night edit, every district.** "This is the DAY plate. Now edit this
+exact image you just made into its NIGHT plate. Do not move, add, remove
+or reshape anything: [the scene's things] stay pixel-for-pixel in the same
+place, same camera, same crop. Change only the light: full night, deep
+ink-navy sky, [the scene's lights]. Same hand-painted gouache brushwork.
+Lower fifth falls into deep ink-navy shadow. No writing, no people."
+
+The scene's lights:
+- lujiazui: windows warm; neon edges in cyan, magenta, amber; the Pearl
+  Tower's spheres magenta; coloured reflections on dark water.
+- longtang: one upstairs window amber; a few small signs cyan and
+  magenta; pools of light on the paving; the distant towers lit.
+- towers: windows warm with cyan edge lighting; the screens on, showing
+  soft abstract colour fields; walkway lights amber. "Restrained, not
+  garish."
+- metro: train windows and headlights lit; the departure board amber with
+  rows of plain bars; platform edge lights cyan; canopy lamps warm.
+- nanjing-road: signs on as solid cyan, magenta or amber shapes and bars
+  ("no rainbow stripes"); shop windows warm; the arcade cabinet's screen
+  glowing; lamps amber; wet-looking paving.
+- bund: the historic buildings floodlit amber; the clock face lit; lamps
+  amber; the kiosk cyan from inside; the towers across the river lit.
+
+Overlay check (each pair at 50%): lujiazui, longtang, towers, metro and
+bund line up. nanjing-road's night plate moved the tram, the signs and the
+facades; see the progress notes for what was done about it.
