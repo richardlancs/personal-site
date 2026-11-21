@@ -253,3 +253,9 @@ test("Home's row of keys lists the places in the registry's order, as the Sectio
   assert.doesNotMatch(page, /\.sort\(/);
   assert.match(read("app/components/city2d/SectionsMenu.tsx"), /listed\.map\(/);
 });
+
+test("wide Home where the scene isn't drawing: the row of keys stands under the panel, out of its flow (no shift when the fallback is decided)", () => {
+  const css = read("app/city/city-pages.css");
+  const wide = css.slice(css.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {"));
+  assert.match(wide, /html\[data-city3d\]:not\(\[data-city3d="on"\]\) \.city-page\[data-section="home"\] \.city-keys \{\s*position: absolute;\s*top: calc\(100% \+ 0\.75rem\);/);
+});

@@ -238,6 +238,17 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   .city-page[data-section="home"] .city-panel {
     width: min(38rem, 100% - 3rem, max(32rem, 42vw));
   }
+
+  /* Where the scene isn't drawing (no WebGL2, a lost context, Save-Data),
+     Home's row of keys is known only after the page has painted: it stands
+     just under the panel, out of the panel's flow, so nothing moves */
+  html[data-city3d]:not([data-city3d="on"]) .city-page[data-section="home"] .city-keys {
+    position: absolute;
+    top: calc(100% + 0.75rem);
+    left: 0;
+    right: 0;
+    margin: 0;
+  }
 }
 
 /* ---------- The canvas (city3d/CityShell.tsx, City3D.tsx) ----------
