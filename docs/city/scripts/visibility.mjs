@@ -8,7 +8,9 @@
 // and its link: laid over the board (its hit area, covering the board's
 // middle), at least 44×44, 8px or more from the nearest other link. Where
 // the links can't stand over the boards (html[data-city-tags="row"]), the
-// row of keys in the panel is measured instead.
+// row of keys in the panel is measured instead; where the boards gave way
+// to the dock altogether (none drawn: a 1024 or 1280 × 720 window, a phone
+// on its side), that is said and nothing is measured.
 // (From docs/world/scripts/visibility.mjs, the park's.)
 //
 // Against `next dev` (the scene handle, window.__city, is development-only,
@@ -173,7 +175,9 @@ async function measure(page) {
         coverers,
       });
     }
-    return { fog: fog && { near: +fog.near.toFixed(1), far: +fog.far.toFixed(1) }, row: document.documentElement.dataset.cityTags === "row", targets: out };
+    // (where the boards gave way to the dock, none drawn: Riverside.tsx)
+    const given = window.__city.scene().scene.getObjectByName("home-signs")?.visible === false;
+    return { fog: fog && { near: +fog.near.toFixed(1), far: +fog.far.toFixed(1) }, row: document.documentElement.dataset.cityTags === "row", given, targets: out };
   }, ids);
 }
 
@@ -191,6 +195,13 @@ for (const [view, opts] of Object.entries(views)) {
     await page.waitForTimeout(1200);
     const m = await measure(page);
     report.push({ view, sky, ...m });
+    if (m.given) {
+      // The boards gave way to the dock (a 1024 or 1280 × 720 window, a
+      // phone on its side): nothing drawn to measure; the dock lists them
+      console.log(`${view} ${sky}: the boards give way to the dock (none drawn)`);
+      if (shots) await page.screenshot({ path: `${shots}/${view}-${sky}.jpg`, type: "jpeg", quality: 75 });
+      continue;
+    }
     const line = m.targets
       .map((t) => {
         if (t.missing) {
