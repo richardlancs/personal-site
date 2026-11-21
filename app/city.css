@@ -558,6 +558,11 @@ button.text-link,
   visibility: hidden;
 }
 
+/* The city closed to visitors (lib/city3dLive.ts): no key, no room kept */
+:root[data-city3d="off"] :is(.view-switch:not([data-to="2d"]), .city-link, .sections-menu-view:not(:has([data-to="2d"]))) {
+  display: none !important;
+}
+
 .top-bar-end .view-switch {
   display: none;
 }

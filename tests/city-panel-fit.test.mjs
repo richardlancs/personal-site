@@ -95,5 +95,19 @@ test("on /city the hero's ways in stay in the city; the Interests link to the 3D
   // next/link, so the page stays and the camera travels (no reload)
   assert.match(hero, /\{where === "3d" \? \(\s*<>\s*<Link href=\{cityPath\("projects"\)\}[\s\S]*?<Link href=\{cityPath\("contact"\)\}/);
   assert.match(hero, /^import Link from "next\/link";/m);
-  assert.match(sections.Interests, /\{where === "2d" && \(\s*<p[^>]*>\s*<CityLink/);
+  assert.match(sections.Interests, /\{where === "2d" && CITY3D_LIVE && \(\s*<p[^>]*>\s*<CityLink/);
+});
+
+// The city can be closed to visitors (app/lib/city3dLive.ts): then nothing
+// on the 2D page leads into it, and its addresses go back to the 2D page
+test("with the 3D city closed, its key and links aren't shown and /city goes to /", () => {
+  const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
+  const rule = /process\.env\.NEXT_PUBLIC_CITY3D === "on" \|\| \(process\.env\.NEXT_PUBLIC_CITY3D !== "off" && process\.env\.NODE_ENV === "development"\)/;
+  assert.match(read("app/lib/city3dLive.ts"), rule);
+  const config = read("next.config.ts");
+  assert.match(config, rule);
+  assert.match(config, /city3dLive\s*\?\s*\[\]\s*:\s*\[\s*\{ source: "\/city", destination: "\/", permanent: false \},\s*\{ source: "\/city\/:path\*", destination: "\/", permanent: false \}/);
+  assert.match(read("app/components/city2d/ViewSwitch.tsx"), /if \(CITY3D_LIVE && mayDrawWebGL\(\)\)/);
+  assert.match(read("app/layout.tsx"), /data-city3d=\{CITY3D_LIVE \? undefined : "off"\}/);
+  assert.match(read("app/city.css"), /:root\[data-city3d="off"\] :is\(\.view-switch:not\(\[data-to="2d"\]\), \.city-link, \.sections-menu-view:not\(:has\(\[data-to="2d"\]\)\)\) \{\s*display: none !important;/);
 });

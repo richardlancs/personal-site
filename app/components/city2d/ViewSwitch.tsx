@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { cityPath, twoDHref } from "../../lib/cityRoutes";
 import { focusAnchor } from "./jump";
 import { useSection } from "./useSection";
+import { CITY3D_LIVE } from "../../lib/city3dLive";
 import { mayDrawWebGL } from "./webgl";
 
 // The switch between the two views (city.css, "The view switch"). On the
@@ -25,7 +26,7 @@ export default function ViewSwitch({ place }: { place: "bar" | "menu" }) {
   const inCity = pathname === "/city" || pathname.startsWith("/city/");
 
   useEffect(() => {
-    if (mayDrawWebGL()) document.documentElement.setAttribute("data-webgl2", "");
+    if (CITY3D_LIVE && mayDrawWebGL()) document.documentElement.setAttribute("data-webgl2", "");
   }, []);
 
   // Back from the city to the 2D page ("2D view", Back, the menu): focus

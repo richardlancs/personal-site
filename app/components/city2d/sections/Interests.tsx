@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
+import { CITY3D_LIVE } from "../../../lib/city3dLive";
 import CityLink from "../CityLink";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
@@ -142,7 +143,7 @@ export default function Interests({ where = "2d" }: { where?: Where }) {
         );
       })}
     </div>
-    {where === "2d" && (
+    {where === "2d" && CITY3D_LIVE && (
       <p className="mt-6">
         <CityLink id="interests">Play it in the 3D city</CityLink>
       </p>

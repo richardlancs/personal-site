@@ -1,5 +1,9 @@
 import type { NextConfig } from "next";
 
+// The 3D city closed to visitors: the same test as app/lib/city3dLive.ts
+const city3dLive =
+  process.env.NEXT_PUBLIC_CITY3D === "on" || (process.env.NEXT_PUBLIC_CITY3D !== "off" && process.env.NODE_ENV === "development");
+
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
@@ -42,6 +46,13 @@ const nextConfig: NextConfig = {
       { source: "/interests", destination: "/#interests", permanent: false },
       { source: "/contact", destination: "/#contact", permanent: false },
       { source: "/map", destination: "/", permanent: false },
+      // Temporary too: the city's addresses go to the 2D page until it opens
+      ...(city3dLive
+        ? []
+        : [
+            { source: "/city", destination: "/", permanent: false },
+            { source: "/city/:path*", destination: "/", permanent: false },
+          ]),
     ];
   },
   // public/ files are served with max-age=0, so every visit asked again
