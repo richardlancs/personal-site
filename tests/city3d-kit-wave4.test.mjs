@@ -162,7 +162,7 @@ test("trees: canopies of several masses (a richer outline), still three draw cal
   assert.ok(trees.length <= 3);
   const src = noComments(read(`${kit}/trees.ts`));
   const canopies = src.slice(src.indexOf("function canopies()"), src.indexOf("return [round, tall];"));
-  assert.ok((canopies.match(/blob\(/g) ?? []).length >= 7, "four masses in the round canopy, three in the tall");
+  assert.ok((canopies.match(/\b(?:blob|mass)\(/g) ?? []).length >= 7, "four masses in the round canopy, three in the tall");
   assert.match(src, /float top = smoothstep\(0\.25, 1\.0, n\.y\);/);
   for (const mesh of trees) mesh.geometry.dispose();
   disposeShared();
@@ -171,7 +171,7 @@ test("trees: canopies of several masses (a richer outline), still three draw cal
 test("paving, the clock and the screens' release, in the source: seeded, cached, no randomness", () => {
   const tex = noComments(read(`${kit}/textures.ts`));
   assert.match(tex, /export function pavingTexture\(o: PavingOptions\): THREE\.Texture/);
-  assert.match(tex, /texture\(`paving:\$\{kind\}:\$\{o\.seed\}:\$\{cols\}x\$\{rows\}:\$\{joint\}`, 256, 256,/);
+  assert.match(tex, /texture\(`paving:\$\{kind\}:\$\{o\.seed\}:\$\{cols\}x\$\{rows\}:\$\{joint\}\$\{look\}`, 256, 256,/);
   assert.match(tex, /const t = base\.clone\(\);\s*t\.repeat\.set\(o\.repeat\[0\], o\.repeat\[1\]\);/);
   assert.match(tex, /export function clockFace\(hour = 12\): THREE\.CanvasTexture/);
   assert.match(tex, /export function setClockHour\(hour: number\): boolean/);

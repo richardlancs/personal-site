@@ -145,11 +145,14 @@ void main() {
   float r2 = sHash(id * 39.346 + vSeed * 11.135);
   float r3 = sHash(id * 73.156 + vSeed * 52.235);
   // each ripple a short horizontal dash, shifted and sized at random
-  // (polished stone: many fine ripples, hardly shifted, longer, so they
-  // stack into one stroke with a bright core)
-  float x = abs(vUv.x - (r1 - 0.5) * mix(0.7, 0.25, uFine)) / mix(mix(0.3, 1.0, r2), 0.55 + 0.45 * r2, uFine);
+  // (polished stone: long soft segments, hardly shifted, so they run into
+  // one stroke with a bright core)
+  float x = abs(vUv.x - (r1 - 0.5) * mix(0.7, 0.1, uFine)) / mix(mix(0.3, 1.0, r2), 0.8 + 0.2 * r2, uFine);
   float across = 1.0 - smoothstep(mix(0.5, 0.2, uFine), 1.0, x);
-  float dash = smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(mix(0.35, 0.55, uFine), mix(0.6, 0.85, uFine), f));
+  float dash = smoothstep(0.0, 0.15, f) * (1.0 - smoothstep(0.35, 0.6, f));
+  // (polished stone: one unbroken stroke, its brightness rising and
+  // falling softly along it, never cut into rungs)
+  dash = mix(dash, 0.55 + 0.45 * smoothstep(0.0, 0.35, f) * (1.0 - smoothstep(0.55, 1.0, f)), uFine);
   float along = smoothstep(0.0, 0.05, vUv.y) * (1.0 - smoothstep(mix(0.3, 0.4, uFine), 1.0, vUv.y));
   float a = across * dash * along * mix(0.4, 1.0, r3);
   // wet: by day pale and soft, at night the lights' colours; dry polish:
@@ -185,7 +188,7 @@ function streakMaterial(kind: StreakKind, mode: ReflectionMode, polish = 0) {
         uStretch: { value: kind === "river" ? 1.6 : polish > 0 ? 1.7 : 1.1 },
         uStrength: { value: mode === "planar" ? 0.45 : 1 },
         uGate: { value: kind === "river" ? 0 : 1 },
-        uDash: { value: kind === "river" ? 1.5 : polish > 0 ? 9 : 4 },
+        uDash: { value: kind === "river" ? 1.5 : polish > 0 ? 3 : 4 },
         uPolish: { value: polish },
         uFine: { value: polish > 0 ? 1 : 0 },
       },

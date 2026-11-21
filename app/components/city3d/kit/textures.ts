@@ -368,14 +368,19 @@ export function setClockHour(hour: number): boolean {
 // courses, every other row shifted half a slab), "grid" (square, as on a
 // platform) or "setts" (small stones). 256 × 256: 0.35 MB with mipmaps,
 // once per kind and seed. Works under wetPaving and surface (their `map`).
-export type PavingOptions = { seed: number; kind?: "slabs" | "grid" | "setts"; cols?: number; rows?: number; joint?: number; repeat?: [number, number] };
+// `mortar`: the joints' grey (#6c6c6c by default); `vary`: how much the
+// slabs differ in tone, 0..255 (34 by default)
+export type PavingOptions = { seed: number; kind?: "slabs" | "grid" | "setts"; cols?: number; rows?: number; joint?: number; repeat?: [number, number]; mortar?: string; vary?: number };
 export function pavingTexture(o: PavingOptions): THREE.Texture {
   const kind = o.kind ?? "slabs";
   const cols = o.cols ?? (kind === "setts" ? 8 : 4);
   const rows = o.rows ?? (kind === "setts" ? 8 : kind === "grid" ? 4 : 6);
   const joint = o.joint ?? (kind === "setts" ? 2 : 3);
-  const base = texture(`paving:${kind}:${o.seed}:${cols}x${rows}:${joint}`, 256, 256, (g, r) => {
-    g.fillStyle = "#6c6c6c";
+  const mortar = o.mortar ?? "#6c6c6c";
+  const vary = o.vary ?? 34;
+  const look = mortar === "#6c6c6c" && vary === 34 ? "" : `:${mortar}:${vary}`;
+  const base = texture(`paving:${kind}:${o.seed}:${cols}x${rows}:${joint}${look}`, 256, 256, (g, r) => {
+    g.fillStyle = mortar;
     g.fillRect(0, 0, 256, 256);
     const sw = 256 / cols;
     const sh = 256 / rows;
@@ -384,7 +389,7 @@ export function pavingTexture(o: PavingOptions): THREE.Texture {
       for (let col = -1; col < cols + 1; col++) {
         const x = col * sw + shift;
         const y = row * sh;
-        const v = 218 + Math.round((r() - 0.5) * 34);
+        const v = Math.min(250, 218 + Math.round((r() - 0.5) * vary));
         const warm = Math.round((r() - 0.5) * 8);
         g.fillStyle = `rgb(${v + warm},${v},${v - warm})`;
         g.fillRect(x + joint / 2, y + joint / 2, sw - joint, sh - joint);

@@ -291,6 +291,63 @@ export function buildMarkSign(o: { seed: number; tone: Tone; w: number; h: numbe
   return group;
 }
 
+/** One plain panel of a row (buildPanels): its face's size, middle and turn (the face toward +z turned by `ry`) */
+export type PanelSpec = { tone: Tone; w: number; h: number; x: number; y: number; z: number; ry: number; arms?: boolean };
+
+/**
+ * Many plain panels (buildMarkSign's "panel": the same faces, rims and
+ * arms, the same materials) merged: one face mesh per tone used and one
+ * mesh for every rim and arm, so a street's worth of panels is at most
+ * four draw calls. Its `userData.glow` holds every panel's mobile glow
+ * points (glowPoints reads it). Dispose with disposeSign(group).
+ */
+export function buildPanels(list: readonly PanelSpec[]): THREE.Group {
+  const group = new THREE.Group();
+  group.name = "panels";
+  const faces = new Map<Tone, THREE.BufferGeometry[]>();
+  const frames: THREE.BufferGeometry[] = [];
+  const glow: { pos: THREE.Vector3; color: string; size: number }[] = [];
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const one = new THREE.Vector3(1, 1, 1);
+  for (const p of list) {
+    m.compose(new THREE.Vector3(p.x, p.y, p.z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), p.ry), one);
+    const face = faceGeometry(p.w, p.h, "panel").toNonIndexed().applyMatrix4(m);
+    if (!faces.has(p.tone)) faces.set(p.tone, []);
+    faces.get(p.tone)!.push(face);
+    frames.push(frameGeometry(p.w, p.h, "panel", p.arms ?? true).applyMatrix4(m));
+    for (const g of glowAlong(p.w, p.h, SCENE_TONES[p.tone], 2.2)) glow.push({ ...g, pos: g.pos.applyMatrix4(m) });
+  }
+  const joined = (parts: THREE.BufferGeometry[]) => {
+    const out = new THREE.BufferGeometry();
+    for (const name of ["position", "normal"] as const) {
+      const data = new Float32Array(parts.reduce((n, p) => n + p.getAttribute(name).array.length, 0));
+      let at = 0;
+      for (const p of parts) {
+        data.set(p.getAttribute(name).array as Float32Array, at);
+        at += p.getAttribute(name).array.length;
+      }
+      out.setAttribute(name, new THREE.BufferAttribute(data, 3));
+    }
+    parts.forEach((p) => p.dispose());
+    out.computeBoundingSphere();
+    return out;
+  };
+  if (frames.length) {
+    const frame = new THREE.Mesh(joined(frames), surface({ color: FRAME }));
+    frame.name = "panels:frames";
+    group.add(frame);
+  }
+  for (const [tone, parts] of faces) {
+    const face = new THREE.Mesh(joined(parts), neonMaterial(`#${new THREE.Color(SCENE_TONES[tone]).multiplyScalar(PANEL_NIGHT).getHexString()}`, { dayColor: PANEL_DAY }));
+    face.name = `panels:${tone}`;
+    group.add(face);
+  }
+  // (in the group's frame: the panels were placed in it)
+  group.userData.glow = glow;
+  return group;
+}
+
 // The points mobile's glow sprites go on (neon.ts: glowSprites), for
 // every sign under `root`, in world space: call once the signs are
 // placed (it updates the world matrices)

@@ -51,9 +51,11 @@ test("anything that moves is a Mover run by useMovers; the tram is parked", () =
 
 test("no words in the scene but the interests' own: decorative signs are mark signs; the machine draws only the data and its rules", () => {
   assert.doesNotMatch(src, /buildSign\(|fillText|strokeText/);
-  const marks = [...src.matchAll(/buildMarkSign\(\{([^}]*)\}\)/g)];
-  assert.ok(marks.length >= 1);
-  for (const m of marks) assert.doesNotMatch(m[1], /text:/);
+  // (the signs are the kit's plain panels, merged: buildPanels; a panel
+  // spec has no text)
+  assert.match(src, /buildPanels\(panels\)/);
+  assert.match(src, /const panels: PanelSpec\[\] = \[\]/);
+  assert.doesNotMatch(src, /text:/);
   assert.match(src, /createMachine\(interests\)/);
   assert.match(src, /import \{ interests \} from "\.\.\/\.\.\/\.\.\/data\/portfolio"/);
   // the machine: no place names, no CJK, no scanlines, the city's fonts
@@ -85,7 +87,7 @@ test("the paving is planar on the high tier only (TIERS), and reflects what it s
 });
 
 test("the kit's new pieces: paving, stone relief on the arcade, planters, light pools; no attach workaround", () => {
-  assert.match(src, /pavingTexture\(\{ seed: 1543, kind: "slabs"/);
+  assert.match(src, /pavingTexture\(\{ seed: 1543, kind: "grid"/);
   assert.match(src, /relief: \{ kind: "stone"/);
   assert.match(src, /buildPlanters\(/);
   assert.match(src, /useGlowPools\("nanjing-road", built\.pools, active\)/);
@@ -107,7 +109,7 @@ test("the tuning: carved, floodlit stone facades with windows lit by floors, gla
   assert.match(src, /\{ from: \[XL \+ 0\.25, 0\.16, l1\], to: \[XL \+ 0\.25, 0\.16, l0\]/);
   // the floodlight from the foot, softer up the walls; plain glowing panels
   assert.match(src, /const FLOODLIT = \{ tone: "#[0-9a-f]{6}", strength: 0\.\d+, base: [\d.]+, fade: [\d.]+ \};/);
-  assert.match(src, /kind: "panel"/);
+  assert.match(src, /buildPanels\(panels\)/);
   assert.doesNotMatch(src, /kind: "blade"|kind: "board"/);
   assert.match(src, /useDayShade\("nanjing-road", SHADE, active\)/);
   const { scenes } = await import("../app/components/city3d/scenes.ts");
