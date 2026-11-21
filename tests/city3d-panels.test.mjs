@@ -213,7 +213,7 @@ test("the picker's slot holds an unseen, unreachable copy of its row, so the pan
   for (const picker of ["screens", "lines", "arcade"]) assert.match(ghost, new RegExp(`data-picker="${picker}"`));
   const css = read("app/city/city-pages.css");
   assert.match(css, /\.city-picker\[data-ghost\] \{\s*visibility: hidden;/);
-  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\],\s*html:is\(\[data-city3d="fallback"\], \[data-city3d="lost"\], \[data-city3d="saving"\]\) \.city-picker\[data-ghost\] \{\s*display: none;/);
+  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\] \{\s*display: none;/);
   // One cell: the copy, the row and the line stacked, so the room is kept
   // without :has() too; the fallback keeps it, filled by a line (Task 19's
   // open fallback shift)

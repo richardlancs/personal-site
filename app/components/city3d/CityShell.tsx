@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Component, Suspense, lazy, useEffect, useState, type ReactNode } from "react";
-import { twoDHref } from "../../lib/cityRoutes";
+import { cityPath, twoDHref } from "../../lib/cityRoutes";
 import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import { SAVE_DATA_MB, pickTier, readTierInput, type Quality } from "./tiers";
@@ -86,6 +86,9 @@ export default function CityShell() {
     };
   }, []);
   const inCity = pathname === "/city" || pathname.startsWith("/city/");
+  // (on a wide screen the note keeps to the scene's side: Interests' panel
+  // is on the right, city-pages.css)
+  const left = pathname.startsWith(cityPath("interests"));
 
   // Decide once, after hydration. Narrow screens give the page's sheet a
   // moment to paint first; wide ones start straight away.
@@ -168,7 +171,7 @@ export default function CityShell() {
         </Guard>
       )}
       {mode === "fallback" && (
-        <p className="city3d-note">
+        <p className="city3d-note" data-left={left || undefined}>
           Your browser can&apos;t draw the 3D city.{" "}
           <Link href={twoDHref(pathname)} className="text-link">
             Read this on the 2D page
@@ -176,14 +179,14 @@ export default function CityShell() {
         </p>
       )}
       {mode === "saving" && (
-        <p className="city3d-note">
+        <p className="city3d-note" data-left={left || undefined}>
           <button type="button" className="glass" onClick={() => (setMode("on"), toHeading())}>
             Load the 3D city (about {SAVE_DATA_MB} MB)
           </button>
         </p>
       )}
       {mode === "lost" && (
-        <p className="city3d-note">
+        <p className="city3d-note" data-left={left || undefined}>
           The 3D city stopped drawing.{" "}
           <button type="button" className="glass" onClick={restart}>
             Restart the 3D city

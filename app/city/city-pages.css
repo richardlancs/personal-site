@@ -135,11 +135,8 @@ body:has(.city-page) .top-bar .rh {
   visibility: hidden;
 }
 
-/* (and where the scene isn't drawing, the copy gives up its room to the
-   line below) */
 html:not([data-still]) .city-picker[data-ghost],
-.city-picker-slot:has(> .city-picker:not([data-ghost])) > .city-picker[data-ghost],
-html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) .city-picker[data-ghost] {
+.city-picker-slot:has(> .city-picker:not([data-ghost])) > .city-picker[data-ghost] {
   display: none;
 }
 
@@ -316,9 +313,14 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
     border-radius: var(--radius);
   }
 
-  /* The note that stands in for the scene keeps above the dock */
+  /* The note that stands in for the scene keeps above the dock, and on
+     the scene's side (Interests' panel is on the right) */
   .city3d-note {
     bottom: 6rem;
+  }
+
+  [data-left] {
+    inset-inline: 1.5rem auto;
   }
 }
 
