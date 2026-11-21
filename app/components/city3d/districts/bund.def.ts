@@ -35,7 +35,6 @@ const bund: PlaceDef = {
   enter: { pos: [-0.01, 0.25, 0.4], target: [-0.26, 0.97, 10] },
   exit: { pos: [-0.01, 0.25, 0.4], target: [-0.26, 0.97, 10] },
   focus: {},
-  sign: { bearing: 17.6, distance: 17.4, y: 1.15 },
   fov: 50,
   plateFrame: { fov: 50, pos: [0, 0.22, 0], target: [-0.26, 0.97, 10] },
   frame: "right",

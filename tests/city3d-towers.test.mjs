@@ -39,13 +39,13 @@ test("it is a painted place whose data is sound", () => {
   assert.doesNotMatch(defSrc, /from "three"/);
 });
 
-test("its home view is the painting's frame, on the right of wide screens, its sign kept; arriving steps in, never back", () => {
+test("its home view is the painting's frame, on the right of wide screens, no riverside sign; arriving steps in, never back", () => {
   assert.deepEqual(def.home.pos, def.plateFrame.pos);
   assert.deepEqual(def.home.target, def.plateFrame.target);
   assert.equal(def.fov, def.plateFrame.fov);
   assert.equal(def.span, undefined, "a wider lens only grows the plate");
   assert.equal(def.frame, "right");
-  assert.ok(def.sign && Number.isFinite(def.sign.bearing));
+  assert.ok(!("sign" in def));
   const to = (p) => Math.hypot(...p.map((x, i) => def.home.target[i] - x));
   for (const pose of [def.enter, def.exit]) {
     assert.deepEqual(pose.target, def.home.target);

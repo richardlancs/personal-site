@@ -32,13 +32,13 @@ test("it is a painted place whose data is sound", () => {
   assert.match(read("app/components/city3d/kit/plateArt.ts"), /bund/);
 });
 
-test("its home view is the painting's frame, on the right of wide screens, its sign kept", () => {
+test("its home view is the painting's frame, on the right of wide screens, no riverside sign", () => {
   assert.deepEqual(def.home.pos, def.plateFrame.pos);
   assert.deepEqual(def.home.target, def.plateFrame.target);
   assert.equal(def.fov, def.plateFrame.fov, "the lens is the painting's, so the plate shows as much of it as it can");
   assert.equal(def.span, undefined);
   assert.equal(def.frame, "right");
-  assert.ok(def.sign && Number.isFinite(def.sign.bearing));
+  assert.ok(!("sign" in def));
   // arriving and leaving step in along the home view's line, never back (no edge shows)
   for (const pose of [def.enter, def.exit]) {
     assert.deepEqual(pose.target, def.home.target);

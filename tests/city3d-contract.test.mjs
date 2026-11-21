@@ -67,12 +67,13 @@ test("every section's place has its own def and its own scene file, and the load
     assert.ok(existsSync(`${root}${file}`), file);
     assert.match(read(file), /export default (\w+Scene;|function \w+\()/, `${file}: a default export named for its section`);
     assert.match(chunks, new RegExp(`"?${id}"?: \\(\\) => import\\("\\./districts/${id}"\\)`), `${id}'s loader`);
-    // Its sign on the riverside is in its def, and nowhere else
-    assert.ok(scenes[id].sign && Number.isFinite(scenes[id].sign.bearing), `${id}: sign`);
+    // (the code-built riverside's signs went with it: Home's spots are its
+    // own data, districts/lujiazui.def.ts: HOME_SIGNS)
+    assert.ok(!("sign" in scenes[id]), `${id}: no riverside sign`);
   }
   assert.match(chunks, /lujiazui: Riverside/);
   assert.doesNotMatch(chunks, /placeholder/);
-  assert.doesNotMatch(read(`${city}/Riverside.tsx`), /bearing: -?\d/, "the signs' places are the defs'");
+  assert.doesNotMatch(read(`${city}/Riverside.tsx`), /bearing: -?\d/, "the signs' places are the def's");
 });
 
 test("anchors are named <scene id>:<name>; sign: is the riverside's alone", () => {
@@ -98,19 +99,20 @@ test("no file outside the kit creates a three.js material; the kit's come from o
   const uniforms = read(`${city}/kit/uniforms.ts`);
   assert.match(uniforms, /export function materialKey\(kind: string, variant: string\): string/);
   assert.match(uniforms, /export const neonUniforms = \{/);
-  assert.match(uniforms, /export const windowUniforms = \{/);
   assert.match(uniforms, /export \{ envUniforms \} from "\.\.\/environment";/);
-  for (const f of ["surface.ts", "windows.ts", "neon.ts"]) {
+  for (const f of ["surface.ts", "neon.ts", "plate.ts", "flight.ts"]) {
     const src = read(`${city}/kit/${f}`);
     assert.match(src, /shared\(materialKey\(/, f);
   }
   assert.match(read(`${city}/City3D.tsx`), /useEffect\(\(\) => \(\) => disposeShared\(\), \[\]\);/);
 });
 
-test("a scene's lights are exactly its DISTRICT_LIGHTS spot lights, through SceneLights", () => {
+test("no place has lights of its own; the scene contract", async () => {
+  const { DISTRICT_LIGHTS } = await import(`../${city}/scenes.ts`);
+  assert.deepEqual(Object.values(DISTRICT_LIGHTS), [0, 0, 0, 0, 0, 0]);
   const common = read(`${city}/common.tsx`);
-  assert.match(common, /export function SceneLights\(/);
-  assert.match(common, /const count = DISTRICT_LIGHTS\[id\];\s*if \(spots\.length !== count\) throw/);
+  assert.doesNotMatch(common, /export function SceneLights\(/);
+  assert.match(common, /export function WorldLights\(/);
   // The scene contract
   assert.match(common, /export type SceneProps = \{[^}]*still: boolean;[^}]*\}/);
   assert.match(common, /export type Mover = \{ object: THREE\.Object3D; update\(t: number\): void; park\(\): void; resting\?\(t: number\): boolean \};/);

@@ -50,8 +50,8 @@ test("About has no picker: no focus keys; spots are anchors (no onSpot)", () => 
   for (const key of ["window", "window-low", "lantern", "lane-end"]) assert.ok(key in def.plate.spots, key);
 });
 
-test("the riverside's board for About stays where visibility.mjs checked it", () => {
-  assert.deepEqual(def.sign, { bearing: -17.6, distance: 17.4, y: 1.15 });
+test("no riverside sign: Home's spot for About is Home's own data (lujiazui.def.ts)", () => {
+  assert.ok(!("sign" in def));
 });
 
 test("the depth is a corridor: walls and paving come out, nearer toward the frame's edges; the sky stays back", () => {

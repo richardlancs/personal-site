@@ -29,10 +29,8 @@ function Clock() {
     const faces = [spotGeometry(def, plate.frame, def.plate.spots.clock, 4), spotGeometry(def, plate.frame, def.plate.spots["clock-side"], 4)];
     const geometry = merge(faces);
     faces.forEach((g) => g.dispose());
+    // (transparent, writing no depth: the face is a disc on a clear square)
     const material = clockMaterial(world.get().hour);
-    // (the face is a disc on a clear square)
-    material.transparent = true;
-    material.depthWrite = false;
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = "bund-clock";
     mesh.renderOrder = 1;

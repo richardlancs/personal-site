@@ -106,7 +106,6 @@ const towers: PlaceDef = {
   enter: { pos: [0, 0, -0.04 * D], target: AIM },
   exit: { pos: [0, 0, -0.04 * D], target: AIM },
   focus: Object.fromEntries(tiles.map((_, n) => [`screen-${n}`, FOCUS])),
-  sign: { bearing: 0, distance: 16.8, y: 1.15 },
   fov: FOV,
   plateFrame: { fov: FOV, pos: EYE, target: AIM },
   frame: "right",

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { clearPools, clearShade, setPools, setShade, type DayShade, type GlowPool } from "./kit/glow";
 import { invisibleMaterial } from "./kit/materials";
-import { DISTRICT_LIGHTS, scenes, type SceneId, type V3 } from "./scenes";
+import { scenes, type SceneId } from "./scenes";
 import { holdLive, world, type Quality } from "./store";
 
 // The contract every place's scene keeps (the riverside, Riverside.tsx, and
@@ -27,13 +27,13 @@ import { holdLive, world, type Quality } from "./store";
 //   riverside's alone: its five signs, "sign:<section id>".
 // - Anything a pointer can choose is a Hitbox (below), whose onSelect calls
 //   navigate(…) or world.select(…); no scene has pointer code of its own.
-// - Materials come only from the kit's factories (kit/surface.ts,
-//   kit/windows.ts, kit/neon.ts; one cache, kit/materials.ts, keyed by
+// - Materials come only from the kit's factories (kit/plate.ts,
+//   kit/neon.ts, kit/signs.ts, kit/flight.ts; one cache, kit/materials.ts, keyed by
 //   kit/uniforms.ts: materialKey), never `new THREE.*Material` in a scene.
 //   Scenes dispose their own geometry and textures, never a shared material.
-// - Lights: the world's two (WorldLights) are City3D's; a scene adds
-//   exactly DISTRICT_LIGHTS[id] spot lights, through SceneLights, and none
-//   other, so day and night (and every blend) compile the same shaders.
+// - Lights: the world's two (WorldLights) are City3D's, and a place adds
+//   none (scenes.ts: DISTRICT_LIGHTS, all 0: a painted place is unlit), so
+//   day and night (and every blend) compile the same shaders.
 // - Anything that moves on its own is a Mover, run by useMovers: it is
 //   parked in still view and while the place isn't showing, and the canvas
 //   draws every frame only while one is running (useLive).
@@ -182,7 +182,6 @@ export function Hitbox({
 // a new one
 export const HEMI = { atmos: "hemi" } as const;
 export const SUN = { atmos: "sun" } as const;
-export const SPOT = { atmos: "spot" } as const;
 
 // The world's two lights, the same in every place and at every hour, so
 // no journey and no blend compiles a shader: a sky light and a sun with no
@@ -192,54 +191,6 @@ export function WorldLights() {
     <>
       <hemisphereLight args={["#c9d3e2", "#2a2d33", 2.2]} userData={HEMI} />
       <directionalLight position={[-40, 80, 30]} intensity={2.2} userData={SUN} />
-    </>
-  );
-}
-
-// A scene's own lights: exactly DISTRICT_LIGHTS[id] spot lights, one at
-// each of `spots` (the lamp heads, in the scene's coordinates), aimed
-// straight down, at intensity 0 until the atmosphere raises them after
-// dark (it finds them by userData.atmos === "spot"). `night` is a spot's
-// intensity at full night (userData.night; the atmosphere's SPOT_NIGHT
-// when left out). A wrong number of spots is an error, so the light count
-// never changes.
-export function SceneLights({
-  id,
-  spots,
-  color = "#ffd7a1",
-  distance = 18,
-  angle = 0.7,
-  night,
-}: {
-  id: SceneId;
-  spots: readonly V3[];
-  color?: string;
-  distance?: number;
-  angle?: number;
-  night?: number;
-}) {
-  const count = DISTRICT_LIGHTS[id];
-  if (spots.length !== count) throw new Error(`SceneLights: ${id} has ${count} spot lights, not ${spots.length}`);
-  const lights = useMemo(
-    () =>
-      spots.map((p, i) => {
-        const light = new THREE.SpotLight(color, 0, distance, angle, 0.6, 1.6);
-        light.position.set(p[0], p[1], p[2]);
-        // Aimed straight down: the target hangs under the light, as its child,
-        // so it moves with the scene's group
-        light.target.position.set(0, -p[1], 0);
-        light.add(light.target);
-        light.userData = night === undefined ? { ...SPOT, index: i } : { ...SPOT, index: i, night };
-        return light;
-      }),
-    [spots, color, distance, angle, night],
-  );
-  useEffect(() => () => lights.forEach((l) => l.dispose()), [lights]);
-  return (
-    <>
-      {lights.map((l, i) => (
-        <primitive key={i} object={l} />
-      ))}
     </>
   );
 }

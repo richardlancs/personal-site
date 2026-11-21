@@ -92,7 +92,6 @@ const metro: PlaceDef = {
   enter: { pos: [0.36, 1.42, 3.1], target: AHEAD },
   exit: { pos: [0.36, 1.42, 3.1], target: AHEAD },
   focus: Object.fromEntries(Array.from({ length: ROWS }, (_, i) => [`line-${i}`, READ])),
-  sign: { bearing: -8.8, distance: 16.2, y: 1.1 },
   fov: FOV,
   plateFrame: { fov: FOV, pos: EYE, target: AHEAD },
   // The painting is wider than any screen: centred, the panel's glass lies

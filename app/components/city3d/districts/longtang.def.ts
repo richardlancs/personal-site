@@ -131,7 +131,6 @@ const longtang: PlaceDef = {
   enter: { pos: [-0.03, 0.24, -0.35], target: [-0.88, 1.37, -10.35] },
   exit: { pos: [-0.03, 0.24, -0.35], target: [-0.88, 1.37, -10.35] },
   focus: {},
-  sign: { bearing: -17.6, distance: 17.4, y: 1.15 },
   fov: 50,
   plateFrame: { fov: 50, pos: [0, 0.22, 0], target: [-0.85, 1.35, -10] },
   frame: "right",

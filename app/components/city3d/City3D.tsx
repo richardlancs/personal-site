@@ -25,6 +25,7 @@ import Flight, { aerialPoint, aerialReady, flightView, keepOverAerial } from "./
 import { AERIAL, crossAt, flightAt, flightFrom, flightLength, flightPlan, travelKind, type FlightPlan } from "./flight.def";
 import type { SceneProps } from "./common";
 import { focusTravel, isPlace, restingPose, sceneOrder, scenes, type PlateDef, type Pose, type SceneId, type V3 } from "./scenes";
+import { HOME_SIGNS } from "./districts/lujiazui.def";
 import { useWorld, world } from "./store";
 import { TIERS, type Quality } from "./tiers";
 
@@ -640,8 +641,11 @@ function TagProjector({ active }: { active: SceneId }) {
 // keyboard's and screen reader's way to each section and the pointer's
 // target. Every listed section but Home; each link's name is its section's
 // title from the registry (the board shows the same word, painted).
-// In the order they stand, left to right, so Tab goes along the river.
-const tagged = listed.filter((s) => s.id !== "home").sort((a, b) => scenes[a.district].sign!.bearing - scenes[b.district].sign!.bearing);
+// In the order they stand on screen, left to right by their spots' middles
+// in the painting (districts/lujiazui.def.ts: HOME_SIGNS), so Tab goes
+// across the view as the eye does.
+const middle = (id: keyof typeof HOME_SIGNS) => HOME_SIGNS[id].spot.reduce((a, c) => a + c[0], 0) / 4;
+const tagged = listed.filter((s) => s.id !== "home").sort((a, b) => middle(a.id as keyof typeof HOME_SIGNS) - middle(b.id as keyof typeof HOME_SIGNS));
 
 function Tags({ show }: { show: boolean }) {
   useEffect(() => {

@@ -42,7 +42,11 @@ const fixture = () => ({
 test("a sound PlaceDef passes checkPlace; each fault is named", () => {
   const ok = fixture();
   assert.ok(isPlace(ok));
-  assert.ok(!isPlace(scenes.metro), "the code-built places aren't painted yet");
+  // Every place is painted now, and every one is sound
+  for (const [id, def] of Object.entries(scenes)) {
+    assert.ok(isPlace(def), `${id} is a painted place`);
+    assert.deepEqual(checkPlace(def), [], id);
+  }
   assert.deepEqual(checkPlace(ok), []);
   const bad = (change) => {
     const d = fixture();

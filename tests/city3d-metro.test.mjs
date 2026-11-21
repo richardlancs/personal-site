@@ -22,8 +22,8 @@ test("the def is a sound painted place on the metro painting", async () => {
   assert.deepEqual(def.home.pos, def.plateFrame.pos);
   assert.deepEqual(def.home.target, def.plateFrame.target);
   assert.equal(def.fov, def.plateFrame.fov);
-  // the sign on the riverside is unchanged
-  assert.deepEqual(def.sign, { bearing: -8.8, distance: 16.2, y: 1.1 });
+  // (the riverside's signs went with the code-built Home)
+  assert.ok(!("sign" in def));
   assert.doesNotMatch(defSrc, /from "three"|portfolio/);
 });
 

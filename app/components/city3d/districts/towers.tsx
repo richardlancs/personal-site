@@ -46,8 +46,8 @@ const cover = (n: number) => {
   return p.screenshots?.[p.cover ?? 0];
 };
 
-// The wall's ground: the painting's own screen, deep violet into rose and
-// amber in soft diagonal bands, darkened so the tiles stand on it
+// The wall's ground: the painting's own screen, deep violet into the kit's
+// rose and gold (kit/neon.ts: SCENE_TONES) in soft diagonal bands, darkened so the tiles stand on it
 function ground(g: CanvasRenderingContext2D, w: number, h: number) {
   const base = g.createLinearGradient(0, h, w, 0);
   base.addColorStop(0, "#3a1f5c");

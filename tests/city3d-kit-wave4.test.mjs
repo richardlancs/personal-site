@@ -29,8 +29,6 @@ const THREE = await import("three");
 const { setPools, clearPools, setShade, clearShade } = await import(`../${kit}/glow.ts`);
 const { poolUniforms, shadeUniforms, POOLS, materialKey, envUniforms, glowOn, neonUniforms } = await import(`../${kit}/uniforms.ts`);
 const { surface } = await import(`../${kit}/surface.ts`);
-const { glassMaterial } = await import(`../${kit}/glass.ts`);
-const { buildPlanters, buildStreetTrees } = await import(`../${kit}/trees.ts`);
 const { disposeShared } = await import(`../${kit}/materials.ts`);
 
 // A shader as onBeforeCompile sees it, from three's own Lambert chunks
@@ -110,69 +108,8 @@ test("the lit surface takes the pools, the shade, relief and a floodlit glow as 
   assert.doesNotMatch(src, /#define/);
 });
 
-test("glass: transparent, writing no depth, one program for every pane, equal options one material, both faces only when asked", () => {
-  disposeShared();
-  const a = glassMaterial({ tint: "#9fcfd6", opacity: 0.3, glow: { tone: "cyan", strength: 0.32 }, double: true });
-  const b = glassMaterial({ tint: "#cfe2ec", opacity: 0.16 });
-  assert.equal(a, glassMaterial({ tint: "#9fcfd6", opacity: 0.3, glow: { tone: "cyan", strength: 0.32 }, double: true }));
-  assert.ok(a.transparent && !a.depthWrite);
-  assert.equal(a.side, THREE.DoubleSide);
-  assert.equal(b.side, THREE.FrontSide);
-  assert.equal(b.opacity, 0.16);
-  assert.equal(a.customProgramCacheKey(), materialKey("glass", "lit"));
-  assert.equal(b.customProgramCacheKey(), materialKey("glass", "lit"));
-  const shader = lambertShader();
-  a.onBeforeCompile(shader);
-  assert.equal(shader.uniforms.uNeon, neonUniforms.uNeon);
-  assert.match(shader.fragmentShader, /hemisphereLights\[0\]\.skyColor/);
-  assert.match(shader.fragmentShader, /#include <opaque_fragment>/);
-  disposeShared();
-});
-
-test("planters: three draw calls whatever the count, the same from the same seed, the box as tall as asked", () => {
-  disposeShared();
-  const spots = [
-    { x: 0.9, z: -1, w: 0.13, d: 0.13, h: 0.085, y: 1.2 },
-    { x: 0.9, z: -3, w: 0.13, d: 0.13 },
-  ];
-  const a = buildPlanters(87, spots);
-  const b = buildPlanters(87, spots);
-  assert.equal(a.length, 3);
-  assert.deepEqual(a.map((m) => m.name), ["planters:boxes", "planters:shrubs", "planters:flowers"]);
-  assert.ok(a.every((m) => m.isInstancedMesh));
-  assert.equal(a[2].count, spots.length * 10);
-  assert.deepEqual(Array.from(a[2].instanceMatrix.array), Array.from(b[2].instanceMatrix.array));
-  const m = new THREE.Matrix4();
-  const p = new THREE.Vector3();
-  const q = new THREE.Quaternion();
-  const s = new THREE.Vector3();
-  a[0].getMatrixAt(0, m);
-  m.decompose(p, q, s);
-  assert.ok(Math.abs(s.y - 0.085) < 1e-6 && Math.abs(p.y - 1.2) < 1e-6);
-  a[0].getMatrixAt(1, m);
-  m.decompose(p, q, s);
-  assert.ok(Math.abs(s.y - 0.045) < 1e-6, "0.045 tall by default");
-  for (const mesh of [...a, ...b]) mesh.geometry.dispose();
-  disposeShared();
-});
-
-test("trees: canopies of several masses (a richer outline), still three draw calls, lighter on top by day", () => {
-  disposeShared();
-  const trees = buildStreetTrees(5, Array.from({ length: 12 }, (_, i) => ({ x: i, z: 0, s: 1 })));
-  assert.ok(trees.length <= 3);
-  const src = noComments(read(`${kit}/trees.ts`));
-  const canopies = src.slice(src.indexOf("function canopies("), src.indexOf("return [round, tall];"));
-  assert.ok((canopies.match(/\b(?:blob|mass)\(/g) ?? []).length >= 7, "four masses in the round canopy, three in the tall");
-  assert.match(src, /float top = smoothstep\(0\.25, 1\.0, n\.y\);/);
-  for (const mesh of trees) mesh.geometry.dispose();
-  disposeShared();
-});
-
-test("paving, the clock and the screens' release, in the source: seeded, cached, no randomness", () => {
+test("the clock and the screens' release, in the source: seeded, cached, no randomness", () => {
   const tex = noComments(read(`${kit}/textures.ts`));
-  assert.match(tex, /export function pavingTexture\(o: PavingOptions\): THREE\.Texture/);
-  assert.match(tex, /texture\(`paving:\$\{kind\}:\$\{o\.seed\}:\$\{cols\}x\$\{rows\}:\$\{joint\}\$\{look\}`, 256, 256,/);
-  assert.match(tex, /const t = base\.clone\(\);\s*t\.repeat\.set\(o\.repeat\[0\], o\.repeat\[1\]\);/);
   assert.match(tex, /export function clockFace\(hour = 12\): THREE\.CanvasTexture/);
   assert.match(tex, /export function setClockHour\(hour: number\): boolean/);
   assert.match(tex, /if \(!t \|\| !clockPaint \|\| minute === clockAt\) return false;/);
@@ -181,10 +118,13 @@ test("paving, the clock and the screens' release, in the source: seeded, cached,
   assert.match(tex, /hand\(Math\.floor\(minutes\) \/ 60, 92, 5\);/);
   // clones share one upload, counted once
   assert.match(tex, /if \(sources\.has\(t\.source\)\) continue;/);
-  for (const f of ["textures.ts", "glass.ts", "glow.ts", "trees.ts", "surface.ts", "neon.ts"]) assert.doesNotMatch(noComments(read(`${kit}/${f}`)), /Math\.random/, f);
+  for (const f of ["textures.ts", "glow.ts", "surface.ts", "neon.ts", "plate.ts", "flight.ts"]) assert.doesNotMatch(noComments(read(`${kit}/${f}`)), /Math\.random/, f);
   const neon = noComments(read(`${kit}/neon.ts`));
   assert.match(neon, /export function clockMaterial\(hour = 12\): THREE\.MeshBasicMaterial/);
   assert.match(neon, /shared\(materialKey\("screen", "clock"\)/);
+  // (a disc on a clear canvas: the kit's to say, not the place's)
+  assert.match(neon, /new THREE\.MeshBasicMaterial\(\{ map: clockFace\(hour\), transparent: true, depthWrite: false \}\)/);
+  assert.doesNotMatch(noComments(read("app/components/city3d/districts/bund.tsx")), /material\.transparent =/);
   assert.match(neon, /m\.userData\.release = \(\) => \{[\s\S]*canvas\.width = canvas\.height = 1;\s*texture\.dispose\(\);/);
   assert.match(neon, /m\.userData\.restore = \(\) => \{[\s\S]*track\(texture\);\s*paint\(\);/);
 });

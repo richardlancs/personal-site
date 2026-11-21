@@ -182,9 +182,11 @@ export function screenMaterial(
 // exactly as painted (a floodlit face reads the same by day and night),
 // on the screens' "exact" program. Its hands move with setClockHour
 // (textures.ts) whenever the minute changes; the caller asks for a frame.
+// The face is a disc on a clear canvas: transparent, writing no depth, so
+// its corners never cut what's behind.
 export function clockMaterial(hour = 12): THREE.MeshBasicMaterial {
   return shared(materialKey("screen", "clock"), () => {
-    const m = new THREE.MeshBasicMaterial({ map: clockFace(hour) });
+    const m = new THREE.MeshBasicMaterial({ map: clockFace(hour), transparent: true, depthWrite: false });
     m.onBeforeCompile = (s) => {
       s.fragmentShader = `${UNTONE}\n${s.fragmentShader}`.replace("#include <opaque_fragment>", "#include <opaque_fragment>\n  gl_FragColor.rgb = untone(gl_FragColor.rgb);");
     };

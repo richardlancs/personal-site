@@ -213,9 +213,6 @@ const nanjingRoad: PlaceDef = {
   enter: { pos: IN, target: [IN[0], IN[1], IN[2] - DISTANCE] },
   exit: { pos: IN, target: [IN[0], IN[1], IN[2] - DISTANCE] },
   focus: { machine: SEE_MACHINE },
-  // where its board stands on the riverside (unchanged; moved only with a
-  // re-run of docs/city/scripts/visibility.mjs)
-  sign: { bearing: 8.8, distance: 16.2, y: 1.1 },
   fov: LENS,
   plateFrame: { fov: PAINTING_FOV, pos: EYE, target: [EYE[0], EYE[1], EYE[2] - DISTANCE] },
   frame: "right",

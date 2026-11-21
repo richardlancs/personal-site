@@ -100,16 +100,27 @@ test("the narrow layout's media query in the city's CSS is FLAT_QUERY", () => {
   assert.equal(m[1].trim(), FLAT_QUERY);
 });
 
-test("six places, each with a plate frame, framed on the right; the riverside has no spot lights", async () => {
-  const { scenes, DISTRICT_LIGHTS, routesFromRiverside } = await import("../app/components/city3d/scenes.ts");
+test("six painted places, each with a plate frame, framed beside the panel; no place mounts a light of its own", async () => {
+  const { scenes, DISTRICT_LIGHTS, isPlace } = await import("../app/components/city3d/scenes.ts");
   assert.deepEqual(Object.keys(scenes).sort(), ["bund", "longtang", "lujiazui", "metro", "nanjing-road", "towers"]);
   for (const [id, def] of Object.entries(scenes)) {
+    assert.ok(isPlace(def), `${id} is painted`);
     assert.ok(def.plateFrame && def.plateFrame.pos.length === 3 && def.plateFrame.target.length === 3 && def.plateFrame.fov > 0, id);
-    assert.equal(def.frame, "right", id);
+    // the panel takes the left half; a place is framed in the right half,
+    // or (Experience, whose board runs the painting's width) centred
+    assert.ok(["right", "center"].includes(def.frame), `${id}: ${def.frame}`);
     assert.ok(def.fov > 0, id);
+    // the riverside's signs and routes went with the code-built Home
+    assert.ok(!("sign" in def), `${id}: no riverside sign`);
+    assert.equal(DISTRICT_LIGHTS[id], 0, `${id}: unlit`);
   }
-  assert.equal(DISTRICT_LIGHTS.lujiazui, 0);
-  assert.deepEqual(Object.keys(routesFromRiverside).sort(), ["bund", "longtang", "metro", "nanjing-road", "towers"]);
+  assert.deepEqual(Object.values(scenes).filter((d) => d.frame === "center").length, 1);
+  // a painted place's light is its paintings' and its shader's: no file
+  // under the places mounts a light, and nothing uses the old SceneLights
+  for (const f of walk("app/components/city3d")) {
+    const src = noComments(read(f));
+    assert.doesNotMatch(src, /SceneLights|<(spot|point|rectArea)Light\b|new THREE\.(Spot|Point|RectArea)Light\(/, f);
+  }
   // Places far apart, past each other's fog
   const offsets = Object.values(scenes).map((d) => d.offset[0]).sort((a, b) => a - b);
   for (let i = 1; i < offsets.length; i++) assert.ok(offsets[i] - offsets[i - 1] >= 400);
@@ -123,21 +134,24 @@ test("the signs and tags say each section's title from the registry, never retyp
   // One link per board, to its section's /city page, named by its title
   // (visually the board's painted word: the link is its hit area)
   assert.match(city, /<Link key=\{s\.id\} className="city-tag" href=\{cityPath\(s\.id\)\} data-anchor=\{`sign:\$\{s\.id\}`\}>\s*<span className="city-tag-name">\{section\(s\.id\)\.title\}<\/span>/);
-  // The anchors the visibility script and the links use: the board's
-  // middle and its four edges
-  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}`, s\.center\)/);
-  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}:\$\{k\}`, v\)/);
+  // The anchors the visibility script and the links use: each spot's
+  // middle and its four edges' middles
+  assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}\$\{k\}`, v\)/);
   // Each sign's Hitbox goes through cityPath, and answers only while the
-  // links stand over the boards
-  assert.match(riverside, /onSelect=\{\(\) => navigate\(cityPath\(s\.id\)\)\}\s*enabled=\{boardsLive\}/);
+  // links stand over the spots
+  assert.match(riverside, /onSpot=\{\(key\) => navigate\(cityPath\(key as SectionId\)\)\} spotEnabled=\{boardsLive\}/);
 });
 
-test("the signs stand left to right About, Experience, Projects, Interests, Contact, each from its place's def", async () => {
-  const { scenes } = await import("../app/components/city3d/scenes.ts");
-  const order = ["longtang", "metro", "towers", "nanjing-road", "bund"].map((id) => scenes[id].sign.bearing);
-  for (let i = 1; i < order.length; i++) assert.ok(order[i] > order[i - 1], String(order));
-  assert.match(riverside, /const SIGNED[^=]*= \["about", "experience", "projects", "interests", "contact"\]/);
-  assert.match(riverside, /signPlace\(placeOf\(id\)\)/);
+test("Home's links take Tab left to right as their spots stand in the painting: Contact, About, Experience, Projects, Interests", async () => {
+  const { HOME_SIGNS } = await import("../app/components/city3d/districts/lujiazui.def.ts");
+  const middle = (id) => HOME_SIGNS[id].spot.reduce((a, c) => a + c[0], 0) / 4;
+  const ids = Object.keys(HOME_SIGNS).sort((a, b) => middle(a) - middle(b));
+  assert.deepEqual(ids, ["contact", "about", "experience", "projects", "interests"]);
+  assert.match(riverside, /const SIGNED[^=]*= \["contact", "about", "experience", "projects", "interests"\]/);
+  // the links' order (City3D.tsx: tagged) is the same measure
+  assert.match(city, /const middle = \(id: keyof typeof HOME_SIGNS\) => HOME_SIGNS\[id\]\.spot\.reduce\(\(a, c\) => a \+ c\[0\], 0\) \/ 4;/);
+  assert.match(city, /const tagged = listed\.filter\(\(s\) => s\.id !== "home"\)\.sort\(\(a, b\) => middle\(a\.id as keyof typeof HOME_SIGNS\) - middle\(b\.id as keyof typeof HOME_SIGNS\)\);/);
+  assert.doesNotMatch(city, /\.sign!?\.bearing|routesFromRiverside/);
 });
 
 test("every /city page passes where=\"3d\" to its section, so the outline runs on", () => {

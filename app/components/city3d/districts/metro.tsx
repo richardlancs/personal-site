@@ -71,7 +71,8 @@ function flaps(g: CanvasRenderingContext2D, text: string, x: number, y: number, 
 const MARKS = 0.14;
 
 // One row per painted row (METRO.rows): its mark, then its role over its
-// organisation and dates, in the painting's amber; the chosen one in gold
+// organisation and dates, in the painting's warm gold (the kit's "gold"
+// scene tone, kit/neon.ts: SCENE_TONES); the chosen one brighter
 function drawBoard(g: CanvasRenderingContext2D, w: number, h: number) {
   g.fillStyle = "#101318";
   g.fillRect(0, 0, w, h);
@@ -82,7 +83,7 @@ function drawBoard(g: CanvasRenderingContext2D, w: number, h: number) {
   LINES.slice(0, METRO.rows).forEach((e, i) => {
     const chosen = i === board.line;
     const y = i * rowH;
-    // the row's lit backing, like the painting's amber bars
+    // the row's lit backing, like the painting's gold-lit bars
     g.fillStyle = chosen ? "rgba(255,186,90,0.2)" : "rgba(255,170,70,0.06)";
     g.fillRect(pad * 0.5, y + pad * 0.4, w - pad, rowH - pad * 0.8);
     // the line's mark

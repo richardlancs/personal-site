@@ -49,8 +49,8 @@ test("home is the painting's frame, its lens a little narrower (never grown on a
   }
 });
 
-test("the riverside's board for Interests stays where visibility.mjs checked it", () => {
-  assert.deepEqual(def.sign, { bearing: 8.8, distance: 16.2, y: 1.1 });
+test("no riverside sign (Home's spot for Interests is Home's own data); framed on the right", () => {
+  assert.ok(!("sign" in def));
   assert.equal(def.frame, "right");
 });
 
