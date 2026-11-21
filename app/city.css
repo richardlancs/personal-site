@@ -350,6 +350,9 @@ button.text-link,
 
 .rh-weather {
   display: inline-flex;
+  /* (a long condition, "Partly cloudy" at 320px with 200% text, goes
+     under the temperature rather than past the screen) */
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
   min-width: 0;
