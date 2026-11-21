@@ -58,8 +58,8 @@ test("the frame loop stops when hidden, before the shaders are warm and under th
 });
 
 test("still view cuts and holds still; the mouse never moves the camera", () => {
-  // The plan's journey becomes one swap when still
-  assert.match(city, /if \(holdingStill\(\)\) \{\s*\/\/ Still view: a cut, no travel\s*s\.queue = \[\{ kind: "swap"/);
+  // The plan's flight becomes one swap when still (flight.def.ts: travelKind)
+  assert.match(city, /const kind = travelKind\(from, to, holdingStill\(\)\);\s*if \(kind === "cut"\) \{\s*\/\/ Still view: a cut, no travel\s*s\.queue = \[\{ kind: "swap"/);
   // Turned on mid-journey: cut, the rest drift stopped
   assert.match(city, /if \(!still \|\| !s\.started\) return;[\s\S]*?s\.drift = 0;/);
   // No drift while still (the painted places' plan: tests/city3d-plate.test.mjs)

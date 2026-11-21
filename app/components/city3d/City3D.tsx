@@ -21,16 +21,19 @@ import Post from "./Post";
 import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
 import { placePending, wantPlate } from "./kit/plate";
 import { ProofPlace, proofWanted } from "./PlatePlace";
+import Flight, { aerialPoint, aerialReady, flightView, keepOverAerial } from "./Flight";
+import { AERIAL, crossAt, flightAt, flightFrom, flightLength, flightPlan, travelKind, type FlightPlan } from "./flight.def";
 import type { SceneProps } from "./common";
-import { focusTravel, isPlace, restingPose, routesFromRiverside, sceneOrder, scenes, type PlateDef, type Pose, type SceneId, type V3 } from "./scenes";
+import { focusTravel, isPlace, restingPose, sceneOrder, scenes, type PlateDef, type Pose, type SceneId, type V3 } from "./scenes";
 import { useWorld, world } from "./store";
 import { TIERS, type Quality } from "./tiers";
 
 // The 3D city's canvas: one for every /city page, kept across their
 // navigations (app/city/layout.tsx mounts the shell, CityShell.tsx, which
 // loads this). The address picks the place; the Director moves the camera
-// there. Carried over from the park's World3D.tsx: the Director (journeys,
-// cuts in still view), the frame loop that stops when nothing changes, the
+// there, a flight over the city's aerial painting from one place to the
+// next (flight.def.ts, Flight.tsx). Carried over from the park's
+// World3D.tsx: the Director (cuts in still view), the frame loop that stops when nothing changes, the
 // warm-up, and the tags pinned over the riverside's signs. The mouse never
 // moves the camera (no parallax, no looking round by dragging: the
 // painted places' plan, docs/superpowers/plans/2026-11-21-city-painted-
@@ -139,7 +142,6 @@ const plateWanted = () => process.env.NODE_ENV === "development" && new URLSearc
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
-const easeIn = (t: number) => t * t * t;
 
 type Move = {
   kind: "move";
@@ -150,7 +152,11 @@ type Move = {
   focus?: boolean; // a turn toward (or back from) something chosen in the place
 };
 type Swap = { kind: "swap"; scene: SceneId; pose: { pos: THREE.Vector3; target: THREE.Vector3 } };
-type Seg = Move | Swap;
+// A flight to another place (flight.def.ts): it stays at the head of the
+// queue while it runs; `hold` is where the camera was in the place it
+// leaves when it began
+type Fly = { kind: "fly"; plan: FlightPlan; t: number; hold: { pos: THREE.Vector3; look: THREE.Vector3 } };
+type Seg = Move | Swap | Fly;
 type Running = { seg: Move; t: number; pos: THREE.CatmullRomCurve3; look: THREE.CatmullRomCurve3; irisFrom: number };
 
 
@@ -187,6 +193,9 @@ function Director({
     shiftY: 0,
     framed: false,
     waitingSince: 0,
+    roll: 0, // the flight's bank, radians
+    flown: 0, // when the flight under way began (performance.now), for its measure
+    scaled: null as SceneId | null, // the place whose picture a flight has pulled back
   });
 
   useEffect(() => {
@@ -208,58 +217,41 @@ function Director({
     const final = restPose(to);
     invalidate();
 
-    if (holdingStill()) {
+    const kind = travelKind(from, to, holdingStill());
+    if (kind === "cut") {
       // Still view: a cut, no travel
       s.queue = [{ kind: "swap", scene: to, pose: final }];
       s.iris = 0;
       s.started = true;
       return;
     }
-    if (!from) {
+    if (kind === "open" || !from) {
       // Arriving on the site (or a deep link): already there, the view
       // opening from the threshold's colour, no travel from anywhere
       s.queue = [{ kind: "swap", scene: to, pose: final }, { kind: "move", dur: 0.5, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } }];
       s.started = true;
       return;
     }
-    if (from === to) {
+    const hold = { pos: s.pos.clone(), look: s.look.clone() };
+    const head = s.queue[0];
+    if (head?.kind === "fly") {
+      // Another choice in the middle of a flight: the new one starts from
+      // wherever this one is (in the air, or in the clouds over a place)
+      // and takes its place, never queued behind it (Review Focus 1)
+      s.queue = [{ kind: "fly", plan: flightFrom(head.plan, head.t, s.active, to), t: 0, hold }];
+      flightView.wanted = true;
+      s.flown = performance.now();
+      return;
+    }
+    if (kind === "stay") {
       s.queue = [];
       if (s.iris > 0) s.queue.push({ kind: "move", dur: 0.35, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 1 } });
       return;
     }
-    const arrive: Seg[] = [
-      { kind: "swap", scene: to, pose: inWorld(to, scenes[to].enter) },
-      { kind: "move", dur: 0.55, ease: easeOut, to: [final], iris: { to: 0, from: 0, until: 0.5 } },
-    ];
-    if (from === RIVERSIDE) {
-      // Fly toward the section's sign on a gentle arc; the threshold closes
-      // over the last part
-      const route = routesFromRiverside[to as Exclude<SceneId, "lujiazui">];
-      const look = add(route.look, scenes[RIVERSIDE].offset);
-      const pts = route.path.map((p, i) => {
-        const t = (i + 1) / route.path.length;
-        return { pos: add(p, scenes[RIVERSIDE].offset), target: s.look.clone().lerp(look, t * t) };
-      });
-      pts[pts.length - 1].target = look;
-      s.queue = [{ kind: "move", dur: 0.7, ease: easeInOut, to: pts, iris: { to: 1, from: 0.55, until: 1 } }, ...arrive];
-    } else if (to === RIVERSIDE) {
-      // Back out of the place, then pull back from the sign to the view
-      const route = routesFromRiverside[from as Exclude<SceneId, "lujiazui">];
-      const door = add(route.path[route.path.length - 1], scenes[RIVERSIDE].offset);
-      const look = add(route.look, scenes[RIVERSIDE].offset);
-      const back = [...route.path]
-        .reverse()
-        .slice(1)
-        .map((p) => ({ pos: add(p, scenes[RIVERSIDE].offset), target: look.clone().lerp(final.target, 0.5) }));
-      s.queue = [
-        { kind: "move", dur: 0.4, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } },
-        { kind: "swap", scene: RIVERSIDE, pose: { pos: door, target: look } },
-        { kind: "move", dur: 0.8, ease: easeInOut, to: [...back, final], iris: { to: 0, from: 0, until: 0.35 } },
-      ];
-    } else {
-      // From one section's place straight to another's
-      s.queue = [{ kind: "move", dur: 0.4, ease: easeIn, to: [inWorld(from, scenes[from].exit)], iris: { to: 1, from: 0.3, until: 1 } }, ...arrive];
-    }
+    // From one place to another: lift out, fly over the city, come down
+    s.queue = [{ kind: "fly", plan: flightPlan(from, to), t: 0, hold }];
+    flightView.wanted = true;
+    s.flown = performance.now();
   }, [target, iris, invalidate]);
 
   // Something chosen in the place (a screen, a line, the machine), or the
@@ -305,6 +297,26 @@ function Director({
 
   const tmp = useMemo(() => ({ dir: new THREE.Vector3(), right: new THREE.Vector3(), p: new THREE.Vector3(), l: new THREE.Vector3() }), []);
 
+  // A place's picture pulled back (scale under 1) toward where the camera
+  // looks, as the flight lifts out of it or comes down into it; any other
+  // place put back as it was
+  const pullBack = (id: SceneId | null, scale: number) => {
+    const s = st.current;
+    if (s.scaled && s.scaled !== id) {
+      const g = scene.getObjectByName(`scene:${s.scaled}`);
+      g?.scale.setScalar(1);
+      g?.position.set(...scenes[s.scaled].offset);
+      s.scaled = null;
+    }
+    if (!id) return;
+    const g = scene.getObjectByName(`scene:${id}`);
+    if (!g) return;
+    const [ox, oy, oz] = scenes[id].offset;
+    g.scale.setScalar(scale);
+    g.position.set(s.look.x - scale * (s.look.x - ox), s.look.y - scale * (s.look.y - oy), s.look.z - scale * (s.look.z - oz));
+    s.scaled = scale === 1 ? null : id;
+  };
+
   useFrame(({ size }, rawDt) => {
     const dt = Math.min(rawDt, 0.05);
     const s = st.current;
@@ -320,6 +332,7 @@ function Director({
     // Next segment
     while (!s.running && s.queue.length) {
       const seg = s.queue[0];
+      if (seg.kind === "fly") break;
       // Not into an empty place: hold at the threshold until it's built
       const place = seg.kind === "swap" ? scene.getObjectByName(`scene:${seg.scene}`) : undefined;
       if (seg.kind === "swap" && ((s.active !== seg.scene && !place?.children.length) || placePending(place))) {
@@ -349,6 +362,75 @@ function Director({
           irisFrom: s.iris,
         };
       }
+    }
+
+    // A flight (flight.def.ts: flightAt says where it is at each moment)
+    const head = s.queue[0];
+    const fly = !s.running && head?.kind === "fly" ? head : null;
+    if (fly) {
+      busy = true;
+      const p = fly.plan;
+      let t = Math.min(flightLength(p), fly.t + dt);
+      // The crossing into the next place, under the closed clouds, waits
+      // for a place still being built or painted (never longer than
+      // WAIT_FOR_PLACE_MS)
+      if (!p.back && t >= crossAt(p) && s.active !== p.to) {
+        const place = scene.getObjectByName(`scene:${p.to}`);
+        const now = performance.now();
+        if (!s.waitingSince) s.waitingSince = now;
+        if ((!place?.children.length || placePending(place)) && now - s.waitingSince < WAIT_FOR_PLACE_MS) t = Math.min(t, crossAt(p) - 1e-4);
+        else {
+          s.waitingSince = 0;
+          s.active = p.to;
+          onSwap(p.to);
+        }
+      }
+      fly.t = t;
+      const f = flightAt(p, t);
+      let pulled: SceneId | null = null;
+      if (f.stage === "air") {
+        aerialPoint(f.at, f.alt, s.pos);
+        aerialPoint(f.look, 0, s.look);
+        s.roll = f.roll;
+      } else {
+        // In a place: easing toward its exit while lifting out, from its
+        // entrance to its rest while arriving; its picture pulled back
+        s.roll = 0;
+        pulled = f.stage === "from" ? p.from : p.to;
+        if (f.stage === "from") {
+          const to = p.back ? restPose(pulled) : inWorld(pulled, scenes[pulled].exit);
+          s.pos.lerpVectors(fly.hold.pos, to.pos, f.progress);
+          s.look.lerpVectors(fly.hold.look, to.target, f.progress);
+        } else {
+          const enter = inWorld(pulled, scenes[pulled].enter);
+          const rest = restPose(pulled);
+          s.pos.lerpVectors(enter.pos, rest.pos, f.progress);
+          s.look.lerpVectors(enter.target, rest.target, f.progress);
+        }
+      }
+      pullBack(pulled, f.scale);
+      // (over the city before its painting is here: cruising in cloud)
+      flightView.air = f.stage === "air";
+      flightView.veil = f.stage === "air" && !aerialReady() ? Math.max(f.veil, 0.95) : f.veil;
+      flightView.look.copy(s.look);
+      flightView.drift.set(f.at[0] * AERIAL.aspect, -f.at[1]).multiplyScalar(2.4 / Math.max(f.alt, 0.2));
+      if (s.iris > 0) s.iris = Math.max(0, s.iris - dt * 3);
+      if (f.done) {
+        // (on the performance timeline: "city:flight", from the choice to
+        // the arrival, any wait for the place included)
+        performance.measure("city:flight", { start: s.flown, end: performance.now(), detail: { from: p.from, to: p.to, planned: flightLength(p) } });
+        s.queue.shift();
+        pullBack(null, 1);
+        flightView.air = false;
+        flightView.veil = 0;
+        s.roll = 0;
+      }
+    } else if (flightView.air || flightView.veil || s.scaled || s.roll) {
+      // (a flight cut short by still view: nothing of it stays)
+      pullBack(null, 1);
+      flightView.air = false;
+      flightView.veil = 0;
+      s.roll = 0;
     }
 
     const r = s.running;
@@ -403,6 +485,7 @@ function Director({
     }
     camera.position.copy(tmp.p);
     camera.lookAt(tmp.l);
+    if (s.roll) camera.rotateZ(s.roll);
 
     // Frame the place on its side on wide screens, leaving the panel its
     // half; on narrow screens in the strip between the bar and the sheet
@@ -449,6 +532,8 @@ function Director({
     s.shift += (want - s.shift) * glide;
     s.shiftY += (wantY - s.shiftY) * glide;
     if (Math.abs(want - s.shift) > 0.0005 || Math.abs(wantY - s.shiftY) > 0.0005) busy = true;
+    // Over the aerial painting: the flight's own lens
+    if (flightView.air) fov = AERIAL.fov * (aspect < 1 ? 1.2 : 1);
     if (plate) {
       // ?frame=plate (development): the painting's pose and lens, nothing else
       const pf = def.plateFrame;
@@ -462,6 +547,7 @@ function Director({
     if (Math.abs(s.shift) > 0.001 || Math.abs(s.shiftY) > 0.001) cam.setViewOffset(size.width, size.height, s.shift * size.width, s.shiftY * size.height, size.width, size.height);
     else cam.clearViewOffset();
     cam.updateProjectionMatrix();
+    if (flightView.air) keepOverAerial(cam);
 
     // The threshold
     const el = iris.current;
@@ -957,6 +1043,7 @@ html, body { background: #000 !important; }
             </group>
           );
         })}
+        <Flight tier={tier} />
         <Post tier={tier} />
         <Warm mounted={built} active={active} tier={tier} onReady={() => setWarm(true)} />
         {handle && <DevHandle tier={tier} navigate={navigate} />}
