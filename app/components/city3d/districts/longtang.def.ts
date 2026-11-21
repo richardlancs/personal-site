@@ -113,7 +113,7 @@ const plate: PlateDef = {
   drift: { amplitude: 0.0028, period: 46 },
   movers: [
     // the towers' aircraft lights: red, swelling slowly, after dark
-    { kind: "beacon", path: [[0.646, 0.045], [0.6045, 0.148]], period: 5.5, color: "#ff5a4a", size: 0.0045 },
+    { kind: "beacon", path: [[0.646, 0.045], [0.6045, 0.148]], period: 5.5, color: "#ff5a4a", size: 0.0055 },
     { kind: "beacon", path: [[0.537, 0.028]], period: 6.5, color: "#ff6a5a", size: 0.0035 },
     // a far aircraft crossing the strip of sky, high over the towers
     { kind: "boat", path: [[0.49, 0.016], [0.6, 0.012], [0.7, 0.01]], period: 150, color: "#ffe2d6", size: 0.003 },
@@ -135,7 +135,11 @@ const longtang: PlaceDef = {
   fov: 50,
   plateFrame: { fov: 50, pos: [0, 0.22, 0], target: [-0.85, 1.35, -10] },
   frame: "right",
-  portrait: { yaw: 3, half: 20, lift: 6 },
+  // A phone in portrait sees a fifth of the painting's width (the plate
+  // fills the whole screen, top to bottom), so its strip shows the
+  // skyline, the laundry and the lane's far gate: turned to take in
+  // Shanghai Tower as well as the Pearl
+  portrait: { yaw: 14, half: 20, lift: 6 },
   short: 2,
   threshold: "#16130f",
   fog: { color: "#1c2232", near: 60, far: 520, keep: { near: 45, far: 380 } },
