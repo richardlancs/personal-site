@@ -57,7 +57,7 @@ type Built = {
   // each board, its size and where it stands (for the narrow layout's
   // size), and its edges' middles in the world ("board:<section>:top", …:
   // the narrow layout lays the links over the boards, City3D.tsx)
-  boards: { id: Exclude<SectionId, "home">; sign: THREE.Object3D; w: number; h: number; x: number; y: number; z: number; world: Record<string, THREE.Vector3> }[];
+  boards: { id: Exclude<SectionId, "home">; sign: THREE.Object3D; w: number; h: number; x: number; nx: number; y: number; z: number; world: Record<string, THREE.Vector3> }[];
   dispose: () => void;
 };
 
@@ -87,7 +87,8 @@ function build(quality: Quality): Built {
     for (const o of sign.children) if (o.name !== "sign-frame") o.position.z += h * FACE_CLEAR;
     const [x, y, z] = localPoint(frame, s.label[0], s.label[1], depth);
     sign.position.set(x, y + h / 2, z);
-    boards.push({ id, sign, w, h, x, y: y + h / 2, z: z + h * FACE_CLEAR + FACE_Z, world: Object.fromEntries(EDGES.map((k) => [k, new THREE.Vector3()])) });
+    const nx = "narrow" in s && s.narrow ? localPoint(frame, s.narrow[0], s.narrow[1], depth)[0] : x;
+    boards.push({ id, sign, w, h, x, nx, y: y + h / 2, z: z + h * FACE_CLEAR + FACE_Z, world: Object.fromEntries(EDGES.map((k) => [k, new THREE.Vector3()])) });
     signFace.name = `sign:${id}`;
     sign.traverse((o) => {
       if ((o as THREE.Mesh).isMesh && o !== signFace) o.name = `mount:${id}`;
@@ -138,13 +139,15 @@ function Signs({ built }: { built: Built }) {
     const flat = isFlat();
     const screenX = (x: number, b: Built["boards"][number]) => p.set(x, b.y, b.z).applyMatrix4(m).project(camera).x;
     for (const b of built.boards) {
+      const x = flat ? b.nx : b.x;
+      b.sign.position.x = x;
       // On the narrow layout the painting is smaller on screen (it fits
       // the strip above the sheet): the boards bigger there, standing on
       // the same foot, so their words stay 12 px or more (in steps of
       // 0.05, so the drift doesn't resize them every frame)
       let k = 1;
       if (flat) {
-        const px = (Math.abs(screenX(b.x + b.w / 2, b) - screenX(b.x - b.w / 2, b)) * size.width) / 2;
+        const px = (Math.abs(screenX(x + b.w / 2, b) - screenX(x - b.w / 2, b)) * size.width) / 2;
         k = Math.min(MAX_BOARD, Math.max(NARROW_BOARD, Math.ceil((MIN_BOARD_PX / Math.max(px, 1)) * 20) / 20));
       }
       if (b.sign.scale.x !== k) {
@@ -153,10 +156,10 @@ function Signs({ built }: { built: Built }) {
       }
       const cy = b.sign.position.y;
       const [hw, hh] = [(b.w * k) / 2, (b.h * k) / 2];
-      b.world[":top"].set(b.x, cy + hh, b.z).applyMatrix4(m);
-      b.world[":foot"].set(b.x, cy - hh, b.z).applyMatrix4(m);
-      b.world[":left"].set(b.x - hw, cy, b.z).applyMatrix4(m);
-      b.world[":right"].set(b.x + hw, cy, b.z).applyMatrix4(m);
+      b.world[":top"].set(x, cy + hh, b.z).applyMatrix4(m);
+      b.world[":foot"].set(x, cy - hh, b.z).applyMatrix4(m);
+      b.world[":left"].set(x - hw, cy, b.z).applyMatrix4(m);
+      b.world[":right"].set(x + hw, cy, b.z).applyMatrix4(m);
     }
     for (const s of built.signs) for (const k of Object.keys(s.local)) s.world[k].copy(s.local[k]).applyMatrix4(m);
   });

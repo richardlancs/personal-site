@@ -65,11 +65,15 @@ const rect = (u0: number, v0: number, u1: number, v1: number, depth = groundDept
 // card, the bar and the dock (tests/city3d-lujiazui.test.mjs); on
 // narrower landscape screens the links can't all fit beside the card, and
 // the dock lists the places instead.
-export type HomeSign = { spot: Quad; label: UV; size: number };
+// (`narrow`: where the board stands on the narrow layout instead, where
+// the boards are bigger and must keep apart)
+export type HomeSign = { spot: Quad; label: UV; size: number; narrow?: UV };
 export const HOME_SIGNS = {
   // the near riverfront right of the clock tower: the Bund's last
-  // building and the promenade's lamps
-  contact: { spot: rect(0.41, 0.455, 0.5, 0.6), label: [0.462, 0.535], size: 0.04 },
+  // building and the promenade's lamps (its board a little right on wide
+  // screens, clear of the title card down to 1366 × 768; a little left on
+  // phones, clear of Experience's)
+  contact: { spot: rect(0.41, 0.455, 0.5, 0.6), label: [0.462, 0.535], size: 0.04, narrow: [0.44, 0.535] },
   // the old lane of low brick houses under the metro line
   about: { spot: rect(0.41, 0.748, 0.585, 0.87), label: [0.497, 0.845], size: 0.04 },
   // the elevated metro line and its train
