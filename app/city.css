@@ -80,7 +80,7 @@
   --glass-edge: rgb(143 233 255 / 0.3);
   --glass-edge-hi: rgb(230 233 238 / 0.22); /* the panel's line along the top */
   --glass-halo: 0 0 1px rgb(8 9 12 / 0.9), 0 0 4px rgb(8 9 12 / 0.7), 0 0 12px rgb(8 9 12 / 0.45);
-  --glass-muted: #b8bec9;
+  --glass-muted: #c0c6d0; /* 4.5:1 over a white screen through the glass */
   /* Behind a focus ring, so it shows on any painting */
   --focus-halo: 0 0 0 6px rgb(8 9 12 / 0.9);
   /* Glow: decoration only, never counted toward contrast */

@@ -167,12 +167,28 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   const out = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
   const scrollX0 = scrollX;
   const scrollY0 = scrollY;
+  // What of a target can be tapped: its box cut by the ancestors that
+  // scroll it sideways (a row of keys that scrolls, the place dock's): a
+  // key scrolled out of its row isn't under its neighbours
+  const tappable = (el, r) => {
+    let { left, right } = r;
+    for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+      const ox = getComputedStyle(e).overflowX;
+      if (ox !== "auto" && ox !== "scroll") continue;
+      const er = e.getBoundingClientRect();
+      left = Math.max(left, er.left);
+      right = Math.min(right, er.right);
+    }
+    return { left, right };
+  };
   const boxes = targets.map((el) => {
-    const r = el.getBoundingClientRect();
+    const full = el.getBoundingClientRect();
+    const cut = tappable(el, full);
+    const r = { left: cut.left, right: cut.right, top: full.top, bottom: full.bottom, width: cut.right - cut.left, height: full.height };
     const layer = layerOf(el);
     const dx = layer ? 0 : scrollX0;
     const dy = layer ? 0 : scrollY0;
-    return { el, layer, inline: inline(el), r: { l: r.left + dx, t: r.top + dy, r: r.right + dx, b: r.bottom + dy, w: r.width, h: r.height }, v: r };
+    return { el, layer, inline: inline(el), hidden: r.width <= 0.5, r: { l: r.left + dx, t: r.top + dy, r: r.right + dx, b: r.bottom + dy, w: full.width, h: r.height }, v: full };
   });
 
   for (const b of boxes) {
@@ -201,7 +217,7 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     for (let j = i + 1; j < boxes.length; j++) {
       const a = boxes[i];
       const c = boxes[j];
-      if (a.layer !== c.layer || a.inline || c.inline) continue;
+      if (a.layer !== c.layer || a.inline || c.inline || a.hidden || c.hidden) continue;
       if (a.el.contains(c.el) || c.el.contains(a.el)) continue;
       const gx = Math.max(a.r.l - c.r.r, c.r.l - a.r.r);
       const gy = Math.max(a.r.t - c.r.b, c.r.t - a.r.b);

@@ -27,7 +27,7 @@ export default function PlaceDock({ current }: { current: SectionId }) {
   const previous = places[(at - 1 + places.length) % places.length];
   const next = places[(at + 1) % places.length];
   return (
-    <nav aria-label="Places" className="place-dock flex items-center gap-1">
+    <nav aria-label="Places" className="place-dock flex items-center gap-2">
       <Link href={previous.city} className="glass glass-icon" data-dock="previous" aria-keyshortcuts="ArrowLeft" aria-label={`Previous place: ${previous.title}`}>
         {arrow("m15 5-7 7 7 7")}
       </Link>
