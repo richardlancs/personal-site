@@ -88,8 +88,8 @@ export function keepOverAerial(camera: THREE.PerspectiveCamera) {
 // every tier; the upper one, which the climb and the descent pass
 // through, on the desktop tiers.
 const LAYERS: (CloudLayer & { z: number })[] = [
-  { z: 0.16, cover: 0.52, seed: [3.1, 7.7], scale: [7, 4], near: [3, 9] },
-  { z: 0.44, cover: 0.55, seed: [11.3, 2.9], scale: [5, 3], near: [2, 8] },
+  { z: 0.16, cover: 0.53, seed: [3.1, 7.7], scale: [5, 6], near: [3, 9] },
+  { z: 0.44, cover: 0.56, seed: [11.3, 2.9], scale: [4, 4.5], near: [2, 8] },
 ];
 
 export default function Flight({ tier }: { tier: Quality }) {

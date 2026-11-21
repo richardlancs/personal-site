@@ -50,11 +50,11 @@ float fbm(vec2 p) {
 vec3 cloudColour(float lit, float under) {
   vec3 dayLit = vec3(0.96, 0.93, 0.87);
   vec3 dayShade = vec3(0.52, 0.6, 0.73);
-  vec3 nightLit = vec3(0.1, 0.12, 0.2);
-  vec3 nightShade = vec3(0.025, 0.035, 0.07);
-  vec3 glow = vec3(0.32, 0.17, 0.1);
+  vec3 nightLit = vec3(0.17, 0.19, 0.29);
+  vec3 nightShade = vec3(0.045, 0.06, 0.11);
+  vec3 glow = vec3(0.42, 0.22, 0.12);
   vec3 day = mix(dayShade, dayLit, lit);
-  vec3 night = mix(nightShade, nightLit, lit) + glow * under * 0.35;
+  vec3 night = mix(nightShade, nightLit, lit) + glow * under * 0.4;
   vec3 col = mix(night, day, smoothstep(0.0, 1.0, uDay));
   vec3 grey = vec3(dot(col, vec3(0.2126, 0.7152, 0.0722)));
   return mix(col, grey * 0.9, 0.55 * uRain);
@@ -129,7 +129,7 @@ void main() {
   vec2 e = min(vUv, 1.0 - vUv);
   a *= smoothstep(0.0, 0.08, min(e.x, e.y));
   a *= smoothstep(uNear.x, uNear.y, vDepth);
-  a *= uOpacity * 0.92;
+  a *= uOpacity * 0.8;
   if (a < 0.002) discard;
   float lit = clamp(0.55 + (n - fbm(p + vec2(-0.05, 0.07))) * 6.0, 0.0, 1.0);
   gl_FragColor = vec4(cloudColour(lit, 1.0 - n), a);

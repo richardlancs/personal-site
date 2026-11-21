@@ -296,8 +296,8 @@ export function flightAt(p: FlightPlan, t: number): FlightSample {
       look: along(p.path, ahead),
       // climbing out of the clouds over the first half, then holding
       alt: lerp(p.start.alt, CRUISE_ALT, smooth(k / 0.5)),
-      // the clouds part over the first third
-      veil: lerp(veil0, 0, smooth(k / 0.32)),
+      // the clouds part over the first quarter
+      veil: lerp(veil0, 0, smooth(k / 0.25)),
       scale: 1,
       roll: p.bank * Math.sin(Math.PI * k),
       progress: k,
