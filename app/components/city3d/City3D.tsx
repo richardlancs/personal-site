@@ -19,7 +19,10 @@ import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import Post from "./Post";
 import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
-import { focusTravel, restingPose, routesFromRiverside, sceneOrder, scenes, type Pose, type SceneId, type V3 } from "./scenes";
+import { placePending, wantPlate } from "./kit/plate";
+import { ProofPlace, proofWanted } from "./PlatePlace";
+import type { SceneProps } from "./common";
+import { focusTravel, isPlace, restingPose, routesFromRiverside, sceneOrder, scenes, type PlateDef, type Pose, type SceneId, type V3 } from "./scenes";
 import { useWorld, world } from "./store";
 import { TIERS, type Quality } from "./tiers";
 
@@ -27,9 +30,12 @@ import { TIERS, type Quality } from "./tiers";
 // navigations (app/city/layout.tsx mounts the shell, CityShell.tsx, which
 // loads this). The address picks the place; the Director moves the camera
 // there. Carried over from the park's World3D.tsx: the Director (journeys,
-// drag-to-look on fine pointers, cuts in still view), the frame loop that
-// stops when nothing changes, the warm-up, and the tags pinned over the
-// riverside's signs.
+// cuts in still view), the frame loop that stops when nothing changes, the
+// warm-up, and the tags pinned over the riverside's signs. The mouse never
+// moves the camera (no parallax, no looking round by dragging: the
+// painted places' plan, docs/superpowers/plans/2026-11-21-city-painted-
+// 25d.md); at rest the camera only drifts, very slowly, by itself
+// (restDrift, below).
 
 const RIVERSIDE: SceneId = "lujiazui";
 
@@ -51,8 +57,26 @@ const placeFor = (pathname: string): SceneId => {
 const sectionOf = (place: SceneId): SectionId => pageSections.find((s) => s.district === place)!.id;
 
 // A journey waits at the threshold, the view closed, for a place whose
-// chunk hasn't landed yet, but never longer than this
+// chunk (or painting, kit/plate.ts: placePending) hasn't landed yet, but
+// never longer than this
 const WAIT_FOR_PLACE_MS = 1500;
+// The first place's painting holds the first frame (the band's painting
+// stays on screen meanwhile) for at most this
+const WAIT_FOR_FIRST_MS = 8000;
+
+// The rest drift (desktop tiers, at rest, never in still view): the eye
+// wanders on a slow figure, sideways `amplitude` of the distance to what
+// it looks at and half that up and down, once round in `period` s, eased
+// in over DRIFT_EASE s when the camera comes to rest and out at once when
+// it moves. A painted place says its own (scenes.ts: PlateDef.drift); the
+// rest take this. Under 1% of the view in any 10 s (scenes.ts:
+// driftTravel).
+const DEFAULT_DRIFT: PlateDef["drift"] = { amplitude: 0.003, period: 40 };
+const DRIFT_EASE = 2.5;
+const driftOf = (id: SceneId) => {
+  const def = scenes[id];
+  return isPlace(def) ? def.plate.drift : DEFAULT_DRIFT;
+};
 
 // Still view (app/lib/still.ts, store.ts): the camera cuts instead of
 // travelling, and nothing moves
@@ -157,12 +181,8 @@ function Director({
     iris: 1,
     active,
     started: false,
-    yaw: 0,
-    pitch: 0,
-    dragging: false,
-    lastDrag: 0,
-    pointer: new THREE.Vector2(),
-    parallax: new THREE.Vector2(),
+    drift: 0, // the drift's weight, 0 .. 1
+    driftT: 0, // the drift's clock, s (runs only while it shows)
     shift: 0,
     shiftY: 0,
     framed: false,
@@ -181,6 +201,8 @@ function Director({
     const from = s.started ? s.active : null;
     // (a focus belongs to the place it was chosen in)
     if (from !== to) world.set({ arrived: false, hover: null, focus: null });
+    // (a painted place starts fetching its painting now)
+    wantPlate(to);
     if (iris.current) iris.current.style.background = scenes[to === RIVERSIDE && from ? from : to].threshold;
     s.running = null;
     const final = restPose(to);
@@ -277,50 +299,9 @@ function Director({
     s.running = null;
     s.queue = [{ kind: "swap", scene: target, pose: restPose(target) }];
     s.iris = 0;
-    s.yaw = s.pitch = 0;
-    s.parallax.set(0, 0);
+    s.drift = 0;
     invalidate();
   }, [still, target, invalidate]);
-
-  // Look around by dragging; a little parallax follows the mouse. Not on
-  // touch screens or the mobile tier: there a drag is a scroll, and the
-  // camera must never catch it. Not in still view either.
-  useEffect(() => {
-    if (tier === "mobile" || matchMedia("(pointer: coarse)").matches) return;
-    const el = gl.domElement;
-    let last: [number, number] | null = null;
-    const down = (e: PointerEvent) => {
-      last = [e.clientX, e.clientY];
-    };
-    const move = (e: PointerEvent) => {
-      const s = st.current;
-      s.pointer.set((e.clientX / window.innerWidth) * 2 - 1, (e.clientY / window.innerHeight) * 2 - 1);
-      if (holdingStill()) return;
-      invalidate();
-      if (!last || !(e.buttons & 1)) return;
-      const dx = e.clientX - last[0];
-      const dy = e.clientY - last[1];
-      last = [e.clientX, e.clientY];
-      if (Math.abs(dx) + Math.abs(dy) > 1) {
-        s.dragging = true;
-        s.lastDrag = performance.now();
-        s.yaw = THREE.MathUtils.clamp(s.yaw - dx * 0.0035, -0.5, 0.5);
-        s.pitch = THREE.MathUtils.clamp(s.pitch - dy * 0.0025, -0.22, 0.22);
-      }
-    };
-    const up = () => {
-      last = null;
-      st.current.dragging = false;
-    };
-    el.addEventListener("pointerdown", down);
-    window.addEventListener("pointermove", move, { passive: true });
-    window.addEventListener("pointerup", up);
-    return () => {
-      el.removeEventListener("pointerdown", down);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-  }, [gl, invalidate, tier]);
 
   const tmp = useMemo(() => ({ dir: new THREE.Vector3(), right: new THREE.Vector3(), p: new THREE.Vector3(), l: new THREE.Vector3() }), []);
 
@@ -340,7 +321,8 @@ function Director({
     while (!s.running && s.queue.length) {
       const seg = s.queue[0];
       // Not into an empty place: hold at the threshold until it's built
-      if (seg.kind === "swap" && s.active !== seg.scene && !scene.getObjectByName(`scene:${seg.scene}`)?.children.length) {
+      const place = seg.kind === "swap" ? scene.getObjectByName(`scene:${seg.scene}`) : undefined;
+      if (seg.kind === "swap" && ((s.active !== seg.scene && !place?.children.length) || placePending(place))) {
         const now = performance.now();
         s.waitingSince ||= now;
         if (now - s.waitingSince < WAIT_FOR_PLACE_MS) {
@@ -353,7 +335,6 @@ function Director({
       if (seg.kind === "swap") {
         s.pos.copy(seg.pose.pos);
         s.look.copy(seg.pose.target);
-        s.yaw = s.pitch = 0;
         if (s.active !== seg.scene) {
           s.active = seg.scene;
           onSwap(seg.scene);
@@ -398,34 +379,30 @@ function Director({
       }
     }
 
-    // Parallax and looking around, at rest and not in still view
+    // The rest drift: desktop tiers, at rest, not in still view (and not
+    // in ?frame=plate). Moving the eye with the aim held makes a painted
+    // place's near layers slide over its far ones.
     tmp.p.copy(s.pos);
     tmp.l.copy(s.look);
-    const resting = !r && !s.queue.length && !reduce;
-    if (resting && tier !== "mobile") {
-      const before = s.parallax.clone();
-      s.parallax.lerp(s.pointer, 1 - Math.exp(-dt * 3));
-      if (before.distanceTo(s.parallax) > 0.0005) busy = true;
+    const resting = !r && !s.queue.length && !reduce && !plate;
+    if (resting && tier !== "mobile" && !holdingStill()) {
+      s.drift = Math.min(1, s.drift + dt / DRIFT_EASE);
+      s.driftT += dt;
+      busy = true;
+    } else {
+      s.drift = 0;
+    }
+    if (s.drift > 0) {
+      const { amplitude, period } = driftOf(s.active);
+      const reach = amplitude * tmp.p.distanceTo(tmp.l) * (s.drift * s.drift * (3 - 2 * s.drift));
+      const w = (2 * Math.PI * s.driftT) / period;
       tmp.dir.subVectors(tmp.l, tmp.p).normalize();
       tmp.right.crossVectors(tmp.dir, camera.up).normalize();
-      tmp.p.addScaledVector(tmp.right, s.parallax.x * 0.25);
-      tmp.p.y += -s.parallax.y * 0.1;
-      if (!s.dragging && performance.now() - s.lastDrag > 2500) {
-        s.yaw *= Math.exp(-dt * 1.2);
-        s.pitch *= Math.exp(-dt * 1.2);
-      }
-    } else if (reduce) {
-      s.yaw = s.pitch = 0;
-    } else if (!s.dragging) {
-      s.yaw *= Math.exp(-dt * 4);
-      s.pitch *= Math.exp(-dt * 4);
+      tmp.p.addScaledVector(tmp.right, reach * Math.sin(w));
+      tmp.p.y += reach * 0.5 * Math.sin(w * 0.73 + 1);
     }
-    if (Math.abs(s.yaw) + Math.abs(s.pitch) > 0.0005) busy = true;
-    else s.yaw = s.pitch = 0;
     camera.position.copy(tmp.p);
     camera.lookAt(tmp.l);
-    camera.rotateY(s.yaw);
-    camera.rotateX(s.pitch);
 
     // Frame the place on its side on wide screens, leaving the panel its
     // half; on narrow screens in the strip between the bar and the sheet
@@ -710,7 +687,15 @@ function Warm({ mounted, active, tier, onReady }: { mounted: SceneId[]; active: 
         if (done) return;
         done = true;
         performance.mark("city:shaders-ready");
-        onReady();
+        // A painted place's painting before the first frame (kit/plate.ts:
+        // placePending), so the band's painting gives way to it, not to
+        // an empty view
+        const since = performance.now();
+        const check = () => {
+          if (placePending(scene.getObjectByName(`scene:${active}`)) && performance.now() - since < WAIT_FOR_FIRST_MS) window.setTimeout(check, 50);
+          else onReady();
+        };
+        check();
       });
       return;
     }
@@ -815,6 +800,11 @@ export default function City3D({ tier }: { tier: Quality }) {
   const [warm, setWarm] = useState(false);
   const [handle] = useState(handleWanted);
   const [plate] = useState(plateWanted);
+  // ?plate=<painting> (development, or ?perf): Home as that painting on
+  // the plate engine, with stand-in data (PlatePlace.tsx: proofPlace), in
+  // place of the code-built riverside
+  const [proof] = useState(proofWanted);
+  const Proof = useMemo(() => (proof ? (p: SceneProps) => <ProofPlace {...p} painting={proof} /> : null), [proof]);
   // ?frame=plate (development): the view at the painting's shape, the
   // page's words and the bar out of the way
   useEffect(() => {
@@ -960,7 +950,7 @@ html, body { background: #000 !important; }
         <WorldLights />
         <TagProjector active={active} />
         {built.map((id) => {
-          const Scene = modules[id]!;
+          const Scene = (id === RIVERSIDE && Proof) || modules[id]!;
           return (
             <group key={id} name={`scene:${id}`} position={scenes[id].offset} visible={id === active}>
               <Scene active={active === id} quality={tier} navigate={navigate} still={still} />

@@ -57,14 +57,13 @@ test("the frame loop stops when hidden, before the shaders are warm and under th
   assert.match(city, /visibilitychange/);
 });
 
-test("still view cuts and holds still; drag-to-look only on fine pointers off the mobile tier", () => {
+test("still view cuts and holds still; the mouse never moves the camera", () => {
   // The plan's journey becomes one swap when still
   assert.match(city, /if \(holdingStill\(\)\) \{\s*\/\/ Still view: a cut, no travel\s*s\.queue = \[\{ kind: "swap"/);
-  // Turned on mid-journey: cut, parallax zeroed
-  assert.match(city, /if \(!still \|\| !s\.started\) return;[\s\S]*?s\.parallax\.set\(0, 0\)/);
-  // No parallax or drag while still
-  assert.match(city, /const resting = !r && !s\.queue\.length && !reduce;/);
-  assert.match(city, /if \(tier === "mobile" \|\| matchMedia\("\(pointer: coarse\)"\)\.matches\) return;/);
+  // Turned on mid-journey: cut, the rest drift stopped
+  assert.match(city, /if \(!still \|\| !s\.started\) return;[\s\S]*?s\.drift = 0;/);
+  // No drift while still (the painted places' plan: tests/city3d-plate.test.mjs)
+  assert.match(city, /const resting = !r && !s\.queue\.length && !reduce && !plate;/);
 });
 
 test("the mobile tier tone-maps on the renderer; the desktop tiers through Post", () => {
