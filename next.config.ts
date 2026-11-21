@@ -1,8 +1,7 @@
 import type { NextConfig } from "next";
 
-// The 3D city closed to visitors: the same test as app/lib/city3dLive.ts
-const city3dLive =
-  process.env.NEXT_PUBLIC_CITY3D === "on" || (process.env.NEXT_PUBLIC_CITY3D !== "off" && process.env.NODE_ENV === "development");
+// The 3D city open unless closed: the same test as app/lib/city3dLive.ts
+const city3dLive = process.env.NEXT_PUBLIC_CITY3D !== "off";
 
 const nextConfig: NextConfig = {
   /* config options here */

@@ -106,7 +106,7 @@ The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
 `/contact`) redirect to their anchors, `/map` to `/`, all temporary
 (`next.config.ts`).
 
-### The 3D city (`/city`, built, closed on the live site)
+### The 3D city (`/city`, open on the live site)
 
 `/city` and `/city/{projects,experience,interests,about,contact}`
 (`app/city/`, `app/components/city3d/`). Home is a riverside looking over
@@ -117,13 +117,12 @@ one `.city-panel` with its `h1`, the section component with `where="3d"`,
 a link to the same section on the 2D page, and the credit; readable without JavaScript or WebGL.
 Pages are `noindex`, canonical to the 2D page.
 
-Closed to visitors by `app/lib/city3dLive.ts: CITY3D_LIVE` and the same
-test in `next.config.ts`: without it there is no "3D city" key or link
-and `/city*` redirects to `/`. It is on in `next dev` and in any build
-made with `NEXT_PUBLIC_CITY3D=on`. **To open it on the live site**: set
-`NEXT_PUBLIC_CITY3D=on` for Production in the Vercel project and
-redeploy (`tests/city-panel-fit.test.mjs` pins the switch's code, so
-change the env, not the test, unless I ask).
+Open to visitors (since 2026-11-21, at my request) through
+`app/lib/city3dLive.ts: CITY3D_LIVE` and the same test in
+`next.config.ts`. **To close it again without a code change**: set
+`NEXT_PUBLIC_CITY3D=off` for Production in the Vercel project and
+redeploy; then there is no "3D city" key or link and `/city*` redirects
+to `/` (`tests/city-panel-fit.test.mjs` pins the switch's code).
 
 The pieces:
 - `CityShell.tsx` probes WebGL2, handles a lost context ("Restart the 3D
@@ -266,7 +265,7 @@ weights and generous line-height. Avoid decorative fonts.
   section you're at (`ProgressLine.tsx`: along the bar's foot, in the
   right margin from 97rem), Richmond Hill's time and weather, the "3D
   city" switch (in the bar from 80rem, the Sections menu's first entry
-  below; hidden while the city is closed), Sections, Still view and the
+  below; only where WebGL2 exists, and hidden if the city is closed), Sections, Still view and the
   music. It never gains a row it doesn't have today, at any width
   (`docs/city/scripts/bar-fit.mjs`).
 - The Sections menu (`SectionsMenu.tsx`, a popover) jumps within the page
@@ -454,7 +453,7 @@ npx tsc --noEmit
 ```
 
 For builds and audits:
-- Build with the city on: `NEXT_PUBLIC_CITY3D=on npm run build`, then
+- Build: `npm run build` (the city is on unless `NEXT_PUBLIC_CITY3D=off`), then
   `npx next start -p 3100` (any port but the dev server's 3101). Then
   `SMOKE_URL=http://localhost:3100 npm test` and
   `node docs/audit/scripts/budget.mjs` (`npm run perf:budget`).
@@ -493,6 +492,6 @@ dev`, for the `?sky=` preview):
 - The weather capsule shifts the layout slightly when its reading arrives
   (CLS up to 0.02, `/` and `/city`).
 - The 3D city still differs from its paintings (mean ΔE about 15, most
-  places darker) and awaits my review on a phone before it opens.
+  places darker), and it opened before my review on a real phone.
 - `bar-fit.mjs` depends on the live weather's words, so it can fail at a
   width without any change to the bar.

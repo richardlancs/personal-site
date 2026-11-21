@@ -98,11 +98,11 @@ test("on /city the hero's ways in stay in the city; the Interests link to the 3D
   assert.match(sections.Interests, /\{where === "2d" && CITY3D_LIVE && \(\s*<p[^>]*>\s*<CityLink/);
 });
 
-// The city can be closed to visitors (app/lib/city3dLive.ts): then nothing
+// The city can be closed to visitors (app/lib/city3dLive.ts, NEXT_PUBLIC_CITY3D=off): then nothing
 // on the 2D page leads into it, and its addresses go back to the 2D page
-test("with the 3D city closed, its key and links aren't shown and /city goes to /", () => {
+test("the 3D city is open unless built with NEXT_PUBLIC_CITY3D=off; closed, its key and links aren't shown and /city goes to /", () => {
   const read = (file) => readFileSync(new URL(`../${file}`, import.meta.url), "utf8");
-  const rule = /process\.env\.NEXT_PUBLIC_CITY3D === "on" \|\| \(process\.env\.NEXT_PUBLIC_CITY3D !== "off" && process\.env\.NODE_ENV === "development"\)/;
+  const rule = /= process\.env\.NEXT_PUBLIC_CITY3D !== "off";/;
   assert.match(read("app/lib/city3dLive.ts"), rule);
   const config = read("next.config.ts");
   assert.match(config, rule);
