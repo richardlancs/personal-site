@@ -91,10 +91,11 @@ test("each section's headings step down one level at a time", () => {
   }
 });
 
-test("on /city the hero's ways in stay in the city; the Interests link to the 3D city is only in 2D", () => {
-  // next/link, so the page stays and the camera travels (no reload)
-  assert.match(hero, /\{where === "3d" \? \(\s*<>\s*<Link href=\{cityPath\("projects"\)\}[\s\S]*?<Link href=\{cityPath\("contact"\)\}/);
-  assert.match(hero, /^import Link from "next\/link";/m);
+test("on /city the hero is the title card, whose ways in are the dock's; the Interests link to the 3D city is only in 2D", () => {
+  // The city's places are the dock's and the menu's (panels/PlaceDock.tsx):
+  // the card links nowhere in the city, so nothing on it leaves the city by accident
+  assert.match(hero, /if \(where === "3d"\) return <TitleCard \/>;/);
+  assert.doesNotMatch(hero.slice(hero.indexOf("function TitleCard()")), /href="#|<Link /);
   assert.match(sections.Interests, /\{where === "2d" && CITY3D_LIVE && \(\s*<p[^>]*>\s*<CityLink/);
 });
 

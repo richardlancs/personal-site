@@ -87,7 +87,8 @@ test("the home page has one h1: the name, in the hero", () => {
   const hero = read("app/components/city2d/sections/Hero.tsx");
   assert.equal((page.match(/<h1[\s>]/g) ?? []).length, 0, "the page's h1 is the hero's");
   assert.equal((page.match(/<Hero \/>/g) ?? []).length, 1, "the page renders the hero once");
-  assert.equal((hero.match(/<h1[\s>]/g) ?? []).length, 1);
+  // one in the 2D hero, one in the 3D city's title card: each page draws one
+  assert.equal((hero.match(/<h1[\s>]/g) ?? []).length, 2);
   assert.match(hero, /<h1[^>]*>\{profile\.name\}<\/h1>/);
 });
 

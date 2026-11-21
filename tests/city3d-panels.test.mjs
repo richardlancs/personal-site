@@ -247,15 +247,16 @@ test("every section's page has a way back to Home in words at its foot (Task 19 
   assert.match(page, /\{id !== "home" && \(\s*<Link href=\{cityPath\("home"\)\} className="text-link text-link-solo">\s*Back to Home\s*<\/Link>/);
 });
 
-test("Home's row of keys lists the places in the registry's order, as the Sections menu does (Task 19 review, ux M3)", () => {
-  const page = read("app/components/city3d/CityPage.tsx");
-  assert.match(page, /\{listed\s*\/\/[^\n]*\n[^\n]*\n\s*\.filter\(\(s\) => s\.id !== "home"\)\s*\.map\(/);
-  assert.doesNotMatch(page, /\.sort\(/);
+test("the place dock lists the places in the registry's order, as the Sections menu does, on every page; Home's row of keys is gone (Task 19 review, ux M3; painted 2.5D Task 2)", () => {
+  const dock = read("app/components/city3d/panels/PlaceDock.tsx");
+  assert.match(dock, /const places = listed;/);
+  assert.doesNotMatch(dock, /\.sort\(/);
   assert.match(read("app/components/city2d/SectionsMenu.tsx"), /listed\.map\(/);
+  assert.doesNotMatch(read("app/components/city3d/CityPage.tsx"), /city-keys/);
 });
 
-test("wide Home where the scene isn't drawing: the row of keys stands under the panel, out of its flow (no shift when the fallback is decided)", () => {
+test("the dock is the same whether the scene draws or not: no rule keyed on the canvas's state moves it (no shift when the fallback is decided)", () => {
   const css = read("app/city/city-pages.css");
-  const wide = css.slice(css.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {"));
-  assert.match(wide, /html\[data-city3d\]:not\(\[data-city3d="on"\]\) \.city-page\[data-section="home"\] \.city-keys \{\s*position: absolute;\s*top: calc\(100% \+ 0\.75rem\);/);
+  assert.doesNotMatch(css, /data-city3d[^{]*\.place-dock/);
+  assert.doesNotMatch(css, /data-city-tags[^{]*\.place-dock/);
 });

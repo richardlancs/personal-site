@@ -31,11 +31,15 @@ import ViewSwitch from "./ViewSwitch";
 // toolbar coming and going (the screen's height changing by a little) can't
 // flip it back and forth mid-scroll.
 //
-// In the 3D city (/city/*) every entry is that section's page there
-// (registry: city), a plain navigation (the city moves focus itself), and
-// the section whose page it is is the one marked. Its first entry, set
-// apart from the sections, is the switch between the views (ViewSwitch.tsx),
-// shown here only on screens too narrow for it in the bar.
+// In the 3D city (/city/*) it is the city's places, named so: the menu is
+// "Places in 3D", with that heading over the entries (city-pages.css; read
+// out as the menu's name, so the heading itself is hidden from screen
+// readers); every entry is that section's page there (registry: city), a
+// plain navigation (the city moves focus itself), and the place whose page
+// it is is the one marked. On both, its first entry, set apart from the
+// sections, is the switch between the views (ViewSwitch.tsx), shown here
+// only on screens too narrow for it in the bar. On `/` it renders exactly
+// as before the city had a heading (tests/city3d-glass.test.mjs).
 export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
   const pathname = usePathname();
@@ -78,11 +82,16 @@ export default function SectionsMenu() {
   }, []);
 
   return (
-    <nav ref={nav} id="places-menu" popover="auto" aria-label="Sections" className="sections-menu">
+    <nav ref={nav} id="places-menu" popover="auto" aria-label={city ? "Places in 3D" : "Sections"} className="sections-menu">
       <ul>
         <li className="sections-menu-view">
           <ViewSwitch place="menu" />
         </li>
+        {city && (
+          <li className="sections-menu-heading" aria-hidden="true">
+            Places in 3D
+          </li>
+        )}
         {listed.map((s) => (
           <li key={s.id}>
             <Link href={city ? s.city : jumpHref(s.href)} onClick={city ? close : go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? (city ? "page" : "location") : undefined}>

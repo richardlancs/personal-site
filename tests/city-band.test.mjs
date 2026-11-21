@@ -150,16 +150,16 @@ test("every district has both plates, the same size, none over 600 KB", () => {
 });
 
 test("the hero has the name, the headline, two actions and three links, and no paragraph", () => {
-  const src = read("app/components/city2d/sections/Hero.tsx");
-  assert.ok(!src.includes('"use client"'), "the hero is a server component");
+  const file = read("app/components/city2d/sections/Hero.tsx");
+  assert.ok(!file.includes('"use client"'), "the hero is a server component");
+  // The 2D hero; the 3D city's title card (TitleCard) is tests/city3d-glass.test.mjs's
+  const src = file.slice(0, file.indexOf("function TitleCard()"));
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
   assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
   assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
-  // In 2D, anchors on the page; in the 3D city, next/link to the sections' pages
+  // Anchors on the page
   assert.match(src, /<a href="#projects" className="glass glass-primary">/);
   assert.match(src, /<a href="#contact" className="glass">/);
-  assert.match(src, /<Link href=\{cityPath\("projects"\)\} className="glass glass-primary">/);
-  assert.match(src, /<Link href=\{cityPath\("contact"\)\} className="glass">/);
   // GitHub, LinkedIn and the résumé: the shared links, as text links
   assert.match(src, /<ProfileLinks variant="text" \/>/);
 });

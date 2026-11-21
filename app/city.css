@@ -67,6 +67,19 @@
   --glass-blur: blur(12px) saturate(1.2);
   --glass-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.6);
   --glass-fallback: rgb(24 27 35 / 0.94); /* no backdrop-filter */
+  /* Glass panels over the 3D city (city-pages.css: .city-panel, the
+     place dock): a light tint of --panel over a strong blur, a thin bright
+     cyan-ish edge, a light line along the top, and the words' own dark
+     halo. Clear by night; by day, over a bright sky, a little more tint,
+     so the light words keep 4.5:1 without counting the halo
+     (docs/city/scripts/city3d-contrast.mjs). Opaque under
+     prefers-contrast: more and in forced colours. */
+  --glass-panel: rgb(24 27 35 / 0.5);
+  --glass-panel-day: rgb(24 27 35 / 0.66);
+  --glass-panel-blur: blur(22px) saturate(1.35);
+  --glass-edge: rgb(143 233 255 / 0.3);
+  --glass-edge-hi: rgb(230 233 238 / 0.22); /* the panel's line along the top */
+  --glass-halo: 0 0 1px rgb(8 9 12 / 0.9), 0 0 4px rgb(8 9 12 / 0.7), 0 0 12px rgb(8 9 12 / 0.45);
   /* Behind a focus ring, so it shows on any painting */
   --focus-halo: 0 0 0 6px rgb(8 9 12 / 0.9);
   /* Glow: decoration only, never counted toward contrast */

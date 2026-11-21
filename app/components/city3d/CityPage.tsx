@@ -2,7 +2,7 @@ import { getImageProps, type StaticImageData } from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cityPath, twoDHref } from "../../lib/cityRoutes";
-import { listed, section, type DistrictId, type SectionId } from "../../sections/registry";
+import { section, type DistrictId, type SectionId } from "../../sections/registry";
 import { richmondHill } from "../../data/weather";
 import { cityPlateScript } from "../../lib/platePreload";
 import { BELOW_SIZES, plates } from "../city2d/plates";
@@ -19,6 +19,7 @@ import { experience, interests, projects } from "../../data/portfolio";
 import { sortNewestFirst } from "../../lib/experience";
 import type { Picks } from "./panels/CityPanel";
 import PickerGhost from "./panels/PickerGhost";
+import PlaceDock from "./panels/PlaceDock";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
 // without JavaScript or WebGL: the section's plate as a band where the
@@ -78,26 +79,14 @@ export default function CityPage({ id }: { id: SectionId }) {
             cityPlateScript): the page's largest paint */}
         <script dangerouslySetInnerHTML={{ __html: plateScript(id, s.district) }} />
       </div>
+      {/* The six places, the one you're at marked, with the previous and
+          the next: along the foot of the scene on wide screens, at the top
+          of the sheet on phones (panels/PlaceDock.tsx). The same on every
+          page and whether the scene draws or not, so nothing moves when
+          the canvas decides; on Home it is also the list of places where
+          the boards' links can't stand over them (City3D.tsx: Tags). */}
+      <PlaceDock current={id} />
       <div className="city-panel">
-        {id === "home" && (
-          // The five places as a row of keys: where the canvas can't lay
-          // a link over each of the riverside's boards (City3D.tsx:
-          // TagProjector sets html[data-city-tags="row"]), and wherever
-          // the 3D city isn't drawing (no WebGL2, Save-Data, a lost
-          // context, no JavaScript), so Home always lists its places
-          // (city-pages.css)
-          <nav aria-label="Places" className="city-keys">
-            {listed
-              // in the registry's order, as the Sections menu lists them
-              // (the boards stand in their own order along the river)
-              .filter((s) => s.id !== "home")
-              .map((s) => (
-                <Link key={s.id} href={cityPath(s.id)} className="glass city-key">
-                  {s.title}
-                </Link>
-              ))}
-          </nav>
-        )}
         {id !== "home" && (
           <h1 id={`${id}-title`} className="city-title" tabIndex={-1}>
             {s.title}

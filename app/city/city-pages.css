@@ -223,31 +223,43 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
     height: auto;
   }
 
+  /* The panel's width, which the dock keeps clear of (.place-dock) */
+  .city-page {
+    --panel-w: min(46rem, 100% - 3rem, max(32rem, 50vw));
+  }
+
+  /* Home holds only the title card: a narrower panel, so more of the city
+     shows */
+  .city-page[data-section="home"] {
+    --panel-w: min(34rem, 100% - 3rem);
+  }
+
+  /* Glass over the scene (city.css: --glass-panel and its kin): a light
+     tint of --panel over a strong blur, a thin bright edge, a light line
+     along the top, and the words' dark halo. A little more tint by day
+     than by night (the sky the atmosphere set, .city3d[data-sky-daylight];
+     until it has, the day's), changing with the sky's own 3 s fade. */
   .city-panel {
-    width: min(46rem, 100% - 3rem, max(32rem, 50vw));
+    width: var(--panel-w);
     margin: 1.5rem 0 3rem max(1.5rem, env(safe-area-inset-left));
     padding: 2rem clamp(1.25rem, 2.5vw, 2.5rem);
-    border: 1px solid var(--line);
+    border: 1px solid var(--glass-edge);
     border-radius: var(--radius-lg);
-    background: color-mix(in srgb, var(--panel) 94%, transparent);
-    box-shadow: 0 24px 60px -30px rgb(0 0 0 / 0.9);
+    background-color: var(--glass-panel-day);
+    box-shadow: inset 0 1px 0 var(--glass-edge-hi), 0 24px 60px -30px rgb(0 0 0 / 0.8);
+    -webkit-backdrop-filter: var(--glass-panel-blur);
+    backdrop-filter: var(--glass-panel-blur);
+    text-shadow: var(--glass-halo);
   }
 
-  /* Home holds only the name, the headline, two keys and the links: a
-     narrower panel, so more of the riverside shows */
-  .city-page[data-section="home"] .city-panel {
-    width: min(38rem, 100% - 3rem, max(32rem, 42vw));
+  html:has(.city3d[data-sky-daylight="night"]) .city-panel {
+    background-color: var(--glass-panel);
   }
 
-  /* Where the scene isn't drawing (no WebGL2, a lost context, Save-Data),
-     Home's row of keys is known only after the page has painted: it stands
-     just under the panel, out of the panel's flow, so nothing moves */
-  html[data-city3d]:not([data-city3d="on"]) .city-page[data-section="home"] .city-keys {
-    position: absolute;
-    top: calc(100% + 0.75rem);
-    left: 0;
-    right: 0;
-    margin: 0;
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-still="on"]) .city-panel {
+      transition: background-color var(--t-sky) var(--ease-in-out);
+    }
   }
 }
 
@@ -358,46 +370,9 @@ html:not([data-city3d="on"]) .city3d {
   white-space: nowrap;
 }
 
-/* The same five places as a row of keys at the top of Home's panel:
-   where the links can't all stand over their boards 8px apart (a small
-   phone, a phone on its side), and wherever the 3D city isn't drawing
-   (no JavaScript: no html[data-still]; or no WebGL2, Save-Data, a lost
-   context). While the canvas is starting they wait, so the panel doesn't
-   move under the reader. */
-.city-keys {
-  display: none;
-}
-
-html:not([data-still]) .city-keys,
-html[data-city3d]:not([data-city3d="on"]) .city-keys,
-html[data-city3d="on"][data-city-tags="row"] .city-keys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 1.5rem;
-}
-
-/* On the narrow layout the row is what a phone's Home usually gets (the
-   links rarely fit over the boards there): its room is kept, unseen, from
-   the start, so the sheet doesn't move when the canvas decides */
-@media (orientation: portrait), (max-width: 767px), (max-height: 480px) /* FLAT_QUERY */ {
-  html[data-still]:not([data-city3d]) .city-keys,
-  html[data-city3d="on"]:not([data-city-tags]) .city-keys {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 1.5rem;
-    visibility: hidden;
-  }
-}
-
-.city-key {
-  color: var(--text);
-  font-family: var(--font-display);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
+/* Where the links can't all stand over their boards 8px apart (a small
+   phone, a phone on its side), none is over the scene: the dock lists the
+   places (panels/PlaceDock.tsx) */
 html[data-city-tags="row"] .city-tags {
   display: none;
 }
@@ -430,10 +405,221 @@ html[data-city-tags="row"] .city-tags {
   }
 }
 
-/* More contrast: the panel is opaque, nothing shows through it */
+/* ---------- The title card (city2d/sections/Hero.tsx, where="3d") ----------
+   Home's panel: the name, the school and the programme, "Email me", and
+   GitHub, LinkedIn and the résumé. The name stands on the glass with its
+   halo (and the hero's faint glow, decoration only). */
+.hero-card {
+  --name-size: min(clamp(2.75rem, 1.9rem + 3.2vw, 4.5rem), 13vw);
+}
+
+.hero-card .hero-name {
+  text-shadow: var(--glass-halo), 0 0 28px rgb(79 216 238 / 0.24);
+}
+
+/* The heading takes focus on a journey back to Home: a ring only when it
+   came from the keyboard */
+.hero-card .hero-name:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.hero-school {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+/* Display type at 24px and over, so it may be the accent */
+.hero-school-name {
+  color: var(--cyan);
+  font-family: var(--font-display);
+  font-size: min(1.5rem, 9vw);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+}
+
+.hero-school-programme {
+  color: var(--text);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.hero-card .hero-actions {
+  margin-top: 1.5rem;
+}
+
+.hero-card .hero-links {
+  margin-top: 0.75rem;
+}
+
+/* The primary key's ink label on its lantern fill needs no halo */
+.city-panel .glass-primary {
+  text-shadow: none;
+}
+
+/* ---------- The place dock (city3d/panels/PlaceDock.tsx) ----------
+   The six places in a row, the one you're at chosen (the chosen glass,
+   aria-current="page", and a dot, so not by colour alone), the previous
+   and the next at its ends. The narrow layout: the top of the sheet, the
+   row scrolling sideways between the two steps. Wide: a glass bar along
+   the foot of the scene, clear of the panel (below). */
+.place-dock {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: -2rem;
+  padding: 0.75rem max(0.75rem, env(safe-area-inset-right)) 0 max(0.75rem, env(safe-area-inset-left));
+  border-top: 1px solid var(--glass-edge);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--ink-2);
+  box-shadow: inset 0 1px 0 var(--glass-edge-hi);
+}
+
+/* The sheet starts with the dock: the panel carries on under it */
+@media (orientation: portrait), (max-width: 767px), (max-height: 480px) /* FLAT_QUERY */ {
+  .place-dock + .city-panel {
+    margin-top: 0;
+    border-top: 0;
+    border-radius: 0;
+  }
+}
+
+.place-dock-row {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
+  /* Room inside the scroller for a focused key's ring and halo */
+  padding: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  scroll-padding-inline: 8px;
+}
+
+.place-dock-row::-webkit-scrollbar {
+  display: none;
+}
+
+.place-dock-row > li {
+  display: flex;
+  flex: none;
+}
+
+.place-dock-key {
+  gap: 0.5rem;
+  padding-inline: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.place-dock-step {
+  flex: none;
+}
+
+/* Where you are: the menu's dot (city.css: .sections-menu-here) */
+.place-dock-here {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 0 2px var(--ink), 0 0 0 3px var(--cyan);
+}
+
+@media (forced-colors: active) {
+  .place-dock-here {
+    background: CanvasText;
+    box-shadow: none;
+    forced-color-adjust: none;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
+  /* Along the foot of the scene, centred in what the panel leaves of the
+     screen; as wide as its keys, and where that's too wide, the row
+     scrolls between the steps */
+  .place-dock {
+    position: fixed;
+    z-index: 2;
+    --dock-left: calc(var(--panel-w) + max(1.5rem, env(safe-area-inset-left)) + 1rem);
+    --dock-right: max(1.5rem, env(safe-area-inset-right));
+    left: var(--dock-left);
+    right: var(--dock-right);
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+    width: fit-content;
+    /* (its row's keys never shrink, so the room is said outright) */
+    max-width: calc(100% - var(--dock-left) - var(--dock-right));
+    margin: 0 auto;
+    padding: 0 4px;
+    border: 1px solid var(--glass-edge);
+    border-radius: calc(var(--radius) + 8px);
+    background-color: var(--glass-panel-day);
+    box-shadow: inset 0 1px 0 var(--glass-edge-hi), 0 18px 40px -22px rgb(0 0 0 / 0.85);
+    -webkit-backdrop-filter: var(--glass-panel-blur);
+    backdrop-filter: var(--glass-panel-blur);
+    text-shadow: var(--glass-halo);
+  }
+
+  html:has(.city3d[data-sky-daylight="night"]) .place-dock {
+    background-color: var(--glass-panel);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :root:not([data-still="on"]) .place-dock {
+      transition: background-color var(--t-sky) var(--ease-in-out);
+    }
+  }
+
+  /* The note that stands in for the scene keeps above the dock */
+  .city3d-note {
+    bottom: calc(max(1.25rem, env(safe-area-inset-bottom)) + 4.75rem);
+  }
+}
+
+/* ---------- The Sections menu in the city (city2d/SectionsMenu.tsx) ----------
+   The places, under a heading of their own, after the view switch */
+.sections-menu .sections-menu-heading {
+  display: block;
+  padding: 0.25rem 0.5rem 0;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* More contrast: the panel and the dock are opaque, nothing shows
+   through them */
 @media (prefers-contrast: more) {
-  .city-panel {
+  .city-panel,
+  .place-dock {
     background: var(--panel);
     backdrop-filter: none;
+  }
+}
+
+/* Forced colours: the system's ground, nothing showing through */
+@media (forced-colors: active) {
+  .city-panel,
+  .place-dock {
+    background: Canvas;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+/* Without a blur, near-opaque glass so the words still have a ground */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .city-panel,
+  .place-dock {
+    background-color: var(--glass-fallback) !important;
   }
 }
