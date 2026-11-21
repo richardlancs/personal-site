@@ -99,3 +99,33 @@ test("a row of the board chooses its line, as the panel's keys do, and the board
   assert.match(src, /world\.select\("line", line\);\s*world\.set\(\{ focus: `line-\$\{line\}` \}\);/);
   assert.match(src, /useWorld\(\(s\) => s\.sel\.line\)/);
 });
+
+// The wide layout's panel (app/city/city-pages.css: --panel-w, its 1.5rem
+// margin): its right edge on a screen `w` wide
+const panelRight = (w) => 24 + Math.min(736, w - 48, Math.max(512, w / 2));
+
+test("on a wide screen the board stands whole between the panel and the screen's right edge at home", async () => {
+  const { scenes } = await import("../app/components/city3d/scenes.ts");
+  const { METRO } = await import("../app/components/city3d/districts/metro.def.ts");
+  const def = scenes.metro;
+  const [look] = def.plate.look;
+  const b = METRO.board;
+  // (kit/plate.ts: coverMargin, the cover's room for the drift)
+  const m = 1.004 + 2.4 * def.plate.drift.amplitude;
+  for (const [w, h] of [[1024, 768], [1280, 800], [1440, 900], [1920, 1080]]) {
+    // home: the painting the view's height (its own lens), `look` on the
+    // view's middle (frame "center"), so a point's x is the middle plus its
+    // distance from `look` in painting widths
+    const width = h * def.plate.aspect * m;
+    const x0 = w / 2 + (b.u0 - look) * width, x1 = w / 2 + (b.u1 - look) * width;
+    assert.ok(x0 >= panelRight(w) + 24, `${w}: the board's left at ${x0.toFixed(0)}, the panel's edge at ${panelRight(w)}`);
+    assert.ok(x1 <= w - 16, `${w}: the board's right at ${x1.toFixed(0)}`);
+  }
+});
+
+test("a phone on its side aims at the board, so the painting's top comes down to the bar's foot", async () => {
+  const { scenes } = await import("../app/components/city3d/scenes.ts");
+  const { METRO } = await import("../app/components/city3d/districts/metro.def.ts");
+  const b = METRO.board;
+  assert.deepEqual(scenes.metro.short.aim, [(b.u0 + b.u1) / 2, (b.v0 + b.v1) / 2]);
+});

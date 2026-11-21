@@ -21,6 +21,8 @@ import type { PlaceDef, Quad, UV, V3 } from "../scenes";
 // board, so each looks at the board.
 
 const ROWS = 3;
+// The painting point on a wide screen's middle (plate.look below)
+const LOOK = 0.46;
 
 // The painting's eye and where it looks (the place's own units; the plate
 // stands square to this view, so from here the painting is exactly itself)
@@ -63,7 +65,9 @@ const along = (a: number, x: number, y: number): V3 => [0, 1, 2].map((i) => EYE[
 // stands `at` (tangents right and up of the view's middle: right of the
 // panel on a wide screen, frame "center", and below the bar)
 function reading(zoom: number, at: [number, number]): { pos: V3; target: V3 } {
-  const u = (BOARD.u0 + BOARD.u1) / 2, v = (BOARD.v0 + BOARD.v1) / 2;
+  // (where the board stands once the cover has slid the painting to put
+  // LOOK on the view's middle: it slides by its distance from the middle)
+  const u = (BOARD.u0 + BOARD.u1) / 2 + (0.5 - LOOK), v = (BOARD.v0 + BOARD.v1) / 2;
   const k = 1 - BOARD.depth;
   const height = 2 * AXES.distance * AXES.tan;
   const bx = (u - 0.5) * height * ASPECT * k, by = (0.5 - v) * height * k, bz = AXES.distance * k;
@@ -71,7 +75,9 @@ function reading(zoom: number, at: [number, number]): { pos: V3; target: V3 } {
   const pos = along(a, bx - at[0] * (bz - a), by - at[1] * (bz - a));
   return { pos, target: [0, 1, 2].map((i) => pos[i] + AXES.ahead[i] * AXES.distance) as V3 };
 }
-const READ = reading(1.3, [0.37, 0.14]);
+// (0.33 across: the board whole between the panel and the screen's right
+// edge from 1024 to 1920 wide)
+const READ = reading(1.3, [0.33, 0.14]);
 
 export const METRO = {
   eye: EYE,
@@ -99,7 +105,11 @@ const metro: PlaceDef = {
   // the half it leaves
   frame: "center",
   portrait: { yaw: 19, half: 22, lift: 17 },
-  short: { under: 2 },
+  // A phone on its side: the board's middle is the aim, so the cover slides
+  // the painting down as far as it may (its top at the bar's foot: the
+  // strip needn't be filled under the bar) and the board's first row
+  // stands clear of the bar
+  short: { under: 2, aim: [(BOARD.u0 + BOARD.u1) / 2, (BOARD.v0 + BOARD.v1) / 2] },
   threshold: "#101318",
   fog: { color: "#1a1f2a", near: 40, far: 520, keep: { near: 24, far: 300 } },
   background: "#181b22",
@@ -107,6 +117,12 @@ const metro: PlaceDef = {
   shelter: METRO.shelter,
   plate: {
     painting: "metro",
+    // On a wide screen the painting slides a little right of its middle
+    // (u LOOK on the view's middle), so the board's left end stands clear
+    // of the panel's edge (at 1024, 1440 and 1920: the panel takes 50vw up
+    // to 46rem, the painting the view's height) and the skyline keeps the
+    // right; tests/city3d-metro.test.mjs measures it
+    look: [LOOK, 0.5],
     aspect: ASPECT,
     depth: {
       kind: "layers",
