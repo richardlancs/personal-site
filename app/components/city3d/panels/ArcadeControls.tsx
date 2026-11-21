@@ -15,10 +15,30 @@ const IDLE_CYCLE_MS = 10000;
 // "Deal"…), what a click on the screen does (arcade/arcadeMachine.ts), and
 // how it turned out is read out from the line beside it. Left alone after
 // arriving, the machine moves on to the next interest every ten seconds,
-// until anything on the page is touched or pointed at; never in still view
-// or a hidden tab. Every key is a tab stop; the arrows also move along the
-// modes (selector.ts). The interests themselves are written out in the
-// panel under this row (city2d/sections/Interests.tsx).
+// until anything on the page is touched, pointed at, scrolled or focused;
+// never in still view or a hidden tab. Every key is a tab stop; the arrows
+// also move along the modes (selector.ts). The interests themselves are
+// written out in the panel under this row (city2d/sections/Interests.tsx).
+
+// The panel's list of interests (its <details>)
+const panelRows = () => [...document.querySelectorAll<HTMLDetailsElement>('details[name="interests"]')];
+// Opens the chosen interest's row in the panel, and only it
+function showInPanel(selected: number) {
+  panelRows().forEach((row, index) => {
+    if (row.open !== (index === selected)) row.open = index === selected;
+  });
+}
+// The interest the idle cycle last moved the machine to, while no visitor
+// has chosen since (kept across visits to the page): the idle cycle drives
+// the machine only, never the panel's rows, so the panel never opens,
+// closes or changes height under a reader
+let idleChoice = -1;
+// A visitor's choice (a key, the screen, a row): the panel shows it
+function chosenByVisitor(index: number) {
+  idleChoice = -1;
+  showInPanel(index);
+}
+
 export default function ArcadeControls({ items: interests }: { items: Pick<Interest, "name" | "scene">[] }) {
   const selected = useWorld((s) => s.sel.interest);
   const arrived = useWorld((s) => s.arrived);
@@ -33,19 +53,21 @@ export default function ArcadeControls({ items: interests }: { items: Pick<Inter
   useEffect(() => {
     if (touched) return;
     const touch = () => setTouched(true);
-    addEventListener("pointerdown", touch);
-    addEventListener("keydown", touch);
-    return () => {
-      removeEventListener("pointerdown", touch);
-      removeEventListener("keydown", touch);
-    };
-  }, [touched]);
+    // Reading counts: a wheel, a touch, a scroll of the page or focus
+    // moving (a screen reader's browse mode sends no keys). Scroll and
+    // focus only once arrived: a journey itself moves focus to the heading
+    const events = ["pointerdown", "keydown", "wheel", "touchstart", ...(arrived ? ["scroll", "focusin"] : [])];
+    const options = { capture: true, passive: true };
+    events.forEach((type) => addEventListener(type, touch, options));
+    return () => events.forEach((type) => removeEventListener(type, touch, options));
+  }, [touched, arrived]);
 
   useEffect(() => {
     if (touched || hovering || still || !arrived) return;
     const id = window.setInterval(() => {
       if (document.hidden) return;
-      world.select("interest", (world.get().sel.interest + 1) % interests.length);
+      idleChoice = (world.get().sel.interest + 1) % interests.length;
+      world.select("interest", idleChoice);
     }, IDLE_CYCLE_MS);
     return () => window.clearInterval(id);
   }, [touched, hovering, still, arrived, interests.length]);
@@ -55,27 +77,27 @@ export default function ArcadeControls({ items: interests }: { items: Pick<Inter
     world.set({ arcadeStatus: "" });
   }, [selected]);
 
-  // One choice, the store's: the panel's list of interests (its <details>,
-  // city2d/sections/Interests.tsx) keeps the chosen one open, whoever chose
-  // it (a key, the screen, the idle cycle), and opening a row there chooses
-  // it for the machine too
+  // One choice, the store's, for what the visitor chooses: the panel's list
+  // of interests keeps the visitor's choice open (a key, the screen), and
+  // opening a row there chooses it for the machine too. What the idle cycle
+  // chooses stays in the scene.
   useEffect(() => {
-    const rows = [...document.querySelectorAll<HTMLDetailsElement>('details[name="interests"]')];
-    rows.forEach((row, index) => {
-      if (row.open !== (index === selected)) row.open = index === selected;
-    });
+    if (selected !== idleChoice) chosenByVisitor(selected);
   }, [selected]);
   useEffect(() => {
-    const rows = [...document.querySelectorAll<HTMLDetailsElement>('details[name="interests"]')];
+    const rows = panelRows();
     const onToggle = (event: Event) => {
       const row = event.currentTarget as HTMLDetailsElement;
-      if (row.open) world.select("interest", rows.indexOf(row));
+      if (!row.open) return;
+      chosenByVisitor(rows.indexOf(row));
+      world.select("interest", rows.indexOf(row));
     };
     rows.forEach((row) => row.addEventListener("toggle", onToggle));
     return () => rows.forEach((row) => row.removeEventListener("toggle", onToggle));
   }, []);
 
   function choose(index: number) {
+    chosenByVisitor(index);
     world.select("interest", index);
     world.set({ focus: "machine" });
   }

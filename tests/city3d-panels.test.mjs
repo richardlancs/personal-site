@@ -168,11 +168,18 @@ test("under prefers-contrast: more the panel is opaque", () => {
   assert.match(rule[1], /backdrop-filter:\s*none/);
 });
 
-test("the arcade: one choice, the store's: the panel's open interest follows it, and opening a row chooses it", () => {
+test("the arcade: one choice, the store's: the panel's open interest follows the visitor's choice, and opening a row chooses it; the idle cycle drives the machine only", () => {
   const src = read("app/components/city3d/panels/ArcadeControls.tsx");
   assert.match(src, /querySelectorAll<HTMLDetailsElement>\('details\[name="interests"\]'\)/);
   assert.match(src, /row\.open = index === selected/);
-  assert.match(src, /if \(row\.open\) world\.select\("interest", rows\.indexOf\(row\)\)/);
+  assert.match(src, /if \(!row\.open\) return;\s*chosenByVisitor\(rows\.indexOf\(row\)\);\s*world\.select\("interest", rows\.indexOf\(row\)\)/);
+  // the idle cycle's choice never reaches the panel's rows (Task 19 review, a11y I1)
+  assert.match(src, /idleChoice = \(world\.get\(\)\.sel\.interest \+ 1\) % interests\.length;\s*world\.select\("interest", idleChoice\)/);
+  assert.match(src, /if \(selected !== idleChoice\) chosenByVisitor\(selected\)/);
+  assert.match(src, /function chosenByVisitor\(index: number\) \{\s*idleChoice = -1;\s*showInPanel\(index\);/);
+  assert.match(src, /function choose\(index: number\) \{\s*chosenByVisitor\(index\);/);
+  // reading counts as touched: wheel, touch, and once arrived scroll and focus
+  assert.match(src, /\["pointerdown", "keydown", "wheel", "touchstart", \.\.\.\(arrived \? \["scroll", "focusin"\] : \[\]\)\]/);
   // the list itself is the 2D page's, unchanged
   assert.match(read("app/components/city2d/sections/Interests.tsx"), /name="interests"/);
 });
