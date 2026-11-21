@@ -208,3 +208,20 @@ test("Flight.tsx: the aerial as a plate, clouds from the kit, one layer on phone
   assert.match(kit, /shared\(materialKey\("flight-cloud"/);
   assert.doesNotMatch(kit + flight, /Math\.random/);
 });
+
+test("the flight never flashes: clouds at most 0.6 and tinted to the hour's haze, the haze about as light as the places, closing and opening over at least 350 ms, and the cut made under it (fix round A, ux I4)", () => {
+  const kit = read("app/components/city3d/kit/flight.ts");
+  assert.match(kit, /export const VEIL_MAX = 0\.6;/);
+  assert.match(kit, /gl_FragColor = vec4\(mix\(col, haze, 0\.5\), a \* \$\{VEIL_MAX\.toFixed\(2\)\}\);/);
+  assert.match(kit, /a \*= uOpacity \* \$\{VEIL_MAX\.toFixed\(2\)\};/);
+  // the haze's lightness (Rec. 709 luma of the sRGB hex): neither white by day nor black at night
+  const luma = (hex) => [0, 1, 2].reduce((s, i) => s + [0.2126, 0.7152, 0.0722][i] * parseInt(hex.slice(1 + 2 * i, 3 + 2 * i), 16), 0);
+  const day = kit.match(/export const HAZE_DAY = "(#[0-9a-f]{6})";/)[1];
+  const night = kit.match(/export const HAZE_NIGHT = "(#[0-9a-f]{6})";/)[1];
+  assert.ok(luma(day) > 110 && luma(day) < 170, `day ${luma(day)}`);
+  assert.ok(luma(night) > 50 && luma(night) < 100, `night ${luma(night)}`);
+  const city = read("app/components/city3d/City3D.tsx");
+  assert.match(city, /const HAZE_EASE = 0\.35;/);
+  assert.match(city, /s\.iris \+= THREE\.MathUtils\.clamp\(want - s\.iris, -dt \/ HAZE_EASE, dt \/ HAZE_EASE\);/);
+  assert.match(city, /placePending\(place\) \|\| s\.iris < 0\.97\)/);
+});

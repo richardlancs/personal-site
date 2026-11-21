@@ -9,6 +9,7 @@ import { cityPath, sectionForCityPath } from "../../lib/cityRoutes";
 import { parseSkyParam } from "../../lib/skyParam";
 import { listed, pageSections, section, type SectionId } from "../../sections/registry";
 import { anchors, boardsIn } from "./anchors";
+import { HAZE_DAY as FLIGHT_HAZE_DAY, HAZE_NIGHT as FLIGHT_HAZE_NIGHT } from "./kit/flight";
 import { WorldLights } from "./common";
 import Atmosphere from "./atmosphere/Atmosphere";
 import Precipitation, { disposePrecipWarmers, precipWarmers } from "./atmosphere/Precipitation";
@@ -169,11 +170,12 @@ export const PLATE_ASPECT = 2400 / 1032;
 // whole switch is behind NODE_ENV, so a production build has none of it.
 const plateWanted = () => process.env.NODE_ENV === "development" && new URLSearchParams(location.search).get("frame") === "plate";
 
-// The haze a flight lifts out through (the iris's colour while it does):
-// the aerial painting's soft sky by day, the threshold's navy at night,
-// never a bright flash
-const HAZE_DAY = new THREE.Color("#9fb4c6");
-const HAZE_NIGHT = new THREE.Color("#0c1526");
+// The haze a flight passes through (the iris's colour while it does):
+// kit/flight.ts, by the hour (never a bright flash, never a dip to black)
+const HAZE_DAY = new THREE.Color(FLIGHT_HAZE_DAY);
+const HAZE_NIGHT = new THREE.Color(FLIGHT_HAZE_NIGHT);
+// The quickest the haze may close or open, s for the whole way: no flash
+const HAZE_EASE = 0.35;
 const haze = new THREE.Color();
 const hazeColour = () => `#${haze.copy(HAZE_NIGHT).lerp(HAZE_DAY, plateUniforms.uDay.value).getHexString()}`;
 
@@ -415,7 +417,8 @@ function Director({
         const place = scene.getObjectByName(`scene:${p.to}`);
         const now = performance.now();
         if (!s.waitingSince) s.waitingSince = now;
-        if ((!place?.children.length || placePending(place)) && now - s.waitingSince < WAIT_FOR_PLACE_MS) t = Math.min(t, crossAt(p) - 1e-4);
+        // (and for the haze to have closed over the cut)
+        if ((!place?.children.length || placePending(place) || s.iris < 0.97) && now - s.waitingSince < WAIT_FOR_PLACE_MS) t = Math.min(t, crossAt(p) - 1e-4);
         else {
           s.waitingSince = 0;
           s.active = p.to;
@@ -447,19 +450,21 @@ function Director({
       }
       pullBack(pulled, f.scale);
       // One soft pass of cloud a flight: the lift out of a place is a
-      // dissolve through the sky's haze (the iris, in its colour for the
-      // hour: hazeColour), and only the descent into the next place
-      // passes through the clouds (the veil). (Over the city before its
-      // painting is here: cruising in cloud.)
+      // dissolve through the sky's haze, and the descent into the next
+      // place passes through the clouds (the veil, at most VEIL_MAX, tinted
+      // to the haze) as the haze closes over the cut and opens again. The
+      // haze is the iris, in its colour for the hour (hazeColour), about as
+      // light as the places, and it closes or opens no faster than over
+      // HAZE_EASE s, so no moment of the flight blinks or flashes. (Over
+      // the city before its painting is here: cruising in cloud.)
       const liftPass = p.back || (p.lift > 0 && t < p.lift + p.cruise);
       flightView.air = f.stage === "air";
       flightView.veil = f.stage === "air" && !aerialReady() ? Math.max(f.veil, 0.95) : liftPass ? 0 : f.veil;
       flightView.look.copy(s.look);
       flightView.drift.set(f.at[0] * AERIAL.aspect, -f.at[1]).multiplyScalar(2.4 / Math.max(f.alt, 0.2));
-      if (liftPass) {
-        s.iris = f.veil;
-        if (iris.current) iris.current.style.background = hazeColour();
-      } else if (s.iris > 0) s.iris = Math.max(0, s.iris - dt * 3);
+      const want = liftPass ? f.veil : flightView.veil;
+      s.iris += THREE.MathUtils.clamp(want - s.iris, -dt / HAZE_EASE, dt / HAZE_EASE);
+      if (iris.current) iris.current.style.background = hazeColour();
       if (f.done) {
         // (on the performance timeline: "city:flight", from the choice to
         // the arrival, any wait for the place included)
@@ -492,6 +497,11 @@ function Director({
       }
       if (r.t >= 1) s.running = null;
     } else if (!s.queue.length) {
+      // (the haze a flight left still opening, at its own pace)
+      if (s.iris > 0 && !reduce) {
+        s.iris = Math.max(0, s.iris - dt / HAZE_EASE);
+        busy = true;
+      }
       // At rest: settle on the place's home view
       const rest = restPose(s.active);
       const k = reduce ? 1 : 1 - Math.exp(-dt * 6);

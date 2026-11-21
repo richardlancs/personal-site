@@ -20,6 +20,20 @@ import { materialKey } from "./uniforms";
 
 const OCTAVES: Record<Quality, number> = { high: 5, low: 4, mobile: 3 };
 
+// The haze a flight passes through (City3D.tsx: the iris's colour, and the
+// veil's clouds are tinted toward it), by the hour: by day a soft blue-grey
+// about as light as a day place's middle tones (never a white flash), at
+// night a slate navy about as light as a night place's (never a dip to
+// black). The veil's clouds are never more than VEIL_MAX opaque: the iris
+// in this colour closes over the cut between the air and a place.
+export const HAZE_DAY = "#8193a3";
+export const HAZE_NIGHT = "#43506b";
+export const VEIL_MAX = 0.6;
+const vec3 = (hex: string) => {
+  const c = new THREE.Color(hex);
+  return `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
+};
+
 const NOISE = /* glsl */ `
 float hash12(vec2 p) {
   vec3 p3 = fract(vec3(p.xyx) * 0.1031);
@@ -48,8 +62,9 @@ float fbm(vec2 p) {
 // moonlit grey-blue with the city's warm light on its underside; greyer in
 // rain. Linear colour, kept under the bloom's threshold.
 vec3 cloudColour(float lit, float under) {
-  vec3 dayLit = vec3(0.96, 0.93, 0.87);
-  vec3 dayShade = vec3(0.52, 0.6, 0.73);
+  // (by day a soft warm grey at most, about 200 of 255: no white flash)
+  vec3 dayLit = vec3(0.56, 0.56, 0.54);
+  vec3 dayShade = vec3(0.32, 0.38, 0.48);
   vec3 nightLit = vec3(0.17, 0.19, 0.29);
   vec3 nightShade = vec3(0.045, 0.06, 0.11);
   vec3 glow = vec3(0.42, 0.22, 0.12);
@@ -93,7 +108,9 @@ void main() {
   // lit from the upper left, the dense parts brighter: a painted mass, not a fog
   float lit = clamp(0.45 + (n - fbm(p + vec2(-0.06, 0.08))) * 9.0 + (n - 0.5) * 0.9, 0.0, 1.0);
   vec3 col = cloudColour(lit * lit * (3.0 - 2.0 * lit), 1.0 - n);
-  gl_FragColor = vec4(col, a);
+  // tinted toward the hour's haze, and never closed: the iris does that
+  vec3 haze = mix(${vec3(HAZE_NIGHT)}, ${vec3(HAZE_DAY)}, smoothstep(0.0, 1.0, uDay));
+  gl_FragColor = vec4(mix(col, haze, 0.5), a * ${VEIL_MAX.toFixed(2)});
   #include <colorspace_fragment>
 }`;
 
@@ -129,7 +146,7 @@ void main() {
   vec2 e = min(vUv, 1.0 - vUv);
   a *= smoothstep(0.0, 0.08, min(e.x, e.y));
   a *= smoothstep(uNear.x, uNear.y, vDepth);
-  a *= uOpacity * 0.8;
+  a *= uOpacity * ${VEIL_MAX.toFixed(2)};
   if (a < 0.002) discard;
   float lit = clamp(0.55 + (n - fbm(p + vec2(-0.05, 0.07))) * 6.0, 0.0, 1.0);
   gl_FragColor = vec4(cloudColour(lit, 1.0 - n), a);
