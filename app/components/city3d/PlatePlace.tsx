@@ -116,7 +116,7 @@ export default function PlatePlace({ id, def, active, quality, still, onSpot, sp
     return () => {
       live = false;
     };
-  }, [want, plate, quality, gl, invalidate]);
+  }, [want, plate, quality, gl, invalidate, id]);
 
   // The spots' anchors, in world coordinates
   const spotAnchors = useMemo(
