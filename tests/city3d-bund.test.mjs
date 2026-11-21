@@ -1,119 +1,122 @@
-// Contact, the promenade (districts/bund.tsx, Task 17): framed like its
-// paintings, built only from the kit, exactly its four spot lights, its one
-// mover a kit Mover, no words in the scene, nothing clickable, and the
-// clock reading Richmond Hill's hour from the store.
+// Contact, the promenade (districts/bund.tsx, bund.def.ts; plan Tasks 4–9):
+// its two paintings on the plate, its data sound (scenes.ts: checkPlace),
+// its home view the painting's frame, the clock spot on the painted clock
+// face and the kit's clock on it telling Richmond Hill's hour, its living
+// parts (river, wet paving, sky, glass) and its movers inside the
+// painting, nothing clickable.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const src = noComments(read("app/components/city3d/districts/bund.tsx"));
-const def = await import("../app/components/city3d/districts/bund.def.ts");
-const { scenes, DISTRICT_LIGHTS } = await import("../app/components/city3d/scenes.ts");
+const def = (await import("../app/components/city3d/districts/bund.def.ts")).default;
+const { scenes, checkPlace, isPlace } = await import("../app/components/city3d/scenes.ts");
 
-const deg = (r) => (r * 180) / Math.PI;
-// Where a point (side, along) is from a pose: degrees right of where it looks
-const bearingFrom = (pose, [s, a]) => {
-  const [px, , pz] = pose.pos;
-  const [tx, , tz] = pose.target;
-  // the scene's x is -side, z is along (bund.tsx: X, Z)
-  const look = Math.atan2(-(tx - px), tz - pz);
-  return deg(Math.atan2(-(-s - px), a - pz) - look);
+const inside = ([u, v]) => u >= 0 && u <= 1 && v >= 0 && v <= 1;
+const bounds = (pts) => {
+  const us = pts.map((p) => p[0]), vs = pts.map((p) => p[1]);
+  return { u0: Math.min(...us), u1: Math.max(...us), v0: Math.min(...vs), v1: Math.max(...vs) };
 };
 
-test("its def has the painting's frame, and the place's poses", () => {
-  const b = scenes.bund;
-  assert.equal(b, def.default);
-  assert.ok(b.plateFrame && b.plateFrame.fov > 0, "plateFrame");
-  for (const v of [...b.plateFrame.pos, ...b.plateFrame.target, ...b.home.pos, ...b.home.target]) assert.ok(Number.isFinite(v));
-  assert.equal(b.frame, "right");
-  assert.deepEqual(b.focus, {}, "Contact has no picker");
-  assert.ok(b.sign && Number.isFinite(b.sign.bearing), "its sign on the riverside stays");
+test("it is a painted place whose data is sound", () => {
+  assert.equal(scenes.bund, def);
+  assert.ok(isPlace(def));
+  assert.deepEqual(checkPlace(def), []);
+  assert.equal(def.plate.painting, "bund");
+  assert.equal(def.plate.aspect, 2400 / 1032);
+  for (const kind of ["day", "night"]) assert.ok(existsSync(`${root}app/assets/city/bund-${kind}.webp`), kind);
+  for (const kind of ["light", "sky"]) assert.ok(existsSync(`${root}app/assets/city/masks/bund-${kind}.webp`), kind);
+  assert.match(read("app/components/city3d/kit/plateArt.ts"), /bund/);
 });
 
-test("the painting's frame holds the clock tower left of the middle and the four landmarks right of it", () => {
-  const { BUND } = def;
-  const plate = scenes.bund.plateFrame;
-  // the painting's aspect, 2400 × 1032
-  const half = deg(Math.atan(Math.tan((plate.fov * Math.PI) / 360) * (2400 / 1032)));
-  const clock = bearingFrom(plate, [BUND.front - BUND.clock.w / 2, BUND.clock.a]);
-  assert.ok(clock < -5 && clock > -half, `clock tower at ${clock.toFixed(1)}°`);
-  const marks = Object.values(BUND.landmarks).map((p) => bearingFrom(plate, p));
-  for (const m of marks) assert.ok(m > 25 && m < half, `landmark at ${m.toFixed(1)}° (frame ±${half.toFixed(1)}°)`);
-  // the Pearl first, left of the others, as in the paintings
-  assert.ok(marks[0] < Math.min(...marks.slice(1)));
-  // and the fog keeps clear of them
-  for (const [s, a] of Object.values(BUND.landmarks)) assert.ok(Math.hypot(s, a) < scenes.bund.fog.keep.far * 0.6);
+test("its home view is the painting's frame, on the right of wide screens, its sign kept", () => {
+  assert.deepEqual(def.home.pos, def.plateFrame.pos);
+  assert.deepEqual(def.home.target, def.plateFrame.target);
+  assert.equal(def.fov, def.plateFrame.fov, "the lens is the painting's, so the plate shows as much of it as it can");
+  assert.equal(def.span, undefined);
+  assert.equal(def.frame, "right");
+  assert.ok(def.sign && Number.isFinite(def.sign.bearing));
+  // arriving and leaving step in along the home view's line, never back (no edge shows)
+  for (const pose of [def.enter, def.exit]) {
+    assert.deepEqual(pose.target, def.home.target);
+    const to = (p) => Math.hypot(...p.map((x, i) => def.home.target[i] - x));
+    assert.ok(to(pose.pos) < to(def.home.pos) && to(pose.pos) > 0.9 * to(def.home.pos));
+  }
+  // portrait phones centre on the clock tower (about u 0.41) and the promenade
+  const half = Math.tan((def.plateFrame.fov * Math.PI) / 360) * def.plate.aspect;
+  const u = 0.5 + Math.tan((def.portrait.yaw * Math.PI) / 180) / (2 * half);
+  assert.ok(u > 0.4 && u < 0.46, `portrait middle at u ${u.toFixed(3)}`);
 });
 
-test("the home view keeps the clock tower and the Pearl in the half the panel leaves", () => {
-  const { BUND } = def;
-  const b = scenes.bund;
-  const clock = bearingFrom(b.home, [BUND.front - BUND.clock.w / 2, BUND.clock.a]);
-  const pearl = bearingFrom(b.home, BUND.landmarks.pearl);
-  assert.ok(Math.abs(clock) <= b.span && Math.abs(pearl) <= b.span + 0.5, `clock ${clock.toFixed(1)}°, Pearl ${pearl.toFixed(1)}°, span ${b.span}`);
+test("Contact has no picker: no focus keys, no Hitbox; the clock spots sit on the painted clock tower", () => {
+  assert.deepEqual(def.focus, {});
+  assert.doesNotMatch(src, /onSpot|Hitbox/);
+  const { clock, "clock-side": side } = def.plate.spots;
+  assert.deepEqual(Object.keys(def.plate.spots).sort(), ["clock", "clock-side"]);
+  // the face toward the eye: centred on the painted face (u 0.412, v 0.216), about as wide as tall in pixels
+  const b = bounds(clock);
+  assert.ok(Math.abs((b.u0 + b.u1) / 2 - 0.412) < 0.002 && Math.abs((b.v0 + b.v1) / 2 - 0.216) < 0.003);
+  const w = (b.u1 - b.u0) * 2400, h = (b.v1 - b.v0) * 1032;
+  assert.ok(w > 30 && w < 46 && h > 30 && h < 46 && Math.abs(w - h) < 6, `${w.toFixed(0)} × ${h.toFixed(0)} px`);
+  // the side face just right of it, narrow
+  const s = bounds(side);
+  assert.ok(s.u0 > b.u1 && s.u1 - s.u0 < 0.01 && s.v0 > 0.19 && s.v1 < 0.25);
+  // both at the depth the painting stands out of the sky there (standing)
+  for (const c of [...clock, ...side]) assert.equal(c[2], def.plate.depth.standing);
 });
 
-test("exactly its four spot lights, through SceneLights, and no other light", () => {
-  assert.equal(DISTRICT_LIGHTS.bund, 4);
-  assert.equal([...src.matchAll(/<SceneLights /g)].length, 1);
-  assert.match(src, /<SceneLights id="bund" spots=\{built\.spots\} \/>/);
-  // four of the lanterns are the spot lamps; their lanterns are the spots
-  assert.match(src, /const spots = heads\.slice\(L\.spots, L\.spots \+ 4\)\.map/);
-  assert.ok(def.BUND.lamps.count >= def.BUND.lamps.spots + 4);
-  // the spot lamps stand ahead of the painting's eye (along > 0)
-  assert.ok(def.BUND.lamps.from + def.BUND.lamps.spots * def.BUND.lamps.step > 0);
-  assert.doesNotMatch(src, /Light\(|<\w*[lL]ight[\s/>]/, "no light but SceneLights");
-});
-
-test("its one mover is the kit's ferry, run by useMovers", () => {
-  assert.match(src, /import \{ aircraftLights, buildBoat \} from "\.\.\/kit\/movers";/);
-  assert.match(src, /movers: \[boat\]/);
-  assert.match(src, /const boat = buildBoat\(/);
-  assert.match(src, /useMovers\(built\.movers, \{ active, still \}\)/);
-  // the warning lights stand steady
-  assert.match(src, /air\.park\(\);/);
-  assert.doesNotMatch(src, /useFrame/);
-});
-
-test("built from the kit only: nothing from another scene, no material of its own, no randomness", () => {
-  const imports = [...src.matchAll(/from "([^"]+)"/g)].map((m) => m[1]);
-  const allowed = /^(react|three|@react-three\/fiber|\.\.\/kit\/\w+|\.\.\/common|\.\.\/rng|\.\.\/scenes|\.\.\/store|\.\.\/tiers|\.\/bund\.def)$/;
-  for (const i of imports) assert.match(i, allowed, i);
-  assert.doesNotMatch(src, /new THREE\.\w*Material\(/);
-  assert.doesNotMatch(src, /Math\.random/);
-});
-
-test("no words in the scene, no clickable things", () => {
-  // no sign with words, no text panel, nothing written on a canvas
-  assert.doesNotMatch(src, /buildSign\(|textPanel|textMask|fillText|strokeText/);
-  // decorative signs, if any, are mark signs
-  for (const m of src.matchAll(/build(\w*)Sign\(/g)) assert.equal(m[1], "Mark");
-  assert.doesNotMatch(src, /Hitbox|onClick|onPointer/);
-  assert.doesNotMatch(src, /anchors\.set/);
-});
-
-test("the clock shows Richmond Hill's hour from the store, redrawn when the minute changes", () => {
-  assert.match(src, /const hour = useWorld\(\(s\) => s\.hour\);/);
-  // the kit's clock (kit/neon.ts: clockMaterial, kit/textures.ts: clockFace), not a local one
+test("the clock tells Richmond Hill's hour: the kit's clock face on the spots, its hands moved with the store's hour", () => {
+  assert.match(src, /<PlatePlace \{\.\.\.props\} id="bund" def=\{bund\}>/);
+  assert.match(src, /spotGeometry\(def, plate\.frame, def\.plate\.spots\.clock/);
+  assert.match(src, /spotGeometry\(def, plate\.frame, def\.plate\.spots\["clock-side"\]/);
   assert.match(src, /clockMaterial\(world\.get\(\)\.hour\)/);
+  assert.match(src, /const hour = useWorld\(\(s\) => s\.hour\);/);
   assert.match(src, /if \(setClockHour\(hour\)\) invalidate\(\);/);
-  assert.doesNotMatch(src, /paintClock|function pavingTiles\(w: number, d: number\) \{/);
+  assert.match(src, /useDisposeOnUnmount\(/);
+  assert.match(src, /export default ContactScene;/);
+  // nothing of the old code-built promenade, no lights of its own, no words
+  assert.doesNotMatch(src, /SceneLights|PointLight|SpotLight|fillText|Math\.random/);
 });
 
-test("the kit's new pieces: glass kiosk, paving, stone relief on the floodlit stone, light pools, day shade", () => {
-  assert.match(src, /glassMaterial\(\{ tint: "#9fcfd6"[^)]*glow: \{ tone: "cyan"/);
-  assert.match(src, /pavingTexture\(\{ seed: 37, kind: "grid"/);
-  assert.match(src, /surface\(\{ color: STONE, relief: \{ kind: "stone"[^}]*\}, glow: \{ tone: SCENE_TONES\.gold/);
-  assert.match(src, /useDayShade\("bund", SHADE, active\)/);
-  // the lamps' reflections on the paving after dark in every weather: the
-  // kit's polish, one fine stroke a lamp (I2), no river streaks, no switch
-  // at the day boundary (M1), the surface's glow and snow passed through (no swap)
-  assert.match(src, /wetPaving\(\{[\s\S]*?snow: true,[\s\S]*?glow: \{ tone: "#7d93bd"[\s\S]*?polish: [\d.]+,/);
-  assert.doesNotMatch(src, /buildStreaks\(|kind: "river"|\.visible = daylight|paving\.mesh\.material =/);
-  assert.match(src, /lampAlong\.slice\(0, 16\)\.map\(/);
-  assert.match(src, /useGlowPools\("bund", POOLS, active\)/);
-  assert.match(src, /useDisposeOnUnmount\(built\)/);
+test("its living parts: the river clear of the railing, the wet paving, the sky and the glass", () => {
+  const kinds = def.plate.regions.map((r) => r.kind);
+  for (const k of ["water", "wet", "sky", "glass"]) assert.ok(kinds.includes(k), k);
+  for (const r of def.plate.regions) assert.ok(r.poly.every(inside), r.kind);
+  // the river sits between the far bank (v ≈ 0.586) and the railing's top rail, right of the promenade's end
+  for (const r of def.plate.regions.filter((r) => r.kind === "water")) {
+    const b = bounds(r.poly);
+    assert.ok(b.u0 >= 0.6 && b.v0 >= 0.585 && b.v1 <= 0.71, JSON.stringify(b));
+  }
+  // the sky stays above the skyline and clear of the clock tower (u < 0.435 above v 0.14)
+  for (const r of def.plate.regions.filter((r) => r.kind === "sky")) {
+    const b = bounds(r.poly);
+    assert.ok(b.v1 <= 0.38 && b.u0 >= 0.435, JSON.stringify(b));
+  }
+  // the wet paving keeps off the booth's glass
+  const glassBooth = def.plate.regions.find((r) => r.kind === "glass");
+  assert.ok(bounds(glassBooth.poly).u1 < 0.35);
+});
+
+test("its movers: ferries on the river, the far bank's traffic and slow beacons, all inside the painting", () => {
+  const movers = def.plate.movers;
+  const kinds = movers.map((m) => m.kind);
+  assert.ok(kinds.filter((k) => k === "boat").length >= 2);
+  assert.ok(kinds.includes("trail") && kinds.includes("beacon"));
+  for (const m of movers) {
+    assert.ok(m.path.every(inside), `${m.kind} inside the painting`);
+    if (m.kind === "boat") {
+      // on the water, under the far bank and above the railing
+      for (const [, v] of m.path) assert.ok(v > 0.595 && v < 0.66, `boat at v ${v}`);
+      // slow: a crossing takes two minutes or more
+      assert.ok(m.period >= 120);
+    }
+    if (m.kind === "beacon") assert.ok(m.period >= 4, "a beacon swells, never blinks");
+  }
+  // the depth: a ground under the promenade's far end and the near things brought forward
+  assert.equal(def.plate.depth.kind, "layers");
+  assert.ok(def.plate.depth.ground.horizon > 0.55 && def.plate.depth.ground.horizon < 0.65);
+  assert.ok(def.plate.depth.layers.length >= 3);
 });
