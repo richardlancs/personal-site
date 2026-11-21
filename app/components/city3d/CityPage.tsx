@@ -66,7 +66,8 @@ const picks: Picks = {
 // quality), day and night, from which the inline script picks the file the
 // band's <img> will ask for
 const srcSet = (plate: StaticImageData) => getImageProps({ src: plate, alt: "", fill: true, sizes: BELOW_SIZES }).props.srcSet ?? "";
-const plateScript = (district: DistrictId) => cityPlateScript(richmondHill, srcSet(plates[district].day), srcSet(plates[district].night));
+const plateScript = (id: SectionId, district: DistrictId) =>
+  cityPlateScript(richmondHill, srcSet(plates[district].day), srcSet(plates[district].night), id);
 
 export default function CityPage({ id }: { id: SectionId }) {
   const s = section(id);
@@ -76,7 +77,7 @@ export default function CityPage({ id }: { id: SectionId }) {
         <DistrictBand district={s.district} />
         {/* The band's painting before the scripts (lib/platePreload.ts:
             cityPlateScript): the page's largest paint */}
-        <script dangerouslySetInnerHTML={{ __html: plateScript(s.district) }} />
+        <script dangerouslySetInnerHTML={{ __html: plateScript(id, s.district) }} />
       </div>
       <div className="city-panel">
         {id === "home" && (

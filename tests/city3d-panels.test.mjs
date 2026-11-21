@@ -197,10 +197,13 @@ test("the picker's slot holds an unseen, unreachable copy of its row, so the pan
 
 test("a city page's band has its painting before the scripts, from the file its own <img> will ask for (Task 19)", () => {
   const page = read("app/components/city3d/CityPage.tsx");
-  assert.match(page, /<DistrictBand district=\{s\.district\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<script dangerouslySetInnerHTML=\{\{ __html: plateScript\(s\.district\) \}\} \/>/);
+  assert.match(page, /<DistrictBand district=\{s\.district\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<script dangerouslySetInnerHTML=\{\{ __html: plateScript\(id, s\.district\) \}\} \/>/);
   assert.match(page, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: BELOW_SIZES \}\)/);
   const preload = read("app/lib/platePreload.ts");
   assert.match(preload, /export function cityPlateScript\(/);
-  assert.match(preload, /document\.currentScript\.previousElementSibling/);
+  // a rule of its own in <head>, keyed by the page, never the band's own style (React's: a hydration mismatch)
+  assert.match(preload, /document\.createElement\("style"\)/);
+  assert.match(preload, /\.city-page\[data-section=\$\{q\(section\)\}\] \.city-band \.band\{--city-plate:url\(/);
+  assert.doesNotMatch(preload, /previousElementSibling|\.style\.setProperty\("--city-plate"/);
   assert.match(read("app/city/city-pages.css"), /background-image: var\(--city-plate, none\)/);
 });
