@@ -390,7 +390,9 @@ float rings(vec2 p, float t) {
 vec3 untone(vec3 y) {
   const float S = 0.76;
   const float D = 0.24;
-  y = min(y, vec3(0.97));
+  // Scale, don't clamp per channel: a clamp turns a saturated sky's hue
+  // (blue at its limit, green catching up: cyan)
+  y *= min(1.0, 0.97 / max(max(y.r, max(y.g, y.b)), 1e-4));
   float peak = max(y.r, max(y.g, y.b));
   if (peak >= S) {
     float p = D * D / (1.0 - peak) - D + S;
@@ -399,7 +401,8 @@ vec3 untone(vec3 y) {
   float m = min(y.r, min(y.g, y.b));
   float x = m >= 0.04 ? m + 0.04 : sqrt(max(m, 0.0) / 6.25);
   y += x - m;
-  return min(y / 1.12, vec3(0.985));
+  y /= 1.12;
+  return y * min(1.0, 0.985 / max(max(y.r, max(y.g, y.b)), 1e-4));
 }
 #endif
 
