@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { cityPath } from "../../lib/cityRoutes";
 import { section, type SectionId } from "../../sections/registry";
 import { anchors } from "./anchors";
+import { isFlat } from "./flat";
 import { useDisposeOnUnmount, type SceneProps } from "./common";
 import lujiazui, { groundDepth, HOME_SIGNS } from "./districts/lujiazui.def";
 import { localPoint, plateFrame, spotPoint } from "./kit/plate";
@@ -39,12 +40,15 @@ const SIGNED: Exclude<SectionId, "home">[] = ["contact", "about", "experience", 
 // how far in front of the painting it stands (a share of the distance)
 const BOARD_ASPECT = 1 / 0.34;
 const LIFT = 0.015;
+const NARROW_BOARD = 1.4;
 
 type Built = {
   group: THREE.Group;
   // each sign's spot: its middle and edges, in the plate group's own
   // coordinates, and the same in the world (kept up to date per frame)
   signs: { id: Exclude<SectionId, "home">; local: Record<string, THREE.Vector3>; world: Record<string, THREE.Vector3> }[];
+  // each board, its height and where it stands (for the narrow layout's size)
+  boards: { sign: THREE.Object3D; h: number; y: number }[];
   dispose: () => void;
 };
 
@@ -54,6 +58,7 @@ function build(quality: Quality): Built {
   const group = new THREE.Group();
   group.name = "home-signs";
   const signs: Built["signs"] = [];
+  const boards: Built["boards"] = [];
   const disposers: (() => void)[] = [];
   for (const id of SIGNED) {
     const s = HOME_SIGNS[id];
@@ -68,6 +73,7 @@ function build(quality: Quality): Built {
     const { group: sign, face: signFace } = buildSign({ text: title, tone: "cyan", w, h, kind: "board" });
     const [x, y, z] = localPoint(frame, s.label[0], s.label[1], depth);
     sign.position.set(x, y + h / 2, z);
+    boards.push({ sign, h, y: y + h / 2 });
     signFace.name = `sign:${id}`;
     sign.traverse((o) => {
       if ((o as THREE.Mesh).isMesh && o !== signFace) o.name = `mount:${id}`;
@@ -87,7 +93,7 @@ function build(quality: Quality): Built {
     };
     signs.push({ id, local, world: Object.fromEntries(Object.keys(local).map((k) => [k, new THREE.Vector3()])) });
   }
-  return { group, signs, dispose: () => disposers.forEach((d) => d()) };
+  return { group, signs, boards, dispose: () => disposers.forEach((d) => d()) };
 }
 
 // The boards, inside the plate's group (so the cover's fit carries them),
@@ -97,6 +103,15 @@ function Signs({ built }: { built: Built }) {
   const context = useContext(PlateContext);
   useFrame(({ camera }) => {
     if (!context) return;
+    // On the narrow layout the painting is smaller on screen (it fits the
+    // strip above the sheet): the boards a little bigger there, standing
+    // on the same foot, so their words stay 48 px wide or more at 320
+    const k = isFlat() ? NARROW_BOARD : 1;
+    for (const b of built.boards)
+      if (b.sign.scale.x !== k) {
+        b.sign.scale.setScalar(k);
+        b.sign.position.y = b.y + ((k - 1) * b.h) / 2;
+      }
     // (the plate's own frame update may come after this one: fit it now)
     context.plate.cover(camera);
     context.plate.group.updateMatrixWorld();

@@ -109,10 +109,18 @@ The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
 ### The 3D city (`/city`, open on the live site)
 
 `/city` and `/city/{projects,experience,interests,about,contact}`
-(`app/city/`, `app/components/city3d/`). Home is a riverside looking over
-the water at five signs; each section is its own scene the camera travels
-into (`districts/<id>.tsx` with its data in `districts/<id>.def.ts`; the
-riverside is `Riverside.tsx`). Each page is real HTML first: the band,
+(`app/city/`, `app/components/city3d/`). Every place is painted 2.5D:
+its day and night paintings (ChatGPT, `app/assets/city/`, prompts in
+`docs/city/prompts.md`) on one plane given depth in code, with living
+light in one shader (`kit/plate.ts`, mounted by `PlatePlace.tsx`; each
+place's data in `districts/<id>.def.ts` as a `PlaceDef`, its component a
+thin wrapper in `districts/<id>.tsx`). Home is the rooftop over the city
+(`Riverside.tsx`, `lujiazui.def.ts`) with its five sections as spots in
+the painting, each with a small board and a link laid over it (Tab runs
+left to right by the spots' middles). The camera flies between places
+over the aerial painting (`flight.def.ts`, `Flight.tsx`): 2–3 s, a lift
+that dissolves through the sky's haze, one pass of cloud on the way
+down, interruptible from any point. Each page is real HTML first: the band,
 one `.city-panel` with its `h1`, the section component with `where="3d"`,
 a link to the same section on the 2D page, and the credit; readable without JavaScript or WebGL.
 Pages are `noindex`, canonical to the 2D page.
@@ -132,10 +140,24 @@ The pieces:
   `/city` route shows. Fallback everywhere is the band's plate.
 - `tiers.ts` picks the renderer tier (`TIERS`; `?tier=high|low|mobile`
   works in production) and steps high down to low once if slow.
-- `kit/`: the shared building kit (towers, windows, surfaces, neon,
-  signs, glass, water, reflection, street, trees, movers, landmarks, sky,
-  precipitation); `kit/uniforms.ts` is the only shared shader state;
-  `kit/materials.ts: shared()` the one material cache.
+- `kit/`: the plate engine (`plate.ts`: the painting, its depth, regions
+  of water, wet paving, sky and glass, movers; `cover()` grows and slides
+  the painting to fill the view from whatever pose the camera is in, so
+  no edge ever shows; `PlateDef.look` aims the home axis at a painting
+  point; on the narrow layout the painting is framed to the strip between
+  the bar and the sheet, `plateView`), the flight's clouds (`flight.ts`),
+  neon and screens (`neon.ts`), Home's boards (`signs.ts`), precipitation;
+  `kit/uniforms.ts` is the only shared shader state; `kit/materials.ts:
+  shared()` the one material cache. The code-built kit (towers, windows,
+  glass, water, street, trees, landmarks, sky dome) is retired.
+- Paintings are decoded off the main thread (`createImageBitmap`) and
+  uploaded between frames before a plate shows them; a press on a link to
+  a place starts its paintings (`kit/plate.ts: hintPlate`, `Wake.tsx`).
+- Power: at rest a place's quiet life (water, lights, the drift, the
+  arcade's attract mode: the store's `ambient`) draws at most 30 frames a
+  second and stops after 60 s with no input or change (`Wake.tsx:
+  RestTicker`); flights, turns and blends draw every frame; nothing in
+  still view or a hidden tab.
 - `atmosphere/`: time and weather into uniforms, bloom and rain/snow.
 - `panels/`: the pickers over the scene (Projects' screens, Experience's
   lines, Interests' arcade machine: `arcade/arcadeMachine.ts`, rules in
@@ -185,17 +207,20 @@ load has about 1 KB of headroom. Latest readings: `docs/city/3d-log.md`,
   (`shared(materialKey(…))`; no file under `city3d/` outside `kit/` makes
   a three.js material, `tests/city3d-contract.test.mjs`); all geometry and
   textures generated in code from fixed seeds (`rng.ts`), no `Math.random`,
-  no downloaded or AI-made models; each scene's light count is fixed
-  (`scenes.ts: DISTRICT_LIGHTS`, through `SceneLights`) and the same by day
-  and night, so day, night and weather change uniforms only and a 3 s
+  no downloaded or AI-made models (the paintings are the one exception:
+  ChatGPT images, masks made from them by code); no place mounts a light
+  of its own (`scenes.ts: DISTRICT_LIGHTS`, all 0), so the light count is
+  the same by day and night, so day, night and weather change uniforms only and a 3 s
   blend compiles no shader; no new shader variants per sky.
 - Motion in the scene only through `common.tsx` (`useLive`, `useMovers`):
   in still view nothing moves on its own, the camera cuts, the frame loop
   is `demand`. `Post.tsx` is a composer, bloom and tone mapping only: no
   glitch, scanlines, noise or chromatic aberration. No lanterns, dragons
   or red-and-gold kitsch.
-- After moving a sign or a board on the riverside, run
-  `docs/city/scripts/visibility.mjs`.
+- After moving a spot or a board on Home, run
+  `docs/city/scripts/visibility.mjs`; after a change to the plate's
+  colour, `docs/city/scripts/plate-compare.mjs` (each place against its
+  painting).
 
 ---
 
@@ -491,7 +516,7 @@ dev`, for the `?sky=` preview):
   (`/` and `/city`; desktop about 0.7 s).
 - The weather capsule shifts the layout slightly when its reading arrives
   (CLS up to 0.02, `/` and `/city`).
-- The 3D city still differs from its paintings (mean ΔE about 15, most
-  places darker), and it opened before my review on a real phone.
+- The painted 3D city opened before my review on a real phone (its
+  match to the paintings: `docs/city/3d-log.md`, "Task 10").
 - `bar-fit.mjs` depends on the live weather's words, so it can fail at a
   width without any change to the bar.

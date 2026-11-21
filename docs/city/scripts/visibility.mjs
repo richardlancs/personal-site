@@ -1,4 +1,5 @@
-// How well each section's sign reads from the riverside (/city): for every
+// How well each section's sign reads from Home (/city, the rooftop painting:
+// each section a spot with a small board, districts/lujiazui.def.ts): for every
 // sign, at each screen size and sky, how much of it is on screen (below the
 // top bar, above a phone's sheet), not covered by the page (the panel,
 // another sign's link), not behind anything in the world, how much fog is
@@ -58,7 +59,8 @@ async function measure(page) {
     // What the world draws that could stand in front: visible, solid
     const solids = [];
     scene.traverseVisible((o) => {
-      if (!o.isMesh || o.userData.hitbox || o.name.startsWith("sign:")) return;
+      // (the movers are small additive lights, not solids)
+      if (!o.isMesh || o.userData.hitbox || o.name.startsWith("sign:") || o.name === "plate-movers") return;
       const m = Array.isArray(o.material) ? o.material[0] : o.material;
       if (!m || m.visible === false || (m.transparent && m.opacity < 0.5)) return;
       solids.push(o);
@@ -77,11 +79,12 @@ async function measure(page) {
     const ceiling = Math.max(cr.top, bar.bottom);
     const floor = Math.min(cr.bottom, window.innerHeight, narrow ? panel.top : Infinity);
     const idOf = (el) => (el.dataset.anchor ? el.dataset.anchor.slice(5) : el.getAttribute("href").split("/").pop());
-    const tags = [...document.querySelectorAll(".city-tag, .city-key")].filter(shown).map((el) => ({ id: idOf(el), over: el.classList.contains("city-tag"), r: el.getBoundingClientRect() }));
+    const tags = [...document.querySelectorAll(".city-tag, .city-key, .place-dock-key")].filter(shown).map((el) => ({ id: idOf(el), over: el.classList.contains("city-tag"), r: el.getBoundingClientRect() }));
     const layers = [...(narrow ? [] : [{ name: "panel", r: panel }]), ...tags.map((t) => ({ id: t.id, name: `tag:${t.id}`, r: t.r }))];
-    // What may stand behind a board's word: its own mount, the ground and
-    // the water
-    const behindOk = (o, id) => o.name === `mount:${id}` || o.name === "ground" || o.name === "river";
+    // What may stand behind a board's word: its own mount, and the painting
+    // it stands on (Home is painted: kit/plate.ts, the mesh "plate"; its
+    // movers' lights)
+    const behindOk = (o, id) => o.name === `mount:${id}` || o.name === "plate" || o.name === "plate-movers";
     const gap = (a, b) => {
       const dx = Math.max(0, Math.max(a.left, b.left) - Math.min(a.right, b.right));
       const dy = Math.max(0, Math.max(a.top, b.top) - Math.min(a.bottom, b.bottom));
@@ -107,6 +110,9 @@ async function measure(page) {
       for (let i = 0; i < 9; i++)
         for (let j = 0; j < 3; j++)
           word.push(new THREE.Vector3((i / 8 - 0.5) * width * 0.84, (j / 2 - 0.5) * height * 0.6, -0.3).applyMatrix4(board.matrixWorld));
+      let onScreen = 0, blocked = 0, covered = 0, fogSum = 0, behind = 0;
+      const behinders = {};
+      const blockers = {}, coverers = {};
       for (const p of word) {
         const dir = p.clone().sub(camera.position).normalize();
         ray.set(p, dir);
@@ -118,9 +124,6 @@ async function measure(page) {
           behinders[name] = (behinders[name] || 0) + 1;
         }
       }
-      let onScreen = 0, blocked = 0, covered = 0, fogSum = 0, behind = 0;
-      const behinders = {};
-      const blockers = {}, coverers = {};
       let minX = Infinity, maxX = -Infinity;
       for (const p of pts) {
         const ndc = p.clone().project(camera);

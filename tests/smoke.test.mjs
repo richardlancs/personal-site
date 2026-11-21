@@ -262,7 +262,9 @@ test("/city is home: my name in its h1, and the way to every section's page", { 
 });
 
 test("/ names no city3d chunk, and no /city page names a place", { skip }, async () => {
-  assert.doesNotMatch((await get("/")).body, /city3d/);
+  // (the html's data-city3d switch, set only when the city is closed, is
+  // no chunk: its name in the payload doesn't count)
+  assert.doesNotMatch((await get("/")).body, /(?<!data-)city3d/);
   for (const s of pageSections) {
     const { body } = await get(s.city);
     for (const name of placeNames) assert.ok(!body.includes(name), `${s.city} says "${name}"`);
