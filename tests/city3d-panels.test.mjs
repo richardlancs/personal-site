@@ -246,3 +246,10 @@ test("every section's page has a way back to Home in words at its foot (Task 19 
   const page = read("app/components/city3d/CityPage.tsx");
   assert.match(page, /\{id !== "home" && \(\s*<Link href=\{cityPath\("home"\)\} className="text-link text-link-solo">\s*Back to Home\s*<\/Link>/);
 });
+
+test("Home's row of keys lists the places in the registry's order, as the Sections menu does (Task 19 review, ux M3)", () => {
+  const page = read("app/components/city3d/CityPage.tsx");
+  assert.match(page, /\{listed\s*\/\/[^\n]*\n[^\n]*\n\s*\.filter\(\(s\) => s\.id !== "home"\)\s*\.map\(/);
+  assert.doesNotMatch(page, /\.sort\(/);
+  assert.match(read("app/components/city2d/SectionsMenu.tsx"), /listed\.map\(/);
+});
