@@ -122,7 +122,17 @@ over the aerial painting (`flight.def.ts`, `Flight.tsx`): 2–3 s, a lift
 that dissolves through the sky's haze, one pass of cloud on the way
 down, interruptible from any point. Each page is real HTML first: the band,
 one `.city-panel` with its `h1`, the section component with `where="3d"`,
-a link to the same section on the 2D page, and the credit; readable without JavaScript or WebGL.
+a link to the same section on the 2D page, and the credit (Home's panel is
+the title card alone: name, school, programme, Email me, GitHub, LinkedIn,
+Résumé; its credit a line of glass under it); readable without JavaScript
+or WebGL. The place dock (`panels/PlaceDock.tsx`) stands in one place on
+every page (centred beside the places' panel width, Home's too), its row
+scrolling where it must, keys snapping whole, the far side fading, a
+focused key brought into view, the wheel turned sideways. Home's boards
+are links over them where all five fit 44px and 8px apart; on a small
+phone they still show (words 12px or more) and answer a tap, and on a
+1024 or 1280 × 720 window or a phone on its side they give way to the
+dock (none drawn).
 Pages are `noindex`, canonical to the 2D page.
 
 Open to visitors (since 2026-11-21, at my request) through
@@ -150,11 +160,18 @@ The pieces:
   `kit/uniforms.ts` is the only shared shader state; `kit/materials.ts:
   shared()` the one material cache. The code-built kit (towers, windows,
   glass, water, street, trees, landmarks, sky dome) is retired.
+- Flights pass through a haze the iris paints in the hour's colour
+  (`kit/flight.ts: HAZE_DAY`, `HAZE_NIGHT`, about as light as the
+  places), closing and opening over at least 350 ms; the clouds at most
+  `VEIL_MAX` 0.6, tinted to it; the cut between air and place made under
+  the closed haze.
+- Only the last place left keeps its pictures for a while
+  (`PlatePlace.tsx: kept`): a hop through all six stays under `TIERS`.
 - Paintings are decoded off the main thread (`createImageBitmap`) and
   uploaded between frames before a plate shows them; a press on a link to
   a place starts its paintings (`kit/plate.ts: hintPlate`, `Wake.tsx`).
 - Power: at rest a place's quiet life (water, lights, the drift, the
-  arcade's attract mode: the store's `ambient`) draws at most 30 frames a
+  arcade's attract mode, rain and snow: the store's `ambient`) draws at most 30 frames a
   second and stops after 60 s with no input or change (`Wake.tsx:
   RestTicker`); flights, turns and blends draw every frame; nothing in
   still view or a hidden tab.
@@ -278,7 +295,9 @@ weights and generous line-height. Avoid decorative fonts.
 - Grounds alternate: About, Experience and Contact sit on `--ink-2`.
 - Corners from `--radius` (10px) and `--radius-lg` (16px).
 - The 3D city: wide screens put the canvas fixed under the bar and the
-  panel in the left half; the narrow layout (`FLAT_QUERY`, mirrored in
+  panel in the left half (Interests in the right half: its painting's
+  machine is at the left edge, `frame: "left"`; the dock keeps its place
+  and the panel ends above it); the narrow layout (`FLAT_QUERY`, mirrored in
   `city-pages.css`) keeps the scene in the top `--hero` (46svh, 64svh on
   a phone on its side) with the panel as a dark sheet over the rest.
 
