@@ -112,6 +112,106 @@ export function blob(r: Rng, radius: number, squash = 0.8, lumps = 0.22, detail 
   return g;
 }
 
+/**
+ * A shaft over any convex outline (`corners`, x/z, either winding), from y0
+ * up to y1, its top outline the bottom's scaled by `top` (1 by default: a
+ * straight shaft; 0.05: a spire) round the outline's origin, with a flat
+ * roof. Side faces carry `aFace` as prism's do (their middle, half width
+ * and number from `faceBase`), so windows.ts fits whole bays to each;
+ * `windows: false` marks every face as a roof's (0, 0, -1): no windows (a
+ * crown, a spire, plant on a roof). Non-indexed, flat normals.
+ */
+export function shaft(corners: readonly (readonly [number, number])[], y0: number, y1: number, faceBase = 0, o: { top?: number; windows?: boolean } = {}) {
+  const top = o.top ?? 1;
+  const windows = o.windows ?? true;
+  const pos: number[] = [];
+  const nor: number[] = [];
+  const face: number[] = [];
+  const n = corners.length;
+  const up = v(0, 1, 0);
+  for (let i = 0; i < n; i++) {
+    const [ax, az] = corners[i];
+    const [bx, bz] = corners[(i + 1) % n];
+    const A = v(ax, y0, az);
+    const B = v(bx, y0, bz);
+    const C = v(bx * top, y1, bz * top);
+    const D = v(ax * top, y1, az * top);
+    const mid = v((ax + bx) / 2, 0, (az + bz) / 2);
+    let nn = new THREE.Vector3().subVectors(B, A).cross(new THREE.Vector3().subVectors(D, A)).normalize();
+    let tris = [A, B, C, A, C, D];
+    if (nn.x * mid.x + nn.z * mid.z < 0) {
+      nn = nn.negate();
+      tris = [A, C, B, A, D, C];
+    }
+    const flat = v(nn.x, 0, nn.z).normalize();
+    const t = new THREE.Vector3().crossVectors(up, flat).normalize();
+    const c = mid.dot(t);
+    const hw = Math.abs(v(bx - ax, 0, bz - az).dot(t)) / 2;
+    for (const p of tris) {
+      pos.push(p.x, p.y, p.z);
+      nor.push(nn.x, nn.y, nn.z);
+      if (windows) face.push(c, hw, faceBase + i);
+      else face.push(0, 0, -1);
+    }
+  }
+  if (top > 0) {
+    for (let i = 0; i < n; i++) {
+      const [ax, az] = corners[i];
+      const [bx, bz] = corners[(i + 1) % n];
+      const e1 = v(ax, 0, az);
+      const e2 = v(bx, 0, bz);
+      const tri = e1.cross(e2).y > 0 ? [[0, 0], [ax, az], [bx, bz]] : [[0, 0], [bx, bz], [ax, az]];
+      for (const [x, z] of tri) {
+        pos.push(x * top, y1, z * top);
+        nor.push(0, 1, 0);
+        face.push(0, 0, -1);
+      }
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+  g.setAttribute("aFace", new THREE.Float32BufferAttribute(face, 3));
+  return g;
+}
+
+/** Outlines for shaft(), centred on the origin: a square of side s, its corners cut by c, or rounded to radius r in `seg` steps; turned by a */
+export function outline(s: number, o: { cut?: number; round?: number; seg?: number; turn?: number } = {}): [number, number][] {
+  const h = s / 2;
+  const out: [number, number][] = [];
+  const quarter = [
+    [h, h],
+    [-h, h],
+    [-h, -h],
+    [h, -h],
+  ];
+  quarter.forEach(([cx, cz], q) => {
+    const a0 = (q * Math.PI) / 2;
+    if (o.round) {
+      const r = Math.min(o.round, h);
+      const seg = o.seg ?? 3;
+      for (let k = 0; k <= seg; k++) {
+        const a = a0 + (k / seg) * (Math.PI / 2);
+        out.push([cx - Math.sign(cx) * r + Math.cos(a) * r, cz - Math.sign(cz) * r + Math.sin(a) * r]);
+      }
+    } else if (o.cut) {
+      const c = Math.min(o.cut, h);
+      // the corner's two cut points, in order round the outline
+      // (going round: along the side that arrives here first)
+      const along: [number, number][] = [
+        [cx, cz - Math.sign(cz) * c],
+        [cx - Math.sign(cx) * c, cz],
+      ];
+      out.push(...(q % 2 ? along.reverse() : along));
+    } else out.push([cx, cz]);
+  });
+  const turn = o.turn ?? 0;
+  if (!turn) return out;
+  const cs = Math.cos(turn);
+  const sn = Math.sin(turn);
+  return out.map(([x, z]) => [x * cs - z * sn, x * sn + z * cs]);
+}
+
 // A straight prism with flat sides, standing on y0 up to y1, its outline a
 // regular polygon of `sides` corners stretched to `sx` × `sz` (so sides 4,
 // sx = sz = 1, phase π/4 is a unit box), with a flat roof and no floor

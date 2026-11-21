@@ -18,7 +18,7 @@ import { buildSkyDome } from "./kit/sky";
 import { glassMaterial } from "./kit/glass";
 import { buildLampRow, buildRailing } from "./kit/street";
 import { surface } from "./kit/surface";
-import { buildTowers, layoutTowers, type TowerSpec } from "./kit/towers";
+import { buildTowers, layoutTowers, withForms, type TowerSpec } from "./kit/towers";
 import { buildPlanters, buildStreetTrees } from "./kit/trees";
 import { windowMaterial } from "./kit/windows";
 import { buildRiver, wetPaving } from "./kit/water";
@@ -143,12 +143,6 @@ function build(quality: Quality): Built {
         return set[Math.floor(t.seed / 7) % set.length];
       },
     });
-  const nearTowers = dressed([...front, ...mid], false);
-  const farTowers = dressed(far, true, L.skyline.farFog);
-  for (const t of [...nearTowers, ...farTowers]) {
-    geometries.push(t.geometry);
-    add(t);
-  }
 
   // ---- The waterfront's low pale civic buildings, and at the Pearl's foot
   // the glass domes and the colonnaded hall between them; floodlit warm
@@ -249,27 +243,40 @@ function build(quality: Quality): Built {
   const parts: Record<SceneTone, THREE.BufferGeometry[]> = { cyan: [], rose: [], gold: [] };
   const lights: LightStrip[] = [];
   const screens: TowerSpec[] = [];
+  const accented = new Set<TowerSpec>();
   const corner = (t: TowerSpec, sx: number, sz: number) => new THREE.Vector3((sx * t.w) / 2, 0, (sz * t.d) / 2).applyAxisAngle(new THREE.Vector3(0, 1, 0), t.ry).add(new THREE.Vector3(t.x, 0, t.z));
   for (const t of [...front, ...mid].sort((a, b) => a.seed - b.seed)) {
     const tone = accents.pick(tones);
     if (t.h > L.neon.crownOver && accents() < L.neon.crowns) {
+      accented.add(t);
       const band = 0.32;
       const y = t.h - band / 2 - 0.05;
       for (const p of [box(t.w + 0.04, band, 0.05).translate(0, 0, t.d / 2 + 0.02), box(t.w + 0.04, band, 0.05).translate(0, 0, -t.d / 2 - 0.02), box(0.05, band, t.d).translate(t.w / 2 + 0.02, 0, 0), box(0.05, band, t.d).translate(-t.w / 2 - 0.02, 0, 0)]) parts[tone].push(p.rotateY(t.ry).translate(t.x, y, t.z));
       lights.push({ x: t.x, z: t.z + t.d / 2, w: t.w * 0.5, color: SCENE_TONES[tone], height: t.h });
       glow.push({ pos: new THREE.Vector3(t.x, y, t.z + t.d / 2), color: SCENE_TONES[tone], size: t.w * 0.7 });
     } else if (accents() < L.neon.edges) {
+      accented.add(t);
       const c = corner(t, 1, 1);
       parts[tone].push(box(0.06, t.h * 0.85, 0.06).translate(c.x, t.h * 0.5, c.z));
       lights.push({ x: c.x, z: c.z, w: 0.3, color: SCENE_TONES[tone], height: t.h * 0.8 });
     } else if (screens.length < L.neon.screens && t.h > 8 && t.style !== 2 && accents() < 0.25) {
       screens.push(t);
+      accented.add(t);
     } else {
       // its windows, warm, in the water
       lights.push({ x: t.x, z: t.z + t.d / 2, w: Math.max(0.3, t.w * 0.28), color: accents() < 0.9 ? "#ffc98a" : "#bfe4ff", height: t.h * 0.55 });
     }
   }
   for (const tone of ["cyan", "rose", "gold"] as SceneTone[]) if (parts[tone].length) mesh(merge(parts[tone]), neonMaterial(dim(tone, 0.5), { dayColor: L.neon.day }), `neon:${tone}`);
+  // the towers themselves, in forms of their own (kit/towers.ts: withForms;
+  // a setback, a taper, a twist, a crown, a spire...), but those carrying a
+  // lit crown, a lit edge or a screen, which are fitted to a box
+  const nearTowers = dressed(withForms([...front, ...mid], 43, (t) => accented.has(t)), false);
+  const farTowers = dressed(withForms(far, 47), true, L.skyline.farFog);
+  for (const t of [...nearTowers, ...farTowers]) {
+    geometries.push(t.geometry);
+    add(t);
+  }
   for (const t of screens) {
     const w = t.w * 0.78;
     const h = Math.min(t.h * 0.2, w * 0.62);

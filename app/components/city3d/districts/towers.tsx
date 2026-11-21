@@ -16,7 +16,7 @@ import { buildSkyDome } from "../kit/sky";
 import { buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { fit, fonts, fontsReady, pavingTexture, textureBytes } from "../kit/textures";
-import { buildTowers, layoutTowers, type TowerSpec } from "../kit/towers";
+import { buildTowers, layoutTowers, withForms, type TowerSpec } from "../kit/towers";
 import { buildPlanters, buildStreetTrees } from "../kit/trees";
 import { wetPaving } from "../kit/water";
 import { windowMaterial } from "../kit/windows";
@@ -280,11 +280,6 @@ function build(quality: Quality): Built {
     ...layoutTowers(79, { x0: -60, x1: 60, z0: -140, z1: -62 }, 30, [10, 26], keepOut),
     ...layoutTowers(83, { x0: -40, x1: 40, z0: 28, z1: 70 }, 12, [8, 24], keepOut),
   ];
-  for (const t of buildTowers(city, { far: false })) {
-    geometries.push(t.geometry);
-    if (mobile) t.castShadow = false;
-    add(t);
-  }
   const cr = rng(89);
   for (const t of city) if (cr() < 0.35) lights.push({ x: t.x, z: t.z, w: Math.max(0.4, t.w * 0.3), color: "#ffc98a", height: t.h * 0.5 });
   // Neon round the roofs of some of them, rose and cyan, as the paintings
@@ -293,6 +288,7 @@ function build(quality: Quality): Built {
   const TOP = [1, 0.78, 0.92, 0.6] as const;
   const crowns: Record<"rose" | "cyan", THREE.BufferGeometry[]> = { rose: [], cyan: [] };
   const nr = rng(131);
+  const crowned = new Set<TowerSpec>();
   for (const t of city) {
     if (t.h < 12 || nr() > 0.4) continue;
     const a = t.w * TOP[t.style] + 0.04;
@@ -301,6 +297,14 @@ function build(quality: Quality): Built {
     const y = t.h + 0.04;
     const edge = (w: number, d: number, x: number, z: number) => box(w, 0.12, d).translate(x, y, z).rotateY(t.ry).translate(t.x, 0, t.z);
     crowns[nr() < 0.5 ? "rose" : "cyan"].push(edge(a, e, 0, b / 2), edge(a, e, 0, -b / 2), edge(e, b, a / 2, 0), edge(e, b, -a / 2, 0));
+    crowned.add(t);
+  }
+  // the towers, in forms of their own (kit/towers.ts: withForms), but the
+  // crowned ones, whose parapet of light is fitted to their style's roof
+  for (const t of buildTowers(withForms(city, 97, (t) => crowned.has(t)), { far: false })) {
+    geometries.push(t.geometry);
+    if (mobile) t.castShadow = false;
+    add(t);
   }
   for (const tone of ["rose", "cyan"] as const) if (crowns[tone].length) mesh(merge(crowns[tone]), neonMaterial(SCENE_TONES[tone], { dayColor: "#9aa6b2" }), `crowns:${tone}`);
 
@@ -421,9 +425,12 @@ function build(quality: Quality): Built {
   mesh(strip, neonMaterial(SCENE_TONES.gold, { dayColor: "#d9d2c4" }), "ring-strip");
   const circle = (r: number) => Array.from({ length: 73 }, (_, i) => polar(r, i * 5, top + R.glass - 0.11));
   for (const r of [rin + 0.04, rout - 0.04]) {
-    const rail = add(buildRailing(circle(r)));
+    // (stout posts, so the railing reads as posts and glass, not one band)
+    const rail = add(buildRailing(circle(r), { post: 0.026 }));
     geometries.push(rail.geometry);
   }
+  // a lit handrail along the top of each, warm, apart from the fascia's strip
+  mesh(merge([arcFace(rin + 0.05, 0, 360, top + R.glass - 0.004, top + R.glass + 0.01, 96, true), arcFace(rout - 0.05, 0, 360, top + R.glass - 0.004, top + R.glass + 0.01, 96, false)]), neonMaterial(`#${new THREE.Color(SCENE_TONES.gold).multiplyScalar(0.55).getHexString()}`, { dayColor: "#cfc8bb" }), "ring-handrail");
   // glass panes along both railings (the kit's glass)
   mesh(merge([arcFace(rin + 0.045, 0, 360, top, top + R.glass, 96, true), arcFace(rout - 0.045, 0, 360, top, top + R.glass, 96, false)]), glassMaterial({ tint: "#bcd6e6", opacity: 0.22, sky: 0.7, glow: { tone: "#ffc98a", strength: 0.35 }, double: true }), "glass:railing");
   // planters along the deck's outer edge, between the pillars, each with
