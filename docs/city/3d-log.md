@@ -259,3 +259,53 @@ Step 4, again (build of `de164b4`):
 - next dev: `visibility.mjs` 0 problems; `city3d-contrast.mjs` pass, 240 combinations, lowest panel
   5.28:1 (Projects' current index row, clear night), top bar 6.03, foot 6.21, keys 14.72;
   `palette-contrast.mjs` 23/23; `plate-compare.mjs` mean ΔE 15.2 (unchanged).
+
+## The painted 2.5D city, Task 10: integration and the gate (21 November 2026)
+
+Every place is a painting on the plate engine now (`kit/plate.ts`, `PlatePlace.tsx`), and the camera flies
+between them over the aerial painting. What Task 10 changed (brief and report:
+`.superpowers/sdd/2026-11-21-city-25d/task-10-*.md`):
+
+- **Retired.** `kit/{glass,landmarks,movers,reflection,sky,street,towers,trees,water,windows}.ts`,
+  `districts/placeholder.tsx` (nothing imported them) and their tests; the riverside's signs and routes
+  (`sign`, `signPlace`, `routesFromRiverside`) and `SceneLights`. `DISTRICT_LIGHTS` is 0 everywhere: no
+  place mounts a light. `clockMaterial` is transparent and writes no depth in the kit.
+- **Framing.** `cover()` works from wherever the camera really is (focus pans, enter/exit, a flight's
+  pull-back), through the nearest pulled plane, so no edge shows from 21:9 to a phone
+  (`tests/city3d-framing.test.mjs`); `PlateDef.look` aims the home axis at a painting point. Phones: the
+  painting fills the strip between the bar and the sheet (measured from the dock's top), its whole height
+  on a portrait phone (0.4 to 0.6 of its width, was about 0.2) slid to its subject (`portrait.aim`, or
+  `yaw`/`lift` read as a painting point); a phone on its side shows its whole width (`short.aim`/`under`).
+  Mobile painting edge kept at 1024: the strip now shows 400 to 600 px of it at DPR 1.25, about 1:1.
+  Home's boards are 1.4× on the narrow layout (49 px at 320). `?frame=plate` uses each painting's aspect.
+- **Flights.** Paintings decode with `createImageBitmap` (off the main thread, at the tier's size) and
+  upload one per task between frames before a plate shows them; a press on a link starts them
+  (`Wake.tsx: useLinkHints`, `kit/plate.ts: hintPlate`). The lift dissolves through the sky's haze (the
+  iris, blue-grey by day, navy at night); the only cloud pass is the descent.
+- **Colour.** The lights' extra over 1.0 after dark is 0.3 (was 0.9); dusk crosses from day to night
+  between n 0.3 and 0.7.
+- **Power.** A place's quiet life (water, sky, glass, movers, the drift, the arcade's attract mode: the
+  store's `ambient`) is drawn at most 30 times a second at rest and not at all after 60 s with no input
+  or change (`Wake.tsx: RestTicker`); flights, turns, blends and falling weather draw every frame.
+
+The gate, production build `0c3WELvmzgj_ntmgZdB-Z` (commit 14522b4):
+
+- lint, `tsc`: clean. `npm test`: 464 tests, 434 pass, 30 skipped, 0 fail; `SMOKE_URL=…3100`: 463 pass,
+  1 skipped (the smoke check of `/` now ignores the html's `data-city3d` switch, which is no chunk).
+- `budget.mjs`: all inside; homeInitialJs 199,632, cityInitialJs 200,022, city3dChunk 298,985, city3dJs
+  336,475, districtChunk 9,256, cityCss 1,999 / 2,000.
+- `city3d-perf.mjs`: all inside; worst p95 high 4.8 / 12 (Home), low 3.9 / 9 (Home), mobile 2.6 / 8;
+  draws ≤ 28; texture ≤ 55.1 MB high, ≤ 18.9 MB mobile; 0 shaders over five skies; still view 0 frames
+  (one turning minute, Experience high); `/` no WebGL.
+- Flights (`city:flight`, production, 1440×900 / 390×844): 2.27–2.75 s on high (night and day) and on
+  low and mobile after the first; the first flight of a visit 3.10 s low, 2.90 s mobile (the aerial and
+  the first place's paintings on their way).
+- `plate-compare.mjs` (dev): see the report; night ΔL Interests +6.6 → +2.1, Home 1.4.
+- `city3d-contrast.mjs` (dev): pass, 240 combinations, lowest panel 4.99 (Projects, rain night).
+- `mobile-audit.mjs`: 0 failures, 0 warnings. `city3d-fallback.mjs`: phones and no-JS clean; wide pages
+  fail on the bar's time-and-weather capsule filling in (0.007–0.012 at about 120 ms; the scene isn't
+  involved); the note's button was under the dock (rule order in `city-pages.css`), fixed. Lighthouse
+  `/city`: mobile LCP 2,843 ms, CLS up to 0.0087 mobile / 0.0131 desktop (the capsule).
+- `city3d-keyboard.mjs`: pass. `visibility.mjs` (dev): phones 320–768 portrait pass; a phone on its side
+  and the 1024×768 landscape tablet still lose some of Home's signs off the strip or the panel's side
+  (the links are the dock's there).
