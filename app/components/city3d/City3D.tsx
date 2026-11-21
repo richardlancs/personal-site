@@ -136,6 +136,19 @@ const panelRight = (width: number, height: number) => {
   return panel.right;
 };
 
+// The place dock's top edge on wide screens (panels/PlaceDock.tsx): the
+// tags stay above it; the screen's foot where there's none
+let dock = { key: "", ticks: 0, top: 0 };
+const dockTop = (width: number, height: number) => {
+  const key = `${width}x${height}|${location.pathname}`;
+  if (dock.key !== key || ++dock.ticks > 120) {
+    const el = document.querySelector(".place-dock");
+    const top = el ? el.getBoundingClientRect().top : 0;
+    dock = { key, ticks: 0, top: top > 0 && top < height ? top : height };
+  }
+  return dock.top;
+};
+
 const add = (a: V3, b: V3) => new THREE.Vector3(a[0] + b[0], a[1] + b[1], a[2] + b[2]);
 const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[scene].offset), target: add(pose.target, scenes[scene].offset) });
 // Where the camera rests in a place: the focus pose the panel or a click
@@ -627,7 +640,9 @@ function TagProjector({ active }: { active: SceneId }) {
     nav.removeAttribute("data-hidden");
     const narrow = isFlat();
     const ceiling = barBottom(size.width, size.height) + 4;
-    const floor = narrow ? heroHeight(size.height) - SHEET_OVERLAP - 4 : size.height - 8;
+    // (wide: over the place dock, 8px clear of it; narrow: over the sheet,
+    // whose top the dock is)
+    const floor = narrow ? heroHeight(size.height) - SHEET_OVERLAP - 4 : dockTop(size.width, size.height) - 8;
     // (4px from the screen's edges: room for the focus ring)
     const edge = panelRight(size.width, size.height);
     const left = edge ? edge + 8 : 4;

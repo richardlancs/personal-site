@@ -216,6 +216,25 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   font-size: 0.875rem;
 }
 
+/* What stands in for the scene when it can't be drawn, or waits
+   (before the wide layout's rules, which lift it over the dock) */
+.city3d-note {
+  position: fixed;
+  right: max(1.5rem, env(safe-area-inset-right));
+  bottom: max(1.5rem, env(safe-area-inset-bottom));
+  z-index: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  max-width: min(24rem, calc(50% - 3rem));
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  color: var(--text);
+}
+
 @media (orientation: landscape) and (min-width: 768px) and (min-height: 481px) {
   .city-band {
     position: fixed;
@@ -394,23 +413,6 @@ html[data-city-tags="row"] .city-tags {
   display: none;
 }
 
-/* What stands in for the scene when it can't be drawn, or waits */
-.city3d-note {
-  position: fixed;
-  right: max(1.5rem, env(safe-area-inset-right));
-  bottom: max(1.5rem, env(safe-area-inset-bottom));
-  z-index: 0;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 0.75rem;
-  max-width: min(24rem, calc(50% - 3rem));
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--panel);
-  color: var(--text);
-}
 
 /* FLAT_QUERY: the narrow layout (city3d/flat.ts; a test keeps them equal) */
 @media (orientation: portrait), (max-width: 767px), (max-height: 480px) /* FLAT_QUERY */ {
