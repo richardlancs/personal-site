@@ -213,7 +213,7 @@ test("the picker's slot holds an unseen, unreachable copy of its row, so the pan
   for (const picker of ["screens", "lines", "arcade"]) assert.match(ghost, new RegExp(`data-picker="${picker}"`));
   const css = read("app/city/city-pages.css");
   assert.match(css, /\.city-picker\[data-ghost\] \{\s*visibility: hidden;/);
-  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\] \{\s*display: none;/);
+  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\],\s*html:is\(\[data-city3d="fallback"\], \[data-city3d="lost"\], \[data-city3d="saving"\]\) \.city-picker\[data-ghost\] \{\s*display: none;/);
   // One cell: the copy, the row and the line stacked, so the room is kept
   // without :has() too; the fallback keeps it, filled by a line (Task 19's
   // open fallback shift)
@@ -254,7 +254,7 @@ test("Home's card holds nothing but the card: no 2D link, the credit a line of i
   const panel = page.slice(page.indexOf('<div className="city-panel">'), page.indexOf("{id === \"home\" && (\n        <footer"));
   // the foot and the colophon only on the sections' pages
   assert.match(panel, /\{id !== "home" && \(\s*<>\s*<p className="city-panel-foot">[\s\S]*<footer className="city-colophon">\s*<Colophon \/>\s*<\/footer>\s*<\/>\s*\)\}\s*<\/div>/);
-  assert.match(page, /\{id === "home" && \(\s*<footer className="city-colophon city-credit">\s*<Colophon \/>\s*<\/footer>\s*\)\}/);
+  assert.match(page, /\{id === "home" && \(\s*<footer className="city-panel city-colophon city-credit">\s*<Colophon \/>\s*<\/footer>\s*\)\}/);
 });
 
 test("the place dock lists the places in the registry's order, as the Sections menu does, on every page; Home's row of keys is gone (Task 19 review, ux M3; painted 2.5D Task 2)", () => {

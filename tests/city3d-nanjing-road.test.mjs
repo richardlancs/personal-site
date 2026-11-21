@@ -55,7 +55,7 @@ test("no riverside sign (Home's spot for Interests is Home's own data); framed o
   assert.equal(def.frame, "left");
   assert.deepEqual(def.plate.look, [0.12, 0.5]);
   const css = read("app/city/city-pages.css");
-  assert.match(css, /\.city-page\[data-section="interests"\] \.city-panel \{\s*margin: 1\.5rem max\(1\.5rem, env\(safe-area-inset-right\)\) 6\.5rem auto;/);
+  assert.match(css, /\.city-page\[data-section="interests"\] \.city-panel \{\s*margin: 1\.5rem 1\.5rem 6\.5rem auto;/);
 });
 
 test("the depth is a street: facades and paving come out, nearer toward the frame's edges; the sky stays back; the arcade is one layer", () => {

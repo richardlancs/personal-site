@@ -129,7 +129,7 @@ export default function CityPage({ id }: { id: SectionId }) {
         )}
       </div>
       {id === "home" && (
-        <footer className="city-colophon city-credit">
+        <footer className="city-panel city-colophon city-credit">
           <Colophon />
         </footer>
       )}

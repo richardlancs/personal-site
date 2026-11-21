@@ -31,9 +31,14 @@ export default function PlaceDock({ current }: { current: SectionId }) {
       <Link href={previous.city} className="glass glass-icon" data-dock="previous" aria-keyshortcuts="ArrowLeft" aria-label={`Previous place: ${previous.title}`}>
         {arrow("m15 5-7 7 7 7")}
       </Link>
-      <ul className="place-dock-row flex flex-1 gap-2 min-w-0">
+      {/* Where the row scrolls (narrow screens, and 1024 to 1440 wide) a
+          key snaps whole into it, and a focused key comes clear of the
+          fades (CityPanel.tsx fades the side with more and brings focus
+          into view); on the row itself, not in the city's stylesheet,
+          which is at its budget (budget.mjs: cityCss) */}
+      <ul className="place-dock-row flex flex-1 gap-2 min-w-0" style={{ scrollSnapType: "x mandatory", scrollPaddingInline: 24 }}>
         {places.map((s) => (
-          <li key={s.id}>
+          <li key={s.id} style={{ scrollSnapAlign: "center" }}>
             <Link href={s.city} className="glass place-dock-key font-display font-semibold" aria-current={s.id === current ? "page" : undefined}>
               {s.title}
               {s.id === current && <span className="sections-menu-here" aria-hidden="true" />}

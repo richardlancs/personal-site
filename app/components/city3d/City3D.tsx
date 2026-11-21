@@ -103,7 +103,8 @@ const heroHeight = (height: number) => {
   if (hero.key !== key || ++hero.ticks > 120) {
     const sheet = isFlat() ? document.querySelector(".place-dock") ?? document.querySelector(".city-panel") : null;
     const top = sheet ? sheet.getBoundingClientRect().top + window.scrollY : 0;
-    const css = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0;
+    // (--hero is in svh: a share of the window's height)
+    const css = ((parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0) * height) / 100;
     hero = { key, ticks: 0, px: top > 0 ? Math.min(height, top + SHEET_OVERLAP) : css };
   }
   return hero.px || height * (height <= 480 ? 0.64 : 0.46);
@@ -772,7 +773,7 @@ function Tags({ show }: { show: boolean }) {
     <nav aria-label="Signs" className="city-tags" data-hidden="" ref={found}>
       {tagged.map((s) => (
         <Link key={s.id} className="city-tag" href={cityPath(s.id)} data-anchor={`sign:${s.id}`}>
-          <span className="city-tag-name">{section(s.id).title}</span>
+          <span className="sr-only">{section(s.id).title}</span>
         </Link>
       ))}
     </nav>

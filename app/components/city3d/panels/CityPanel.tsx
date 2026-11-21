@@ -122,8 +122,10 @@ export default function CityPanel() {
     const fade = () => {
       if (!row) return;
       const more = row.scrollWidth - row.clientWidth;
-      row.style.setProperty("--fade-l", row.scrollLeft > 1 ? "24px" : "0px");
-      row.style.setProperty("--fade-r", more - row.scrollLeft > 1 ? "24px" : "0px");
+      const [l, r] = [row.scrollLeft > 1 ? 24 : 0, more - row.scrollLeft > 1 ? 24 : 0];
+      const mask = l || r ? `linear-gradient(90deg, #0000, #000 ${l}px, #000 calc(100% - ${r}px), #0000)` : "";
+      row.style.maskImage = mask;
+      row.style.setProperty("-webkit-mask-image", mask);
     };
     const onFocus = (e: FocusEvent) => (e.target as HTMLElement).scrollIntoView?.({ inline: "nearest", block: "nearest" });
     // (a mouse's wheel turns the row sideways, while it has further to go)

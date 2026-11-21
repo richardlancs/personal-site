@@ -40,7 +40,9 @@ const primary = profile.emails[0];
 export default function Contact({ where = "2d" }: { where?: Where }) {
   return (
     <div className="@container mt-10">
-    <div className="contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10">
+    {/* (in the 3D city the card is no fill of its own, only its edges:
+        glass within the panel's glass) */}
+    <div className={`contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan ${where === "3d" ? "bg-transparent" : "bg-panel"} px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10`}>
       <a
         href={`mailto:${primary.address}`}
         className="glass glass-primary glass-lg w-full @min-[27.5rem]:w-auto"

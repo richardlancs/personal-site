@@ -135,8 +135,11 @@ body:has(.city-page) .top-bar .rh {
   visibility: hidden;
 }
 
+/* (and where the scene isn't drawing, the copy gives up its room to the
+   line below) */
 html:not([data-still]) .city-picker[data-ghost],
-.city-picker-slot:has(> .city-picker:not([data-ghost])) > .city-picker[data-ghost] {
+.city-picker-slot:has(> .city-picker:not([data-ghost])) > .city-picker[data-ghost],
+html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) .city-picker[data-ghost] {
   display: none;
 }
 
@@ -151,10 +154,6 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   display: block;
 }
 
-/* (and the keys' unseen copy gives up its room to the line) */
-html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) .city-picker[data-ghost] {
-  display: none;
-}
 
 .city-picker,
 .city-picker-row {
@@ -221,15 +220,7 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   font-size: 0.875rem;
 }
 
-/* Home's credit, out of the title card: the sheet's foot on the narrow
-   layout (glass under the card on wide screens, above) */
-.city-credit {
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
-  background: var(--ink-2);
-}
+
 
 /* What stands in for the scene when it can't be drawn, or waits
    (before the wide layout's rules, which lift it over the dock) */
@@ -260,8 +251,7 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   /* The places' panel width, which the dock keeps clear of on every page
      (.place-dock), so its keys stand still from one place to the next */
   .city-page {
-    --place-w: min(46rem, 100% - 3rem, max(32rem, 50vw));
-    --panel-w: var(--place-w);
+    --panel-w: min(46rem, 100% - 3rem, max(32rem, 50vw));
   }
 
   /* Home holds only the title card: a narrower panel, so more of the city
@@ -282,8 +272,7 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
      edge, a light line along the top, the words' dark halo, and the
      secondary words a little lighter, so they keep 4.5:1 on it */
   .city-panel,
-  .place-dock,
-  .city-credit {
+  .place-dock {
     --muted: var(--glass-muted);
     border: 1px solid var(--glass-edge);
     background: var(--glass-panel);
@@ -302,11 +291,11 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
   .place-dock {
     position: fixed;
     z-index: 2;
-    left: calc(var(--place-w) + 2.5rem);
+    left: calc(min(46rem, 100% - 3rem, max(32rem, 50vw)) + 2.5rem);
     right: 1.5rem;
     bottom: 1.25rem;
     width: fit-content;
-    max-width: calc(100% - var(--place-w) - 4rem);
+    max-width: calc(100% - min(46rem, 100% - 3rem, max(32rem, 50vw)) - 4rem);
     margin: 0 auto;
     padding: 0 4px;
     border-radius: 18px; /* --radius and the 8px round its keys */
@@ -316,20 +305,13 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
      is at its left edge: districts/nanjing-road.def.ts, frame "left");
      the dock keeps its place, so the panel ends clear above it */
   .city-page[data-section="interests"] .city-panel {
-    margin: 1.5rem max(1.5rem, env(safe-area-inset-right)) 6.5rem auto;
-  }
-
-  /* Contact's card is glass within the glass: an edge and a faint tint,
-     no fill of its own */
-  .city-panel .contact {
-    background: rgb(230 233 238 / 0.04);
+    margin: 1.5rem 1.5rem 6.5rem auto;
   }
 
   /* Home's credit, under the title card: a small line of glass */
   .city-credit {
     width: fit-content;
-    max-width: var(--panel-w);
-    margin: -2rem 0 1.5rem max(1.5rem, env(safe-area-inset-left));
+    margin: -2rem 0 1.5rem 1.5rem;
     padding: 0.5rem 1rem;
     border-radius: var(--radius);
   }
@@ -342,16 +324,10 @@ html:is([data-city3d="fallback"], [data-city3d="lost"], [data-city3d="saving"]) 
 
 /* ---------- The canvas (city3d/CityShell.tsx, City3D.tsx) ----------
    --hero: how much of a narrow screen the scene keeps above the sheet
-   (a length, so the canvas can read it in pixels). The canvas is fixed
+   (in svh: the canvas reads it as a share of the window's height). The canvas is fixed
    over the whole window on both layouts, over the band, under the panel;
    the band hides once the canvas has drawn its first frame, and comes
    back whenever html[data-city3d] isn't "on". */
-@property --hero {
-  syntax: "<length>";
-  inherits: true;
-  initial-value: 0px;
-}
-
 :root {
   --hero: 46svh;
 }
@@ -437,16 +413,6 @@ html:not([data-city3d="on"]) .city3d {
   }
 }
 
-/* (the name is for screen readers; the board shows it) */
-.city-tag-name {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* Where the links can't all stand over their boards 8px apart (a small
    phone, a phone on its side), none is over the scene: the dock lists the
    places (panels/PlaceDock.tsx) */
@@ -475,7 +441,10 @@ html[data-city-tags="row"] .city-tags {
     background: var(--ink-2);
   }
 
-  .place-dock + .city-panel {
+  /* (and Home's credit, a .city-panel of its own after the card, carries
+     the sheet on) */
+  .place-dock + .city-panel,
+  .city-panel + .city-panel {
     margin-top: 0;
     border: 0;
     border-radius: 0;
@@ -496,21 +465,11 @@ html[data-city-tags="row"] .city-tags {
    carries on under it). Wide: glass along the foot of the scene, clear of
    the panel (above). The rest of its layout is utilities. */
 /* (8px inside the scroller: room for a focused key's ring) */
-/* Where it scrolls (narrow screens, and 1024 to 1440 wide) a key snaps
-   whole into the row,
-   the side with more fades out (--fade-l, --fade-r: CityPanel.tsx sets
-   them as it scrolls), and a focused key is brought clear of the fades */
+/* (where it scrolls, its keys snap whole into it: PlaceDock.tsx) */
 .place-dock-row {
   padding: 8px;
   overflow-x: auto;
   scrollbar-width: none;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 24px;
-  mask-image: linear-gradient(90deg, #0000, #000 var(--fade-l, 0px), #000 calc(100% - var(--fade-r, 0px)), #0000);
-}
-
-.place-dock-row > li {
-  scroll-snap-align: center;
 }
 
 .place-dock-key {
@@ -528,8 +487,7 @@ html[data-city-tags="row"] .city-tags {
    nothing shows through them */
 @media (prefers-contrast: more), (forced-colors: active) {
   .city-panel,
-  .place-dock,
-  .city-credit {
+  .place-dock {
     background: var(--panel);
     backdrop-filter: none;
   }

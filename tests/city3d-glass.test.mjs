@@ -31,8 +31,8 @@ test("the glass tokens exist, and the panel and the dock are glass: a tint over 
   assert.match(tokens, /--glass-panel:\s*rgb\(24 27 35 \/ 0\.\d+\);/);
   assert.match(tokens, /--glass-muted:\s*#[0-9a-f]{6};/);
   const wide = noComments(pages.slice(pages.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px)")));
-  const glass = wide.match(/\n {2}\.city-panel,\s*\.place-dock,\s*\.city-credit \{([^}]*)\}/);
-  assert.ok(glass, ".city-panel, .place-dock and Home's credit on wide screens");
+  const glass = wide.match(/\n {2}\.city-panel,\s*\.place-dock \{([^}]*)\}/);
+  assert.ok(glass, ".city-panel (Home's credit too) and .place-dock on wide screens");
   assert.match(glass[1], /--muted: var\(--glass-muted\);/);
   assert.match(glass[1], /backdrop-filter: var\(--glass-panel-blur\);/);
   assert.match(glass[1], /background: var\(--glass-panel\);/);
@@ -42,7 +42,7 @@ test("the glass tokens exist, and the panel and the dock are glass: a tint over 
 
 test("the glass goes opaque under prefers-contrast: more and in forced colours", () => {
   const css = noComments(pages);
-  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock,\s*\.city-credit \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
+  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
 });
 
 test("Home's title card is the name, the school, the programme, Email me, GitHub, LinkedIn and the résumé, all from the data", () => {
@@ -106,12 +106,13 @@ test("← and → go to the previous and the next place, but not while typing, w
 test("the dock stands in one place on every page; where its row scrolls, a focused key comes into view, keys snap whole, the far side fades, the wheel turns it (fix round A, ux I1, a11y I2)", () => {
   const wide = noComments(pages.slice(pages.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px)")));
   // Home's panel is narrower, but the dock keeps to the places' line
-  assert.match(wide, /\.city-page \{\s*--place-w: min\(46rem, 100% - 3rem, max\(32rem, 50vw\)\);\s*--panel-w: var\(--place-w\);/);
-  assert.match(wide, /\.place-dock \{[^}]*left: calc\(var\(--place-w\) \+ 2\.5rem\);[^}]*max-width: calc\(100% - var\(--place-w\) - 4rem\);/);
+  const place = "min\\(46rem, 100% - 3rem, max\\(32rem, 50vw\\)\\)";
+  assert.match(wide, new RegExp(`\\.city-page \\{\\s*--panel-w: ${place};`));
+  assert.match(wide, new RegExp(`\\.place-dock \\{[^}]*left: calc\\(${place} \\+ 2\\.5rem\\);[^}]*max-width: calc\\(100% - ${place} - 4rem\\);`));
   assert.doesNotMatch(wide, /\.place-dock \{[^}]*var\(--panel-w\)/);
-  const css = noComments(pages);
-  assert.match(css, /\.place-dock-row \{[^}]*scroll-snap-type: x mandatory;[^}]*scroll-padding-inline: 24px;[^}]*mask-image: linear-gradient\(90deg, #0000, #000 var\(--fade-l, 0px\), #000 calc\(100% - var\(--fade-r, 0px\)\), #0000\);/);
-  assert.match(css, /\.place-dock-row > li \{\s*scroll-snap-align: center;/);
+  assert.match(dock, /<ul className="place-dock-row[^"]*" style=\{\{ scrollSnapType: "x mandatory", scrollPaddingInline: 24 \}\}>/);
+  assert.match(dock, /<li key=\{s\.id\} style=\{\{ scrollSnapAlign: "center" \}\}>/);
+  assert.match(panelSrc, /linear-gradient\(90deg, #0000, #000 \$\{l\}px, #000 calc\(100% - \$\{r\}px\), #0000\)/);
   assert.match(panelSrc, /scrollIntoView\?\.\(\{ inline: "nearest", block: "nearest" \}\)/);
   assert.match(panelSrc, /row\?\.addEventListener\("focusin", onFocus\);/);
   assert.match(panelSrc, /row\?\.addEventListener\("wheel", onWheel, \{ passive: false \}\);/);

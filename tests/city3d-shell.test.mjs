@@ -135,7 +135,7 @@ test("the signs and tags say each section's title from the registry, never retyp
   assert.match(riverside, /const title = section\(id\)\.title;/);
   // One link per board, to its section's /city page, named by its title
   // (visually the board's painted word: the link is its hit area)
-  assert.match(city, /<Link key=\{s\.id\} className="city-tag" href=\{cityPath\(s\.id\)\} data-anchor=\{`sign:\$\{s\.id\}`\}>\s*<span className="city-tag-name">\{section\(s\.id\)\.title\}<\/span>/);
+  assert.match(city, /<Link key=\{s\.id\} className="city-tag" href=\{cityPath\(s\.id\)\} data-anchor=\{`sign:\$\{s\.id\}`\}>\s*<span className="sr-only">\{section\(s\.id\)\.title\}<\/span>/);
   // The anchors the visibility script and the links use: each spot's
   // middle and its four edges' middles
   assert.match(riverside, /anchors\.set\(`sign:\$\{s\.id\}\$\{k\}`, v\)/);
