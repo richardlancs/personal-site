@@ -249,6 +249,8 @@ function Director({
     const from = s.started ? s.active : null;
     // (a focus belongs to the place it was chosen in)
     if (from !== to) world.set({ arrived: false, hover: null, focus: null });
+    // (a new plan waits at its own crossing from its own start)
+    s.waitingSince = 0;
     // (a painted place starts fetching its painting now)
     wantPlate(to);
     if (iris.current) iris.current.style.background = scenes[to === RIVERSIDE && from ? from : to].threshold;
@@ -473,6 +475,7 @@ function Director({
         pullBack(null, 1);
         flightView.air = false;
         flightView.veil = 0;
+        flightView.wanted = false;
         s.roll = 0;
       }
     } else if (flightView.air || flightView.veil || s.scaled || s.roll) {

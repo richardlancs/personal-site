@@ -29,7 +29,9 @@ import { precip } from "./state";
 // In still view the clock stops, so they hold where they are, at half the
 // density: rain as still strokes, like rain in a woodblock print, so the
 // weather still reads with nothing moving. While they fall (and still view
-// is off) the canvas draws every frame (useLive).
+// is off) they are the place's quiet life (useLive, ambient: Wake.tsx,
+// RestTicker): at most 30 frames a second, and held where they are after
+// 60 s with no input, as the water and the lights are.
 //
 // Per tier: high and low draw the full field (1,100 drops, 800 flakes; one
 // draw call each, 2 triangles a drop); mobile draws 600 and 460, larger and
@@ -118,11 +120,11 @@ export default function Precipitation({ quality, active }: { quality: Quality; a
   const { camera, scene, invalidate } = useThree();
   const fields = useRef<Record<Kind, Field | null>>({ rain: null, snow: null });
   const tmp = useRef({ dir: new THREE.Vector3(), time: 0 });
-  // Whether anything is falling: the canvas draws every frame while it is
-  // (and still view is off)
+  // Whether anything is falling: the canvas draws while it is (and still
+  // view is off), as the rest of the place's quiet life does
   const [falling, setFalling] = useState(false);
   const still = useWorld((s) => s.still);
-  useLive(falling && !still);
+  useLive(falling && !still, true);
 
   // The mobile tier's fields are another size, so a change to or from it
   // builds them again; high and low share theirs (a step down compiles

@@ -93,6 +93,8 @@ const LAYERS: (CloudLayer & { z: number })[] = [
   { z: 0.44, cover: 0.56, seed: [11.3, 2.9], scale: [4, 4.5], near: [2, 8] },
 ];
 
+const RETRY_MS = 10_000;
+
 export default function Flight({ tier }: { tier: Quality }) {
   const { gl, scene, camera, size } = useThree();
   const plate = useMemo(() => buildPlate(AERIAL_PLACE, tier), [tier]);
@@ -133,11 +135,15 @@ export default function Flight({ tier }: { tier: Quality }) {
     return () => void parts.group.remove(plate.group);
   }, [parts, plate]);
 
-  // The pictures: in idle time, or as soon as a flight wants them
+  // The pictures: in idle time, or as soon as a flight wants them (a
+  // failed load is tried again RETRY_MS later at the soonest)
   const fetch = useRef<() => void>(() => {});
   useEffect(() => {
     let live = true;
     let started = false;
+    // (after a failed load, offline say, not again for a while: never a
+    // fetch and an error every frame)
+    let failedAt = -Infinity;
     const compile = () => {
       // Every program the flight draws, against the target the frame
       // draws into (City3D.tsx: Warm), hidden or not
@@ -156,7 +162,7 @@ export default function Flight({ tier }: { tier: Quality }) {
       pending.finally(() => target?.dispose());
     };
     fetch.current = () => {
-      if (started) return;
+      if (started || performance.now() - failedAt < RETRY_MS) return;
       started = true;
       plate.load(uploadBetweenFrames(gl)).then(
         () => {
@@ -166,6 +172,7 @@ export default function Flight({ tier }: { tier: Quality }) {
         },
         (error) => {
           started = false;
+          failedAt = performance.now();
           console.error(error);
         },
       );

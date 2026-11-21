@@ -18,9 +18,10 @@ import { world } from "./store";
 // second, and not at all once there has been no input (pointer, keys,
 // wheel, touch, scroll) and no change in the store (a sky, a choice, an
 // arrival) for REST_IDLE_MS; anything of those starts it again. Anything
-// really moving (a flight, a turn to something chosen, a sky's blend, the
-// rain and snow: the store's `live`) draws every frame as before; still
-// view and a hidden tab draw nothing.
+// really moving (a flight, a turn to something chosen, a sky's blend: the
+// store's `live`) draws every frame as before; rain and snow are quiet
+// life too (atmosphere/Precipitation.tsx); still view and a hidden tab
+// draw nothing.
 const REST_FPS = 30;
 const REST_IDLE_MS = 60_000;
 export function RestTicker({ on }: { on: boolean }) {

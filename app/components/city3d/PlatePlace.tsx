@@ -32,8 +32,12 @@ export const PlateContext = createContext<{ plate: Plate; def: PlaceDef } | null
 
 // How long a place keeps its pictures after it stops showing (and isn't
 // being travelled to): a journey back within this is instant; the phone
-// tier keeps only the showing place's
+// tier keeps only the showing place's. Only the last place left keeps
+// them: leaving another frees the one before at once, so hopping through
+// every place holds the showing one, the one wanted and one left, inside
+// the tier's texture budget (tiers.ts: TIERS)
 const KEEP_MS: Record<Quality, number> = { high: 20_000, low: 12_000, mobile: 0 };
+let kept: { id: SceneId; release: () => void } | null = null;
 
 // Whether the plate moves on its own (water, sky, glass, wet paving), so
 // the canvas must draw every frame while it shows
@@ -88,8 +92,18 @@ export default function PlatePlace({ id, def, active, quality, still, onSpot, sp
   const want = active || wantedHere;
   useEffect(() => {
     if (!want) {
-      const t = window.setTimeout(() => plate.release(), KEEP_MS[quality]);
-      return () => window.clearTimeout(t);
+      if (kept && kept.id !== id) kept.release();
+      const release = () => {
+        window.clearTimeout(t);
+        plate.release();
+        if (kept?.id === id) kept = null;
+      };
+      const t = window.setTimeout(release, KEEP_MS[quality]);
+      kept = { id, release };
+      return () => {
+        window.clearTimeout(t);
+        if (kept?.id === id) kept = null;
+      };
     }
     let live = true;
     plate.load(uploadBetweenFrames(gl)).then(

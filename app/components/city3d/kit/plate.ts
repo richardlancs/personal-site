@@ -770,12 +770,29 @@ export function buildPlate(def: PlaceDef, quality: Quality): Plate {
       .then(async (list) => {
         const pics = list[plate.painting];
         if (!pics) throw new Error(`plate: no painting "${plate.painting}" in kit/plateArt.ts (npm run city:masks)`);
-        const [day, night, light, depth] = await Promise.all([
+        // (if one picture fails, the ones that did decode are freed, not
+        // left for the canvas's end)
+        const settled = await Promise.allSettled([
           pictureTexture(pics.day, edge.painting, true),
           pictureTexture(pics.night, edge.painting, true),
           pics.light ? pictureTexture(pics.light, edge.mask, false) : Promise.resolve(null),
           depthTexture(plate, pics, regions.sky, quality),
-        ]);
+        ] as const);
+        const failed = settled.find((r): r is PromiseRejectedResult => r.status === "rejected");
+        if (failed) {
+          for (const r of settled) {
+            if (r.status !== "fulfilled" || !r.value) continue;
+            const t = r.value instanceof THREE.Texture ? r.value : r.value.texture;
+            if (t !== s.black && t !== s.color) freeTexture(t);
+          }
+          throw failed.reason;
+        }
+        const [day, night, light, depth] = settled.map((r) => (r as PromiseFulfilledResult<unknown>).value) as [
+          THREE.Texture,
+          THREE.Texture,
+          THREE.Texture | null,
+          Awaited<ReturnType<typeof depthTexture>>,
+        ];
         const all = [day, night, light, depth.texture, regions.texture].filter((t): t is THREE.Texture => !!t && t !== s.black && t !== s.color);
         // Uploaded one at a time, each in a task of its own, between frames
         // (never in the frame that first draws them: no stall at a lift)
