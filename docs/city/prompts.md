@@ -107,3 +107,42 @@ The scene's lights:
 Overlay check (each pair at 50%): lujiazui, longtang, towers, metro and
 bund line up. nanjing-road's night plate moved the tram, the signs and the
 facades; see the progress notes for what was done about it.
+
+## The painted 2.5D city (21 November 2026)
+
+Made in ChatGPT (Richard's account) in one chat, 1672×941, saved as webp
+under `app/assets/city/` (originals in `docs/city/concepts/25d/`). Each
+prompt began with the style paragraph, adjusted: "restrained neon in cyan
+and warm lantern amber" (no magenta), "very rich fine detail everywhere",
+"Wide 16:9 landscape format".
+
+**rooftop-night** (3D Home). At night, the famous view from the edge of a
+very high rooftop looking out and steeply down over the whole of Shanghai.
+In the foreground, the corner of the rooftop with a low parapet, a few
+rooftop vents, cables and a small glowing cyan light strip. Below, the
+Huangpu River curves through the middle, glittering with reflections and a
+few lit river boats. Across the river the entire Lujiazui skyline, densely
+packed lit towers. Far below, streets full of tiny light trails of traffic,
+an elevated metro line, old stone buildings along the riverfront promenade
+with a clock tower, a narrow old lane of low brick houses with lanterns, a
+bright shopping street of glowing signs. Haze and city glow rising into a
+deep navy sky with a few stars.
+
+**rooftop-day**. "Exactly the same image, the same composition … on a clear
+late afternoon by day: warm golden sunlight from the left, a deep
+gouache-blue sky with a few towering white cumulus clouds, the river blue
+with sun glints, windows mostly unlit with sky reflections, neon signs
+faint, the rooftop in soft shade."
+
+**aerial-night** (the flight). An aerial view of the whole city at night
+from a plane high above, looking steeply down at about 60 degrees. The
+river in a big S curve; the Lujiazui towers seen from above; on the west
+bank the riverfront promenade with a clock tower, a street grid with light
+trails, an elevated metro line, a bright shopping street, a quarter of old
+low brick lane houses with lanterns. Thin wisps of low cloud.
+
+**aerial-day**. The same, by day on a clear late afternoon.
+
+A depth map was tried ("a depth map of exactly that image"): ChatGPT
+repaints the scene with a different composition, so it can't be used.
+Depth is made in code from layers and polygons instead.
