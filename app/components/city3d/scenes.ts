@@ -9,6 +9,7 @@
 //
 
 import type { FogBase } from "./atmosphere/looks";
+import { FLAT_QUERY } from "./flat.ts";
 import type { DistrictId } from "../../sections/registry";
 import bund from "./districts/bund.def.ts";
 import longtang from "./districts/longtang.def.ts";
@@ -29,6 +30,9 @@ export type SceneDef = {
   enter: Pose;
   exit: Pose;
   focus: Record<string, Pose>;
+  // The same keys' poses on the narrow layout, where they differ (the
+  // panel is a sheet there, not a side)
+  narrowFocus?: Record<string, Pose>;
   // The lens at the home view (vertical degrees) on landscape screens
   fov: number;
   // The pose and lens that frame the place like its painting
@@ -266,7 +270,9 @@ export const DISTRICT_LIGHTS: Record<SceneId, number> = {
 // store's `focus`: a screen, a line, the machine), or its home view when
 // nothing is chosen or the key isn't the place's
 export function restingPose(id: SceneId, focus: string | null): Pose {
-  return (focus ? scenes[id].focus[focus] : undefined) ?? scenes[id].home;
+  if (!focus) return scenes[id].home;
+  const narrow = typeof matchMedia === "function" && matchMedia(FLAT_QUERY).matches ? scenes[id].narrowFocus?.[focus] : undefined;
+  return narrow ?? scenes[id].focus[focus] ?? scenes[id].home;
 }
 
 // The camera's turn toward something chosen in a place, or back home: a

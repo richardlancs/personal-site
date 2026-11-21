@@ -11,7 +11,6 @@ import { shared } from "../kit/materials";
 import { plateUniforms, spotGeometry } from "../kit/plate";
 import { materialKey } from "../kit/uniforms";
 import { track } from "../kit/textures";
-import { isFlat } from "../flat";
 import PlatePlace, { PlateContext } from "../PlatePlace";
 import type { Quad } from "../scenes";
 import { useWorld, world } from "../store";
@@ -328,32 +327,9 @@ function DaySigns() {
   return null;
 }
 
-// ---------- Arriving ----------
-//
-// On a wide screen the panel's glass lies over the left half, and the
-// machine stands in the painting's left tenth: no framing of the painting
-// at its own size can show it beside the panel (the painting must fill
-// the view, so its left edge is the screen's). So the place arrives at the
-// machine: coming to Interests, the eye comes down the street and walks
-// up to the arcade (focus "machine", the pose the panel's keys choose), in
-// one movement, the flight's own. A phone keeps the street at rest (no
-// panel over it; the machine is one Play away).
-const AT_INTERESTS = /\/interests\/?$/;
-function useArriveAtMachine(active: boolean) {
-  const focus = useWorld((s) => s.focus);
-  const arrived = useWorld((s) => s.arrived);
-  useEffect(() => {
-    if (!active || arrived || focus !== null) return;
-    // (only coming here: leaving, the place is still showing a moment)
-    if (!AT_INTERESTS.test(window.location.pathname) || isFlat()) return;
-    world.set({ focus: "machine" });
-  }, [active, arrived, focus]);
-}
-
 export default function InterestsScene(props: SceneProps) {
   const { active } = props;
   const spotEnabled = useCallback(() => active && world.get().arrived, [active]);
-  useArriveAtMachine(active);
   return (
     <PlatePlace {...props} id="nanjing-road" def={def} onSpot={(_, hit) => onScreen(hit)} spotEnabled={spotEnabled}>
       <Screen active={props.active} still={props.still} />

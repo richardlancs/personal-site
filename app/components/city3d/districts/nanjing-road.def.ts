@@ -140,28 +140,37 @@ function painted(u: number, v: number, pull: number): V3 {
   return [EYE[0] + (u - 0.5) * height * ASPECT * k, EYE[1] + (0.5 - v) * height * k, EYE[2] - DISTANCE * k];
 }
 
-// Going to the machine: the eye walks up to the arcade, a little in front
-// of the cabinet and just right of it, looking straight ahead as the home
-// view does (so the painting stays square to it), until the cabinet stands
-// tall in the half of a wide screen the panel leaves, its screen a little
-// left of and above that half's middle (`aside`, `above`: shares of the
-// gap, the lens's tangents). How near (`gap`) is set by the painting's
-// left edge: it must stay past the screen's left edge (under the panel)
-// at every wide screen's shape (1280 × 800 to 1920 × 1080: the panel's
-// half puts the view's middle 1.12 to 1.15 lens-heights from the screen's
-// left). The same pose serves a phone: there the view's middle is the
-// strip over the sheet (portrait below: no turn to speak of, and `lift`
-// puts the eye's aim at the screen's middle, so the painting stands where
-// it does on a wide screen), and the screen shows just under the strip's
-// middle.
+// Going to the machine on a phone: the eye walks up to the arcade, a
+// little in front of the cabinet and just right of it, looking straight
+// ahead as the home view does (so the painting stays square to it), until
+// the cabinet stands tall in the strip over the sheet, its screen a little
+// left of and above the strip's middle (`aside`, `above`: shares of the
+// gap, the lens's tangents; portrait below: no turn to speak of, and
+// `lift` puts the eye's aim at the screen's middle).
 const TOWARD = { gap: 1.7, aside: 0.05, above: 0.1 };
 const screenMiddle = painted(0.119, 0.625, streetDepth(0.118, 0.63));
 const seeFrom: V3 = [screenMiddle[0] + TOWARD.aside * TOWARD.gap, screenMiddle[1] - TOWARD.above * TOWARD.gap, screenMiddle[2] + TOWARD.gap];
-const SEE_MACHINE = {
+const SEE_MACHINE_NARROW = {
   pos: seeFrom.map((x) => +x.toFixed(3)) as V3,
   target: [seeFrom[0], seeFrom[1], screenMiddle[2]].map((x) => +x.toFixed(3)) as V3,
 };
-export const NANJING = { eye: EYE, distance: DISTANCE, lens: LENS, paintingFov: PAINTING_FOV, aspect: ASPECT, vp: VP, painted, toward: TOWARD };
+
+// On a wide screen the panel stands on the right (frame "left",
+// city-pages.css) and the machine is in the free half at rest (`look`):
+// going to it is a gentle step in, `NEARER` of the way toward its screen,
+// down and forward, still looking straight ahead; the painting slides to
+// bring the machine toward the free half's middle as the room grows
+// (kit/plate.ts: cover). The machine's paint grows 1 / (1 − NEARER):
+// with the painting at 1.07 screen px a painting px at rest at 1440 × 900
+// and 1.28 at 1920 × 1080 (the lens is vertical), 1.25 and 1.49 there:
+// never a soft close-up.
+const NEARER = 0.14;
+const stepIn: V3 = [EYE[0], EYE[1] + NEARER * (screenMiddle[1] - EYE[1]), EYE[2] - NEARER * (EYE[2] - screenMiddle[2])];
+const SEE_MACHINE = {
+  pos: stepIn.map((x) => +x.toFixed(3)) as V3,
+  target: [stepIn[0], stepIn[1], stepIn[2] - DISTANCE].map((x) => +x.toFixed(3)) as V3,
+};
+export const NANJING = { eye: EYE, distance: DISTANCE, lens: LENS, paintingFov: PAINTING_FOV, aspect: ASPECT, vp: VP, painted, toward: TOWARD, nearer: NEARER };
 
 // ---------- The signs by day ----------
 //
@@ -217,6 +226,11 @@ const plate: PlateDef = {
     { kind: "wet", poly: [[0.585, 0.655], [0.635, 0.655], [0.7, 0.7], [0.82, 0.74], [0.86, 0.78], [1, 0.8], [1, 1], [0, 1], [0, 0.84], [0.16, 0.79], [0.3, 0.75], [0.45, 0.7]] },
   ],
   spots: { machine: MACHINE },
+  // On a wide screen the home axis aims at the arcade's machine, which
+  // the cover brings as near the free (left) half's middle as filling the
+  // view allows: at 1440 and 1920 the machine and the bright street to
+  // its right share that half at rest
+  look: [0.12, 0.5],
   // a slow, small drift (under 1% of the view in 10 s)
   drift: { amplitude: 0.0028, period: 44 },
   movers: [
@@ -241,9 +255,10 @@ const nanjingRoad: PlaceDef = {
   enter: { pos: IN, target: [IN[0], IN[1], IN[2] - DISTANCE] },
   exit: { pos: IN, target: [IN[0], IN[1], IN[2] - DISTANCE] },
   focus: { machine: SEE_MACHINE },
+  narrowFocus: { machine: SEE_MACHINE_NARROW },
   fov: LENS,
   plateFrame: { fov: PAINTING_FOV, pos: EYE, target: [EYE[0], EYE[1], EYE[2] - DISTANCE] },
-  frame: "right",
+  frame: "left",
   // A phone: the lens no wider than the painting's (40 × 1.2), barely
   // turned (the Pearl right of the strip's middle, the arcade's machine
   // still in reach), and `lift` the degrees that put the aim at the

@@ -50,9 +50,12 @@ test("home is the painting's frame, its lens a little narrower (never grown on a
   }
 });
 
-test("no riverside sign (Home's spot for Interests is Home's own data); framed on the right", () => {
+test("no riverside sign (Home's spot for Interests is Home's own data); framed on the left, its panel on the right, aimed at the machine", () => {
   assert.ok(!("sign" in def));
-  assert.equal(def.frame, "right");
+  assert.equal(def.frame, "left");
+  assert.deepEqual(def.plate.look, [0.12, 0.5]);
+  const css = read("app/city/city-pages.css");
+  assert.match(css, /\.city-page\[data-section="interests"\] \.city-panel \{\s*margin: 1\.5rem max\(1\.5rem, env\(safe-area-inset-right\)\) 6\.5rem auto;/);
 });
 
 test("the depth is a street: facades and paving come out, nearer toward the frame's edges; the sky stays back; the arcade is one layer", () => {
@@ -91,26 +94,29 @@ test("the machine's screen is the one spot and the one focus key; it lies on the
   for (const c of [...SCREEN.night, ...SCREEN.day]) assert.ok(c[0] >= u0 && c[0] <= u1 && c[1] >= v0 && c[1] <= v1);
 });
 
-test("the walk up to the machine: square to the painting, the screen near the view's middle, the painting's left edge past a wide screen's left edge", () => {
-  const pose = def.focus.machine;
-  const dir = pose.target.map((t, i) => t - pose.pos[i]);
-  assert.ok(Math.abs(dir[0]) < 1e-9 && Math.abs(dir[1]) < 1e-9 && dir[2] < 0, "looking straight down -z, as home does");
-  const tanHalf = Math.tan(((def.fov / 2) * Math.PI) / 180);
+test("the step toward the machine: square to the painting, gentle on a wide screen (its paint at most 1.5 screen px a painting px at 1920 × 1080); a phone walks up to it", () => {
+  for (const pose of [def.focus.machine, def.narrowFocus.machine]) {
+    const dir = pose.target.map((t, i) => t - pose.pos[i]);
+    assert.ok(Math.abs(dir[0]) < 1e-9 && Math.abs(dir[1]) < 1e-9 && dir[2] < 0, "looking straight down -z, as home does");
+  }
+  // wide: the machine's plane grows 1 / (1 − nearer) over the rest, where
+  // the painting is (tan 24° / tan 20°) × 1080 / 1032 screen px a painting px
   const z = streetDepth(0.118, 0.63);
+  const m = NANJING.painted(0.119, 0.625, z);
+  const grow = (NANJING.eye[2] - m[2]) / (def.focus.machine.pos[2] - m[2]);
+  const rest = (Math.tan((24 * Math.PI) / 180) / Math.tan((20 * Math.PI) / 180)) * (1080 / 1032);
+  assert.ok(grow > 1.1 && rest * grow <= 1.5, `${(rest * grow).toFixed(2)} at 1920 × 1080`);
+  // a phone: the screen near the view's middle, every pulled point in front of the eye
+  const pose = def.narrowFocus.machine;
+  const tanHalf = Math.tan(((def.fov / 2) * Math.PI) / 180);
   const see = (u, v, pull) => {
     const p = NANJING.painted(u, v, pull);
     const d = pose.pos[2] - p[2];
     assert.ok(d > 0.5, "in front of the eye");
-    return [(p[0] - pose.pos[0]) / d / tanHalf, (p[1] - pose.pos[1]) / d / tanHalf]; // in half-heights of the view
+    return [(p[0] - pose.pos[0]) / d / tanHalf, (p[1] - pose.pos[1]) / d / tanHalf];
   };
   const [sx, sy] = see(0.119, 0.625, z);
   assert.ok(Math.abs(sx) < 0.3 && Math.abs(sy) < 0.4, `the screen at ${sx.toFixed(2)}, ${sy.toFixed(2)}`);
-  // the painting's left edge (at the arcade's depth) further left than the
-  // screen's left edge at 1280 × 800, 1440 × 900 and 1920 × 1080 (the view's
-  // middle 2.3 half-heights in from the left, the panel's half)
-  const [ex] = see(0, 0.625, z);
-  assert.ok(ex < -2.3, `the left edge at ${ex.toFixed(2)}`);
-  // and every pulled point stays in front of the eye
   for (let u = 0; u <= 1; u += 0.1) for (let v = 0; v <= 1; v += 0.1) see(u, v, streetDepth(u, v));
 });
 
@@ -149,14 +155,8 @@ test("the machine: a mover (parked in still view), the store's mode and presses,
   assert.match(src, /const SOFT = 0\.5;/);
 });
 
-test("on a wide screen the place arrives at the machine (the panel covers the painting's left, where it stands)", () => {
-  assert.match(src, /function useArriveAtMachine\(active: boolean\)/);
-  assert.match(src, /if \(!active \|\| arrived \|\| focus !== null\) return;/);
-  assert.match(src, /if \(!AT_INTERESTS\.test\(window\.location\.pathname\) \|\| isFlat\(\)\) return;\s*world\.set\(\{ focus: "machine" \}\);/);
-  assert.match(src, /useArriveAtMachine\(active\);/);
-  // the machine's left edge is a tenth in: no framing of the whole
-  // painting can show it beside a panel over the left half
-  for (const c of SCREEN.night) assert.ok(c[0] < 0.14);
+test("the place rests on the street with the machine in view; nothing chooses the machine on arrival", () => {
+  assert.doesNotMatch(src, /useArriveAtMachine|AT_INTERESTS/);
 });
 
 test("by day the signs are lit, in their night colours, on the day painting's boards, in the plate's own shader", async () => {

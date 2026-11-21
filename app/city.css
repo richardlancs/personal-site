@@ -75,11 +75,11 @@
      without counting the halo, the secondary words a little lighter on
      the glass (--glass-muted) (docs/city/scripts/city3d-contrast.mjs).
      Opaque under prefers-contrast: more and in forced colours. */
-  --glass-panel: rgb(24 27 35 / 0.8);
-  --glass-panel-blur: blur(22px) saturate(1.35);
+  --glass-panel: rgb(24 27 35 / 0.66);
+  --glass-panel-blur: blur(28px) saturate(1.4);
   --glass-edge: rgb(143 233 255 / 0.3);
   --glass-edge-hi: rgb(230 233 238 / 0.22); /* the panel's line along the top */
-  --glass-halo: 0 0 1px rgb(8 9 12 / 0.9), 0 0 4px rgb(8 9 12 / 0.7), 0 0 12px rgb(8 9 12 / 0.45);
+  --glass-halo: 0 0 1px rgb(8 9 12 / 0.95), 0 0 4px rgb(8 9 12 / 0.8), 0 0 14px rgb(8 9 12 / 0.55);
   --glass-muted: #c0c6d0; /* 4.5:1 over a white screen through the glass */
   /* Behind a focus ring, so it shows on any painting */
   --focus-halo: 0 0 0 6px rgb(8 9 12 / 0.9);

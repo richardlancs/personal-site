@@ -107,8 +107,10 @@ test("six painted places, each with a plate frame, framed beside the panel; no p
     assert.ok(isPlace(def), `${id} is painted`);
     assert.ok(def.plateFrame && def.plateFrame.pos.length === 3 && def.plateFrame.target.length === 3 && def.plateFrame.fov > 0, id);
     // the panel takes the left half; a place is framed in the right half,
-    // or (Experience, whose board runs the painting's width) centred
-    assert.ok(["right", "center"].includes(def.frame), `${id}: ${def.frame}`);
+    // or (Experience, whose board runs the painting's width) centred; only
+    // Interests, its machine at the painting's left edge, is framed on the
+    // left, its panel on the right (city-pages.css)
+    assert.ok(id === "nanjing-road" ? def.frame === "left" : ["right", "center"].includes(def.frame), `${id}: ${def.frame}`);
     assert.ok(def.fov > 0, id);
     // the riverside's signs and routes went with the code-built Home
     assert.ok(!("sign" in def), `${id}: no riverside sign`);

@@ -125,16 +125,20 @@ const barBottom = (width: number, height: number) => {
   return bar.bottom;
 };
 
-// The panel's right edge on wide screens: the tags stay clear of it
-let panel = { key: "", ticks: 0, right: 0 };
-const panelRight = (width: number, height: number) => {
+// The panel's edges on wide screens (0, 0 on the narrow layout): the tags
+// stay clear of it, the place is framed beside it. The showing page's
+// panel: the router may keep an earlier page, hidden.
+let panel = { key: "", ticks: 0, left: 0, right: 0 };
+const panelEdges = (width: number, height: number) => {
   const key = `${width}x${height}|${location.pathname}`;
   if (panel.key !== key || ++panel.ticks > 120) {
-    const el = document.querySelector(".city-panel");
-    panel = { key, ticks: 0, right: el && !isFlat() ? el.getBoundingClientRect().right : 0 };
+    const el = [...document.querySelectorAll<HTMLElement>(".city-panel")].find((p) => p.checkVisibility?.() ?? true);
+    const r = el && !isFlat() ? el.getBoundingClientRect() : null;
+    panel = { key, ticks: 0, left: r?.left ?? 0, right: r?.right ?? 0 };
   }
-  return panel.right;
+  return panel;
 };
+const panelRight = (width: number, height: number) => panelEdges(width, height).right;
 
 // The place dock's top edge on wide screens (panels/PlaceDock.tsx): the
 // tags stay above it; the screen's foot where there's none
@@ -570,9 +574,10 @@ function Director({
       wantY = narrowLift(size.height, ceiling);
     } else if (def.frame !== "center" && edge > 0) {
       // A wide screen: the view's middle moves to the middle of the part
-      // the panel leaves, and the lens widens if it must to show `span`
-      // degrees either side of it there
-      const [l, r] = def.frame === "right" ? [edge + 12, size.width - 12] : [12, size.width - edge - 12];
+      // the panel leaves (the panel on the left, or on the right for a
+      // place framed "left": city-pages.css), and the lens widens if it
+      // must to show `span` degrees either side of it there
+      const [l, r] = def.frame === "right" ? [edge + 12, size.width - 12] : [12, panelEdges(size.width, size.height).left - 12];
       want = 0.5 - (l + r) / 2 / size.width;
       if (def.span) fov = Math.max(fov, lens(tan(def.span) / (((r - l) / size.width) * aspect)));
     }
