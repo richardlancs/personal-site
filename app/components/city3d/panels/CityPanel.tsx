@@ -1,9 +1,10 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Suspense, lazy, useEffect, useState, useSyncExternalStore, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import type { Interest } from "../../../data/portfolio";
+import { cityPath } from "../../../lib/cityRoutes";
 
 // What a /city page's panel does beyond its words, for every /city page:
 // mounted once in the layout, in the chunk that comes after the page is up
@@ -23,8 +24,11 @@ import type { Interest } from "../../../data/portfolio";
 // drawn into its page's slot (.city-picker-slot, whose data-picks holds
 // what it lists, written by the server). They only mean something while
 // the 3D city is drawing (html[data-city3d="on"], CityShell.tsx), so each
-// loads in its own chunk then. Escape back to the riverside is
-// City3D.tsx's, in the 3D chunk.
+// loads in its own chunk then.
+//
+// Escape on a section's page goes back to Home, whether the scene draws
+// or not (no WebGL2, Save-Data, a lost context), unless a dialog or menu
+// is open (they take Escape themselves).
 
 // What the pickers list, from the server (CityPage.tsx, the slot's
 // data-picks): the pickers import no data of their own
@@ -80,6 +84,18 @@ export default function CityPanel() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- read from the page's own DOM, once it is in the document
     setSection((mains.find((m) => m.checkVisibility?.() ?? true) ?? mains.at(-1))?.dataset.section);
   }, [pathname]);
+
+  const router = useRouter();
+  useEffect(() => {
+    if (!section || section === "home") return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      if (document.documentElement.classList.contains("resume-lock") || document.querySelector(":popover-open, dialog[open]")) return;
+      router.push(cityPath("home"));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [section, router]);
 
   const on = useSyncExternalStore(watchDrawing, drawing, notYet);
   const slot = section ? document.querySelector<HTMLElement>(`[data-section="${section}"] .city-picker-slot`) : null;

@@ -118,6 +118,13 @@ export default function CityPage({ id }: { id: SectionId }) {
         )}
         {content[id]}
         <p className="city-panel-foot">
+          {/* The way back, in words, on every section's page (Escape does
+              the same, panels/CityPanel.tsx), drawing or not */}
+          {id !== "home" && (
+            <Link href={cityPath("home")} className="text-link text-link-solo">
+              Back to Home
+            </Link>
+          )}
           <Link href={twoDHref(s.city)} className="text-link text-link-solo">
             This section on the 2D page
           </Link>

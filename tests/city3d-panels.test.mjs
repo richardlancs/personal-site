@@ -28,16 +28,16 @@ test("a journey puts focus on the panel's heading at once, without scrolling, ne
   assert.doesNotMatch(read("app/components/city3d/CityPage.tsx"), /CityFocus/);
 });
 
-test("Escape goes back to the riverside once, from the 3D chunk, never on home or over a menu or the résumé", () => {
-  // City3D.tsx (loaded lazily with the canvas) already handles it; the
-  // panel, which is in /city's first load, doesn't add a second
-  const city = code(read("app/components/city3d/City3D.tsx"));
-  assert.match(city, /e\.key !== "Escape"/);
-  assert.match(city, /if \(target === RIVERSIDE\) return;/);
-  assert.match(city, /resume-lock/);
-  assert.match(city, /:popover-open, dialog\[open\]/);
-  assert.match(city, /router\.push\(cityPath\("home"\)\)/);
-  assert.doesNotMatch(code(read(`${panels}/CityPanel.tsx`)), /Escape|keydown/);
+test("Escape goes back to Home once, from the panel (so also where the scene isn't drawing), never on home or over a menu or the résumé", () => {
+  // CityPanel.tsx comes after the page is up (CityAfter.tsx), drawing or
+  // not; City3D.tsx no longer adds a second (Task 19 review, a11y M1)
+  const panel = code(read(`${panels}/CityPanel.tsx`));
+  assert.match(panel, /e\.key !== "Escape"/);
+  assert.match(panel, /if \(!section \|\| section === "home"\) return;/);
+  assert.match(panel, /resume-lock/);
+  assert.match(panel, /:popover-open, dialog\[open\]/);
+  assert.match(panel, /router\.push\(cityPath\("home"\)\)/);
+  assert.doesNotMatch(code(read("app/components/city3d/City3D.tsx")), /"Escape"/);
 });
 
 test("the pickers load lazily, only for Projects, Experience and Interests, and only while the 3D city draws", () => {
@@ -240,4 +240,9 @@ test("a city page's band has its painting before the scripts, from the file its 
 test("forced colours: a focused place tag gets a two-colour ring that holds over the unforced scene (Task 19 review, a11y I3)", () => {
   const css = read("app/city/city-pages.css");
   assert.match(css, /@media \(forced-colors: active\) \{\s*\.city-tag:focus-visible \{\s*outline: 3px solid CanvasText;\s*box-shadow: 0 0 0 6px Canvas;\s*forced-color-adjust: none;/);
+});
+
+test("every section's page has a way back to Home in words at its foot (Task 19 review, a11y M1)", () => {
+  const page = read("app/components/city3d/CityPage.tsx");
+  assert.match(page, /\{id !== "home" && \(\s*<Link href=\{cityPath\("home"\)\} className="text-link text-link-solo">\s*Back to Home\s*<\/Link>/);
 });

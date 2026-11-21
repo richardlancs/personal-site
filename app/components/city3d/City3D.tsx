@@ -894,18 +894,7 @@ html, body { background: #000 !important; }
     };
   }, []);
 
-  // Escape in a section's place goes back to the riverside, unless a
-  // dialog or menu is open (they take Escape themselves)
-  useEffect(() => {
-    if (target === RIVERSIDE) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || e.defaultPrevented) return;
-      if (document.documentElement.classList.contains("resume-lock") || document.querySelector(":popover-open, dialog[open]")) return;
-      router.push(cityPath("home"));
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [target, router]);
+  // (Escape back to the riverside is the panel's: panels/CityPanel.tsx)
 
   // The résumé covers the page: no frames under it
   useEffect(() => {
