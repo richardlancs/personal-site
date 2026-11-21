@@ -293,8 +293,10 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     if (part && unsafeAt(part, !!b.layer))
       out.unsafe.push(`control ${describe(b.el)} at ${Math.round(part.left)},${Math.round(part.top)}–${Math.round(part.right)},${Math.round(part.bottom)}`);
     // A fixed control must also be the thing a tap at its middle reaches
-    if (b.layer) {
-      const x = r.left + r.width / 2;
+    // (the middle of what its sideways-scrolling row shows: none, if it's
+    // scrolled out of it)
+    if (b.layer && !b.hidden) {
+      const x = (b.r.l + b.r.r) / 2;
       const y = r.top + r.height / 2;
       // (Not one scrolled out of sight inside its menu)
       const scroller = b.el.parentElement?.closest(":popover-open, .resume-doc");
