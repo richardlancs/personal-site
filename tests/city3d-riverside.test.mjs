@@ -25,9 +25,9 @@ test("the anchors are exactly the five sections' signs and their edges, from the
   assert.ok(m);
   const signed = m[1].split(",").map((s) => s.trim().replace(/"/g, ""));
   assert.deepEqual([...signed].sort(), ["about", "contact", "experience", "interests", "projects"]);
-  // left to right across the painting
-  const left = signed.map((id) => Math.min(...HOME_SIGNS[id].spot.map((c) => c[0])));
-  for (let i = 1; i < left.length; i++) assert.ok(left[i] > left[i - 1], signed.join(", "));
+  // left to right across the painting (by their middles)
+  const mid = signed.map((id) => HOME_SIGNS[id].spot.reduce((a, c) => a + c[0], 0) / 4);
+  for (let i = 1; i < mid.length; i++) assert.ok(mid[i] > mid[i - 1], signed.join(", "));
   const keys = [...src.matchAll(/anchors\.set\(\s*([^,]+),/g)].map((x) => x[1].trim());
   assert.deepEqual(keys, ["`sign:${s.id}${k}`"]);
   for (const k of ['""', '":top"', '":foot"', '":left"', '":right"']) assert.ok(src.includes(`${k}: new THREE.Vector3(`), k);
