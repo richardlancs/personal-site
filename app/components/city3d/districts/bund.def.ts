@@ -41,10 +41,13 @@ const bund: PlaceDef = {
   frame: "right",
   // (no `span`: a lens wider than the painting's only makes the plate
   // grow to fill it, showing less of the painting, not more)
-  // Portrait phones show about a fifth of the painting's width: turned
-  // 8.6° left, its middle at u 0.43, the clock tower and the promenade
-  // running away beside it (u = 0.5 + tan(yaw) / (2 tan 25° × 2400/1032))
-  portrait: { yaw: -8.6, half: 27 },
+  // Portrait phones show about a fifth of the painting's width, from the
+  // top down to the far bank above the sheet. The phone's wide lens grows
+  // the plate (kit/plate.ts: cover, about 2.4× on a 390 × 844 phone), so
+  // the turn moves the view across the painting by tan(yaw) / (2 tan 25° ×
+  // 2400/1032 × that growth): 22° left puts the clock tower (u 0.41) near
+  // the middle, the facades left of it and the promenade's lamps right
+  portrait: { yaw: -22, half: 27 },
   short: 3,
   threshold: "#0f1418",
   sun: [-60, 60, -25],

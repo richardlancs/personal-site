@@ -45,10 +45,15 @@ test("its home view is the painting's frame, on the right of wide screens, its s
     const to = (p) => Math.hypot(...p.map((x, i) => def.home.target[i] - x));
     assert.ok(to(pose.pos) < to(def.home.pos) && to(pose.pos) > 0.9 * to(def.home.pos));
   }
-  // portrait phones centre on the clock tower (about u 0.41) and the promenade
-  const half = Math.tan((def.plateFrame.fov * Math.PI) / 360) * def.plate.aspect;
-  const u = 0.5 + Math.tan((def.portrait.yaw * Math.PI) / 180) / (2 * half);
-  assert.ok(u > 0.4 && u < 0.46, `portrait middle at u ${u.toFixed(3)}`);
+  // A 390 × 844 phone centres on the clock tower (u 0.41): its lens (City3D.tsx:
+  // the wider of 1.2 × fov and `half` either side) grows the plate to fill it
+  // (kit/plate.ts: cover), and the turn moves the view by tan(yaw) over that
+  const rad = (d) => (d * Math.PI) / 180;
+  const aspect = 390 / 844;
+  const lensHalf = Math.max(Math.tan(rad(def.fov * 0.6)), Math.tan(rad(def.portrait.half)) / aspect);
+  const grow = (lensHalf / Math.tan(rad(def.plateFrame.fov / 2))) * 1.011;
+  const u = 0.5 + Math.tan(rad(def.portrait.yaw)) / (2 * Math.tan(rad(def.plateFrame.fov / 2)) * def.plate.aspect * grow);
+  assert.ok(u > 0.4 && u < 0.44, `portrait middle at u ${u.toFixed(3)}`);
 });
 
 test("Contact has no picker: no focus keys, no Hitbox; the clock spots sit on the painted clock tower", () => {
