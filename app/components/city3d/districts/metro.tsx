@@ -64,25 +64,37 @@ function flaps(g: CanvasRenderingContext2D, text: string, x: number, y: number, 
   }
 }
 
-// One row per painted row (METRO.rows): its role over its organisation and
-// dates, in the painting's amber; the chosen one in gold with a mark
+// The board's left side: a column of line marks, one per row (the train's
+// teal stripe on a disc, the chosen one gold), no words. It keeps the
+// words clear of the panel's glass on a laptop, where the panel's edge
+// falls across the board's left end at the home view.
+const MARKS = 0.14;
+
+// One row per painted row (METRO.rows): its mark, then its role over its
+// organisation and dates, in the painting's amber; the chosen one in gold
 function drawBoard(g: CanvasRenderingContext2D, w: number, h: number) {
   g.fillStyle = "#101318";
   g.fillRect(0, 0, w, h);
   const rowH = h / METRO.rows;
   const pad = rowH * 0.12;
-  const room = w - pad * 4;
+  const left = w * MARKS;
+  const room = w - left - pad * 1.5;
   LINES.slice(0, METRO.rows).forEach((e, i) => {
     const chosen = i === board.line;
     const y = i * rowH;
-    if (chosen) {
-      g.fillStyle = "rgba(255,186,90,0.16)";
-      g.fillRect(pad * 0.5, y + pad * 0.4, w - pad, rowH - pad * 0.8);
-      g.fillStyle = "#ffc24f";
-      g.fillRect(pad * 0.7, y + rowH * 0.18, pad * 0.8, rowH * 0.64);
-    }
-    flaps(g, e.role, pad * 2.4, y + rowH * 0.1, room, rowH * 0.44, chosen ? "#ffd27a" : "#f4b04a", chosen ? "#2b2216" : "#191b20");
-    flaps(g, `${e.organization} · ${dates(e)}`, pad * 2.4, y + rowH * 0.6, room, rowH * 0.3, chosen ? "#f6c578" : "#c99a52", chosen ? "#251e14" : "#15171b");
+    // the row's lit backing, like the painting's amber bars
+    g.fillStyle = chosen ? "rgba(255,186,90,0.2)" : "rgba(255,170,70,0.06)";
+    g.fillRect(pad * 0.5, y + pad * 0.4, w - pad, rowH - pad * 0.8);
+    // the line's mark
+    const r = rowH * 0.27, cx = left / 2, cy = y + rowH / 2;
+    g.fillStyle = chosen ? "#ffc24f" : "#2c3a44";
+    g.beginPath();
+    g.arc(cx, cy, r, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = chosen ? "#2b2216" : "#3fb6b0";
+    g.fillRect(cx - r * 0.72, cy - r * 0.16, r * 1.44, r * 0.32);
+    flaps(g, e.role, left, y + rowH * 0.1, room, rowH * 0.44, chosen ? "#ffd27a" : "#f4b04a", chosen ? "#2b2216" : "#191b20");
+    flaps(g, `${e.organization} · ${dates(e)}`, left, y + rowH * 0.6, room, rowH * 0.3, chosen ? "#f6c578" : "#d2a35c", chosen ? "#251e14" : "#15171b");
   });
 }
 
@@ -97,7 +109,7 @@ function Board({ quality }: { quality: Quality }) {
   const invalidate = useThree((s) => s.invalidate);
   const line = useWorld((s) => s.sel.line);
   const face = FACE[quality];
-  const material = useMemo(() => screenMaterial(drawBoard, { ...face, key: `metro:plate-board:${face.w}x${face.h}` }), [face]);
+  const material = useMemo(() => screenMaterial(drawBoard, { ...face, key: `metro:plate-board:${face.w}x${face.h}`, glow: 1.15 }), [face]);
   const mesh = useMemo(() => {
     if (!ctx) return null;
     const b = METRO.board;
