@@ -7,7 +7,7 @@
 //
 //   npx next build && npx next start -p 3100
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/city/scripts/city3d-perf.mjs http://localhost:3100 [out.json]
-//   ONLY=lujiazui,towers TIER=low SKY=rain-night …   a subset
+//   ONLY=lujiazui,towers TIER=low SKY=rain-night PARTS=budget,blend …   a subset
 //
 // For each place and tier (high and low at 1440×900, mobile at 390×844
 // DPR 2 with touch), at the place's resting pose, clear night (the most
@@ -19,9 +19,17 @@
 // showing (the kit's textureBytes() over every mesh not inside a hidden
 // place). Frame times are relative (headless, this machine).
 //
+// Then, per place (high and mobile tiers): the skies blend by numbers, not
+// shaders (from lighting-blend.mjs): once the place is up and its idle
+// warm-up done, through clear day, rain at night, snow by day, clear dusk
+// and back to clear night, each blend let run, no shader is compiled. And
+// in still view the place draws nothing on its own: no frame in 6 s once
+// it has arrived and settled.
+//
 // Fails (exit 1) on any draw-call, triangle, texture or p95 figure over its
-// tier's budget, a tier that isn't the one asked for, a console error, or,
-// on `/`: any response holding WebGLRenderer, or any getContext("webgl"/
+// tier's budget, a tier that isn't the one asked for, a console error, a
+// shader compiled by a change of sky, a frame drawn in still view, or, on
+// `/`: any response holding WebGLRenderer, or any getContext("webgl"/
 // "webgl2"), after loading, scrolling to the foot, and hovering and
 // focusing the "3D city" key, wide and on a phone.
 import { writeFileSync } from "node:fs";
@@ -39,6 +47,7 @@ const views = {
 };
 const only = process.env.ONLY?.split(",");
 const onlyTier = process.env.TIER?.split(",");
+const PARTS = (process.env.PARTS || "budget,blend,still,home").split(",");
 
 // Counts every draw call and triangle the page's WebGL2 contexts make
 const probe = () => {
@@ -67,7 +76,7 @@ const browser = await launch({ args: ["--disable-gpu-vsync", "--disable-frame-ra
 const results = [];
 
 // ---------- The places, per tier ----------
-for (const [id, path] of Object.entries(pages)) {
+for (const [id, path] of PARTS.includes("budget") ? Object.entries(pages) : []) {
   if (only && !only.includes(id)) continue;
   for (const [tier, v] of Object.entries(views)) {
     if (onlyTier && !onlyTier.includes(tier)) continue;
@@ -141,9 +150,84 @@ for (const [id, path] of Object.entries(pages)) {
   }
 }
 
+// ---------- Blends compile nothing; still view draws nothing ----------
+const blends = [];
+for (const [id, path] of Object.entries(pages)) {
+  if (only && !only.includes(id)) continue;
+  for (const tier of ["high", "mobile"]) {
+    if (onlyTier && !onlyTier.includes(tier)) continue;
+    const v = views[tier];
+    const size = { viewport: { width: v.width, height: v.height }, deviceScaleFactor: v.mobile ? 2 : 1, isMobile: v.mobile, hasTouch: v.mobile };
+    if (PARTS.includes("blend")) {
+      const where = `${id} ${tier} blend`;
+      const ctx = await browser.newContext(size);
+      await ctx.addInitScript(() => {
+        window.__compiles = 0;
+        const orig = WebGL2RenderingContext.prototype.compileShader;
+        WebGL2RenderingContext.prototype.compileShader = function (...a) {
+          window.__compiles++;
+          return orig.apply(this, a);
+        };
+      });
+      const page = await ctx.newPage();
+      const errors = [];
+      page.on("pageerror", (e) => errors.push(String(e)));
+      page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
+      await page.goto(`${base}${path}?perf&tier=${tier}&sky=clear-night`, { waitUntil: "load" });
+      const arrived = await page.waitForSelector(".city3d[data-arrived]", { timeout: 90000 }).then(() => true, () => false);
+      if (!arrived) {
+        fail(where, "the place never arrived");
+        await ctx.close();
+        continue;
+      }
+      // The idle warm-up of the other places (City3D.tsx: onIdle, 3 s)
+      await page.waitForTimeout(9000);
+      const before = await page.evaluate(() => window.__compiles);
+      const steps = [];
+      for (const sky of ["clear-day", "rain-night", "snow-day", "clear-dusk", "clear-night"]) {
+        await page.evaluate((s) => window.__city.sky(s), sky);
+        await page.waitForTimeout(3600);
+        steps.push(`${sky} ${(await page.evaluate(() => window.__compiles)) - before}`);
+      }
+      const added = (await page.evaluate(() => window.__compiles)) - before;
+      blends.push({ scene: id, tier, compiles: added, steps });
+      console.log(`${id.padEnd(13)} ${tier.padEnd(7)} blend: ${added} shader(s) compiled over five skies (${steps.join(", ")})`);
+      if (added) fail(where, `${added} shader(s) compiled by a change of sky (${steps.join(", ")})`);
+      for (const e of errors) fail(where, `console: ${e.slice(0, 200)}`);
+      await ctx.close();
+    }
+    if (PARTS.includes("still")) {
+      const where = `${id} ${tier} still`;
+      const ctx = await browser.newContext(size);
+      await ctx.addInitScript(() => {
+        try {
+          localStorage.setItem("still-view", "on");
+        } catch {}
+      });
+      const page = await ctx.newPage();
+      await page.goto(`${base}${path}?perf&tier=${tier}`, { waitUntil: "load" });
+      const arrived = await page.waitForSelector(".city3d[data-arrived]", { timeout: 90000 }).then(() => true, () => false);
+      if (!arrived) {
+        fail(where, "the place never arrived");
+        await ctx.close();
+        continue;
+      }
+      // Settled: the first frames and the idle warm-up behind it
+      await page.waitForTimeout(5000);
+      const f0 = await page.evaluate(() => window.__city.frames);
+      await page.waitForTimeout(6000);
+      const drawn = (await page.evaluate(() => window.__city.frames)) - f0;
+      blends.push({ scene: id, tier, stillFrames: drawn });
+      console.log(`${id.padEnd(13)} ${tier.padEnd(7)} still: ${drawn} frame(s) drawn in 6 s`);
+      if (drawn) fail(where, `${drawn} frame(s) drawn in 6 s of still view`);
+      await ctx.close();
+    }
+  }
+}
+
 // ---------- The 2D page: no three.js, no WebGL context ----------
 const home = {};
-if (!only && !onlyTier) {
+if (!only && !onlyTier && PARTS.includes("home")) {
   for (const [name, v] of Object.entries({ wide: { width: 1440, height: 900, mobile: false }, phone: { width: 390, height: 844, mobile: true } })) {
     const where = `/ ${name}`;
     const ctx = await browser.newContext({ viewport: { width: v.width, height: v.height }, deviceScaleFactor: v.mobile ? 2 : 1, isMobile: v.mobile, hasTouch: v.mobile });
@@ -210,6 +294,6 @@ if (!only && !onlyTier) {
 }
 
 await browser.close();
-if (outFile) writeFileSync(outFile, JSON.stringify({ base, sky: SKY, date: new Date().toISOString(), results, home, failures }, null, 2));
+if (outFile) writeFileSync(outFile, JSON.stringify({ base, sky: SKY, date: new Date().toISOString(), results, blends, home, failures }, null, 2));
 console.log(failures.length ? `\n${failures.length} failure(s)` : "\nall inside budget");
 process.exit(failures.length ? 1 : 0);

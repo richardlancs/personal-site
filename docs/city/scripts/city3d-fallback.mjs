@@ -112,10 +112,10 @@ async function run(name, browser, opts, body) {
         fail(where, String(e.message).split("\n")[0]);
       }
       const cls = +o.shifts.reduce((a, b) => a + b, 0).toFixed(4);
-      if (cls > 0) fail(where, `layout shift ${cls}`);
+      if (cls > 0) fail(where, `layout shift ${cls} (${o.shifts.map((v) => +v.toFixed(4)).join(" + ")})`);
       for (const e of o.errors) fail(where, `console: ${e.slice(0, 200)}`);
-      rows.push({ case: name, size: size.name, route, cls, errors: o.errors.slice(0, 3) });
-      console.log(`${failures.some((f) => f.startsWith(where)) ? "FAIL" : "ok  "} ${where}  CLS ${cls}`);
+      rows.push({ case: name, size: size.name, route, cls, shifts: o.shifts, errors: o.errors.slice(0, 3) });
+      if (!failures.some((f) => f.startsWith(where))) console.log(`ok   ${where}  CLS 0`);
       await o.ctx.close();
     }
 }

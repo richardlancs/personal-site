@@ -24,21 +24,21 @@ after, and what a lab on one laptop can't say.
 
 Scripts (reproducible; Playwright and Lighthouse are external tools):
 
-- `docs/audit/scripts/lighthouse.mjs <url> <out> [runs] [profiles]`:
+- `docs/audit/scripts/lighthouse.mjs <url>[,<url>…] <out> [runs] [profiles]`:
   N cold runs per profile, every run's JSON, and `summary.json` with the
   median, min and max of score, FCP, LCP, TBT, CLS and Speed Index plus
   the settings Lighthouse used. A run whose Chrome falls over is retried
   and recorded.
-- `docs/audit/scripts/trace.mjs <base> <out.json> [runs] [cpu]`: frame
-  timing and main-thread work, separate from Lighthouse: the world's own
-  marks (`world:first-frame`, `world:<scene>`, `park:<stage>`,
-  `tex:<name>`; new: `world:shaders-ready`), long tasks, long animation
-  frames with their scripts, and `requestAnimationFrame` deltas during
-  the walk-in, at rest, and during a park → workshop journey.
+- `docs/audit/scripts/trace.mjs` (the park's frame timing and marks) and
+  `docs/audit/scripts/motion.mjs` (the park's still view and interrupted
+  journeys) were deleted in Task 19 of the 3D plan (20 November 2026):
+  they read the park, which is gone. Their successor for the 3D city is
+  `docs/city/scripts/city3d-perf.mjs` (per tier and place: draw calls,
+  triangles, texture memory, frame p50/p95; blends that compile nothing;
+  no frame drawn in still view); the figures below are the park's, kept
+  as history.
 - `docs/audit/scripts/budget.mjs [.next]`: byte budgets for a build
   (below); exits 1 when one is exceeded.
-- `docs/audit/scripts/motion.mjs <base>`: still view and interrupted
-  journeys (commit 6); not a performance measure, listed for completeness.
 
 ## Lighthouse, the park page (`/`), 3 cold runs each
 
