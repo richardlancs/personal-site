@@ -41,7 +41,7 @@ const school = experience.find((e) => e.kind === "education");
 // "Email me" writes to the first address, as the 2D page's Contact does
 const email = profile.emails[0];
 
-// The title card on the 3D city's Home (city-pages.css, "The title card"):
+// The title card on the 3D city's Home, on the panel's glass:
 // the name, the school and the programme, "Email me" (the one primary
 // action), and GitHub, LinkedIn and the résumé (opened over the page).
 // Nothing else: the places are the dock's and the Sections menu's. The
@@ -49,15 +49,22 @@ const email = profile.emails[0];
 // focuses it, city3d/panels/CityPanel.tsx).
 function TitleCard() {
   return (
-    <div className="hero hero-card">
-      <h1 id="home-title" className="hero-name hero-arrive" style={order(0)} tabIndex={-1}>
+    <div className="hero">
+      {/* (the 2D hero's name, a little smaller: the card is narrower) */}
+      <h1 id="home-title" className="hero-name hero-arrive" style={{ ...order(0), fontSize: "min(4.5rem, 13vw)" }} tabIndex={-1}>
         {profile.name}
       </h1>
       {school && (
-        <p className="hero-school hero-arrive" style={order(1)}>
-          <span className="hero-school-name">{school.organization}</span>
-          <span className="hero-school-programme">{school.role}</span>
-        </p>
+        <>
+          {/* (display type at 24px, so it may be the accent: the 2D
+              headline's look) */}
+          <p className="hero-headline hero-arrive" style={order(1)}>
+            {school.organization}
+          </p>
+          <p className="hero-arrive mt-2 text-lg font-semibold" style={order(1)}>
+            {school.role}
+          </p>
+        </>
       )}
       <div className="hero-actions hero-arrive" style={order(2)}>
         <a href={`mailto:${email.address}`} className="glass glass-primary">

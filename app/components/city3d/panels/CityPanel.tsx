@@ -68,6 +68,10 @@ const watchDrawing = (onChange: () => void) => {
 const drawing = () => document.documentElement.dataset.city3d === "on" && document.documentElement.hasAttribute("data-arrive");
 const notYet = () => false;
 
+// Where the arrow keys belong to what has focus (the place dock leaves them)
+const typing = (el: Element | null) =>
+  !!el?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="slider"], [role="radiogroup"], [role="tablist"], [role="toolbar"], [role="listbox"], [role="menu"], [role="grid"], [data-choice]');
+
 export default function CityPanel() {
   // The section showing: its page's main (the router may keep earlier
   // pages, hidden), read once the address has changed
@@ -96,6 +100,30 @@ export default function CityPanel() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [section, router]);
+
+  // The place dock (PlaceDock.tsx): ← and → go to the previous and the
+  // next place, unless the key is meant for something else (a modifier
+  // held, typing in a field, a row of choices that takes the arrows itself:
+  // selector.ts prevents the default) or a dialog, a menu or the résumé is
+  // open; and on the narrow layout the current place is brought into view
+  // in the dock's row, without moving the page
+  useEffect(() => {
+    const dock = section ? document.querySelector<HTMLElement>(`[data-section="${section}"] .place-dock`) : null;
+    if (!dock) return;
+    const row = dock.querySelector<HTMLElement>(".place-dock-row");
+    const here = row?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (row && here) row.scrollLeft = here.offsetLeft - row.offsetLeft - (row.clientWidth - here.offsetWidth) / 2;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.defaultPrevented) return;
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (typing(e.target as Element | null) || typing(document.activeElement)) return;
+      if (document.documentElement.classList.contains("resume-lock") || document.querySelector(":popover-open, dialog[open]")) return;
+      e.preventDefault();
+      dock.querySelector<HTMLElement>(`[data-dock="${e.key === "ArrowLeft" ? "previous" : "next"}"]`)?.click();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [section]);
 
   const on = useSyncExternalStore(watchDrawing, drawing, notYet);
   const slot = section ? document.querySelector<HTMLElement>(`[data-section="${section}"] .city-picker-slot`) : null;

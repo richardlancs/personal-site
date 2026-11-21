@@ -21,29 +21,28 @@ const get = async (path) => (await fetch(base + path)).text();
 const hero = read("app/components/city2d/sections/Hero.tsx");
 const card = hero.slice(hero.indexOf("function TitleCard()"));
 const dock = read("app/components/city3d/panels/PlaceDock.tsx");
+const panelSrc = read("app/components/city3d/panels/CityPanel.tsx");
 const pages = read("app/city/city-pages.css");
 
-test("the glass tokens exist, and the panel and the dock are glass: a tint over a backdrop blur, an edge, the words' halo", () => {
+test("the glass tokens exist, and the panel and the dock are glass: a tint over a backdrop blur, an edge, the words' halo (Task 2)", () => {
   const tokens = noComments(read("app/city.css"));
   for (const t of ["--glass-panel", "--glass-blur", "--glass-edge", "--glass-halo"]) assert.match(tokens, new RegExp(`${t}:\\s*[^;]+;`), t);
-  // a tint of --panel (#181b23), see-through
+  // a tint of --panel (#181b23), see-through; the secondary words lighter on it
   assert.match(tokens, /--glass-panel:\s*rgb\(24 27 35 \/ 0\.\d+\);/);
+  assert.match(tokens, /--glass-muted:\s*#[0-9a-f]{6};/);
   const wide = noComments(pages.slice(pages.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px)")));
-  const panel = wide.match(/\n {2}\.city-panel \{([^}]*)\}/);
-  assert.ok(panel, ".city-panel on wide screens");
-  assert.match(panel[1], /backdrop-filter: var\(--glass-panel-blur\);/);
-  assert.match(panel[1], /background-color: var\(--glass-panel-day\);/);
-  assert.match(panel[1], /border: 1px solid var\(--glass-edge\);/);
-  assert.match(panel[1], /text-shadow: var\(--glass-halo\);/);
-  assert.match(wide, /html:has\(\.city3d\[data-sky-daylight="night"\]\) \.city-panel \{\s*background-color: var\(--glass-panel\);/);
-  assert.match(wide, /\.place-dock \{[^}]*backdrop-filter: var\(--glass-panel-blur\);/);
+  const glass = wide.match(/\n {2}\.city-panel,\s*\.place-dock \{([^}]*)\}/);
+  assert.ok(glass, ".city-panel and .place-dock on wide screens");
+  assert.match(glass[1], /--muted: var\(--glass-muted\);/);
+  assert.match(glass[1], /backdrop-filter: var\(--glass-panel-blur\);/);
+  assert.match(glass[1], /background: var\(--glass-panel\);/);
+  assert.match(glass[1], /border: 1px solid var\(--glass-edge\);/);
+  assert.match(glass[1], /text-shadow: var\(--glass-halo\);/);
 });
 
-test("the glass goes opaque under prefers-contrast: more, in forced colours, and without backdrop-filter", () => {
+test("the glass goes opaque under prefers-contrast: more and in forced colours", () => {
   const css = noComments(pages);
-  assert.match(css, /@media \(prefers-contrast: more\) \{\s*\.city-panel,\s*\.place-dock \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
-  assert.match(css, /@media \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock \{\s*background: Canvas;/);
-  assert.match(css, /@supports not \(\(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\)\) \{\s*\.city-panel,\s*\.place-dock \{\s*background-color: var\(--glass-fallback\)/);
+  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
 });
 
 test("Home's title card is the name, the school, the programme, Email me, GitHub, LinkedIn and the résumé, all from the data", () => {
@@ -61,10 +60,10 @@ test("Home's title card is the name, the school, the programme, Email me, GitHub
   // GitHub, LinkedIn, and the résumé opened over the page
   assert.match(card, /<ProfileLinks variant="text" \/>/);
   assert.match(read("app/components/city2d/ProfileLinks.tsx"), /<ResumeLink className=\{className\}>/);
-  // Nothing else: one h1, one paragraph, one key, one list of links; no
+  // Nothing else: one h1, two lines, one key, one list of links; no
   // headline, no ways into sections, no facts typed in
-  assert.equal((card.match(/<(h1|p|a|ul|Link)\b/g) ?? []).join(","), "<h1,<p,<a,<ul");
-  assert.doesNotMatch(card, /headline|cityPath|View projects/);
+  assert.equal((card.match(/<(h1|p|a|ul|Link)\b/g) ?? []).join(","), "<h1,<p,<p,<a,<ul");
+  assert.doesNotMatch(card, /profile\.headline|cityPath|View projects/);
   for (const fact of ["University of Waterloo", "Honours Computer Science", "Co-op", profile.emails[0].address, profile.name]) assert.ok(!card.includes(fact), `"${fact}" typed into the card`);
   // and the data has what the card reads
   const school = experience.find((e) => e.kind === "education");
@@ -73,12 +72,13 @@ test("Home's title card is the name, the school, the programme, Email me, GitHub
 });
 
 test("the dock: every listed place in the registry's order, the current one marked, previous and next that wrap", () => {
-  assert.match(dock, /^"use client";/);
+  // drawn on the server: nothing added to the page's first load
+  assert.doesNotMatch(dock, /^"use client";/);
   assert.match(dock, /const places = listed;/);
   assert.doesNotMatch(dock, /\.sort\(|\.filter\(|\.reverse\(/);
   assert.match(dock, /\{places\.map\(\(s\) => \(/);
   assert.match(dock, /aria-current=\{s\.id === current \? "page" : undefined\}/);
-  assert.match(dock, /place-dock-here/, "a mark as well as colour");
+  assert.match(dock, /<span className="sections-menu-here" aria-hidden="true" \/>/, "a mark as well as colour");
   assert.match(dock, /const previous = places\[\(at - 1 \+ places\.length\) % places\.length\];/);
   assert.match(dock, /const next = places\[\(at \+ 1\) % places\.length\];/);
   // client components never import values from the data
@@ -91,23 +91,25 @@ test("the dock: every listed place in the registry's order, the current one mark
 });
 
 test("← and → go to the previous and the next place, but not while typing, with a modifier, in a row of choices, or with a dialog or menu open", () => {
-  assert.match(dock, /if \(\(e\.key !== "ArrowLeft" && e\.key !== "ArrowRight"\) \|\| e\.defaultPrevented\) return;/);
-  assert.match(dock, /if \(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey\) return;/);
-  assert.match(dock, /input, textarea, select, \[contenteditable/);
-  assert.match(dock, /\[data-choice\]/, "the pickers' rows take the arrows themselves (panels/selector.ts)");
-  assert.match(dock, /if \(document\.documentElement\.classList\.contains\("resume-lock"\) \|\| document\.querySelector\(":popover-open, dialog\[open\]"\)\) return;/);
-  assert.match(dock, /if \(!\(dock\.checkVisibility\?\.\(\) \?\? true\)\) return;/, "only the dock on screen");
-  assert.match(dock, /aria-keyshortcuts="ArrowLeft"/);
-  assert.match(dock, /aria-keyshortcuts="ArrowRight"/);
+  // In the panel's behaviour, loaded after the page (CityLoader.tsx), for the page showing
+  assert.match(panelSrc, /const dock = section \? document\.querySelector<HTMLElement>\(`\[data-section="\$\{section\}"\] \.place-dock`\) : null;/);
+  assert.match(panelSrc, /if \(\(e\.key !== "ArrowLeft" && e\.key !== "ArrowRight"\) \|\| e\.defaultPrevented\) return;/);
+  assert.match(panelSrc, /if \(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey\) return;/);
+  assert.match(panelSrc, /input, textarea, select, \[contenteditable/);
+  assert.match(panelSrc, /\[data-choice\]/, "the pickers' rows take the arrows themselves (panels/selector.ts)");
+  assert.match(panelSrc, /if \(typing\(e\.target as Element \| null\) \|\| typing\(document\.activeElement\)\) return;\s*if \(document\.documentElement\.classList\.contains\("resume-lock"\) \|\| document\.querySelector\(":popover-open, dialog\[open\]"\)\) return;/);
+  assert.match(panelSrc, /\[data-dock="\$\{e\.key === "ArrowLeft" \? "previous" : "next"\}"\]/);
+  assert.match(dock, /data-dock="previous" aria-keyshortcuts="ArrowLeft"/);
+  assert.match(dock, /data-dock="next" aria-keyshortcuts="ArrowRight"/);
 });
 
 test("the Sections menu in the city: named Places in 3D, with that heading after the view switch; each entry its place's page, the current marked", () => {
   const src = read("app/components/city2d/SectionsMenu.tsx");
   assert.match(src, /aria-label=\{city \? "Places in 3D" : "Sections"\}/);
-  assert.match(src, /<ViewSwitch place="menu" \/>\s*<\/li>\s*\{city && \(\s*<li className="sections-menu-heading" aria-hidden="true">\s*Places in 3D\s*<\/li>\s*\)\}\s*\{listed\.map/);
+  assert.match(src, /<ViewSwitch place="menu" \/>\s*<\/li>\s*\{city && \(\s*<li className="sections-menu-heading[^"]*" aria-hidden="true">\s*Places in 3D\s*<\/li>\s*\)\}\s*\{listed\.map/);
   assert.match(src, /<Link href=\{city \? s\.city : jumpHref\(s\.href\)\}/);
   assert.match(src, /aria-current=\{s\.id === here \? \(city \? "page" : "location"\) : undefined\}/);
-  assert.match(pages, /\.sections-menu \.sections-menu-heading \{/, "styled where only the city loads it");
+  assert.match(pages, /\.sections-menu-heading \{/, "styled where only the city loads it");
 });
 
 test("server HTML: `/`'s Sections menu and hero exactly as before", { skip }, async () => {
@@ -123,15 +125,15 @@ test("server HTML: `/`'s Sections menu and hero exactly as before", { skip }, as
 test("server HTML: every /city page has the dock, in the registry's order, its own place marked; Home has the title card", { skip }, async () => {
   for (const s of listed) {
     const body = await get(s.city);
-    const nav = body.match(/<nav aria-label="Places" class="place-dock">.*?<\/nav>/s)?.[0];
+    const nav = body.match(/<nav aria-label="Places" class="place-dock[^"]*">.*?<\/nav>/s)?.[0];
     assert.ok(nav, `${s.city}: the dock`);
-    const keys = [...nav.matchAll(/<a class="glass place-dock-key"[^>]*href="([^"]+)"|<a[^>]*href="([^"]+)"[^>]*class="glass place-dock-key"/g)].map((m) => m[1] ?? m[2]);
+    const keys = [...nav.matchAll(/<a class="glass place-dock-key[^"]*"[^>]*href="([^"]+)"|<a[^>]*href="([^"]+)"[^>]*class="glass place-dock-key[^"]*"/g)].map((m) => m[1] ?? m[2]);
     assert.deepEqual(keys, listed.map((p) => p.city), `${s.city}: the order`);
     const current = [...nav.matchAll(/<a[^>]*aria-current="page"[^>]*>/g)];
     assert.equal(current.length, 1, `${s.city}: one current`);
     assert.match(current[0][0], new RegExp(`href="${s.city}"`));
     assert.match(body, /<nav id="places-menu" popover="auto" aria-label="Places in 3D"/, `${s.city}: the menu's name`);
-    assert.match(body, /<li class="sections-menu-heading" aria-hidden="true">Places in 3D<\/li>/, `${s.city}: the menu's heading`);
+    assert.match(body, /<li class="sections-menu-heading[^"]*" aria-hidden="true">Places in 3D<\/li>/, `${s.city}: the menu's heading`);
   }
   const home = await get("/city");
   const school = experience.find((e) => e.kind === "education");

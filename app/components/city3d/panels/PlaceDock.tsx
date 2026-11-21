@@ -1,78 +1,48 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useRef } from "react";
 import { listed, type SectionId } from "../../../sections/registry";
 
 // The place dock, on every /city page (CityPage.tsx; city-pages.css, "The
 // place dock"): the six places in the registry's order, each a link to its
 // page in the city, the one you're at marked (aria-current="page", the
-// chosen glass and a dot, so not by colour alone), with the previous and
-// the next place at its ends (they wrap: before Home is Contact). Wide
-// screens: a glass bar along the foot of the scene, clear of the panel;
-// the narrow layout: a row at the top of the sheet that scrolls sideways,
-// the current place brought into view.
+// chosen glass and the menu's dot, so not by colour alone), with the
+// previous and the next place at its ends (they wrap: before Home is
+// Contact). Wide screens: a glass bar along the foot of the scene, clear of
+// the panel; the narrow layout: a row at the top of the sheet that scrolls
+// sideways.
 //
-// ← and → go to the previous and the next place, unless the key is meant
-// for something else: a modifier held, typing in a field, a row of choices
-// that takes the arrows itself (panels/selector.ts prevents the default),
-// or a dialog, a menu or the résumé open. The router may keep earlier
-// pages, hidden: only the dock on screen answers.
+// Drawn on the server, so it adds nothing to the page's first load. What
+// it does beyond its links is panels/CityPanel.tsx's, loaded after the
+// page: ← and → click its previous and next keys (data-dock), and on the
+// narrow layout the current place is brought into view in its row.
 const places = listed;
 
-const typing = (el: Element | null) =>
-  !!el?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="slider"], [role="radiogroup"], [role="tablist"], [role="toolbar"], [role="listbox"], [role="menu"], [role="grid"], [data-choice]');
+const arrow = (d: string) => (
+  <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
 
 export default function PlaceDock({ current }: { current: SectionId }) {
-  const nav = useRef<HTMLElement>(null);
   const at = Math.max(0, places.findIndex((s) => s.id === current));
   const previous = places[(at - 1 + places.length) % places.length];
   const next = places[(at + 1) % places.length];
-
-  useEffect(() => {
-    const dock = nav.current;
-    if (!dock) return;
-    // The narrow layout's row: the current place in view, without moving
-    // the page
-    const row = dock.querySelector<HTMLElement>(".place-dock-row");
-    const here = row?.querySelector<HTMLElement>('[aria-current="page"]');
-    if (row && here && row.scrollWidth > row.clientWidth) {
-      row.scrollLeft = here.offsetLeft - (row.clientWidth - here.offsetWidth) / 2;
-    }
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.defaultPrevented) return;
-      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      if (typing(e.target as Element | null) || typing(document.activeElement)) return;
-      if (document.documentElement.classList.contains("resume-lock") || document.querySelector(":popover-open, dialog[open]")) return;
-      if (!(dock.checkVisibility?.() ?? true)) return;
-      e.preventDefault();
-      dock.querySelector<HTMLElement>(`[data-dock="${e.key === "ArrowLeft" ? "previous" : "next"}"]`)?.click();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
   return (
-    <nav ref={nav} aria-label="Places" className="place-dock">
-      <Link href={previous.city} className="glass glass-icon place-dock-step" data-dock="previous" aria-keyshortcuts="ArrowLeft" aria-label={`Previous place: ${previous.title}`}>
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m15 5-7 7 7 7" />
-        </svg>
+    <nav aria-label="Places" className="place-dock flex items-center gap-1">
+      <Link href={previous.city} className="glass glass-icon" data-dock="previous" aria-keyshortcuts="ArrowLeft" aria-label={`Previous place: ${previous.title}`}>
+        {arrow("m15 5-7 7 7 7")}
       </Link>
-      <ul className="place-dock-row">
+      <ul className="place-dock-row flex flex-1 gap-2 min-w-0">
         {places.map((s) => (
           <li key={s.id}>
-            <Link href={s.city} className="glass place-dock-key" aria-current={s.id === current ? "page" : undefined}>
+            <Link href={s.city} className="glass place-dock-key font-display font-semibold" aria-current={s.id === current ? "page" : undefined}>
               {s.title}
-              {s.id === current && <span className="place-dock-here" aria-hidden="true" />}
+              {s.id === current && <span className="sections-menu-here" aria-hidden="true" />}
             </Link>
           </li>
         ))}
       </ul>
-      <Link href={next.city} className="glass glass-icon place-dock-step" data-dock="next" aria-keyshortcuts="ArrowRight" aria-label={`Next place: ${next.title}`}>
-        <svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="m9 5 7 7-7 7" />
-        </svg>
+      <Link href={next.city} className="glass glass-icon" data-dock="next" aria-keyshortcuts="ArrowRight" aria-label={`Next place: ${next.title}`}>
+        {arrow("m9 5 7 7-7 7")}
       </Link>
     </nav>
   );

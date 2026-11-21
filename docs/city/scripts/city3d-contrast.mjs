@@ -1,6 +1,6 @@
 // Composited contrast of every visible word on the 3D city's pages (/city
 // and /city/<section>: the panels over the scene, the riverside's sign
-// tags, the row of keys, the top bar), over every daylight and weather
+// tags, the place dock, the top bar), over every daylight and weather
 // (4 x 5 = 20 skies), wide (1440x900) and on a phone (390x844): 6 pages x
 // 20 skies x 2 sizes, 240 combinations. (From docs/ui/scripts/
 // city-contrast.mjs, the 2D page's, whose method it keeps.)
@@ -136,7 +136,7 @@ const collect = (page) =>
       // The line is mounted in the bar, but is its own layer on wide screens
       if (el.closest(".top-bar")) return "top bar";
       if (el.closest(".city-tags")) return "tags";
-      if (el.closest(".city-keys")) return "keys";
+      if (el.closest(".place-dock")) return "dock";
       if (el.closest(".city3d-note")) return "note";
       if (el.closest("footer")) return "foot";
       if (el.closest(".city-panel")) return "panel";

@@ -88,7 +88,7 @@ export default function SectionsMenu() {
           <ViewSwitch place="menu" />
         </li>
         {city && (
-          <li className="sections-menu-heading" aria-hidden="true">
+          <li className="sections-menu-heading font-display text-sm font-semibold uppercase text-muted" aria-hidden="true">
             Places in 3D
           </li>
         )}
