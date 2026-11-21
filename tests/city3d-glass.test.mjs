@@ -156,3 +156,12 @@ test("server HTML: every /city page has the dock, in the registry's order, its o
   assert.ok(home.includes(school.organization) && home.includes(school.role.replace(/[()]/g, (c) => c)), "the school and programme");
   assert.ok(home.includes(`href="mailto:${profile.emails[0].address}"`), "Email me");
 });
+
+test("the panels' glass is clearer (0.66 over a 28px blur), Projects' and Interests' a little denser by a value on their page (fix round A, ux I3)", () => {
+  const tokens = noComments(read("app/city.css"));
+  assert.match(tokens, /--glass-panel: rgb\(24 27 35 \/ 0\.66\);/);
+  assert.match(tokens, /--glass-panel-blur: blur\(28px\) saturate\(1\.4\);/);
+  const page = read("app/components/city3d/CityPage.tsx");
+  assert.match(page, /projects: \{ "--glass-panel": "rgb\(24 27 35 \/ 0\.8\)" \}/);
+  assert.match(page, /<main className="city-page" data-section=\{id\} style=\{DENSER\[id\]\}>/);
+});

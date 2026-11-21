@@ -1,6 +1,6 @@
 import { getImageProps, type StaticImageData } from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { cityPath, twoDHref } from "../../lib/cityRoutes";
 import { section, type DistrictId, type SectionId } from "../../sections/registry";
 import { richmondHill } from "../../data/weather";
@@ -69,10 +69,20 @@ const srcSet = (plate: StaticImageData) => getImageProps({ src: plate, alt: "", 
 const plateScript = (id: SectionId, district: DistrictId) =>
   cityPlateScript(richmondHill, srcSet(plates[district].day), srcSet(plates[district].night), id);
 
+// The panels' glass is as clear as the words allow over what each scene
+// puts behind them (city.css: --glass-panel, 0.66; city3d-contrast.mjs);
+// Projects' screens show white screenshots behind its panel, and Interests'
+// street is bright by day, so their glass is a little denser (a value, not
+// a rule: the city's stylesheet is at its budget)
+const DENSER: Partial<Record<SectionId, CSSProperties>> = {
+  projects: { "--glass-panel": "rgb(24 27 35 / 0.8)" } as CSSProperties,
+  interests: { "--glass-panel": "rgb(24 27 35 / 0.74)" } as CSSProperties,
+};
+
 export default function CityPage({ id }: { id: SectionId }) {
   const s = section(id);
   return (
-    <main className="city-page" data-section={id}>
+    <main className="city-page" data-section={id} style={DENSER[id]}>
       <div className="city-band">
         <DistrictBand district={s.district} />
         {/* The band's painting before the scripts (lib/platePreload.ts:
