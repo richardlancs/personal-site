@@ -115,7 +115,7 @@ test("CityPage keeps the section's words with where=\"3d\" and puts the panel's 
   // (CityLoader.tsx), never in /city's first load
   assert.match(page, /import type \{ Picks \} from "\.\/panels\/CityPanel";/);
   assert.doesNotMatch(page, /import CityPanel/);
-  assert.match(page, /<\/h1>\s*\)\}\s*\{id in picks && \([\s\S]*?<div className="city-picker-slot" data-picks=\{JSON\.stringify\(picks\[id as keyof Picks\]\)\} \/>\s*\)\}\s*\{content\[id\]\}/);
+  assert.match(page, /<\/h1>\s*\)\}\s*\{id in picks && \([\s\S]*?<div className="city-picker-slot" data-picks=\{JSON\.stringify\(picks\[id as keyof Picks\]\)\}>\s*<PickerGhost id=\{id as keyof Picks\} picks=\{picks\} \/>\s*<\/div>\s*\)\}\s*\{content\[id\]\}/);
   assert.match(read("app/components/city3d/CityLoader.tsx"), /const CityAfter = lazy\(\(\) => import\("\.\/CityAfter"\)\);/);
   assert.match(read("app/components/city3d/CityAfter.tsx"), /import CityPanel from "\.\/panels\/CityPanel";/);
   // The pickers import no data: the portfolio's data stays out of every
@@ -181,4 +181,16 @@ test("interestPhotos reads public/interests/ without tracing the whole project (
   const src = read("app/lib/interestPhotos.ts");
   assert.match(src, /path\.join\(\/\* turbopackIgnore: true \*\/ process\.cwd\(\), "public", "interests"\)/);
   assert.match(src, /readdirSync\(\/\* turbopackIgnore: true \*\/ path\.join\(baseDir, scene\)\)/);
+});
+
+test("the picker's slot holds an unseen, unreachable copy of its row, so the panel doesn't move when the row comes or goes (Task 19)", () => {
+  const ghost = read(`${panels}/PickerGhost.tsx`);
+  assert.doesNotMatch(ghost, /^"use client";/, "drawn on the server");
+  assert.equal((ghost.match(/data-ghost="" aria-hidden="true" inert/g) ?? []).length, 3, "one per picker, unseen and inert");
+  // The same keys as the real rows
+  for (const picker of ["screens", "lines", "arcade"]) assert.match(ghost, new RegExp(`data-picker="${picker}"`));
+  const css = read("app/city/city-pages.css");
+  assert.match(css, /\.city-picker\[data-ghost\] \{\s*visibility: hidden;/);
+  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*html\[data-city3d="fallback"\] \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\] \{\s*display: none;/);
+  assert.doesNotMatch(css, /\.city-picker-slot \{\s*min-height/);
 });

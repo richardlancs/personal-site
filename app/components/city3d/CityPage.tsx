@@ -14,6 +14,7 @@ import Colophon from "../ui/Colophon";
 import { experience, interests, projects } from "../../data/portfolio";
 import { sortNewestFirst } from "../../lib/experience";
 import type { Picks } from "./panels/CityPanel";
+import PickerGhost from "./panels/PickerGhost";
 import { scenes } from "./scenes";
 
 // One page of the 3D city (app/city/), server-rendered, so all of it reads
@@ -91,8 +92,11 @@ export default function CityPage({ id }: { id: SectionId }) {
         )}
         {id in picks && (
           // The section's picker goes here (panels/CityPanel.tsx, loaded
-          // after the page), with what it lists
-          <div className="city-picker-slot" data-picks={JSON.stringify(picks[id as keyof Picks])} />
+          // after the page), with what it lists; until it comes, its
+          // unseen copy holds its room (panels/PickerGhost.tsx)
+          <div className="city-picker-slot" data-picks={JSON.stringify(picks[id as keyof Picks])}>
+            <PickerGhost id={id as keyof Picks} picks={picks} />
+          </div>
         )}
         {content[id]}
         <p className="city-panel-foot">

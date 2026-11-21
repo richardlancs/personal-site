@@ -60,13 +60,20 @@ body:has(.city-page) .top-bar .rh {
 
 /* The section's picker (panels/ScreenPicker.tsx, BoardLines.tsx,
    ArcadeControls.tsx): a row of glass keys choosing what the scene shows,
-   there only while the 3D city draws. Its slot keeps one row's height
-   from the start wherever the city may still come (JavaScript on, the
-   canvas starting or drawing), so the panel doesn't move when it does;
-   no JavaScript, or a fallback, and the slot takes no room. */
-html[data-still]:not([data-city3d]) .city-picker-slot,
-html[data-city3d="on"] .city-picker-slot {
-  min-height: calc(1.25rem + 44px);
+   there only while the 3D city draws. Its slot holds the row's unseen
+   copy (panels/PickerGhost.tsx) wherever the city may still come or come
+   back (JavaScript on: the canvas starting or drawing, Save-Data's key
+   waiting, a lost context), so the panel doesn't move when the row
+   arrives or goes; no JavaScript, or a fallback, and the slot takes no
+   room. */
+.city-picker[data-ghost] {
+  visibility: hidden;
+}
+
+html:not([data-still]) .city-picker[data-ghost],
+html[data-city3d="fallback"] .city-picker[data-ghost],
+.city-picker-slot:has(> .city-picker:not([data-ghost])) > .city-picker[data-ghost] {
+  display: none;
 }
 
 .city-picker,
@@ -272,6 +279,20 @@ html[data-city3d="on"][data-city-tags="row"] .city-keys {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 1.5rem;
+}
+
+/* On the narrow layout the row is what a phone's Home usually gets (the
+   links rarely fit over the boards there): its room is kept, unseen, from
+   the start, so the sheet doesn't move when the canvas decides */
+@media (orientation: portrait), (max-width: 767px), (max-height: 480px) /* FLAT_QUERY */ {
+  html[data-still]:not([data-city3d]) .city-keys,
+  html[data-city3d="on"]:not([data-city-tags]) .city-keys {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    visibility: hidden;
+  }
 }
 
 .city-key {
