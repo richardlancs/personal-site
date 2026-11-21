@@ -11,7 +11,7 @@ import { listed, pageSections, section, type SectionId } from "../../sections/re
 import { anchors } from "./anchors";
 import { WorldLights } from "./common";
 import Atmosphere from "./atmosphere/Atmosphere";
-import Precipitation from "./atmosphere/Precipitation";
+import Precipitation, { disposePrecipWarmers, precipWarmers } from "./atmosphere/Precipitation";
 import { disposeShared } from "./kit/materials";
 import { disposeTextures, textureBytes } from "./kit/textures";
 import { glowOn } from "./kit/uniforms";
@@ -661,20 +661,39 @@ function Warm({ mounted, active, tier, onReady }: { mounted: SceneId[]; active: 
       const group = scene.getObjectByName(`scene:${id}`);
       if (!group) return ready?.();
       const def = scenes[id];
-      const alone = new THREE.Scene();
-      alone.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
-      const wasVisible = group.visible;
-      group.visible = true;
+      // Compiled against the scene the frame draws, so each program's key
+      // matches the frame's: its lights (the world's sun and sky, and this
+      // place's own; three keys every program, lit or not, on the counts),
+      // with every other place hidden, as when this one shows; and fog. The
+      // weather's drops are compiled with it (Precipitation.tsx:
+      // precipWarmers), in this place's light, so the first rain or snow
+      // compiles nothing (docs/city/scripts/city3d-perf.mjs, the blends).
+      // (Synchronous: no frame is drawn in between.)
+      const places = scene.children.filter((o) => o.name.startsWith("scene:"));
+      const shown = places.map((o) => o.visible);
+      for (const o of places) o.visible = o === group;
+      const fog = scene.fog;
+      if (!fog) scene.fog = new THREE.Fog(def.fog.color, def.fog.near, def.fog.far);
+      const drops = new THREE.Group();
+      for (const m of precipWarmers(tier === "mobile")) drops.add(m);
+      group.add(drops);
       const previous = gl.getRenderTarget();
       gl.setRenderTarget(target);
       let pending: Promise<unknown>;
       try {
-        pending = gl.compileAsync(group, camera, alone);
+        // (the place's materials only; its lights are counted once, from
+        // the scene, where it is the one place showing: three's compile
+        // otherwise counts an object's own lights a second time)
+        const place = { traverse: (fn: (o: THREE.Object3D) => void) => group.traverse(fn), traverseVisible: () => {} } as unknown as THREE.Object3D;
+        pending = gl.compileAsync(place, camera, scene);
       } catch {
         pending = Promise.resolve();
       } finally {
         gl.setRenderTarget(previous);
-        group.visible = wasVisible;
+        group.remove(drops);
+        drops.clear();
+        scene.fog = fog;
+        places.forEach((o, i) => (o.visible = shown[i]));
       }
       if (ready) {
         const fallback = window.setTimeout(ready, 2500);
@@ -823,6 +842,7 @@ html, body { background: #000 !important; }
   // kit/textures.ts)
   useEffect(() => () => disposeShared(), []);
   useEffect(() => () => disposeTextures(), []);
+  useEffect(() => () => disposePrecipWarmers(), []);
 
   if (!mounted.includes(target)) setMounted([...mounted, target]);
 

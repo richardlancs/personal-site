@@ -161,3 +161,14 @@ test("Post.tsx: bloom's strength from the neon, one level count on both desktop 
   // Under prefers-contrast: more, no bloom at all
   assert.match(src, /prefers-contrast: more/);
 });
+
+test("the warm-up compiles each place in the frame's own light, with the weather's drops, so a change of sky compiles nothing (Task 19)", () => {
+  const city = readFileSync(new URL("../app/components/city3d/City3D.tsx", import.meta.url), "utf8");
+  const precip = readFileSync(new URL("../app/components/city3d/atmosphere/Precipitation.tsx", import.meta.url), "utf8");
+  // against the scene itself (its sun and sky), every other place hidden
+  assert.match(city, /gl\.compileAsync\(place, camera, scene\)/);
+  assert.match(city, /for \(const o of places\) o\.visible = o === group;/);
+  assert.match(city, /for \(const m of precipWarmers\(tier === "mobile"\)\) drops\.add\(m\);/);
+  assert.match(city, /disposePrecipWarmers\(\)/);
+  assert.match(precip, /export function precipWarmers\(mobile: boolean\)/);
+});

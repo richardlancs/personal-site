@@ -89,6 +89,25 @@ function build(kind: Kind, mobile: boolean): Field {
   return { mesh, geometry, material, full, alpha: look.alpha, idle: 0 };
 }
 
+// One unseen field of each kind per tier size, never drawn: City3D.tsx's
+// Warm compiles them with each place, so the drops' program is ready (and
+// kept, for every field built later) before the first rain or snow of a
+// visit. Disposed with the canvas.
+const warmers: { full?: Field[]; mobile?: Field[] } = {};
+export function precipWarmers(mobile: boolean): THREE.Object3D[] {
+  const key = mobile ? "mobile" : "full";
+  return (warmers[key] ??= [build("rain", mobile), build("snow", mobile)]).map((f) => f.mesh);
+}
+export function disposePrecipWarmers() {
+  for (const key of ["full", "mobile"] as const) {
+    for (const f of warmers[key] ?? []) {
+      f.geometry.dispose();
+      f.material.dispose();
+    }
+    delete warmers[key];
+  }
+}
+
 function release(scene: THREE.Scene, f: Field) {
   scene.remove(f.mesh);
   f.geometry.dispose();
