@@ -20,578 +20,479 @@ If information is missing, use a clearly labeled placeholder or ask me.
 
 ## Tech Stack
 
-This project uses:
+- Next.js 16.4 with the App Router (read `AGENTS.md`: this Next.js
+  differs from older versions; its docs are in `node_modules/next/dist/docs/`)
+- React 19.3, TypeScript, Tailwind CSS 4, npm
+- three r186, React Three Fiber 9.8 and `postprocessing` 6.39, for the 3D
+  city only
+- `pdfjs-dist` (pinned, loaded on demand) for the résumé viewer
 
-- Next.js with the App Router
-- React
-- TypeScript
-- Tailwind CSS
-- npm
+Do not replace the stack unless I explicitly ask. Avoid new dependencies;
+nothing new may reach the 2D page. Prefer built-in Next.js, React, CSS and
+Tailwind functionality.
 
-Do not replace the existing stack unless I explicitly ask.
-
-Avoid adding new dependencies unless they provide a meaningful benefit.
-Prefer built-in Next.js, React, CSS, and Tailwind functionality.
+Deployed by Vercel from `main` on every push: never push `main` without my
+explicit yes.
 
 ---
 
 ## Project Structure
 
-The main application lives under:
+- `app/page.tsx`: the 2D site, one page (`/`), six stations in order
+- `app/layout.tsx`: root layout (fonts, the head scripts, top bar,
+  résumé host, sky driver, glass press)
+- `app/city.css` (tokens and the 2D page), `app/motion.css`,
+  `app/reveal.css`; the 3D city's own rules in `app/city/city-pages.css`
+- `app/data/portfolio.ts`: all content. `app/data/weather.ts`: the place
+  the clock and weather follow
+- `app/sections/registry.ts`: the sections (id, anchor, title, district,
+  `/city` address); `app/sections/metadata.ts`: their words and page
+  metadata, server only
+- `app/components/city2d/`: the 2D page (`Station`, `DistrictBand`,
+  `TopBar`, `ProgressLine`, `SectionsMenu`, `ViewSwitch`, `WeatherOverlay`,
+  `CityDriver`, and `sections/` with one component per section)
+- `app/components/city3d/`: the 3D city (below)
+- `app/components/weather/`, `components/resume/`, `components/ui/`
+  (`GlassPress`, `Arrivals`, `Colophon`), `components/MusicToggle.tsx`
+- `app/lib/`: pure logic (time, sun, sky, weather, still view, plate
+  preload, city routes, the `CITY3D_LIVE` switch)
+- `app/assets/city/`: the twelve plates, `<district>-{day,night}.webp`
+- `public/`: résumé, project screenshots, interest photos, music, share card
+- `tests/`: `npm test` (node's test runner, offline; `smoke.test.mjs` runs
+  only with `SMOKE_URL`)
 
-- `app/`
-- `app/components/`
-- `app/data/`
-- `public/`
-
-Important files include:
-
-- `app/page.tsx` — homepage
-- `app/layout.tsx` — root layout
-- `app/globals.css` — global styling
-- `app/data/portfolio.ts` — portfolio content/data
-
-Prefer reusable components over putting everything into `page.tsx`.
-
-Keep content/data separate from visual components where practical.
+Prefer reusable components over growing `page.tsx`. Keep content in
+`app/data/`, separate from components.
 
 ---
 
 ## Design Direction
 
-The site is a small real-time 3D world: an abandoned, overgrown Japanese
-park and the places around it, at the turn from summer to autumn, painted
-to match the intro's hand-painted film (`docs/world/film-look.md`: a deep
-gouache-blue sky with towering cumulus, the film's sage greens and sunlit
-grass with a few orange trees, ochre paths, firm painted light and shade
-with a soft ink line, and the film's far view of a calm sea, a small
-drowned town, a rusted pylon, a broken overpass and blue hills; measure
-how close a view is with `docs/world/scripts/film-compare.mjs`). Its light and weather follow
-Richmond Hill's: the time of day from the local clock and that day's
-sunrise and sunset, and clear, cloudy, rain or snow from the current
-reading (`world3d/atmosphere/`, driven by `components/weather/`; the
-neutral look, close to late-afternoon light, when there's no reading).
-It is built with three.js and React Three Fiber in
-`app/components/world3d/`, and every model and texture there is generated
-in code from fixed seeds (no downloaded models, no Blender). The painting
-`app/assets/park/park-v04.png` is the art reference, and the fallback when
-WebGL isn't available. One deliberate exception: the home page's intro
-(`components/intro/`), a short painted film of a kid running down an
-overgrown hillside path toward the park, made with Google Flow (Veo) from
-a start frame painted in ChatGPT (`public/intro/`, encoded by
-`scripts/intro-video.sh`, 8 MB at most per file; how it was made:
-`docs/world/intro-prompts.md`). What was built and how it was checked:
-`docs/weather/report.md`.
+A near-future Shanghai, technical, current and calm, that still does the
+portfolio's job first: a recruiter finds the name, the projects and the
+contact links in seconds. Source documents: the spec
+`docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md`, the
+style sheet `docs/city/style.md` (palette, type, how the plates are
+painted; the prompts in `docs/city/prompts.md`), and for the 3D city the
+plan `docs/superpowers/plans/2026-11-19-shanghai-3d.md` and the log
+`docs/city/3d-log.md`. Where the spec and later rulings differ (no
+magenta, no Chinese signs), the code and `style.md` win. `docs/world/` is
+the retired park's history, not current instructions.
 
-Six places, each its own 3D scene: the park (home; its notice board opens
-the map at `/map`), the workshop (Projects, Skills), the station
-(Experience), the arcade (Interests: one working machine, every interest
-a mode of it with a short boot and one small thing to do, by a click on
-its screen or the card's play button; `scenes/arcadeMachine.ts`, its rules
-in `arcadeLogic.ts`; untouched, it moves to the next interest every 10 s,
-never in still view), the pavilion reading room (About) and
-the phone booth (Contact). The URL picks the place; `World3D.tsx` moves the
-camera there. Each page's HTML panel and its 3D objects share state through
-`world3d/store.ts`. Progress, decisions and limits:
-`docs/world/3d-progress-log.md`.
+### The 2D page (default, live)
 
-Every section is one entry in `app/sections/registry.ts` (address, names,
-glyph, scene, where it is in the painting and on the map, metadata) plus
-one page file. The menu, the home page's tags and list, the map, the park's
-name tags and the links at the foot of each page are generated from the
-registry: never keep a second list of sections anywhere. To add one, follow
-`docs/adding-a-section.md`; the starter page is
-`docs/development/section-template/page.tsx` (not served).
+`/` is one long page: Home, About, Projects (with Skills at `/#skills`),
+Experience, Interests, Contact, numbered 01 to 06. Each section is a
+station under a band painted with a different part of the Shanghai
+skyline (`DistrictBand.tsx`, plates in `app/assets/city/`, made from
+ChatGPT paintings with `scripts/city-plates.mjs`). The band is 21:9 wide
+and a 4:3 crop under 768px; its foot fades into the ground through
+`--seam`. Only the home band's plate loads early (`HOME_QUALITY` 60, a
+head script paints it before hydration: `lib/platePreload.ts`); the rest
+load as they near the screen.
 
-Phones, portrait tablets and short windows get the same world, at the
-mobile renderer tier (`World3D.tsx`: pixel ratio capped at 1.25, 2x
-antialiasing, 512px shadow maps, no brushwork, no drag-to-look), framed
-in the upper part of the screen; the page is a cream sheet that comes up
-over the lower part (`globals.css`, the narrow-layout block, `--hero`),
-with everything written out in one column. The world stops drawing once
-the sheet has been scrolled over all of it. Where WebGL is missing the
-painting `app/assets/park/park-v04.png` stands in on every layout. Both
-layouts render the same content from `app/data/`. The two media queries
-that decide which layout a screen gets are in `components/world/flat.ts`
-and, identically, in `globals.css` (`npm test` checks they match). Use
-`.only-flat` / `.only-world` for anything that belongs to one layout.
-Buttons are glass (see "Buttons" below), and so are the panels: over the
-world, glass as clear as the time and weather (`--paper`, `--reading`: a
-few percent of tint over a blur), the coloured ones stained glass of the
-same clearness (`--stain-*`). The words carry their own contrast, as the
-time's do: slate with a cream halo by day, cream with a dark halo at night
-(`--halo-light`, `--halo-dark`; the clear-glass block at the end of
-`globals.css`).
+Words never sit on the paintings, except the hero's name on its own dark
+backing. Districts are never named anywhere a visitor reads or hears.
 
-The overall feeling should be:
+Light and weather follow Richmond Hill: the hour and that day's sunrise
+and sunset pick the day plate, the night plate, or a cross-fade with a
+warm or cyan grade at dawn and dusk (`lib/cityLook.ts`); cloudy, rain and
+snow are drawn over the band in CSS and one small canvas
+(`WeatherOverlay.tsx`, at most 30 frames a second, nothing moving in
+still view). No reading means the neutral look. In `next dev` only,
+`?sky=` (e.g. `?sky=clear-dusk-0.5`, `lib/skyParam.ts`) previews a sky.
 
-- warm
-- calm
-- nostalgic, quietly lonely, never frightening
-- polished
-- recruiter-friendly: content stays readable and easy to skim
+The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
+`/contact`) redirect to their anchors, `/map` to `/`, all temporary
+(`next.config.ts`).
 
-Build scenery as 3D in `world3d/`, through the shared painted material
-(`paint.ts`), not as CSS or SVG. Keep text on glass or open sky, never over
-busy scenery. Real content stays in HTML.
+### The 3D city (`/city`, built, closed on the live site)
 
-Light after dark (`world3d/glow.ts`, driven by `atmosphere/Atmosphere.tsx`
-through `glowUniforms` and the paint's day/night `glow`): street lamps are
-spotlights at the bulb aimed straight down, with a per-pixel beam in the
-air (no halos, no cone meshes); every sign is made one way
-(`world3d/torch.ts`): a board of brown oak (planks, grain, knots, drawn
-at twice the board's pixel size so the grain holds up close) in a darker
-oak frame, its English words burned in dark (`carvedSign`; they read dark
-on mid-brown by day, and after dark the oak catches the torches' warm
-light, steadily and faintly, so the letters stay dark against it; the
-letters themselves are never lit), and on the buildings a torch on an
-iron bracket each side (`buildTorch`, `torchPair`) whose light is an
-additive wash on the wall (`glow.ts: wash`), not a light. The small signs
-are carved the same way (the signpost's arms, the bus stop's disc and
-times, the booth, the platform, the arcade's counters), the free-standing
-ones with a torch on their post; a carved sign's words are set smaller
-if they would outrun the board (`textures.ts`: `fit`). The flames sway
-slowly; their brightness doesn't change, and they hold still in still
-view. The park's fountain is a small
-pond whose water (`props.ts: waterMaterial`) holds the sky, the trees,
-its column and, after dark, the nearby lamps and signs as broken
-streaks; reeds, stones and lily pads stay on its shallow edge. Nothing
-flickers. Keep light counts the same by day and night (drive intensity),
-so the 3 s blends build no shaders; shadowed lamps only on the desktop
-tiers. What was built and measured: `docs/world/3d-progress-log.md`,
-"Lamps and signs".
+`/city` and `/city/{projects,experience,interests,about,contact}`
+(`app/city/`, `app/components/city3d/`). Home is a riverside looking over
+the water at five signs; each section is its own scene the camera travels
+into (`districts/<id>.tsx` with its data in `districts/<id>.def.ts`; the
+riverside is `Riverside.tsx`). Each page is real HTML first: the band,
+one `.city-panel` with its `h1`, the section component with `where="3d"`,
+a link to the same section on the 2D page, and the credit; readable without JavaScript or WebGL.
+Pages are `noindex`, canonical to the 2D page.
 
-From the park's steps every place and its sign stays readable, in every
-weather and at every hour, on every screen. The sky's clouds are on the
-sky dome, behind everything; what can hide a place is the fog, something
-standing in front, or a tag. So the park's fog starts past its places and
-has a floor the weather can't draw it past (`scenes.ts: fog.keep`), while
-the far view (sea, town, overpass) and its trees take more of it (`fogScale`); nothing stands on the
-line to a sign; near places' tags sit low, on themselves; and portrait
-phones get their own framing (`scenes.ts: portrait`, `short`). After
-moving anything in the park, run `docs/world/scripts/visibility.mjs`
-against `next dev` (it says what covers each sign, and how much fog is
-on it). The record: `docs/world/3d-progress-log.md`, "The places, clear
-from the steps".
+Closed to visitors by `app/lib/city3dLive.ts: CITY3D_LIVE` and the same
+test in `next.config.ts`: without it there is no "3D city" key or link
+and `/city*` redirects to `/`. It is on in `next dev` and in any build
+made with `NEXT_PUBLIC_CITY3D=on`. **To open it on the live site**: set
+`NEXT_PUBLIC_CITY3D=on` for Production in the Vercel project and
+redeploy (`tests/city-panel-fit.test.mjs` pins the switch's code, so
+change the env, not the test, unless I ask).
+
+The pieces:
+- `CityShell.tsx` probes WebGL2, handles a lost context ("Restart the 3D
+  city", the fallback after a second loss), waits under Save-Data ("Load
+  the 3D city (about N MB)", `tiers.ts: SAVE_DATA_MB`), and lazy-loads
+  `City3D.tsx` (canvas, Director, warm-up, frame loop) only while a
+  `/city` route shows. Fallback everywhere is the band's plate.
+- `tiers.ts` picks the renderer tier (`TIERS`; `?tier=high|low|mobile`
+  works in production) and steps high down to low once if slow.
+- `kit/`: the shared building kit (towers, windows, surfaces, neon,
+  signs, glass, water, reflection, street, trees, movers, landmarks, sky,
+  precipitation); `kit/uniforms.ts` is the only shared shader state;
+  `kit/materials.ts: shared()` the one material cache.
+- `atmosphere/`: time and weather into uniforms, bloom and rain/snow.
+- `panels/`: the pickers over the scene (Projects' screens, Experience's
+  lines, Interests' arcade machine: `arcade/arcadeMachine.ts`, rules in
+  `arcade/arcadeLogic.ts`; untouched it moves to the next interest every
+  10 s, never in still view, and only the machine, not the panel).
+- `store.ts`: state shared by the panels and the scene (the only city3d
+  module `/` may import).
+
+### Renderer tiers and budgets (`tiers.ts`, `docs/audit/scripts/budget.mjs`)
+
+| | high | low | mobile |
+|---|---|---|---|
+| Who | desktop, discrete or Apple GPU | integrated GPU, ≤ 4 cores or memory, Save-Data, software | coarse pointer or the narrow layout (`flat.ts: FLAT_QUERY`) |
+| DPR cap | 1.75 | 1.5 | 1.25 |
+| Bloom | 0.5 scale, 5 levels, MSAA 4 | 0.25 scale, 5 levels, MSAA 2 | none (glow sprites) |
+| Draw calls | ≤ 300 | ≤ 220 | ≤ 150 |
+| Triangles | ≤ 1.2 M | ≤ 700 k | ≤ 350 k |
+| Texture memory | ≤ 128 MB | ≤ 96 MB | ≤ 48 MB |
+| Frame p95 at the home pose | ≤ 12 ms | ≤ 9 ms | ≤ 8 ms |
+
+Bundles (gzip bytes, `budget.mjs`; limits only go down): `homeInitialJs`
+and `cityInitialJs` ≤ 200,848; `totalJs` ≤ 214,000; `totalCss` ≤ 10,760;
+`cityCss` ≤ 2,000; `city3dChunk` ≤ 330,000; `districtChunk` ≤ 32,000;
+`city3dJs` ≤ 480,000; `resumeJs` ≤ 470,000; `resumeCss` ≤ 2,500. First
+load has about 1 KB of headroom. Latest readings: `docs/city/3d-log.md`,
+"Task 19, the reviews' fixes".
+
+### Standing rules
+
+- Content only from `app/data/portfolio.ts` and `public/`, through the
+  section components in `city2d/sections/`. Section names come from the
+  registry's `title`, never retyped.
+- No place names in anything a visitor reads or hears (text, signs, tags,
+  `aria-label`, titles, `alt`), and no Chinese or Japanese characters
+  anywhere in `app/`; no CJK font (`tests/city-routes.test.mjs`,
+  `tests/city-theme.test.mjs`).
+- Nothing 3D on `/`: no import reachable from `app/page.tsx` or
+  `app/layout.tsx` reaches `three`, `@react-three/*`, `postprocessing` or
+  `components/city3d/`, except `city3d/store.ts`
+  (`tests/city3d-bundle.test.mjs`, `budget.mjs`). The "3D city" link
+  never prefetches.
+- A client component in a first load never imports values from
+  `app/data/portfolio.ts` (types are fine): pass them as props from a
+  server component (as `TopBar` passes the song to `MusicToggle`). One
+  such import pulls the whole data file into every page's first load.
+- The kit: every material through the kit's factories
+  (`shared(materialKey(…))`; no file under `city3d/` outside `kit/` makes
+  a three.js material, `tests/city3d-contract.test.mjs`); all geometry and
+  textures generated in code from fixed seeds (`rng.ts`), no `Math.random`,
+  no downloaded or AI-made models; each scene's light count is fixed
+  (`scenes.ts: DISTRICT_LIGHTS`, through `SceneLights`) and the same by day
+  and night, so day, night and weather change uniforms only and a 3 s
+  blend compiles no shader; no new shader variants per sky.
+- Motion in the scene only through `common.tsx` (`useLive`, `useMovers`):
+  in still view nothing moves on its own, the camera cuts, the frame loop
+  is `demand`. `Post.tsx` is a composer, bloom and tone mapping only: no
+  glitch, scanlines, noise or chromatic aberration. No lanterns, dragons
+  or red-and-gold kitsch.
+- After moving a sign or a board on the riverside, run
+  `docs/city/scripts/visibility.mjs`.
 
 ---
 
 ## Color Palette
 
-One fixed theme: frosted glass and a baby-blue interface over the world. Cream
-`#fff9f2`, sky `#55c6f0`, sand `#e5ddd4`, ink `#1d1e1e`, error `#fb5745`
-(from Monkeytype's "Soaring Skies"), and the interface's blues: baby blue
-`#b8dcfa`, hover `#9bcbf1`, pale `#eaf5ff`, light `#f7fbff`, line
-`#c6dff0`, slate text `#203245`, focus `#326e9f`. They are named once at
-the top of `app/globals.css`; every component uses the semantic tokens
-derived from them (`--background`, `--paper`, `--surface-2`,
-`--surface-deep`, `--foreground`, `--muted`, `--accent`, `--mark`,
-`--highlight`, `--focus`, `--shadow`, `--glass-*`, …). Baby blue is for
-surfaces, chosen states, washes and strokes, never text: text and links
-use slate, `--accent` (`#23527c`, a deep baby blue) or `--mark`. The
-panels and buttons over the world are clear pale-blue glass (`--paper`,
-`--reading`, `--glass-tint`), their words haloed (slate on cream by day,
-cream on dark at night): `docs/ui/scripts/panel-contrast.mjs` measures
-every panel's and button's text, halo and all, over all 16 skies. The pieces that were coloured
-(the timetable, the cabinets' screens, the notebook's cover) are slate
-stained glass (`--stain-deep`), the contact page's phone line baby-blue
-stained glass (`--stain-baby`). Cream stays for the phone layout's sheet. Indigo is gone from the interface (`npm test` checks).
-There is no dark theme and no toggle; `npm test` checks that none comes
-back. The 3D scenes' skies, fog and thresholds are tuned to the same
-family; the landscape stays natural.
+One dark theme, soft black with a trace of blue (`app/city.css`, `:root`,
+verbatim from `docs/city/style.md`):
 
-Avoid:
-- large areas of pure black or pure white
-- neon or highly saturated colors
-- rainbow gradients
-- words on clear glass without their halo, or under 4.5:1 with it (measure
-  with panel-contrast.mjs)
-- a second theme, or anything keyed on `prefers-color-scheme`
+- `--ink` `#08090c` the ground; `--ink-2` `#101217` the alternate ground
+- `--panel` `#181b23` panels; `--line` `#2d323d` hairlines
+- `--text` `#e6e9ee` body and headings; `--muted` `#9ea5b1` secondary
+- `--cyan` `#4fd8ee` the accent; `--focus` `#8fe9ff` the focus ring
+- `--lantern` `#f4b860` the one warm accent: the primary action's fill
+  (hover `--glass-primary-hover` `#f8c97f`, label `--ink`)
+- `--seam` `#070c15`, `--seam-2` `#0c121d`: the band's fade
 
-Keep text contrast at 4.5:1 or better on glass and on every sky.
+Accents only on edges, marks, chosen states and display type of 24px or
+larger, never body text. Glow (`--glow-cyan`) never provides contrast and
+goes under `prefers-contrast: more`. The scene's neon tones are named
+`cyan`, `rose`, `gold` in `kit/neon.ts` only.
+
+Avoid (tests enforce most): a light theme, a toggle, anything keyed on
+`prefers-color-scheme` or `light-dark()`; magenta or amber interface
+tokens or names; pure white; text under 4.5:1 on any ground or sky.
 
 ---
 
 ## Typography
 
-Two typefaces, set in `app/layout.tsx`: Fraunces for headings and place
-names (`font-display`), a soft, slightly wonky serif with some personality;
-Nunito for text (`font-sans`), a rounded, friendly sans. Both load with
-`next/font/local` from two variable Latin files in `app/fonts/` (75 KB in
-all): Fraunces cut to weights 500 to 700, optical size 72, its "soft" and
-"wonky" axes set on; Nunito 400 to 700. To change a cut, fetch it from the
-Google Fonts CSS API with the axes pinned and replace the file. Every sign
-and notice in the world is in English, drawn in these same fonts
-(`world3d/textures.ts: fonts()`), so no CJK font is loaded (`npm test`
-checks no Chinese or Japanese characters come back into `app/`).
+Set in `app/layout.tsx` with `next/font/local` from `app/fonts/` (Latin
+only, OFL texts alongside): Rajdhani 500, 600 and 700 (three files) for
+headings and section names (`font-display`, `--font-display`), a squared
+signage sans; Nunito variable 400 to 700 for text (`font-sans`). Every
+word in the 3D scene uses these same fonts (the kit loads no font file of
+its own).
 
-Body copy is written as short points, not paragraphs: `.points` (a rust
-dash in the margin) on paper, `.notebook-points` in the notebook.
+Body copy is short points, not paragraphs: `.points`, each marked with a
+6px cyan square turned 45°. Figures in the text are bold through
+`<Figures>` (`lib/figures.ts`). `Heading.tsx` sets a section's heading
+levels: its 2D level on `/`, one higher in the 3D city.
 
-Prefer:
-
-- large, confident hero typography
-- clear heading hierarchy
-- comfortable body text
-- restrained use of font weights
-- generous line-height
-- strong readability
-
-Avoid excessive font sizes and decorative fonts.
+Prefer large, confident hero type, a clear heading hierarchy, restrained
+weights and generous line-height. Avoid decorative fonts.
 
 ---
 
 ## Layout
 
-Use:
-
-- generous whitespace
-- strong vertical rhythm
-- centered content containers
-- responsive layouts
-- large editorial sections
-- clean alignment
-
-Prefer a few strong elements per section rather than many small cards.
-
-The site should feel spacious rather than dense.
+- Generous whitespace, strong vertical rhythm, centred containers, a few
+  strong elements per section rather than many small cards.
+- Sections lay out by their own column width, never the viewport: one
+  `@container` on a wrapper, then `@min-[…]:` variants
+  (`tests/city-panel-fit.test.mjs`), so the same components fit the 2D
+  page and the 3D city's panel.
+- Grounds alternate: About, Experience and Contact sit on `--ink-2`.
+- Corners from `--radius` (10px) and `--radius-lg` (16px).
+- The 3D city: wide screens put the canvas fixed under the bar and the
+  panel in the left half; the narrow layout (`FLAT_QUERY`, mirrored in
+  `city-pages.css`) keeps the scene in the top `--hero` (46svh, 64svh on
+  a phone on its side) with the panel as a dark sheet over the rest.
 
 ---
 
 ## Navigation
 
-There is no row of tabs. Visitors get around by going to places in the
-park; the camera moves there. The plain alternatives, always one step away:
+- The top bar (`TopBar.tsx`): the name (home), the progress line and the
+  section you're at (`ProgressLine.tsx`: along the bar's foot, in the
+  right margin from 97rem), Richmond Hill's time and weather, the "3D
+  city" switch (in the bar from 80rem, the Sections menu's first entry
+  below; hidden while the city is closed), Sections, Still view and the
+  music. It never gains a row it doesn't have today, at any width
+  (`docs/city/scripts/bar-fit.mjs`).
+- The Sections menu (`SectionsMenu.tsx`, a popover) jumps within the page
+  and moves focus there; on `/city/*` it points at the city and offers the
+  way back.
+- The hero's "View projects" and "Contact".
+- In the 3D city: the riverside's sign tags (`.city-tag` links over the
+  boards, or the panel's row of keys `.city-keys` where they can't fit),
+  Escape back to Home, "Back to Home" and "This section on the 2D page"
+  on every section page; the bar's switch reads "2D view" there.
+- The time and weather (`components/weather/WeatherClock.tsx`) is
+  something to read, not a control: plain text with a `<time>`, blanks
+  while loading, an "as of" tag on an old reading, "Weather unavailable"
+  with the time kept, no live region. Open-Meteo's credit is in every
+  page's footer (`components/ui/Colophon.tsx`).
 
-- the **Sections** menu in the top-right corner, labelled the same on both
-  layouts (every section, including Skills, with its place in the park
-  beside it on wide screens)
-- on the home page, the introduction with "View projects" and "Contact"
-- the notice board's map (`/map`)
-- "Back to the park" and Escape on every place's page
-- on the flat layout: the bar along the top (the way back, Sections), tags on
-  the painting, and "Elsewhere in the park" at the foot of each page
-
-Every place is a real URL, so browser history, deep links and the keyboard
-work. Keep the corner controls few and small (44px glass keys).
-
-Beside Sections is Richmond Hill's time and weather
-(`components/weather/WeatherClock.tsx`): not a control but something to
-read, a small capsule of clear glass (a few percent of tint, a 6px blur,
-a thin bright edge) as wide as its words, plain selectable text with a
-`<time>`. No button, focus, hover, press or details. Its words carry
-their own contrast: slate with a cream halo by day, cream with a dark
-halo at night. On narrow screens it takes a row of its own under the bar
-and wraps if it must. It never shows a value it doesn't have: blanks
-while loading, an "as of" tag on an old reading, "Weather unavailable"
-(with the time kept) when there is none. No live region: the minute tick
-isn't announced. Open-Meteo's credit (its licence asks for one) is in
-every page's footer (`components/ui/Colophon.tsx`).
-
-On wide screens a page's column takes one half of the screen and its place
-the other, and sits in the middle of its half (`.location` in
-`globals.css`), so wide monitors stay balanced. Corners come from the
-`--radius*` tokens: one family of soft edges everywhere.
+Every section is one entry in `app/sections/registry.ts`; the menu, the
+progress line, the numbers and the city's keys are generated from it.
+Never keep a second list. To add one: `docs/adding-a-section.md`
+(starter `docs/development/section-template/Greenhouse.tsx`, not served).
 
 ### Buttons
 
-Every button and button-like control is glass (`.glass` at the end of
-`globals.css`), including the bench tabs, the cabinets, the timetable's
-lines, the notebook's page turns, the screenshot thumbnails and the
-Sections slip's entries: a 10px-cornered rectangle as wide as its words,
-44px tall, a little baby blue over a backdrop blur, a thin baby-blue
-edge, a light line along its top; the label is opaque slate. The base
-rule is in `:where()`, so a control's own class sets its size, type and
-layout (and keeps a small sign of its own: the bench tab's power light,
-the cabinet's screen). Tertiary actions stay text links (`.text-link`);
-the scene's name tags and map pins are scenery, not buttons.
-
-The states, the same on every control:
-- secondary `.glass`; primary `.glass-primary`, a stronger blue and a
-  heavier label; `.glass-icon`, a square icon key
-- hover: a little more blue
-- chosen (`aria-pressed`, `aria-selected`, `aria-current`,
-  `data-copied`, an open popover): baby blue, a double focus-blue edge,
-  pressed in (a shade inside, no lift), so not colour alone
-- disabled (`:disabled`, `aria-disabled="true"`): no glass, a dashed
-  edge, a muted label (still 4.5:1); no hover, press or pointer
-- focus: the focus-blue ring on a cream halo (`--focus-halo`)
-
-Over the world (the corner controls, bench tabs, cabinets, the
-introduction's actions) the glass is as clear as the time and weather's,
-and its label carries a halo: slate on cream by day, cream on dark under
-a dark sky (`--glass-ink`); a chosen key is filled baby blue, so its
-label stays plain slate. `docs/ui/scripts/panel-contrast.mjs` measures
-every label over every sky; `glass-states.mjs` checks and photographs
-every state.
+Every button-like control is glass (`.glass` in `city.css`): 44px tall,
+as wide as its words, `--glass-tint` over a backdrop blur
+(`--glass-fallback` without one), a thin cyan-tinted edge, the label in
+opaque `--text`. Tertiary actions stay text links (`.text-link`; on their
+own they take 44px). States, the same everywhere:
+- `.glass-primary`: the lantern fill, an `--ink` label
+- `.glass-icon`: a square icon key
+- hover: under `@media (hover: hover)` only
+- chosen (`aria-pressed`, `aria-selected`, `aria-current`, an open
+  popover): `--glass-chosen`, a cyan inner edge, pressed in
+- disabled: dashed edge, muted label still 4.5:1, no hover or pointer
+- focus: the `--focus` ring on a dark halo (`--focus-halo`)
 
 The press is `components/ui/GlassPress.tsx`, mounted once in the layout:
-one listener sets `data-held` and `data-pressed` and the press point on
-whichever `.glass` is pressed (the middle for the keyboard), and CSS does
-the rest: a give to 97% while held (a transition, springing back), a
-ripple of light from the press point and a sheen, settled in `--t-slow`
-(280 ms); only scale, translate and opacity, under the label. The keys
-used most (the top bar's, the Sections menu's rows) get a tint at once
-instead, with no give or light. It never
-delays the action and never stacks. Still view and reduced motion get a
-brief tint instead. New buttons only need the class.
+it answers in `pointerdown`, never delays the action, never stacks, and
+settles within `--t-slow`; still view gets a brief tint instead. New
+buttons only need the class.
 
 ---
 
 ## Hero Section
 
-The hero should prioritize:
-
-1. My name
-2. My professional/academic headline
-3. A concise introduction
-4. Primary call to action
-5. GitHub / LinkedIn links where appropriate
-
-Keep the hero simple.
-
-The introduction is the name, the subtitle `cs@uwaterloo`, View
-projects and Contact, and the GitHub / LinkedIn / Résumé links: no
-paragraph. The name is its one bold element (`.park-name`): slate-blue
-Shippori Mincho with an ochre brushstroke under it (the intro film's path colour), brushed in once on
-arrival. Over the park there is no card behind the introduction: by day
-the name, the subtitle and the links each sit on their own soft, blurred
-cream backing; at night (`.world3d`'s `data-sky-daylight`) the backings
-fade and the words turn cream with a faint dark halo, so nothing glows
-like a lamp. `docs/ui/scripts/intro-contrast.mjs` measures every line
-over all 16 skies.
-
-Do not add unnecessary decorative graphics just to fill space.
+The home station's opening (`city2d/sections/Hero.tsx`): the name (the
+page's one `h1`, `#home-title`, on its own dark backing, rising onto the
+band's foot from 1024px, capped at 13vw), the headline from `profile`,
+"View projects" and "Contact" (glass), and the GitHub / LinkedIn / Résumé
+links (`ProfileLinks.tsx`). No paragraph, no caption, no list of
+sections. Keep it simple; no decorative graphics to fill space.
 
 ---
 
 ## Project Section
 
-Projects should be the most important portfolio content.
+Projects are the most important content (`city2d/sections/Projects.tsx`):
+an index of every project, then one `article` per project with a level-3
+heading, cover screenshot (never cropped), summary, features (or "My
+part" when it lists contributions), the stack as one muted line, GitHub and an
+optional live demo, the rest in a native `<details>`. Skills follow,
+inside Projects. In the 3D city each project is a screen in the towers;
+choosing one there marks it current in the panel's index.
 
-Project components should support:
+Do not invent projects. Keep them polished but restrained: soft surfaces,
+hairlines, gentle hover; no huge shadows, heavy animation or badge
+clutter.
 
-- title
-- description
-- technologies
-- GitHub link
-- optional live demo
-- optional image
-- optional longer project page in the future
-
-Do not invent projects.
-
-Keep project cards visually polished but restrained.
-
-Prefer:
-- soft surfaces
-- subtle borders
-- rounded corners
-- gentle hover behavior
-
-Avoid:
-- huge shadows
-- excessive animation
-- cluttered technology badges
+Interests (`sections/Interests.tsx`) are native `<details>` rows with
+optional photos read from `public/interests/<scene>/` at build time. To
+add photos: `docs/adding-interest-photos.md` (no code; captions in
+`portfolio.ts`).
 
 ---
 
 ## Motion
 
-**Apply the nineteen UX and motion principles in
-`docs/ui/ux-motion-principles.md` to any interface you add or change**
-(exaggeration, origin awareness, staggering, squash and stretch, rubber
-banding, the Doherty threshold, anticipation, Fitts's law, slow in and
-slow out, Hick's law, follow-through, arcs, the Von Restorff effect,
-timing, interruptible motion, secondary action, solid drawing, frequency
-of use, the peak-end rule). Richard asked for this on 20 November 2026.
-Read the file before interface work: it says what each one means on this
-site. Implement every one that honestly fits, and say which you applied.
-They work inside the rules below, which win when they disagree: still view
-and reduced motion show the end state with nothing moving; nothing loops;
-content never waits on an animation; the size budgets hold.
+Subtle, and never in the way of reading (`docs/ui/ux-motion-principles.md`:
+apply its principles to interface work). The tokens are in `city.css`
+(`--ease-out`, `--ease-in-out`, `--ease-spring`, `--t-fast` 120ms,
+`--t-base` 200ms, `--t-slow` 280ms, `--stagger` 60ms; `--t-sky` 3s for
+the day/night fade); no transition writes its own duration or curve.
+Items arrive once as they scroll in (`reveal.css`, `ui/Arrivals.tsx`),
+visible at rest, transforms and opacity only; nothing loops.
 
-Animations should be subtle. Words never wait for the world: a page's
-content comes in within about 0.1 s of arriving (`--arrive-delay`) while
-the camera's journey, a second or so, plays behind it. The one deliberate
-exception is the home page's intro: on every full load of `/`, wide
-layout only, a painted film of the walk into the park plays over the page for 9.2 s
-(gone by 9.5, a hard cap at 10; `intro/timeline.ts`) while the world
-loads underneath. A clear-glass "Skip intro" key, Escape or a click ends
-it; it never plays in still view (so not with reduced motion), on the
-phone layout (hidden by CSS before any script runs; the film and its
-poster never fetched), on deep links, or on a client navigation back to `/`. Interface
-transitions are 150–300 ms; a glass button's press settles in `--t-slow` (280 ms). The
-world stops drawing when the tab is hidden.
-
-Preferred:
-- opacity transitions
-- small translate transitions
-- gentle hover effects
-- approximately 200–400ms durations
-
-Respect `prefers-reduced-motion`.
-
-Do not add:
-- excessive parallax
-- animated cursors
-- distracting background animations
-- unnecessary page loaders
-- constant movement
+Still view is `html[data-still="on"]`, set before first paint by
+`lib/still.ts: STILL_SCRIPT` from the visitor's choice or
+`prefers-reduced-motion`: no animation, no parallax or tilt, no moving
+weather, camera cuts instead of travel, nothing in the scene moving on
+its own. Every animation sits behind that guard and the reduced-motion
+query. No scroll hijacking: the canvas never takes wheel or touch-scroll.
+The 3D frame loop stops when the tab is hidden, when the sheet covers the
+canvas, and under the résumé.
 
 ---
 
 ## Responsive Design
 
-Every change must work on:
+Every change must work on mobile, tablet, laptop and large desktop.
+Checked by `docs/ui/scripts/mobile-audit.mjs` (`/`, its anchors and the
+six `/city` pages, the open menu, the weather display, the progress line
+and the résumé dialog, at 320, 390, 430, 768, 1024 portrait and
+landscape, 1440, 1600, 844×390 and 667×375, plus 200% text at 320, 390
+and 844×390; headless Chrome with touch and emulated notch insets, not a
+real device):
 
-- mobile
-- tablet
-- laptop
-- large desktop
-
-Do not optimize only for my current browser size.
-
-What's guaranteed, and checked by `docs/ui/scripts/mobile-audit.mjs`
-(every route, the open Sections menu, the weather display and the résumé dialog, at
-320, 390, 430, 768, 1024 portrait and landscape, 1440, 844×390 and
-667×375, plus 200% text at 320, 390 and 844×390; headless Chrome with
-touch and emulated notch insets, not a real device):
-
-- no sideways scroll, and nothing reaching past the screen
-- every target at least 44×44 CSS px on touch, and none overlapping or
-  closer than 8px. Links inside a sentence are exempt; links that stand
-  on their own (the home page's GitHub / LinkedIn / Résumé, "Home",
-  "Open the map", the directory's lines) stay text links but take 44px
-  (`.text-link` sizing near the top of `globals.css`)
+- no sideways scroll, nothing past the screen
+- every target at least 44×44 CSS px on touch, none overlapping or closer
+  than 8px (links inside a sentence are exempt)
 - no text under 12px; body copy on phones at 16px
-- the corner controls, menus, the weather display and the résumé's bar clear every
-  `env(safe-area-inset-*)` (top, sides in landscape, the home bar)
+- the bar, menus and dialogs clear every `env(safe-area-inset-*)`
 - menus and dialogs fit the screen, scroll inside, and don't scroll the
   page behind (`overscroll-behavior: contain`)
-- labels wrap or the bar wraps; nothing clips. The bar is a size
-  container: when it's narrow for its words (under 22.2em of its own
-  text, a 379px phone or larger text on any phone) the way back is its
-  arrow alone, and the time and weather may take two lines. With very
-  large text on a phone (under 18em) Sections is its map alone too and
-  the display drops the place visually (it's still read out), so the
-  fixed bar doesn't cover the page
-- words longer than a line break rather than push the page sideways
-  (`overflow-wrap: anywhere` on the sheet), since a phone otherwise
-  widens its layout viewport and the fixed bar and dialogs spill with it.
-  Glass labels and the map's labels use `break-word` instead, so a key
-  never shrinks round one letter; a place's title and the name are
-  capped at 13vw so they stay whole
-- glass on the sheet has no backdrop blur on phones (it sits on opaque
-  cream); only the bar's keys blur, over the world
-- hover only adds: put `:hover` styles under `@media (hover: hover)` so
-  a tap doesn't leave them stuck (the audit lists any that aren't)
-- on a touch screen under 480px the map's drawing is a picture (its pins
-  can't be 44px apart there); the list under it takes the taps
-
-Check especially:
-
-- navigation
-- hero typography
-- project cards
-- spacing
-- overflow
-- buttons
-- contact links
+- labels wrap or the bar wraps; nothing clips; a tall top bar stops being
+  sticky
+- hover only adds: `:hover` under `@media (hover: hover)`
 
 ---
 
 ## Accessibility
 
-Maintain good accessibility.
-
-Use:
-- semantic HTML
-- appropriate headings
-- keyboard-accessible controls
-- visible focus states
-- useful alt text
-- sufficient color contrast
-
+Semantic landmarks, one `h1` per page, headings in order, a skip link,
+visible focus, keyboard access to everything, no information by colour
+alone, all painting `alt=""`. In the 3D city focus moves to the panel's
+heading on each journey (never on first load), and under
+`prefers-contrast: more` panels are opaque, with no bloom and no glow.
 Do not sacrifice accessibility for visual styling.
 
 ---
 
 ## Content Rules
 
-Never invent:
+Never invent: projects, employers, jobs, internships, awards, grades,
+technologies I know, years of experience, GitHub usernames, LinkedIn
+URLs, email addresses, statistics.
 
-- projects
-- employers
-- jobs
-- internships
-- awards
-- grades
-- technologies I know
-- years of experience
-- GitHub usernames
-- LinkedIn URLs
-- email addresses
-- statistics
+If something is unknown, either ask me or leave an obvious placeholder.
 
-If something is unknown, either:
-1. ask me, or
-2. leave an obvious placeholder.
-
-Do not use generic AI-written statements such as:
-
-"Passionate developer creating innovative digital experiences."
-
-Prefer concise, natural language.
+Do not use generic AI-written statements such as "Passionate developer
+creating innovative digital experiences." Prefer concise, natural
+language.
 
 ---
 
 ## Coding Style
 
-Use TypeScript.
+Use TypeScript. Prefer simple components, meaningful names, clear props,
+readable code, straightforward solutions. Avoid premature abstraction,
+giant components, unnecessary state, unnecessary client components and
+dependencies, overly clever code.
 
-Prefer:
-- simple components
-- meaningful names
-- reusable components
-- clear props
-- readable code
-- straightforward solutions
-
-Avoid:
-- premature abstraction
-- giant components
-- unnecessary state
-- unnecessary client components
-- unnecessary dependencies
-- overly clever code
-
-Use Server Components by default when possible.
-
-Only use `"use client"` when client-side behavior actually requires it.
+Use Server Components by default; `"use client"` only when client-side
+behaviour requires it.
 
 ---
 
 ## Editing Rules
 
-Before making a large change:
+Before a large change: inspect the relevant files, understand the current
+implementation, preserve unrelated functionality, make the smallest
+reasonable set of changes. Don't rewrite unrelated sections. For major
+redesigns, explain the plan first.
 
-1. inspect the relevant existing files
-2. understand the current implementation
-3. preserve functionality that is unrelated to the request
-4. make the smallest reasonable set of changes
+Shared files (`package.json`, the lockfile, `next.config.ts`,
+`app/city.css`, `app/layout.tsx`, `app/sections/registry.ts`, `TopBar.tsx`,
+`city3d/{store,scenes,sceneChunks}.ts`, `kit/uniforms.ts`, `budget.mjs`)
+are edited by one session at a time, never by parallel agents.
 
-Do not rewrite unrelated sections of the site unless necessary.
-
-For major redesigns, explain the plan before implementing it.
+The icons and share card are drawn in code:
+`scripts/identity/make-identity.mjs` (from `mark.svg` and the riverside's
+night plate) writes `app/icon.svg`, `app/favicon.ico`,
+`app/apple-icon.png` and `public/share-card.jpg`. Rerun it after changing
+the mark or that plate.
 
 ---
 
 ## Validation
 
-After significant code changes, run:
+After significant code changes:
 
 ```bash
 npm run lint
 npm test
+npx tsc --noEmit
 ```
+
+For builds and audits:
+- Build with the city on: `NEXT_PUBLIC_CITY3D=on npm run build`, then
+  `npx next start -p 3100` (any port but the dev server's 3101). Then
+  `SMOKE_URL=http://localhost:3100 npm test` and
+  `node docs/audit/scripts/budget.mjs` (`npm run perf:budget`).
+- Never delete `.next` under a running `next dev`. If `next dev` serves a
+  stale stylesheet, stop it, `rm -rf .next`, start it again.
+- The browser scripts need Playwright from outside the project
+  (`PLAYWRIGHT=…/playwright/index.mjs`, `docs/audit/scripts/pw.mjs`).
+
+The scripts and what they measure (production build unless marked `next
+dev`, for the `?sky=` preview):
+- `docs/audit/scripts/budget.mjs`: bundle budgets; no three.js on `/` or
+  its linked routes. `lighthouse.mjs`: cold runs, LCP and CLS per URL.
+  `shots.mjs`: screenshots of every route.
+- `docs/ui/scripts/mobile-audit.mjs`: the guarantees above.
+  `responsive-shots.mjs`: the pages at every width.
+  `city-contrast.mjs` (`next dev`): every word on `/` over 20 skies.
+  `glass-contrast.mjs` (`next dev`): glass labels over every sky.
+  `glass-states.mjs`, `glass-press.mjs`: the buttons' states and press.
+  `palette-contrast.mjs`: the palette's pairs. `resume-viewer.mjs`: the
+  résumé dialog. `weather-display.mjs`: the time and weather display.
+- `docs/city/scripts/city3d-perf.mjs`: draws, triangles, memory and frame
+  times per tier and place against `TIERS`; shaders compiled by blends;
+  still view's frames. `city3d-fallback.mjs`: every fallback reads and
+  doesn't shift. `city3d-keyboard.mjs`: the city by keyboard.
+  `city3d-contrast.mjs` (`next dev`): panels, tags, keys and bar over 20
+  skies. `visibility.mjs` (`next dev`): each sign on screen, uncovered,
+  out of fog, its link 44px and apart. `plate-compare.mjs` (`next dev`):
+  ΔE between each place and its painting (a measure, not a gate).
+  `bar-fit.mjs`: the bar's height at every width against
+  `docs/city/bar-baseline.json`.
+
+### Open
+
+- Simulated-phone largest paint is about 3.0 s against the 2.5 s target
+  (`/` and `/city`; desktop about 0.7 s).
+- The weather capsule shifts the layout slightly when its reading arrives
+  (CLS up to 0.02, `/` and `/city`).
+- The 3D city still differs from its paintings (mean ΔE about 15, most
+  places darker) and awaits my review on a phone before it opens.
+- `bar-fit.mjs` depends on the live weather's words, so it can fail at a
+  width without any change to the bar.
