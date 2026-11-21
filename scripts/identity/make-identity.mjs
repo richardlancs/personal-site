@@ -1,6 +1,6 @@
 // Draws the site's icons and share image from code, like the rest of the
-// art: the mark in mark.svg, the share card from the painting
-// (app/assets/park/park-v04.png) with the name set in the site's own fonts.
+// art: the mark in mark.svg, the share card from the riverside's night plate
+// (app/assets/city/lujiazui-night.webp) with the name set in the site's own fonts.
 //
 //   PLAYWRIGHT=/path/to/node_modules/playwright/index.mjs node scripts/identity/make-identity.mjs
 //
@@ -57,20 +57,21 @@ const sizes = [16, 32, 48];
 writeFileSync(app("favicon.ico"), ico(await Promise.all(sizes.map(async (size) => ({ size, data: await icon(size) })))));
 writeFileSync(app("apple-icon.png"), await icon(180, true));
 
-// The share card: the painting, and the name on a sheet of the site's
-// cream paper in the open sky at the upper left, as on the home page
+// The share card: the riverside's night plate, and the name on a sheet of
+// the site's soft-black panel at the upper left, as on the home page
 const fonts = `
-  @font-face { font-family: Shippori; font-weight: 600; src: url(${dataUrl(app("fonts/shippori-mincho-b1-latin-600.woff2"), "font/woff2")}); }
-  @font-face { font-family: Zen; font-weight: 500; src: url(${dataUrl(app("fonts/zen-kaku-gothic-new-latin-500.woff2"), "font/woff2")}); }`;
+  @font-face { font-family: Rajdhani; font-weight: 700; src: url(${dataUrl(app("fonts/rajdhani-latin-700.woff2"), "font/woff2")}); }
+  @font-face { font-family: Rajdhani; font-weight: 500; src: url(${dataUrl(app("fonts/rajdhani-latin-500.woff2"), "font/woff2")}); }
+  @font-face { font-family: Nunito; font-weight: 600; src: url(${dataUrl(app("fonts/nunito-latin-400-700.woff2"), "font/woff2")}); }`;
 const card = `
   <style>${fonts}</style>
-  <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#e9e2d8">
-    <img src="${dataUrl(app("assets/park/park-v04.png"), "image/png")}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 60%">
-    <div style="position:absolute;left:64px;top:64px;padding:36px 44px 34px;border-radius:18px;background:rgb(255 253 248 / 0.94);box-shadow:0 18px 44px -20px rgb(30 16 122 / 0.35)">
-      <div style="font-family:Shippori;font-weight:600;font-size:76px;line-height:1.05;color:#1d1e1e;letter-spacing:-0.01em">Richard Lan</div>
-      <div style="margin-top:14px;font-family:Zen;font-weight:500;font-size:30px;color:#45474a">CS student @uwaterloo</div>
-      <div style="margin-top:22px;width:56px;height:3px;border-radius:2px;background:#55c6f0"></div>
-      <div style="margin-top:20px;font-family:Zen;font-weight:500;font-size:26px;color:#1e107a">Software engineering portfolio</div>
+  <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#08090c">
+    <img src="${dataUrl(app("assets/city/lujiazui-night.webp"), "image/webp")}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%">
+    <div style="position:absolute;left:56px;top:56px;padding:34px 44px 34px;border-radius:14px;background:rgb(24 27 35 / 0.92);border:1px solid rgb(79 216 238 / 0.35);box-shadow:0 18px 44px -20px rgb(0 0 0 / 0.7)">
+      <div style="font-family:Rajdhani;font-weight:700;font-size:88px;line-height:1;color:#e6e9ee;letter-spacing:0.01em">Richard Lan</div>
+      <div style="margin-top:12px;font-family:Rajdhani;font-weight:500;font-size:36px;color:#4fd8ee;letter-spacing:0.04em">cs@uwaterloo</div>
+      <div style="margin-top:20px;width:56px;height:3px;border-radius:2px;background:#4fd8ee"></div>
+      <div style="margin-top:18px;font-family:Nunito;font-weight:600;font-size:26px;color:#e6e9ee">Software engineering portfolio</div>
     </div>
   </div>`;
 writeFileSync(`${root}public/share-card.jpg`, await png(card, 1200, 630, "jpeg"));
