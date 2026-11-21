@@ -74,6 +74,40 @@ body:has(.city-page) .top-bar .rh {
   margin-top: 2.5rem;
 }
 
+/* Projects' index (city2d/sections/Projects.tsx), in the city: the project
+   on the screen (panels/ScreenPicker.tsx sets aria-current) is marked by a
+   cyan bar in the margin beside its row, a faint wash and a heavier
+   underline on its name, so not by colour alone; nothing moves */
+.city-page[data-section="projects"] nav[aria-label="Projects"] a {
+  position: relative;
+}
+
+.city-page[data-section="projects"] nav[aria-label="Projects"] a[aria-current="true"] {
+  background: color-mix(in srgb, var(--cyan) 8%, transparent);
+}
+
+.city-page[data-section="projects"] nav[aria-label="Projects"] a[aria-current="true"]::before {
+  content: "";
+  position: absolute;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  left: -0.75rem;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--cyan);
+}
+
+.city-page[data-section="projects"] nav[aria-label="Projects"] a[aria-current="true"] .font-display {
+  text-decoration-thickness: 2px;
+}
+
+@media (forced-colors: active) {
+  .city-page[data-section="projects"] nav[aria-label="Projects"] a[aria-current="true"]::before {
+    background: Highlight;
+    forced-color-adjust: none;
+  }
+}
+
 /* The section's picker (panels/ScreenPicker.tsx, BoardLines.tsx,
    ArcadeControls.tsx): a row of glass keys choosing what the scene shows,
    there only while the 3D city draws. Its slot holds the row's unseen

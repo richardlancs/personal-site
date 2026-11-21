@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { isFlat } from "../flat";
 import { useWorld, world } from "../store";
 import { onChoiceKey } from "./selector";
 
@@ -13,13 +14,22 @@ function show(index: number) {
   world.set({ focus: `screen-${index}` });
 }
 
+// The panel's index of the projects (city2d/sections/Projects.tsx: its
+// links to each row, #<slug>)
+const indexLinks = () => [...document.querySelectorAll<HTMLAnchorElement>('.city-page[data-section="projects"] nav[aria-label="Projects"] a[href^="#"]')];
+
 // The towers' screens, one per project (districts/towers.def.ts:
 // "screen-<n>"): a key here lights that project's screen and turns the
 // camera to it. The other way round, a screen chosen in the scene (its
 // Hitbox writes sel.project) brings that project's row in the panel into
 // view and puts the keyboard on its heading. The index's links (#<slug>)
 // choose a screen too. Every key is a tab stop; the arrows also move along
-// the row (selector.ts).
+// the row (selector.ts). Whoever chose, the index marks the project on the
+// screen as current (aria-current, city-pages.css: a bar and a heavier
+// underline, so not by colour alone). A key chosen here also brings the
+// project's write-up into view on the narrow layout (the sheet, the page,
+// scrolls there; at once in still view), and keeps the keyboard on the
+// key; on the wide layout the page doesn't move: the index row shows it.
 export default function ScreenPicker({ items: titles }: { items: string[] }) {
   const selected = useWorld((s) => s.sel.project);
   // The last choice this row made or followed: any other change of
@@ -29,7 +39,19 @@ export default function ScreenPicker({ items: titles }: { items: string[] }) {
   function choose(index: number) {
     known.current = index;
     show(index);
+    if (!isFlat()) return;
+    document.getElementById(slug(titles[index]))?.scrollIntoView({ block: "start", behavior: world.get().still ? "auto" : "smooth" });
   }
+
+  useEffect(() => {
+    const links = indexLinks();
+    links.forEach((link, index) => {
+      if (index === selected) link.setAttribute("aria-current", "true");
+      else link.removeAttribute("aria-current");
+    });
+    // gone with the row (a fallback, another page): nothing is on a screen
+    return () => links.forEach((link) => link.removeAttribute("aria-current"));
+  }, [selected]);
 
   useEffect(() => {
     const fromHash = () => {

@@ -101,6 +101,21 @@ test("each picker writes its choice and its scene's focus key", () => {
   assert.match(arcade, /document\.hidden/);
 });
 
+test("Projects: the project on the screen is current in the panel's index, and a key brings its write-up into view on the narrow layout only (Task 19 review, ux I2)", () => {
+  const src = read("app/components/city3d/panels/ScreenPicker.tsx");
+  assert.match(src, /nav\[aria-label="Projects"\] a\[href\^="#"\]/);
+  assert.match(src, /link\.setAttribute\("aria-current", "true"\)/);
+  assert.match(src, /link\.removeAttribute\("aria-current"\)/);
+  // the key keeps focus (no .focus in choose), the wide layout's page stays put, still view jumps
+  assert.match(src, /function choose\(index: number\) \{\s*known\.current = index;\s*show\(index\);\s*if \(!isFlat\(\)\) return;\s*document\.getElementById\(slug\(titles\[index\]\)\)\?\.scrollIntoView\(\{ block: "start", behavior: world\.get\(\)\.still \? "auto" : "smooth" \}\);\s*\}/);
+  const css = read("app/city/city-pages.css");
+  // not by colour alone: a bar beside the row and a heavier underline
+  assert.match(css, /nav\[aria-label="Projects"\] a\[aria-current="true"\]::before \{[^}]*width: 3px;/);
+  assert.match(css, /a\[aria-current="true"\] \.font-display \{\s*text-decoration-thickness: 2px;/);
+  // the 2D page's index is untouched
+  assert.doesNotMatch(read("app/components/city2d/sections/Projects.tsx"), /aria-current/);
+});
+
 test("the scene keys named in the districts' defs are the ones the pickers write", () => {
   assert.match(read("app/components/city3d/districts/towers.def.ts"), /"screen-<n>"/);
   assert.match(read("app/components/city3d/districts/metro.def.ts"), /"line-<n>"/);
