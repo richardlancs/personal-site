@@ -301,7 +301,7 @@ function build(quality: Quality): Built {
   }
   // the towers, in forms of their own (kit/towers.ts: withForms), but the
   // crowned ones, whose parapet of light is fitted to their style's roof
-  for (const t of buildTowers(withForms(city, 97, (t) => crowned.has(t)), { far: false })) {
+  for (const t of buildTowers(withForms(city, 97, { keep: (t) => crowned.has(t) }), { far: false })) {
     geometries.push(t.geometry);
     if (mobile) t.castShadow = false;
     add(t);

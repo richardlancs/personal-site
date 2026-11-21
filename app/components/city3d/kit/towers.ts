@@ -87,29 +87,32 @@ function formGeometry(form: TowerForm): THREE.BufferGeometry {
  * Forms for towers laid out without them (a copy of `specs`, the same
  * places and sizes): from `seed` alone, so the layout never moves. The
  * three tallest get the hero forms, a spire, a twist and a crown; the
- * rest, at random, the tall ones any form and the low ones the plainer
- * (a setback, a podium, rounded or chamfered); a share keep their style's
- * own shape. `keep(t)`: towers that stay as they are (say, ones carrying
- * a lit crown or a screen fitted to a box).
+ * rest take a form by group (`group(t)`, by default the tower's style):
+ * every tower of a group the same form, so the forms cost no draw calls
+ * beyond the groups' own (buildTowers makes a mesh per form and facade:
+ * group by facade). `keep(t)`: towers that stay as they are (say, ones
+ * carrying a lit crown or a screen fitted to a box). `forms`: the forms
+ * to choose from (all by default).
  */
-export function withForms(specs: TowerSpec[], seed: number, keep: (t: TowerSpec) => boolean = () => false): TowerSpec[] {
-  const r = rng(seed);
+export function withForms(specs: TowerSpec[], seed: number, o: { keep?: (t: TowerSpec) => boolean; group?: (t: TowerSpec) => unknown; forms?: readonly TowerForm[] } = {}): TowerSpec[] {
+  const keep = o.keep ?? (() => false);
+  const group = o.group ?? ((t: TowerSpec) => t.style);
+  const pool = o.forms && o.forms.length ? o.forms : TOWER_FORMS;
   const heroes = specs
     .filter((t) => !keep(t))
     .sort((a, b) => b.h - a.h)
     .slice(0, 3);
   const HERO: TowerForm[] = ["spire", "twist", "crown"];
-  const tallest = specs.length ? Math.max(...specs.map((t) => t.h)) : 0;
+  // each group's form, in the order the groups are first met, from the seed
+  const r = rng(seed);
+  const chosen = new Map<unknown, TowerForm>();
   return specs.map((t) => {
-    const pick = r();
-    const which = r();
     if (keep(t)) return t;
     const hero = heroes.indexOf(t);
     if (hero >= 0) return { ...t, form: HERO[hero] };
-    if (pick < 0.25) return t;
-    const tall = t.h > tallest * 0.5;
-    const pool: TowerForm[] = tall ? ["setback", "taper", "twist", "rounded", "chamfer", "crown", "spire", "podium"] : ["setback", "podium", "rounded", "chamfer"];
-    return { ...t, form: pool[Math.floor(which * pool.length)] };
+    const g = group(t);
+    if (!chosen.has(g)) chosen.set(g, pool[Math.floor(r() * pool.length)]);
+    return { ...t, form: chosen.get(g)! };
   });
 }
 
@@ -170,40 +173,43 @@ export function buildTowers(specs: TowerSpec[], o: { far: boolean; fogScale?: nu
   const p = new THREE.Vector3();
   const s = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0);
-  for (const style of [0, 1, 2, 3] as const) {
-    // this style's towers, by form and facade, in the order first met (fixed by the specs)
-    const groups = new Map<string, { look: TowerPalette; form?: TowerForm; specs: TowerSpec[] }>();
+  // one instanced mesh per group of towers sharing a shape and a facade:
+  // a style's own shape (by style), or a form (whatever the style)
+  const groups = new Map<string, { look: TowerPalette; style: TowerSpec["style"]; form?: TowerForm; specs: TowerSpec[] }>();
+  for (const style of [0, 1, 2, 3] as const)
     for (const t of specs) {
       if (t.style !== style) continue;
       const look = o.palette ? o.palette(t) : TOWER_STYLES[style];
-      const key = `${t.form ?? ""}|${windowVariant(look)}`;
-      if (!groups.has(key)) groups.set(key, { look, form: t.form, specs: [] });
+      const key = `${t.form ?? style}|${windowVariant(look)}`;
+      if (!groups.has(key)) groups.set(key, { look, style, form: t.form, specs: [] });
       groups.get(key)!.specs.push(t);
     }
-    let k = 0;
-    for (const { look, form, specs: mine } of groups.values()) {
-      const geometry = form ? formGeometry(form) : styleGeometry(style);
-      const size = new Float32Array(mine.length * 3);
-      const seeds = new Float32Array(mine.length);
-      const material = windowMaterial({ ...look, far: o.far, fogScale: o.fogScale });
-      const mesh = new THREE.InstancedMesh(geometry, material, mine.length);
-      mine.forEach((t, i) => {
-        m.compose(p.set(t.x, 0, t.z), q.setFromAxisAngle(up, t.ry), s.set(t.w, t.h, t.d));
-        mesh.setMatrixAt(i, m);
-        size.set([t.w, t.h, t.d], i * 3);
-        seeds[i] = t.seed;
-      });
-      geometry.setAttribute("aSize", new THREE.InstancedBufferAttribute(size, 3));
-      geometry.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seeds, 1));
-      mesh.instanceMatrix.needsUpdate = true;
-      mesh.computeBoundingBox();
-      mesh.computeBoundingSphere();
-      mesh.castShadow = !o.far;
-      mesh.receiveShadow = !o.far;
-      mesh.name = `towers:${style}${o.far ? ":far" : ""}${form ? `:${form}` : ""}${k ? `:${k}` : ""}`;
-      meshes.push(mesh);
-      k++;
-    }
+  const count = new Map<string, number>();
+  for (const { look, style, form, specs: mine } of groups.values()) {
+    const geometry = form ? formGeometry(form) : styleGeometry(style);
+    const size = new Float32Array(mine.length * 3);
+    const seeds = new Float32Array(mine.length);
+    const material = windowMaterial({ ...look, far: o.far, fogScale: o.fogScale });
+    const mesh = new THREE.InstancedMesh(geometry, material, mine.length);
+    mine.forEach((t, i) => {
+      m.compose(p.set(t.x, 0, t.z), q.setFromAxisAngle(up, t.ry), s.set(t.w, t.h, t.d));
+      mesh.setMatrixAt(i, m);
+      size.set([t.w, t.h, t.d], i * 3);
+      seeds[i] = t.seed;
+    });
+    geometry.setAttribute("aSize", new THREE.InstancedBufferAttribute(size, 3));
+    geometry.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seeds, 1));
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingBox();
+    mesh.computeBoundingSphere();
+    mesh.castShadow = !o.far;
+    mesh.receiveShadow = !o.far;
+    // towers:<style>[:far][:k] for a style's shape, towers:<form>[:far][:k] for a form
+    const base = `towers:${form ?? style}${o.far ? ":far" : ""}`;
+    const k = count.get(base) ?? 0;
+    count.set(base, k + 1);
+    mesh.name = `${base}${k ? `:${k}` : ""}`;
+    meshes.push(mesh);
   }
   // the beacons on the masts and spires: a small steady light each, rose,
   // all in one instanced mesh (never blinking: nothing moves by itself)

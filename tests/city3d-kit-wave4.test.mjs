@@ -161,7 +161,7 @@ test("trees: canopies of several masses (a richer outline), still three draw cal
   const trees = buildStreetTrees(5, Array.from({ length: 12 }, (_, i) => ({ x: i, z: 0, s: 1 })));
   assert.ok(trees.length <= 3);
   const src = noComments(read(`${kit}/trees.ts`));
-  const canopies = src.slice(src.indexOf("function canopies()"), src.indexOf("return [round, tall];"));
+  const canopies = src.slice(src.indexOf("function canopies("), src.indexOf("return [round, tall];"));
   assert.ok((canopies.match(/\b(?:blob|mass)\(/g) ?? []).length >= 7, "four masses in the round canopy, three in the tall");
   assert.match(src, /float top = smoothstep\(0\.25, 1\.0, n\.y\);/);
   for (const mesh of trees) mesh.geometry.dispose();

@@ -134,15 +134,11 @@ function build(quality: Quality): Built {
   // each tower in one of the painting's facades (by its seed: glass towers
   // a glass palette, stone ones a stone palette), one instanced mesh per
   // shape and facade, the kit's window material in that facade's colours
-  const dressed = (specs: TowerSpec[], isFar: boolean, fogScale?: number) =>
-    buildTowers(specs, {
-      far: isFar,
-      fogScale,
-      palette: (t) => {
-        const set = isFar ? L.palettes.far : t.style === 0 || t.style === 2 ? L.palettes.glass : L.palettes.stone;
-        return set[Math.floor(t.seed / 7) % set.length];
-      },
-    });
+  const paletteOf = (t: TowerSpec, isFar: boolean) => {
+    const set = isFar ? L.palettes.far : t.style === 0 || t.style === 2 ? L.palettes.glass : L.palettes.stone;
+    return set[Math.floor(t.seed / 7) % set.length];
+  };
+  const dressed = (specs: TowerSpec[], isFar: boolean, fogScale?: number) => buildTowers(specs, { far: isFar, fogScale, palette: (t) => paletteOf(t, isFar) });
 
   // ---- The waterfront's low pale civic buildings, and at the Pearl's foot
   // the glass domes and the colonnaded hall between them; floodlit warm
@@ -271,8 +267,10 @@ function build(quality: Quality): Built {
   // the towers themselves, in forms of their own (kit/towers.ts: withForms;
   // a setback, a taper, a twist, a crown, a spire...), but those carrying a
   // lit crown, a lit edge or a screen, which are fitted to a box
-  const nearTowers = dressed(withForms([...front, ...mid], 43, (t) => accented.has(t)), false);
-  const farTowers = dressed(withForms(far, 47), true, L.skyline.farFog);
+  // (a form a facade, so the forms add no draw calls; the far layer by its
+  // style, from the plainer forms)
+  const nearTowers = dressed(withForms([...front, ...mid], 43, { keep: (t) => accented.has(t), group: (t) => paletteOf(t, false) }), false);
+  const farTowers = dressed(withForms(far, 47, { forms: ["setback", "taper", "chamfer", "crown"] }), true, L.skyline.farFog);
   for (const t of [...nearTowers, ...farTowers]) {
     geometries.push(t.geometry);
     add(t);

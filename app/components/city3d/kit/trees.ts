@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { rng } from "../rng";
+import { world } from "../store";
 import { blob, merge } from "./geometry";
 import { shared } from "./materials";
 import { FOG_FRAGMENT, surface, WORLD_VARYINGS_VERTEX } from "./surface";
@@ -9,8 +10,8 @@ import { envUniforms, materialKey } from "./uniforms";
 // a short trunk, a row along a bank or a street, and at night lit warm from
 // below by the lamps and shopfronts. No vegetation system: a few canopy
 // shapes and a trunk with limbs, instanced, so any number of round and
-// tall trees is 3 draw calls (≈ 700 triangles a round tree, 560 a tall; a
-// plane tree ≈ 420, a leafy clump ≈ 280).
+// tall trees is 3 draw calls (≈ 700 triangles a round tree, 560 a tall, on
+// the mobile tier 480 and 400; a plane tree ≈ 420, a leafy clump ≈ 280).
 //
 // `s` is a tree's size: 1 is about 10 m tall.
 
@@ -107,7 +108,7 @@ if (uLeaves > 0.0) {
 //   potted plant, bamboo), no trunk showing
 // round and tall share one trunk (0.4 tall at s = 1) that forks into three
 // limbs up into the crown; plane has its own taller trunk with three branches
-function canopies() {
+function canopies(lite = false) {
   const r = rng(4242);
   const mass = (rad: number, x: number, y: number, z: number) => blob(r, rad, 0.8, 0.34, 1).translate(x, y, z);
   const round = merge([
@@ -120,7 +121,7 @@ function canopies() {
     mass(0.14, -0.12, 0.74, 0.09),
     mass(0.13, 0.02, 0.84, 0.02),
     mass(0.11, 0.24, 0.66, 0.15),
-  ]);
+  ].filter((_, i) => !lite || i < 6));
   const tall = merge([
     mass(0.18, 0, 0.62, 0),
     mass(0.14, 0.12, 0.56, 0.05),
@@ -129,7 +130,7 @@ function canopies() {
     mass(0.13, -0.06, 0.86, -0.05),
     mass(0.11, 0.05, 0.96, 0.0),
     mass(0.1, -0.02, 1.04, 0.03),
-  ]);
+  ].filter((_, i) => !lite || i < 5));
   return [round, tall];
 }
 // a limb from (0, y0, 0) reaching (x, y1, z), tapering
@@ -191,7 +192,8 @@ export function buildStreetTrees(seed: number, spots: { x: number; z: number; s:
   const r = rng(seed);
   const greens = o.greens && o.greens.length ? o.greens : GREENS;
   const trunkGeometry = trunkWithLimbs();
-  const [round, tall] = canopies();
+  // (the mobile tier: fewer, the larger masses only)
+  const [round, tall] = canopies(world.get().quality === "mobile");
   const usePlane = spots.some((p) => p.kind === "plane");
   const useLeafy = spots.some((p) => p.kind === "leafy");
   const plane = usePlane ? planeParts() : null;

@@ -81,7 +81,7 @@ test("shaft: sides facing out with window faces, a roof facing up; a spire's fac
   for (let i = 0; i < f.count; i++) assert.equal(f.getZ(i), -1);
 });
 
-test("withForms: the layout never moves, the tallest get the hero forms, kept towers keep their shape, the same from the same seed", () => {
+test("withForms: the layout never moves, the tallest get the hero forms, one form a group, kept towers keep their shape, the same from the same seed", () => {
   const specs = layoutTowers(11, { x0: -60, x1: 60, z0: -40, z1: -10 }, 40, [6, 30]);
   const formed = withForms(specs, 5);
   assert.equal(formed.length, specs.length);
@@ -94,9 +94,15 @@ test("withForms: the layout never moves, the tallest get the hero forms, kept to
   assert.deepEqual(byHeight.slice(0, 3).map((t) => t.form), ["spire", "twist", "crown"]);
   assert.deepEqual(withForms(specs, 5), formed);
   const keep = new Set(specs.slice(0, 10));
-  const kept = withForms(specs, 5, (t) => keep.has(t));
+  const kept = withForms(specs, 5, { keep: (t) => keep.has(t) });
   for (let i = 0; i < 10; i++) assert.equal(kept[i].form, undefined);
-  assert.ok(new Set(formed.map((t) => t.form ?? "")).size >= 5, "a varied field");
+  // one form a group (by style by default), heroes aside
+  const heroes = new Set(byHeight.slice(0, 3));
+  for (const style of [0, 1, 2, 3]) assert.ok(new Set(formed.filter((t) => t.style === style && !heroes.has(t)).map((t) => t.form)).size <= 1);
+  // groups of one each: a varied field, from the forms asked for
+  const varied = withForms(specs, 5, { group: (t) => t.seed, forms: ["setback", "podium", "taper"] });
+  const heroAt = new Set(byHeight.slice(0, 3).map((t) => formed.indexOf(t)));
+  assert.equal(new Set(varied.filter((_, i) => !heroAt.has(i)).map((t) => t.form)).size, 3);
 });
 
 test("buildTowers with forms: one mesh per style and form, every tower once, beacons on masts and spires, the window program", () => {
@@ -114,8 +120,8 @@ test("buildTowers with forms: one mesh per style and form, every tower once, bea
     // a form is small: under 400 triangles
     assert.ok(m.geometry.getAttribute("position").count / 3 < 400, m.name);
   }
-  // draw calls: at most a mesh per style and form used, and one for beacons
-  const kinds = new Set(specs.map((t) => `${t.style}|${t.form ?? ""}`));
+  // draw calls: at most a mesh per shape used (a style's own, or a form) and facade (here the style's), and one for beacons
+  const kinds = new Set(specs.map((t) => `${t.form ?? t.style}|${t.style}`));
   assert.ok(meshes.length <= kinds.size + 1);
   for (const m of meshes) m.geometry.dispose();
   disposeShared();
