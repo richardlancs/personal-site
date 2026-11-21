@@ -15,6 +15,9 @@ const walk = (dir) =>
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const city = "app/components/city3d";
 const places = pageSections.filter((s) => s.id !== "home").map((s) => s.district);
+// A painted place (PlatePlace.tsx, kit/plate.ts) is a thin wrapper: its
+// plate holds and frees what it builds, and it has no pools to light
+const painted = (f) => /<PlatePlace\b/.test(read(`${city}/${f}`));
 
 test("the store has no park fields, and has the hour and the live counter", async () => {
   const { world } = await import(`../${city}/store.ts`);
@@ -62,7 +65,7 @@ test("every section's place has its own def and its own scene file, and the load
     assert.ok(existsSync(`${root}${city}/districts/${id}.def.ts`), `${id}.def.ts`);
     const file = `${city}/districts/${id}.tsx`;
     assert.ok(existsSync(`${root}${file}`), file);
-    assert.match(read(file), /export default \w+Scene;/, `${file}: a default export named for its section`);
+    assert.match(read(file), /export default (\w+Scene;|function \w+\()/, `${file}: a default export named for its section`);
     assert.match(chunks, new RegExp(`"?${id}"?: \\(\\) => import\\("\\./districts/${id}"\\)`), `${id}'s loader`);
     // Its sign on the riverside is in its def, and nowhere else
     assert.ok(scenes[id].sign && Number.isFinite(scenes[id].sign.bearing), `${id}: sign`);
@@ -183,15 +186,17 @@ test("what a scene builds is let go on its real unmount, never on development's 
   assert.match(common, /window\.setTimeout\(\(\) => \{\s*pendingDispose\.delete\(owner\);\s*owner\.dispose\(\);\s*\}, 0\)/);
   for (const f of ["Riverside.tsx", ...places.map((id) => `districts/${id}.tsx`)]) {
     const src = noComments(read(`${city}/${f}`));
-    assert.match(src, /useDisposeOnUnmount\(built\);/, f);
+    // (a painted place's plate is let go by PlatePlace; what it adds, by the same hook)
+    if (!painted(f)) assert.match(src, /useDisposeOnUnmount\(built\);/, f);
     assert.doesNotMatch(src, /useEffect\(\(\) => \(\) => built\.dispose\(\), \[built\]\);/, f);
     assert.doesNotMatch(src, /built\.dispose\(\)/, `${f}: disposed only through useDisposeOnUnmount`);
   }
   for (const f of walk(`${city}/kit`)) assert.doesNotMatch(noComments(read(f)), /removeFromParent\(\)/, f);
 });
 
-test("every section's scene and the riverside light their surroundings after dark with the kit's pools", () => {
+test("every code-built scene lights its surroundings after dark with the kit's pools (a painted place's light is its painting's)", () => {
   for (const [f, id] of [["Riverside.tsx", "lujiazui"], ...places.map((p) => [`districts/${p}.tsx`, p])]) {
+    if (painted(f)) continue;
     assert.match(noComments(read(`${city}/${f}`)), new RegExp(`useGlowPools\\("${id}", [\\w.]+, active\\)`), f);
   }
 });
