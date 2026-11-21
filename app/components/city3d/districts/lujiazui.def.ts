@@ -169,14 +169,13 @@ const lujiazui: PlaceDef = {
   fov: 40,
   plateFrame: { fov: 40, pos: [0, 6, 14], target: [0, 16, -86] },
   frame: "right",
-  // Portrait screens: the painting fills the whole lens, so a phone's
-  // band shows about a quarter of its width; turned 18° right, that
-  // quarter is the river and the skyline from the Pearl to Shanghai Tower
-  // (u 0.54 .. 0.79 on a 390 × 844 phone), a portrait tablet's from the
-  // Pearl to the shopping street
-  portrait: { yaw: 18, half: 14, lift: 4 },
+  // Portrait screens: the painting fills the strip between the bar and
+  // the sheet, top to bottom (about 0.6 of its width on a 390 × 844
+  // phone), centred on u 0.645 so the five spots (u 0.41 .. 0.885) are all
+  // in view: the riverfront to the shopping street, the skyline above
+  portrait: { yaw: 18, half: 14, lift: 4, aim: [0.645, 0.5] },
   // A phone on its side: the skyline and the river in the strip
-  short: -6,
+  short: { under: -6 },
   threshold: "#0c1526",
   fog: { color: "#141a24", near: 400, far: 900, keep: { near: 400, far: 900 } },
   background: "#10141c",

@@ -130,7 +130,7 @@ test("the component is a thin PlatePlace with the live machine on the spot, from
 });
 
 test("the machine: a mover (parked in still view), the store's mode and presses, a click on the screen plays there", () => {
-  assert.match(src, /useMovers\(movers, \{ active: on, still \}\)/);
+  assert.match(src, /useMovers\(movers, \{ active: on, still, ambient: true \}\)/);
   assert.match(src, /useWorld\(\(s\) => s\.arcadePress\)/);
   assert.match(src, /useWorld\(\(s\) => s\.sel\.interest\)/);
   assert.match(src, /world\.set\(\{ arcadeStatus: status \}\)/);

@@ -26,8 +26,12 @@ mkdirSync(out, { recursive: true });
 const PLATES = new URL("../../../app/assets/city/", import.meta.url).pathname;
 const pages = { lujiazui: "/city", towers: "/city/projects", metro: "/city/experience", "nanjing-road": "/city/interests", longtang: "/city/about", bund: "/city/contact" };
 const districts = onlyArg ? onlyArg.split(",") : Object.keys(pages);
+// Each place's painting (its def's plate.painting: Home is the rooftop),
+// and the view at that painting's own shape (?frame=plate letterboxes to
+// it: City3D.tsx)
+const paintings = { lujiazui: "rooftop" };
 const W = 1440;
-const H = Math.round(W / (2400 / 1032)); // the plates' shape (City3D.tsx: PLATE_ASPECT)
+let H = Math.round(W / (2400 / 1032));
 const COLS = 6;
 const ROWS = 3;
 
@@ -77,6 +81,9 @@ let broken = false;
 for (const district of districts) {
   for (const sky of skyArg.split(",")) {
     const phase = sky.includes("night") ? "night" : "day";
+    const plate = `${PLATES}${paintings[district] ?? district}-${phase}.webp`;
+    const meta = await sharp(plate).metadata();
+    H = Math.round(W / (meta.width / meta.height));
     const page = await browser.newPage({ viewport: { width: W, height: H } });
     const errors = [];
     page.on("pageerror", (e) => errors.push(String(e)));
@@ -96,7 +103,6 @@ for (const district of districts) {
     const box = await page.locator(".city3d").boundingBox();
     const shot = await page.screenshot({ clip: box });
     await page.close();
-    const plate = `${PLATES}${district}-${phase}.webp`;
     const [p, r] = [await cells(plate), await cells(shot)];
     const des = p.grid.map((c, i) => dE(c.lab, r.grid[i].lab));
     const mean = des.reduce((a, b) => a + b, 0) / des.length;

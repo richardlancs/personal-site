@@ -8,6 +8,7 @@ import { AERIAL, AERIAL_FRAME, AERIAL_PLACE, FLIGHT_ORIGIN, type MapUV } from ".
 import { onIdle } from "./idle";
 import { cloudMaterial, veilMaterial, type CloudLayer } from "./kit/flight";
 import { buildPlate, syncPlateUniforms } from "./kit/plate";
+import { uploadBetweenFrames } from "./PlatePlace";
 import { world } from "./store";
 import type { Quality } from "./tiers";
 
@@ -157,10 +158,9 @@ export default function Flight({ tier }: { tier: Quality }) {
     fetch.current = () => {
       if (started) return;
       started = true;
-      plate.load().then(
+      plate.load(uploadBetweenFrames(gl)).then(
         () => {
           if (!live) return;
-          for (const t of plate.textures()) gl.initTexture(t);
           ready = true;
           compile();
         },

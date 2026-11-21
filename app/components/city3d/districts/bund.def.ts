@@ -47,7 +47,7 @@ const bund: PlaceDef = {
   // 2400/1032 × that growth): 22° left puts the clock tower (u 0.41) near
   // the middle, the facades left of it and the promenade's lamps right
   portrait: { yaw: -22, half: 27 },
-  short: 3,
+  short: { under: 3 },
   threshold: "#0f1418",
   sun: [-60, 60, -25],
   fog: { color: "#161c22", near: 60, far: 640, keep: { near: 45, far: 480 } },

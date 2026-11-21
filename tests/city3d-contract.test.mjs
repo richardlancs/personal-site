@@ -43,8 +43,14 @@ test("the live counter counts up and down, and a release counts once", async () 
   assert.equal(world.get().live, 1);
   b();
   assert.equal(world.get().live, 0);
+  // …and the ambient one (a place's quiet life) apart from it
+  const c = holdLive(true);
+  assert.equal(world.get().ambient, 1);
+  assert.equal(world.get().live, 0);
+  c();
+  assert.equal(world.get().ambient, 0);
   // useLive holds it while on; City3D draws every frame only while live and not still
-  assert.match(read(`${city}/common.tsx`), /export function useLive\(on: boolean\): void \{\s*useEffect\(\(\) => \(on \? holdLive\(\) : undefined\), \[on\]\);/);
+  assert.match(read(`${city}/common.tsx`), /export function useLive\(on: boolean, ambient = false\): void \{\s*useEffect\(\(\) => \(on \? holdLive\(ambient\) : undefined\), \[on, ambient\]\);/);
   const shell = read(`${city}/City3D.tsx`);
   assert.match(shell, /const live = useWorld\(\(s\) => s\.live > 0\);/);
   assert.match(shell, /still \|\| !live \? "demand" : "always"/);

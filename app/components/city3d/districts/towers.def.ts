@@ -112,7 +112,7 @@ const towers: PlaceDef = {
   // Portrait phones show the middle of the painting, the three supertalls
   // in the band over the sheet
   portrait: { yaw: 0, half: 24 },
-  short: 0,
+  short: { under: 0 },
   threshold: "#0b1424",
   fog: { color: "#151c2a", near: 70, far: 300, keep: { near: 60, far: 240 } },
   background: "#151c2a",

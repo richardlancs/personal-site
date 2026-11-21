@@ -139,7 +139,7 @@ const longtang: PlaceDef = {
   // skyline, the laundry and the lane's far gate: turned to take in
   // Shanghai Tower as well as the Pearl
   portrait: { yaw: 14, half: 20, lift: 6 },
-  short: 2,
+  short: { under: 2 },
   threshold: "#16130f",
   fog: { color: "#1c2232", near: 60, far: 520, keep: { near: 45, far: 380 } },
   background: "#1c2232",

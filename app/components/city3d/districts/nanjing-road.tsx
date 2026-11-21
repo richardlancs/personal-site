@@ -119,7 +119,9 @@ function Screen({ active, still }: { active: boolean; still: boolean }) {
       },
     ];
   }, [built]);
-  useMovers(movers, { active: on, still });
+  // (its attract mode is the place's quiet life: drawn at rest at most 30
+  // times a second, and resting after a minute with no input)
+  useMovers(movers, { active: on, still, ambient: true });
 
   // Where the screen sits: the night painting's, the day one's, or between
   // (the blend is the plate's own, uDay)

@@ -41,17 +41,18 @@ export type SceneDef = {
   // `span` degrees either side of the view's middle in the part the panel
   // leaves
   span?: number;
-  // On a portrait screen, at the place's home view: the middle of the view
-  // is `yaw` degrees right of where the camera looks, and the lens widens
-  // if it must to show `half` degrees either side of that
-  // `lift`: the point that many degrees above where the camera looks goes
-  // to the middle of the strip (phones: the band over the sheet), and the
-  // lens shows at least `cover` degrees top to bottom in that strip
-  portrait?: { yaw: number; half: number; lift?: number; cover?: number };
-  // On a short landscape screen (a phone on its side), at the home view:
-  // how many degrees under where the camera looks the place's fronts are,
-  // lifted to the middle of the strip between the bar and the sheet
-  short?: number;
+  // On a portrait screen (the narrow layout): the painting fills the
+  // strip above the sheet, top to bottom, and slides sideways to put its
+  // subject in the strip's middle: `aim`, a painting point; or, left out,
+  // the point `yaw` degrees right of the home axis and `lift` above it
+  // (kit/plate.ts: aimAt). `half` and `cover` are kept for the defs'
+  // record; the strip shows the most of the painting it can hold.
+  portrait?: { yaw: number; half: number; lift?: number; cover?: number; aim?: UV };
+  // On a short landscape screen (a phone on its side): the painting fills
+  // the strip's width, and slides up or down to put `aim` (a painting
+  // point; or the point `under` degrees under the home axis) in the
+  // middle of what shows between the bar and the sheet
+  short?: { under: number; aim?: UV };
   // The colour the view passes through between places
   threshold: string;
   fog: { color: string } & FogBase;
@@ -166,6 +167,11 @@ export type PlateDef = {
   // 1% of the view in any 10 s).
   drift: { amplitude: number; period: number };
   movers?: PlateMover[];
+  // The painting point the home axis aims at (kit/plate.ts: cover slides
+  // the painting toward it, as far as filling the view allows): on a wide
+  // screen the middle of the part the panel leaves. Left out: the
+  // painting's middle.
+  look?: UV;
 };
 
 export type PlaceDef = SceneDef & { plate: PlateDef };
@@ -215,6 +221,7 @@ export function checkPlace(def: PlaceDef): string[] {
     else if (!q.every((c) => c.length === 3 && unit(c[0]) && unit(c[1]) && unit(c[2]))) out.push(`spot ${key}: a corner outside the painting (u, v, depth in 0..1)`);
   }
   for (const key of Object.keys(def.focus)) if (!(key in (p.spots ?? {}))) out.push(`focus "${key}" has no spot`);
+  if (p.look !== undefined && !(Array.isArray(p.look) && p.look.length === 2 && unit(p.look[0]) && unit(p.look[1]))) out.push("look: a point in the painting (u, v in 0..1)");
   if (!(p.drift && p.drift.amplitude >= 0 && p.drift.period > 0)) out.push("drift: amplitude ≥ 0 and period > 0");
   else if (driftTravel(p.drift) >= 0.01) out.push(`drift travels ${driftTravel(p.drift).toFixed(4)} of the distance in 10 s (under 0.01)`);
   (p.movers ?? []).forEach((m, i) => {

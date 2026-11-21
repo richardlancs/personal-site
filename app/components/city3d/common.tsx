@@ -66,8 +66,11 @@ export const anchorKey = (scene: Exclude<SceneId, "lujiazui">, name: string) => 
 // While `on`, something in the city is moving, and the canvas draws every
 // frame (unless still view is on); otherwise it draws only on change. A
 // counter in the store, so any number of scenes and movers can hold it.
-export function useLive(on: boolean): void {
-  useEffect(() => (on ? holdLive() : undefined), [on]);
+// `ambient`: only the place's own quiet life (its water, its small lights),
+// drawn at rest at most 30 times a second and not after a minute with no
+// input (City3D.tsx: RestTicker).
+export function useLive(on: boolean, ambient = false): void {
+  useEffect(() => (on ? holdLive(ambient) : undefined), [on, ambient]);
 }
 
 // Runs a scene's movers: each frame while the place is showing, still
@@ -90,11 +93,11 @@ function anyInView(movers: readonly Mover[], camera: THREE.Camera, t: number) {
     return frustum.intersectsBox(box.setFromObject(m.object));
   });
 }
-export function useMovers(movers: readonly Mover[], { active, still }: { active: boolean; still: boolean }): void {
+export function useMovers(movers: readonly Mover[], { active, still, ambient = false }: { active: boolean; still: boolean; ambient?: boolean }): void {
   const wanted = active && !still && movers.length > 0;
   const [seen, setSeen] = useState(true);
   const camera = useThree((s) => s.camera);
-  useLive(wanted && seen);
+  useLive(wanted && seen, ambient);
   useEffect(() => {
     if (!wanted) for (const m of movers) m.park();
   }, [wanted, movers]);

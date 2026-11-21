@@ -43,6 +43,12 @@ export type WorldState = {
   // the canvas draws every frame only while this is above 0 and still view
   // is off; otherwise only when something changes
   live: number;
+  // How many things are only the place's own quiet life right now (a
+  // painted place's water, sky and glass, its small moving lights, the
+  // arcade's attract mode: common.tsx, useLive(on, true)): at rest the
+  // canvas draws for them at most 30 times a second, and not at all after
+  // a minute with no input (City3D.tsx: RestTicker)
+  ambient: number;
   sel: Selection;
   // The arcade machine (arcade/arcadeMachine.ts): the page's play button
   // counts presses, the machine says how each turned out
@@ -59,6 +65,7 @@ let state: WorldState = {
   sky: { preset: "neutral", daylight: "day", progress: 0, source: "fallback" },
   hour: 12,
   live: 0,
+  ambient: 0,
   sel: { project: 0, shot: 0, line: 0, interest: 0 },
   arcadePress: 0,
   arcadeStatus: "",
@@ -86,13 +93,14 @@ export const world = {
 // Something has started moving (common.tsx: useLive): the canvas draws
 // every frame until every holder has let go. The returned release counts
 // once, however often it's called.
-export function holdLive(): () => void {
-  world.set({ live: state.live + 1 });
+export function holdLive(ambient = false): () => void {
+  const key = ambient ? "ambient" : "live";
+  world.set({ [key]: state[key] + 1 });
   let held = true;
   return () => {
     if (!held) return;
     held = false;
-    world.set({ live: Math.max(0, state.live - 1) });
+    world.set({ [key]: Math.max(0, state[key] - 1) });
   };
 }
 

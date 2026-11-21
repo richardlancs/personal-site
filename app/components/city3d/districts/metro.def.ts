@@ -99,7 +99,7 @@ const metro: PlaceDef = {
   // the half it leaves
   frame: "center",
   portrait: { yaw: 19, half: 22, lift: 17 },
-  short: 2,
+  short: { under: 2 },
   threshold: "#101318",
   fog: { color: "#1a1f2a", near: 40, far: 520, keep: { near: 24, far: 300 } },
   background: "#181b22",

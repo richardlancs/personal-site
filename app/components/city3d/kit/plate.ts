@@ -73,6 +73,18 @@ export function syncPlateUniforms(hour: number) {
   plateUniforms.uHour.value = hour;
 }
 
+// ---------- What the view must show (the Director's, each frame) ----------
+//
+// `fill`: the share of the view's height, from its top, the painting must
+// cover: 1 on wide screens; on the narrow layout the strip above the sheet
+// (City3D.tsx: the sheet is opaque from --hero down, so the painting is
+// framed to the strip, not the whole screen). `aim`: for the place whose
+// painting is `painting`, the painting point the home axis should aim at
+// (a phone's subject), in place of its def's `look`.
+// `top`: the share of the view's height, from its top, the painting needn't
+// cover (under the narrow layout's opaque bar).
+export const plateView: { fill: number; top: number; painting: string | null; aim: UV | null } = { fill: 1, top: 0, painting: null, aim: null };
+
 // ---------- The frame (pure) ----------
 
 export type PlateFrame = { eye: V3; target: V3; distance: number; width: number; height: number };
@@ -83,6 +95,75 @@ export function plateFrame(def: PlaceDef): PlateFrame {
   const distance = Math.hypot(tx - ex, ty - ey, tz - ez);
   const height = 2 * distance * Math.tan(THREE.MathUtils.degToRad(def.plateFrame.fov) / 2);
   return { eye: def.home.pos, target: def.home.target, distance, width: height * def.plate.aspect, height };
+}
+
+// The most a place's painting is pulled toward the eye anywhere: the
+// nearest plane its edges can show at (cover() keeps that one filled too)
+export function maxPull(plate: PlateDef): number {
+  const d = plate.depth;
+  if (d.kind === "map") return Math.min(0.85, d.strength);
+  return Math.min(0.85, Math.max(d.standing ?? (d.ground ? 0.06 : 0), d.ground?.near ?? 0, ...d.layers.map((l) => l.z)));
+}
+
+// The cover's spare growth: room for the rest drift (and a hair)
+export const coverMargin = (plate: PlateDef) => 1.004 + 2.4 * plate.drift.amplitude;
+
+// The cover's fit (pure): given the window the view makes in the
+// painting's plane (x0..x1, y0..y1, in the home frame, at the plane's
+// distance), the least growth `s` that fills it (never shrinking), then
+// the slide (cx, cy) nearest to the one that puts `aim` (a painting point;
+// none: the painting's middle) on the home axis, that keeps it filled
+export function coverFit(win: { x0: number; x1: number; y0: number; y1: number }, frame: Pick<PlateFrame, "width" | "height">, margin: number, aim: UV | null) {
+  const ww = (win.x1 - win.x0) * margin, wh = (win.y1 - win.y0) * margin;
+  const s = Math.max(1, ww / frame.width, wh / frame.height);
+  const roomX = Math.max(0, (s * frame.width - ww) / 2), roomY = Math.max(0, (s * frame.height - wh) / 2);
+  const px = aim ? -s * (aim[0] - 0.5) * frame.width : 0;
+  const py = aim ? -s * (0.5 - aim[1]) * frame.height : 0;
+  const mx = (win.x0 + win.x1) / 2, my = (win.y0 + win.y1) / 2;
+  return { s, cx: THREE.MathUtils.clamp(px, mx - roomX, mx + roomX), cy: THREE.MathUtils.clamp(py, my - roomY, my + roomY) };
+}
+
+// The window a view makes in a painting's plane (pure): the view's
+// corners (`projectionInverse`: its lens and shift; only the top `fill`
+// of its height), as rays from the camera (`rel`: the camera's matrix in
+// the painting's home frame, eye at the origin looking down -z), where
+// they meet the plane at `distance` and the nearer planes its pulled
+// parts reach (`pulls`, as the painting point there). From the home pose
+// it is the lens's own window, whatever the pulls.
+const _wv = new THREE.Vector4();
+const _wc = new THREE.Vector3();
+const _wo = new THREE.Vector3();
+const _wd = new THREE.Vector3();
+export function viewWindow(projectionInverse: THREE.Matrix4, rel: THREE.Matrix4, distance: number, pulls: readonly number[], fill = 1, top = 0) {
+  _wo.setFromMatrixPosition(rel);
+  const low = 1 - 2 * Math.min(1, Math.max(0.05, fill));
+  const high = Math.max(low + 0.1, 1 - 2 * Math.max(0, top));
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for (const [x, y] of [[-1, low], [1, low], [-1, high], [1, high]]) {
+    _wv.set(x, y, 1, 1).applyMatrix4(projectionInverse);
+    _wc.set(_wv.x / _wv.w, _wv.y / _wv.w, _wv.z / _wv.w);
+    _wd.copy(_wc).transformDirection(rel);
+    for (const p of pulls) {
+      const z = -distance * (1 - p);
+      const t = _wd.z < -1e-6 ? (z - _wo.z) / _wd.z : Infinity;
+      if (!(t > 0) || !Number.isFinite(t)) continue;
+      const px = (_wo.x + _wd.x * t) / (1 - p), py = (_wo.y + _wd.y * t) / (1 - p);
+      x0 = Math.min(x0, px);
+      x1 = Math.max(x1, px);
+      y0 = Math.min(y0, py);
+      y1 = Math.max(y1, py);
+    }
+  }
+  return Number.isFinite(x0 + x1 + y0 + y1) ? { x0, x1, y0, y1 } : null;
+}
+
+// A direction from a place's home eye, `right` degrees right of its home
+// axis and `up` degrees above it, as the painting point it meets (for
+// framings the defs give in degrees: portrait yaw and lift, short)
+export function aimAt(def: PlaceDef, right: number, up: number): UV {
+  const t = Math.tan(THREE.MathUtils.degToRad(def.plateFrame.fov) / 2);
+  const deg = (d: number) => Math.tan(THREE.MathUtils.degToRad(d));
+  return [0.5 + deg(right) / (2 * t * def.plate.aspect), 0.5 - deg(up) / (2 * t)];
 }
 
 // A depth (as the data gives it: a layer's z, a spot's or mover's third
@@ -156,6 +237,52 @@ export function pictureUrl(img: { src: string; width: number; height: number }, 
   const w = WIDTHS.find((x) => x >= want);
   if (!w || w >= img.width) return img.src;
   return `/_next/image?url=${encodeURIComponent(img.src)}&w=${w}&q=75`;
+}
+
+// A painting decoded off the main thread, already at the tier's size and
+// flipped for the GPU (createImageBitmap), so neither the decode nor the
+// resize lands on a frame; null where the browser can't (loadImage then)
+async function loadBitmap(url: string, edge: number): Promise<ImageBitmap | null> {
+  if (typeof createImageBitmap !== "function") return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const probe = await createImageBitmap(blob);
+    const long = Math.max(probe.width, probe.height);
+    const k = long > edge ? edge / long : 1;
+    const w = Math.round(probe.width * k), h = Math.round(probe.height * k);
+    probe.close();
+    return await createImageBitmap(blob, { imageOrientation: "flipY", resizeWidth: w, resizeHeight: h, resizeQuality: "high" });
+  } catch {
+    return null;
+  }
+}
+
+function bitmapTexture(bmp: ImageBitmap, color: boolean): THREE.Texture {
+  const t = track(new THREE.Texture(bmp));
+  // (flipped when decoded: an ImageBitmap ignores the GL's own flip)
+  t.flipY = false;
+  t.colorSpace = color ? THREE.SRGBColorSpace : THREE.NoColorSpace;
+  t.anisotropy = color ? 4 : 1;
+  t.needsUpdate = true;
+  return t;
+}
+
+// A painting as a texture: decoded off the main thread where it can be,
+// else through an <img> and a canvas
+async function pictureTexture(src: { src: string; width: number; height: number }, edge: number, color: boolean): Promise<THREE.Texture> {
+  const url = pictureUrl(src, edge);
+  const bmp = await loadBitmap(url, edge);
+  if (bmp) return bitmapTexture(bmp, color);
+  return toTexture(await loadImage(url), edge, color);
+}
+
+// Frees a texture and the bitmap it holds
+function freeTexture(t: THREE.Texture) {
+  const img = t.image as { close?: () => void } | null;
+  t.dispose();
+  if (img && typeof ImageBitmap !== "undefined" && img instanceof ImageBitmap) img.close();
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -421,7 +548,10 @@ void main() {
   vec3 day = texture2D(uDayMap, uv).rgb;
   vec3 night = texture2D(uNightMap, uv).rgb;
   float lit = texture2D(uLightMap, uv).r;
-  vec3 col = mix(day, night, smoothstep(0.0, 1.0, n));
+  // The two paintings never line up exactly: the crossover runs through the
+  // middle of the dusk (n 0.3 .. 0.7), so no long half-and-half double
+  // image; continuous in n, so never a pop
+  vec3 col = mix(day, night, smoothstep(0.3, 0.7, n));
   // The lights come up early and hold steady through the blend
   float early = smoothstep(0.15, 0.55, n);
   vec3 lights = night * lit;
@@ -467,7 +597,7 @@ void main() {
 #ifdef PLATE_UNTONE
   col = untone(col);
   // After dark the lights go over 1.0, where the bloom takes them
-  col += lights * n * uGlow * 0.9;
+  col += lights * n * uGlow * 0.3;
 #endif
   gl_FragColor = vec4(col, 1.0);
   #include <colorspace_fragment>
@@ -529,6 +659,22 @@ export function wantPlate(id: SceneId | null) {
   wantListeners.forEach((l) => l());
 }
 export const wantedPlate = () => wanted;
+// A place about to be wanted: a press (or Enter) on a link to it, before
+// the address changes, so its pictures start on their way at the click
+// (held a few seconds; the journey's wantPlate takes over)
+const hinted = new Map<SceneId, number>();
+const HINT_MS = 6000;
+export function hintPlate(id: SceneId) {
+  const fresh = !hinted.has(id);
+  hinted.set(id, performance.now());
+  if (fresh) wantListeners.forEach((l) => l());
+  window.setTimeout(() => {
+    if (performance.now() - (hinted.get(id) ?? 0) < HINT_MS - 50) return;
+    hinted.delete(id);
+    wantListeners.forEach((l) => l());
+  }, HINT_MS);
+}
+export const hintedPlate = (id: SceneId) => hinted.has(id);
 export function onWantPlate(listener: () => void) {
   wantListeners.add(listener);
   return () => void wantListeners.delete(listener);
@@ -553,14 +699,15 @@ export type Plate = {
   frame: PlateFrame;
   material: THREE.ShaderMaterial;
   textures: () => THREE.Texture[]; // what's loaded now (to upload ahead)
-  load(): Promise<void>; // fetch the pictures (once; again after release)
+  // fetch the pictures (once; again after release); `upload` puts each on
+  // the GPU before the plate shows them (PlatePlace.tsx: uploadBetweenFrames)
+  load(upload?: (t: THREE.Texture) => Promise<void>): Promise<void>;
   release(): void; // let the pictures go (the place can load them again)
-  cover(camera: THREE.Camera): void; // grow and slide to fill what the camera's lens shows from home
+  cover(camera: THREE.Camera): void; // grow and slide to fill what the camera shows, from wherever it is
   dispose(): void;
 };
 
 const _m = new THREE.Matrix4();
-const _v = new THREE.Vector4();
 
 export function buildPlate(def: PlaceDef, quality: Quality): Plate {
   const plate = def.plate;
@@ -610,11 +757,11 @@ export function buildPlate(def: PlaceDef, quality: Quality): Plate {
 
   const freeMaps = () => {
     if (!maps) return;
-    for (const t of [maps.day, maps.night, maps.light, maps.depth]) if (t && t !== s.black && t !== s.color) t.dispose();
+    for (const t of [maps.day, maps.night, maps.light, maps.depth]) if (t && t !== s.black && t !== s.color) freeTexture(t);
     maps = null;
   };
 
-  const load = () => {
+  const load = (upload?: (t: THREE.Texture) => Promise<void>) => {
     if (maps) return Promise.resolve();
     if (loading) return loading;
     const mine = ++generation;
@@ -624,21 +771,23 @@ export function buildPlate(def: PlaceDef, quality: Quality): Plate {
         const pics = list[plate.painting];
         if (!pics) throw new Error(`plate: no painting "${plate.painting}" in kit/plateArt.ts (npm run city:masks)`);
         const [day, night, light, depth] = await Promise.all([
-          loadImage(pictureUrl(pics.day, edge.painting)),
-          loadImage(pictureUrl(pics.night, edge.painting)),
-          pics.light ? loadImage(pictureUrl(pics.light, edge.mask)) : Promise.resolve(null),
+          pictureTexture(pics.day, edge.painting, true),
+          pictureTexture(pics.night, edge.painting, true),
+          pics.light ? pictureTexture(pics.light, edge.mask, false) : Promise.resolve(null),
           depthTexture(plate, pics, regions.sky, quality),
         ]);
+        const all = [day, night, light, depth.texture, regions.texture].filter((t): t is THREE.Texture => !!t && t !== s.black && t !== s.color);
+        // Uploaded one at a time, each in a task of its own, between frames
+        // (never in the frame that first draws them: no stall at a lift)
+        if (upload) for (const t of all) {
+          if (mine !== generation) break;
+          await upload(t);
+        }
         if (mine !== generation) {
-          if (depth.texture !== s.black) depth.texture.dispose();
+          for (const t of [day, night, light, depth.texture]) if (t && t !== s.black) freeTexture(t);
           return;
         }
-        maps = {
-          day: toTexture(day, edge.painting, true),
-          night: toTexture(night, edge.painting, true),
-          light: light ? toTexture(light, edge.mask, false) : null,
-          depth: depth.texture,
-        };
+        maps = { day, night, light, depth: depth.texture };
         material.uniforms.uStrength.value = depth.strength;
         apply();
       })
@@ -648,11 +797,16 @@ export function buildPlate(def: PlaceDef, quality: Quality): Plate {
     return loading;
   };
 
-  // Scratch for cover()
-  const corner = new THREE.Vector3();
+  // Scratch for cover(): the home frame in the world (through the place's
+  // group: its offset, and a flight's pull-back, so not even a lift ever
+  // shows the painting's edge), and the camera in it
   const fit = new THREE.Matrix4();
   const last = { s: 1, x: 0, y: 0 };
-  const margin = 1.004 + 2.4 * plate.drift.amplitude;
+  const margin = coverMargin(plate);
+  const pulls = [0, maxPull(plate)];
+  const homeInv = new THREE.Matrix4();
+  const rel = new THREE.Matrix4();
+  const unit = new THREE.Vector3(1, 1, 1);
 
   return {
     group,
@@ -668,34 +822,26 @@ export function buildPlate(def: PlaceDef, quality: Quality): Plate {
       apply();
     },
     cover(camera) {
-      // The view's four corners, through the lens as it is now (its fov,
-      // aspect and the panel's shift), from the home pose: the window they
-      // make in the painting's plane
-      const inv = (camera as THREE.PerspectiveCamera).projectionMatrixInverse;
-      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-      for (const [x, y] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
-        _v.set(x, y, 1, 1).applyMatrix4(inv);
-        corner.set(_v.x / _v.w, _v.y / _v.w, _v.z / _v.w);
-        const k = frame.distance / -corner.z;
-        x0 = Math.min(x0, corner.x * k);
-        x1 = Math.max(x1, corner.x * k);
-        y0 = Math.min(y0, corner.y * k);
-        y1 = Math.max(y1, corner.y * k);
-      }
-      // The least growth that fills it (never shrinking), then the least
-      // slide off the painting's own middle that keeps it filled
-      const ww = (x1 - x0) * margin, wh = (y1 - y0) * margin;
-      const s = Math.max(1, ww / frame.width, wh / frame.height);
-      const roomX = Math.max(0, (s * frame.width - ww) / 2), roomY = Math.max(0, (s * frame.height - wh) / 2);
-      const cx = THREE.MathUtils.clamp(0, (x0 + x1) / 2 - roomX, (x0 + x1) / 2 + roomX);
-      const cy = THREE.MathUtils.clamp(0, (y0 + y1) / 2 - roomY, (y0 + y1) / 2 + roomY);
+      // The window the view makes in the painting (viewWindow: from where
+      // the camera really is, only the part of the view's height that
+      // must be filled, the nearest pulled plane too), filled
+      const parent = group.parent;
+      if (parent) {
+        parent.updateWorldMatrix(true, false);
+        homeInv.multiplyMatrices(parent.matrixWorld, home).invert();
+      } else homeInv.copy(home).invert();
+      rel.compose(camera.position, camera.quaternion, unit).premultiply(homeInv);
+      const win = viewWindow((camera as THREE.PerspectiveCamera).projectionMatrixInverse, rel, frame.distance, pulls, plateView.fill, plateView.top);
+      if (!win) return;
+      const D = frame.distance;
+      const aim = plateView.painting === plate.painting && plateView.aim ? plateView.aim : (plate.look ?? null);
+      const { s, cx, cy } = coverFit(win, frame, margin, aim);
       if (Math.abs(last.s - s) < 1e-5 && Math.abs(last.x - cx) < 1e-5 && Math.abs(last.y - cy) < 1e-5) return;
       last.s = s;
       last.x = cx;
       last.y = cy;
       // (a point in the plane moves by (cx, cy); one pulled toward the eye
       // by its share of that: along its line to the eye)
-      const D = frame.distance;
       fit.set(s, 0, -cx / D, 0, 0, s, -cy / D, 0, 0, 0, 1, 0, 0, 0, 0, 1);
       group.matrix.multiplyMatrices(home, fit);
       group.matrixWorldNeedsUpdate = true;

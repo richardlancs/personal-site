@@ -5,7 +5,7 @@ import { createContext, useEffect, useMemo, useRef, useState, type ReactNode } f
 import * as THREE from "three";
 import { anchors } from "./anchors";
 import { anchorKey, Hitbox, useDisposeOnUnmount, useLive, useMovers, type Hit, type SceneProps } from "./common";
-import { buildMovers, buildPlate, onWantPlate, spotBox, spotPoint, syncPlateUniforms, plateUniforms, wantedPlate, type Plate } from "./kit/plate";
+import { buildMovers, buildPlate, hintedPlate, onWantPlate, spotBox, spotPoint, syncPlateUniforms, plateUniforms, wantedPlate, type Plate } from "./kit/plate";
 import { scenes, type PlaceDef, type SceneDef, type SceneId } from "./scenes";
 import { world } from "./store";
 import type { Quality } from "./tiers";
@@ -43,6 +43,20 @@ const living = (def: PlaceDef) => def.plate.regions.length > 0;
 // otherwise (so a ripple never jumps)
 let clock = 0;
 
+// Puts a texture on the GPU in a task of its own, between frames (never
+// inside one: kit/plate.ts load() uploads its pictures one by one through
+// this before the plate shows them, so a flight's lift doesn't stall)
+export const uploadBetweenFrames = (gl: THREE.WebGLRenderer) => (t: THREE.Texture) =>
+  new Promise<void>((resolve) =>
+    window.setTimeout(() => {
+      try {
+        gl.initTexture(t);
+      } finally {
+        resolve();
+      }
+    }, 0),
+  );
+
 export type PlatePlaceProps = SceneProps & {
   id: SceneId;
   def: PlaceDef;
@@ -62,13 +76,15 @@ export default function PlatePlace({ id, def, active, quality, still, onSpot, sp
     return () => void plate.group.remove(movers.object);
   }, [plate, movers]);
   useDisposeOnUnmount(useMemo(() => ({ dispose: () => movers?.dispose() }), [movers]));
-  useMovers(moverList, { active, still });
-  useLive(active && !still && living(def));
+  // (the place's own quiet life: ambient, City3D.tsx: RestTicker)
+  useMovers(moverList, { active, still, ambient: true });
+  useLive(active && !still && living(def), true);
   const { gl, invalidate } = useThree();
 
-  // The pictures: wanted while the place shows or is being travelled to
-  const [wantedHere, setWantedHere] = useState(() => wantedPlate() === id);
-  useEffect(() => onWantPlate(() => setWantedHere(wantedPlate() === id)), [id]);
+  // The pictures: wanted while the place shows, is being travelled to, or
+  // a link to it has just been pressed
+  const [wantedHere, setWantedHere] = useState(() => wantedPlate() === id || hintedPlate(id));
+  useEffect(() => onWantPlate(() => setWantedHere(wantedPlate() === id || hintedPlate(id))), [id]);
   const want = active || wantedHere;
   useEffect(() => {
     if (!want) {
@@ -76,11 +92,9 @@ export default function PlatePlace({ id, def, active, quality, still, onSpot, sp
       return () => window.clearTimeout(t);
     }
     let live = true;
-    plate.load().then(
+    plate.load(uploadBetweenFrames(gl)).then(
       () => {
         if (!live) return;
-        // Uploaded now, not in the frame that first shows them
-        for (const t of plate.textures()) gl.initTexture(t);
         invalidate();
       },
       (error) => console.error(error),

@@ -223,7 +223,7 @@ const nanjingRoad: PlaceDef = {
   // middle 185 px over it), so the painting isn't slid and the machine's
   // pose holds
   portrait: { yaw: 3, half: 9, lift: 11 },
-  short: 0,
+  short: { under: 0 },
   threshold: "#160f16",
   fog: { color: "#1c1820", near: 45, far: 420, keep: { near: 35, far: 260 } },
   background: "#1c1820",

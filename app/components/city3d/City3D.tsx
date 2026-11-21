@@ -19,7 +19,7 @@ import { isFlat } from "./flat";
 import { onIdle } from "./idle";
 import Post from "./Post";
 import { loadScene, loadedScene, type SceneComponent } from "./sceneChunks";
-import { placePending, wantPlate } from "./kit/plate";
+import { aimAt, coverMargin, placePending, plateUniforms, plateView, wantPlate } from "./kit/plate";
 import { ProofPlace, proofWanted } from "./PlatePlace";
 import Flight, { aerialPoint, aerialReady, flightView, keepOverAerial } from "./Flight";
 import { AERIAL, crossAt, flightAt, flightFrom, flightLength, flightPlan, travelKind, type FlightPlan } from "./flight.def";
@@ -27,6 +27,7 @@ import type { SceneProps } from "./common";
 import { focusTravel, isPlace, restingPose, sceneOrder, scenes, type PlateDef, type Pose, type SceneId, type V3 } from "./scenes";
 import { HOME_SIGNS } from "./districts/lujiazui.def";
 import { useWorld, world } from "./store";
+import { RestTicker, useLinkHints } from "./Wake";
 import { TIERS, type Quality } from "./tiers";
 
 // The 3D city's canvas: one for every /city page, kept across their
@@ -86,17 +87,26 @@ const driftOf = (id: SceneId) => {
 // travelling, and nothing moves
 const holdingStill = () => world.get().still;
 
+// Where the sheet's rounded top edge starts (it comes up 2rem over the band)
+const SHEET_OVERLAP = 32;
+
 // On narrow screens the panel is a sheet over the lower part of the
 // screen, from --hero down (city-pages.css); the camera's subject is
 // lifted into the part above it. Read once per resize or page change.
-let hero = { key: "", px: 0 };
+// Measured where the sheet really starts (the dock, the top of the sheet,
+// or the panel: its top as laid out, not as scrolled, plus the rounded
+// top's overlap), now and then (the page's words settle), else --hero.
+let hero = { key: "", ticks: 0, px: 0 };
 const heroHeight = (height: number) => {
   const key = `${height}|${location.pathname}`;
-  if (hero.key !== key) hero = { key, px: parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0 };
+  if (hero.key !== key || ++hero.ticks > 120) {
+    const sheet = isFlat() ? document.querySelector(".place-dock") ?? document.querySelector(".city-panel") : null;
+    const top = sheet ? sheet.getBoundingClientRect().top + window.scrollY : 0;
+    const css = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hero")) || 0;
+    hero = { key, ticks: 0, px: top > 0 ? Math.min(height, top + SHEET_OVERLAP) : css };
+  }
   return hero.px || height * (height <= 480 ? 0.64 : 0.46);
 };
-// Where the sheet's rounded top edge starts (it comes up 2rem over the band)
-const SHEET_OVERLAP = 32;
 const narrowLift = (height: number, ceiling: number) => {
   // The middle of the strip between the bar and the sheet
   const middle = (ceiling + heroHeight(height) - SHEET_OVERLAP) / 2;
@@ -133,13 +143,22 @@ const inWorld = (scene: SceneId, pose: Pose) => ({ pos: add(pose.pos, scenes[sce
 const restPose = (scene: SceneId) => inWorld(scene, restingPose(scene, world.get().focus));
 const v3 = (v: THREE.Vector3): V3 => [v.x, v.y, v.z];
 
-// The plates' shape (app/assets/city/*.webp, 2400 × 1032)
+// The plates' usual shape (app/assets/city/*.webp, 2400 × 1032; ?frame=plate
+// uses each place's own: PlateDef.aspect)
 export const PLATE_ASPECT = 2400 / 1032;
 // Development only, for matching a place to its painting: ?frame=plate
 // holds the camera at the place's plateFrame (districts/<id>.def.ts), the
 // view cut to the painting's shape, the panel and the bar hidden. The
 // whole switch is behind NODE_ENV, so a production build has none of it.
 const plateWanted = () => process.env.NODE_ENV === "development" && new URLSearchParams(location.search).get("frame") === "plate";
+
+// The haze a flight lifts out through (the iris's colour while it does):
+// the aerial painting's soft sky by day, the threshold's navy at night,
+// never a bright flash
+const HAZE_DAY = new THREE.Color("#9fb4c6");
+const HAZE_NIGHT = new THREE.Color("#0c1526");
+const haze = new THREE.Color();
+const hazeColour = () => `#${haze.copy(HAZE_NIGHT).lerp(HAZE_DAY, plateUniforms.uDay.value).getHexString()}`;
 
 const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -410,12 +429,20 @@ function Director({
         }
       }
       pullBack(pulled, f.scale);
-      // (over the city before its painting is here: cruising in cloud)
+      // One soft pass of cloud a flight: the lift out of a place is a
+      // dissolve through the sky's haze (the iris, in its colour for the
+      // hour: hazeColour), and only the descent into the next place
+      // passes through the clouds (the veil). (Over the city before its
+      // painting is here: cruising in cloud.)
+      const liftPass = p.back || (p.lift > 0 && t < p.lift + p.cruise);
       flightView.air = f.stage === "air";
-      flightView.veil = f.stage === "air" && !aerialReady() ? Math.max(f.veil, 0.95) : f.veil;
+      flightView.veil = f.stage === "air" && !aerialReady() ? Math.max(f.veil, 0.95) : liftPass ? 0 : f.veil;
       flightView.look.copy(s.look);
       flightView.drift.set(f.at[0] * AERIAL.aspect, -f.at[1]).multiplyScalar(2.4 / Math.max(f.alt, 0.2));
-      if (s.iris > 0) s.iris = Math.max(0, s.iris - dt * 3);
+      if (liftPass) {
+        s.iris = f.veil;
+        if (iris.current) iris.current.style.background = hazeColour();
+      } else if (s.iris > 0) s.iris = Math.max(0, s.iris - dt * 3);
       if (f.done) {
         // (on the performance timeline: "city:flight", from the choice to
         // the arrival, any wait for the place included)
@@ -467,11 +494,12 @@ function Director({
     // place's near layers slide over its far ones.
     tmp.p.copy(s.pos);
     tmp.l.copy(s.look);
+    // (drawn at rest by the RestTicker, 30 times a second at most, not
+    // every frame: it doesn't make the Director busy)
     const resting = !r && !s.queue.length && !reduce && !plate;
     if (resting && tier !== "mobile" && !holdingStill()) {
       s.drift = Math.min(1, s.drift + dt / DRIFT_EASE);
       s.driftT += dt;
-      busy = true;
     } else {
       s.drift = 0;
     }
@@ -496,37 +524,44 @@ function Director({
     const aspect = size.width / size.height;
     const tan = (d: number) => Math.tan(THREE.MathUtils.degToRad(d));
     const lens = (halfTan: number) => 2 * THREE.MathUtils.radToDeg(Math.atan(halfTan));
-    // A portrait screen at a place's home view: a wider lens if needed to
-    // show `half` degrees either side, the middle turned by `yaw`
-    const portrait = narrow && aspect < 1 ? def.portrait : undefined;
-    let fov = aspect < 1 ? def.fov * 1.2 : def.fov;
     const ceiling = barBottom(size.width, size.height);
-    if (portrait) fov = Math.max(fov, lens(tan(portrait.half) / aspect));
-    // …and on a portrait tablet (a phone's lens is already wide from its
-    // narrowness) at least `cover` degrees top to bottom in the strip
-    // between the bar and the sheet
-    if (portrait?.cover && size.width >= 600) fov = Math.max(fov, lens(tan(portrait.cover / 2) / Math.max(0.36, (heroHeight(size.height) - SHEET_OVERLAP - ceiling) / size.height)));
+    let fov = def.fov;
     let want = 0;
+    let wantY = 0;
+    plateView.fill = 1;
+    plateView.top = 0;
+    plateView.painting = null;
+    plateView.aim = null;
     const edge = narrow ? 0 : panelRight(size.width, size.height);
-    if (!narrow && def.frame !== "center" && edge > 0) {
+    if (narrow && isPlace(def)) {
+      // The narrow layout: the painting framed to the strip between the
+      // bar and the sheet (both opaque there), as much of it as the strip
+      // holds (its full height on a portrait screen, its full width on a
+      // phone on its side), the home axis in the strip's middle, and the
+      // painting slid to put the place's subject there (kit/plate.ts:
+      // plateView, cover)
+      const bottom = Math.min(size.height, heroHeight(size.height));
+      const top = Math.min(ceiling, bottom * 0.5);
+      const strip = bottom - top;
+      plateView.fill = bottom / size.height;
+      plateView.top = top / size.height;
+      const k = Math.min(size.height / strip, (def.plate.aspect * size.height) / size.width);
+      fov = lens((tan(def.plateFrame.fov / 2) * k) / coverMargin(def.plate));
+      wantY = narrowLift(size.height, ceiling);
+      plateView.painting = def.plate.painting;
+      const p = def.portrait;
+      if (aspect < 1 && p) plateView.aim = p.aim ?? aimAt(def, p.yaw, p.lift ?? 0);
+      else if (size.height <= 480 && def.short !== undefined) plateView.aim = def.short.aim ?? aimAt(def, 0, -def.short.under);
+    } else if (narrow) {
+      fov = aspect < 1 ? def.fov * 1.2 : def.fov;
+      wantY = narrowLift(size.height, ceiling);
+    } else if (def.frame !== "center" && edge > 0) {
       // A wide screen: the view's middle moves to the middle of the part
       // the panel leaves, and the lens widens if it must to show `span`
       // degrees either side of it there
       const [l, r] = def.frame === "right" ? [edge + 12, size.width - 12] : [12, size.width - edge - 12];
       want = 0.5 - (l + r) / 2 / size.width;
       if (def.span) fov = Math.max(fov, lens(tan(def.span) / (((r - l) / size.width) * aspect)));
-    } else if (portrait) {
-      want = tan(portrait.yaw) / (2 * tan(fov / 2) * aspect);
-    }
-    let wantY = narrow ? narrowLift(size.height, ceiling) : 0;
-    // A phone on its side: the place's fronts (`short`, degrees under the
-    // aim) go to the middle of the strip; a portrait one: the point
-    // `portrait.lift` degrees over the aim does
-    const under = narrow && aspect >= 1 && size.height <= 480 ? def.short : portrait?.lift !== undefined ? -portrait.lift : undefined;
-    if (under !== undefined) {
-      const fronts = (Math.tan(THREE.MathUtils.degToRad(under)) * size.height) / 2 / Math.tan(THREE.MathUtils.degToRad(fov / 2));
-      const aim = (ceiling + heroHeight(size.height) - SHEET_OVERLAP) / 2 - fronts;
-      wantY = 0.5 - aim / size.height;
     }
     // (in still view, and before the first arrival, the framing is simply there)
     const glide = reduce || !s.started || !world.get().arrived ? 1 : 1 - Math.exp(-dt * 4);
@@ -899,11 +934,14 @@ export default function City3D({ tier }: { tier: Quality }) {
   // page's words and the bar out of the way
   useEffect(() => {
     if (process.env.NODE_ENV !== "development" || !plate) return;
+    // (the painting's own shape)
+    const def = scenes[placeFor(location.pathname)];
+    const aspect = isPlace(def) ? def.plate.aspect : PLATE_ASPECT;
     const style = document.createElement("style");
     style.dataset.cityPlate = "";
     style.textContent = `.city-page, .top-bar, .city-tags, .city-skip { visibility: hidden !important; }
 html, body { background: #000 !important; }
-.city3d { inset: 0 !important; margin: auto !important; width: min(100vw, calc(100vh * ${PLATE_ASPECT})) !important; height: min(100vh, calc(100vw / ${PLATE_ASPECT})) !important; z-index: 40 !important; }`;
+.city3d { inset: 0 !important; margin: auto !important; width: min(100vw, calc(100vh * ${aspect})) !important; height: min(100vh, calc(100vw / ${aspect})) !important; z-index: 40 !important; }`;
     document.head.append(style);
     document.documentElement.dataset.cityPlate = "on";
     return () => {
@@ -916,6 +954,7 @@ html, body { background: #000 !important; }
   // Something is moving (common.tsx: useLive, useMovers): only then, and
   // not in still view, does the loop draw every frame
   const live = useWorld((s) => s.live > 0);
+  const ambient = useWorld((s) => s.ambient > 0);
   useEffect(() => world.set({ quality: tier }), [tier]);
   // The canvas is going away (leaving /city, a lost context): the kit's
   // shared materials and its textures go with it (kit/materials.ts,
@@ -959,20 +998,8 @@ html, body { background: #000 !important; }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrived]);
 
-  // A link to a place, pointed at or focused anywhere on the page: its
-  // chunk is fetched now, so the journey there doesn't wait for it
-  useEffect(() => {
-    const want = (e: Event) => {
-      const href = (e.target as Element | null)?.closest?.("a[href^='/city']")?.getAttribute("href");
-      if (href) loadScene(placeFor(href.split("#")[0])).catch(() => {});
-    };
-    document.addEventListener("pointerover", want, { passive: true });
-    document.addEventListener("focusin", want);
-    return () => {
-      document.removeEventListener("pointerover", want);
-      document.removeEventListener("focusin", want);
-    };
-  }, []);
+  // Links to places fetch ahead (Wake.tsx)
+  useLinkHints(placeFor);
 
   // (Escape back to the riverside is the panel's: panels/CityPanel.tsx)
 
@@ -1034,6 +1061,7 @@ html, body { background: #000 !important; }
       >
         <Director target={target} active={active} onSwap={setActive} iris={iris} still={still} tier={tier} plate={plate} />
         <Demand pathname={pathname} />
+        <RestTicker on={!still && (ambient || tier !== "mobile")} />
         <Contrast />
         <Atmosphere active={active} />
         <Precipitation quality={tier} active={active} />

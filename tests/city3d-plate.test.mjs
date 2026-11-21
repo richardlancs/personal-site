@@ -161,7 +161,40 @@ test("pictures per tier: phones at most 1024 px on the painting's long edge, hig
   assert.match(place, /useDisposeOnUnmount\(plate\);/);
   assert.match(place, /plate\.release\(\)/);
   // Movers parked in still view (useMovers), living light only while showing and not still
-  assert.match(place, /useMovers\(moverList, \{ active, still \}\);/);
-  assert.match(place, /useLive\(active && !still && living\(def\)\);/);
+  // (the place's quiet life: ambient, drawn at rest at most 30 times a second)
+  assert.match(place, /useMovers\(moverList, \{ active, still, ambient: true \}\);/);
+  assert.match(place, /useLive\(active && !still && living\(def\), true\);/);
   assert.match(place, /if \(!still && last\.current\) clock \+=/);
+});
+
+test("power: at rest the place's quiet life draws at most 30 times a second, nothing after a minute with no input, nothing in still view", () => {
+  const wake = noComments(read("app/components/city3d/Wake.tsx"));
+  assert.match(wake, /const REST_FPS = 30;/);
+  assert.match(wake, /const REST_IDLE_MS = 60_000;/);
+  assert.match(wake, /if \(now - since > REST_IDLE_MS\) return;/);
+  // the input only wakes it (the mouse never moves the camera)
+  assert.match(wake, /const poke = \(\) => \{\s*since = performance\.now\(\);/);
+  assert.doesNotMatch(wake, /camera/);
+  // mounted off in still view, and on mobile only for something living
+  assert.match(city, /<RestTicker on=\{!still && \(ambient \|\| tier !== "mobile"\)\} \/>/);
+  // the drift no longer makes the Director draw every frame
+  assert.doesNotMatch(city, /s\.driftT \+= dt;\s*busy = true;/);
+  // a hidden tab draws nothing
+  assert.match(city, /frameloop=\{!visible \|\| !warm \|\| covered \? "never" :/);
+});
+
+test("a flight's paintings are decoded off the main thread and uploaded between frames, from the press on the link", () => {
+  assert.match(plate, /createImageBitmap\(blob, \{ imageOrientation: "flipY", resizeWidth: w, resizeHeight: h, resizeQuality: "high" \}\)/);
+  assert.match(plate, /if \(upload\) for \(const t of all\) \{/);
+  assert.match(place, /plate\.load\(uploadBetweenFrames\(gl\)\)/);
+  assert.match(read("app/components/city3d/Flight.tsx"), /plate\.load\(uploadBetweenFrames\(gl\)\)/);
+  assert.match(read("app/components/city3d/Wake.tsx"), /if \(href\) hintPlate\(placeFor\(href\)\);/);
+  // one soft pass of cloud: the lift dissolves through the haze, only the descent through the veil
+  assert.match(city, /const liftPass = p\.back \|\| \(p\.lift > 0 && t < p\.lift \+ p\.cruise\);/);
+  assert.match(city, /: liftPass \? 0 : f\.veil;/);
+});
+
+test("night is the painting's: the lights' extra over 1.0 is small; dusk crosses over through its middle", () => {
+  assert.match(plate, /col \+= lights \* n \* uGlow \* 0\.3;/);
+  assert.match(plate, /vec3 col = mix\(day, night, smoothstep\(0\.3, 0\.7, n\)\);/);
 });
