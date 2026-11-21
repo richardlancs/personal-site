@@ -229,3 +229,8 @@ test("a city page's band has its painting before the scripts, from the file its 
   assert.doesNotMatch(preload, /previousElementSibling|\.style\.setProperty\("--city-plate"/);
   assert.match(read("app/city/city-pages.css"), /background-image: var\(--city-plate, none\)/);
 });
+
+test("forced colours: a focused place tag gets a two-colour ring that holds over the unforced scene (Task 19 review, a11y I3)", () => {
+  const css = read("app/city/city-pages.css");
+  assert.match(css, /@media \(forced-colors: active\) \{\s*\.city-tag:focus-visible \{\s*outline: 3px solid CanvasText;\s*box-shadow: 0 0 0 6px Canvas;\s*forced-color-adjust: none;/);
+});
