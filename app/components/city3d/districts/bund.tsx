@@ -12,7 +12,7 @@ import { aircraftLights, buildBoat } from "../kit/movers";
 import { clockMaterial, glowSprites, litSurface, neonMaterial, SCENE_TONES, type SceneTone } from "../kit/neon";
 import { reflectIn, type LightStrip } from "../kit/reflection";
 import { buildSkyDome } from "../kit/sky";
-import { buildRailing, glowMaterial } from "../kit/street";
+import { buildLampRow, buildRailing, glowMaterial } from "../kit/street";
 import { surface } from "../kit/surface";
 import { pavingTexture, setClockHour } from "../kit/textures";
 import { buildTowers, layoutTowers } from "../kit/towers";
@@ -156,7 +156,7 @@ function build(quality: Quality): Built {
     glow: { tone: "#7d93bd", strength: 0.075 },
     polish: 1,
     lights: [
-      ...lampAlong.slice(0, 16).map((a) => ({ x: X(B.lamps.s - 0.1), z: Z(a), w: 0.12, color: "#ffc98a", height: 0.8 })),
+      ...lampAlong.slice(0, 16).map((a) => ({ x: X(B.lamps.s - 0.1), z: Z(a), w: 0.18, color: "#ffc98a", height: 0.8 })),
       { x: X(B.kiosk.s), z: Z(B.kiosk.a), w: 0.1, color: SCENE_TONES.cyan, height: 0.3 },
     ],
   });
@@ -185,25 +185,22 @@ function build(quality: Quality): Built {
   const one = new THREE.Vector3(1, 1, 1);
   const q = new THREE.Quaternion();
   instanced(merge([pierGeo, pierCap]), surface({ color: PIER, grime: 0.4, glow: { tone: "#ffc98a", strength: 0.16 } }), lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND, Z(a)), q, one)), "piers");
-  // on each pier a lantern post as the plates paint them: a cast-iron post
-  // on a fluted base, a collar, a six-sided glass lantern lit warm, a
-  // hooded roof and a finial (two instanced meshes for all of them); the
-  // four from L.spots on carry the place's four spot lights, just inside
-  // their lanterns, toward the promenade
-  const POST = 0.36;
-  const lanternY = 0.05 + POST + 0.012 + 0.037;
-  const postGeo = merge([
-    new THREE.CylinderGeometry(0.016, 0.024, 0.05, 8).translate(0, 0.025, 0),
-    new THREE.CylinderGeometry(0.008, 0.012, POST, 8).translate(0, 0.05 + POST / 2, 0),
-    new THREE.CylinderGeometry(0.02, 0.014, 0.012, 8).translate(0, 0.05 + POST + 0.006, 0),
-    new THREE.ConeGeometry(0.042, 0.032, 6).translate(0, lanternY + 0.037 + 0.016, 0),
-    new THREE.SphereGeometry(0.009, 6, 4).translate(0, lanternY + 0.037 + 0.04, 0),
-  ]);
-  const lanternGeo = new THREE.CylinderGeometry(0.03, 0.021, 0.074, 6).translate(0, lanternY, 0);
-  const lampFeet = lampAlong.map((a) => new THREE.Matrix4().compose(new THREE.Vector3(X(L.s), LAND + L.pier + 0.015, Z(a)), q, one));
-  instanced(postGeo, surface({ color: METAL }), lampFeet, "lamps:posts");
-  instanced(lanternGeo, glowMaterial({ day: "#e4ddcc", night: "#ffd49a" }), lampFeet, "lamps:lanterns");
-  const heads = lampAlong.map((a) => new THREE.Vector3(X(L.s), LAND + L.pier + 0.015 + lanternY, Z(a)));
+  // on each pier a lantern post as the plates paint them: the kit's
+  // (buildLampRow, head "lantern": a cast-iron post on a fluted base, a
+  // collar, a six-sided lantern lit warm, a cap and a finial), a little
+  // under its street size, no pool on the pier; the four from L.spots on
+  // carry the place's four spot lights, just inside their lanterns, toward
+  // the promenade
+  const lampRow = buildLampRow(
+    lampAlong.map((a) => ({ x: X(L.s), y: LAND + L.pier + 0.015, z: Z(a) })),
+    { head: "lantern", size: 0.8, pool: false },
+  );
+  lampRow.meshes.forEach((m, i) => {
+    m.name = i ? "lamps:lanterns" : "lamps:posts";
+    add(m);
+  });
+  disposers.push(lampRow.dispose);
+  const heads = lampRow.heads;
   const spots = heads.slice(L.spots, L.spots + 4).map((h) => [h.x + 0.06, h.y - 0.02, h.z] as V3);
   for (const h of heads.slice(0, 27)) glow.push({ pos: h, color: "#ffc98a", size: 0.12 });
   for (const a of lampAlong.slice(0, 20)) waterLights.push({ x: X(L.s + 0.15), z: Z(a), w: 0.1, color: "#ffc98a", height: 0.9 });

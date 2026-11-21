@@ -8,9 +8,9 @@ import { envUniforms, materialKey } from "./uniforms";
 // Street trees as the plates paint them: soft, rounded masses of green on
 // a short trunk, a row along a bank or a street, and at night lit warm from
 // below by the lamps and shopfronts. No vegetation system: a few canopy
-// shapes and a trunk, instanced, so any number of round and tall trees is
-// 3 draw calls (≈ 260 triangles a tree; a plane tree ≈ 420, a leafy clump
-// ≈ 280).
+// shapes and a trunk with limbs, instanced, so any number of round and
+// tall trees is 3 draw calls (≈ 700 triangles a round tree, 560 a tall; a
+// plane tree ≈ 420, a leafy clump ≈ 280).
 //
 // `s` is a tree's size: 1 is about 10 m tall.
 
@@ -64,9 +64,13 @@ if (uLeaves > 0.0) {
     vec3 c = o + vec3(leafHash(i + o), leafHash(i + o + 17.0), leafHash(i + o + 31.0)) * 0.8 - 0.4;
     best = min(best, length(f - c));
   }
-  float fade = 1.0 - smoothstep(0.25, 0.8, length(fwidth(q)));
-  kitLeaf = (smoothstep(0.8, 0.15, best) - 0.5) * uLeaves * fade;
-  diffuseColor.rgb *= 1.0 + kitLeaf * 0.4;
+  // (gone where a cluster is finer than a pixel, and where it is so large
+  // on screen it would read as spots rather than leaves: up close the
+  // masses carry the shape)
+  float cells = length(fwidth(q));
+  float fade = (1.0 - smoothstep(0.25, 0.8, cells)) * smoothstep(0.08, 0.2, cells);
+  kitLeaf = (smoothstep(0.85, 0.2, best) - 0.5) * uLeaves * fade;
+  diffuseColor.rgb *= 1.0 + kitLeaf * 0.3;
 }`,
         )
         .replace(
@@ -79,8 +83,8 @@ if (uLeaves > 0.0) {
   // the painted masses: light caught round the top (a little warmer), the
   // underside in their own shade
   float top = smoothstep(0.25, 1.0, n.y);
-  outgoingLight *= (1.0 + top * 0.3 * (1.0 - uNight)) * (1.0 - smoothstep(-0.1, -0.85, n.y) * 0.2 * (1.0 - uNight));
-  outgoingLight += vec3(0.05, 0.05, 0.0) * top * diffuseColor.rgb * (1.0 - uNight);
+  outgoingLight *= (1.0 + top * 0.38 * (1.0 - uNight)) * (1.0 - smoothstep(-0.1, -0.85, n.y) * 0.32 * (1.0 - uNight));
+  outgoingLight += vec3(0.07, 0.07, 0.0) * top * diffuseColor.rgb * (1.0 - uNight);
 }
 #include <opaque_fragment>`,
         )
@@ -91,29 +95,52 @@ if (uLeaves > 0.0) {
   });
 }
 
-// The canopy shapes, each a few merged masses so the outline breaks up
-// - round: a body, two side lobes, a lighter crown above
-// - tall: three masses stacked a little off true
+// The canopy shapes: many overlapping leaf masses, small enough that the
+// outline breaks (a rounded crown with bites out of it, not one lump),
+// over limbs that show between them
+// - round: a crown of nine masses round a hollow middle, the top ones
+//   smaller and higher
+// - tall: seven masses up a narrower crown, a little off true
 // - plane: a plane tree's open crown, high on its trunk: six masses spread
 //   wide with sky between them
 // - leafy: a low clump of upright leafy masses from near the ground (a
 //   potted plant, bamboo), no trunk showing
-// each (but leafy) sits on a trunk 0.32 tall (at s = 1); plane on its own
-// taller trunk with three branches
+// round and tall share one trunk (0.4 tall at s = 1) that forks into three
+// limbs up into the crown; plane has its own taller trunk with three branches
 function canopies() {
   const r = rng(4242);
+  const mass = (rad: number, x: number, y: number, z: number) => blob(r, rad, 0.8, 0.34, 1).translate(x, y, z);
   const round = merge([
-    blob(r, 0.28, 0.8, 0.2, 1).translate(0, 0.6, 0),
-    blob(r, 0.2, 0.82, 0.24, 1).translate(0.22, 0.53, 0.06),
-    blob(r, 0.19, 0.82, 0.24, 1).translate(-0.2, 0.55, -0.09),
-    blob(r, 0.16, 0.85, 0.22, 1).translate(0.04, 0.8, -0.03),
+    mass(0.22, 0, 0.62, 0),
+    mass(0.16, 0.18, 0.56, 0.07),
+    mass(0.16, -0.17, 0.57, -0.07),
+    mass(0.15, 0.04, 0.55, 0.18),
+    mass(0.15, -0.05, 0.56, -0.18),
+    mass(0.14, 0.13, 0.73, -0.08),
+    mass(0.14, -0.12, 0.74, 0.09),
+    mass(0.13, 0.02, 0.84, 0.02),
+    mass(0.11, 0.24, 0.66, 0.15),
   ]);
   const tall = merge([
-    blob(r, 0.22, 1.0, 0.2, 1).translate(0, 0.6, 0),
-    blob(r, 0.18, 1.0, 0.22, 1).translate(0.07, 0.8, 0.04),
-    blob(r, 0.13, 1.0, 0.24, 1).translate(-0.04, 0.96, -0.02),
+    mass(0.18, 0, 0.62, 0),
+    mass(0.14, 0.12, 0.56, 0.05),
+    mass(0.14, -0.11, 0.6, -0.05),
+    mass(0.15, 0.04, 0.77, 0.03),
+    mass(0.13, -0.06, 0.86, -0.05),
+    mass(0.11, 0.05, 0.96, 0.0),
+    mass(0.1, -0.02, 1.04, 0.03),
   ]);
   return [round, tall];
+}
+// a limb from (0, y0, 0) reaching (x, y1, z), tapering
+function limb(x: number, z: number, y0: number, y1: number, r0 = 0.02, r1 = 0.012) {
+  const dir = new THREE.Vector3(x, y1 - y0, z);
+  const g = new THREE.CylinderGeometry(r1, r0, dir.length(), 5).translate(0, dir.length() / 2, 0);
+  g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()));
+  return g.translate(0, y0, 0);
+}
+function trunkWithLimbs() {
+  return merge([new THREE.CylinderGeometry(0.02, 0.032, 0.42, 6).translate(0, 0.21, 0), limb(0.16, 0.05, 0.36, 0.62), limb(-0.14, -0.07, 0.38, 0.64), limb(0.02, -0.15, 0.4, 0.66, 0.016, 0.01)]);
 }
 function planeParts() {
   const r = rng(5151);
@@ -125,12 +152,7 @@ function planeParts() {
     blob(r, 0.14, 0.75, 0.28, 1).translate(-0.12, 0.72, 0.29),
     blob(r, 0.13, 0.8, 0.25, 1).translate(0.16, 1.02, 0.08),
   ]);
-  const branch = (x: number, z: number, y0: number, y1: number) => {
-    const dir = new THREE.Vector3(x, y1 - y0, z);
-    const g = new THREE.CylinderGeometry(0.012, 0.02, dir.length(), 5).translate(0, dir.length() / 2, 0);
-    g.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()));
-    return g.translate(0, y0, 0);
-  };
+  const branch = (x: number, z: number, y0: number, y1: number) => limb(x, z, y0, y1);
   const trunk = merge([
     new THREE.CylinderGeometry(0.026, 0.042, 0.58, 6).translate(0, 0.29, 0),
     branch(0.26, 0.08, 0.52, 0.76),
@@ -168,7 +190,7 @@ const KIND_INDEX: Record<TreeKind, number> = { round: 0, tall: 1, plane: 2, leaf
 export function buildStreetTrees(seed: number, spots: { x: number; z: number; s: number; kind?: TreeKind }[], o: { greens?: readonly string[] } & CanopyOptions = {}): THREE.InstancedMesh[] {
   const r = rng(seed);
   const greens = o.greens && o.greens.length ? o.greens : GREENS;
-  const trunkGeometry = new THREE.CylinderGeometry(0.022, 0.034, 0.36, 5).translate(0, 0.18, 0);
+  const trunkGeometry = trunkWithLimbs();
   const [round, tall] = canopies();
   const usePlane = spots.some((p) => p.kind === "plane");
   const useLeafy = spots.some((p) => p.kind === "leafy");

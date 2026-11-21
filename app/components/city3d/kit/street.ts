@@ -145,10 +145,13 @@ export function buildLamp(o?: { light: "spot" | "none" }): { group: THREE.Group;
  * calls whatever their number. `heads` are where each one's light comes
  * from, in the same frame as the spots. `head`: "arm" (the promenade lamp,
  * its head out over +x; the default) or "lantern" (a lantern post, its
- * light in the lantern on top of the post).
+ * light in the lantern on top of the post). `size`: the lamps' scale (1 by
+ * default: a 6 m post); `pool: false`: no pool of light at their feet (a
+ * lamp on a pier over water), one draw call fewer.
  */
-export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: number }[], o?: { light?: "spot" | "none"; head?: LampHead }) {
-  const spot = o?.light === "spot";
+export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: number }[], o?: { light?: "spot" | "none"; head?: LampHead; size?: number; pool?: boolean }) {
+  const spot = o?.light === "spot" || o?.pool === false;
+  const k = o?.size ?? 1;
   const lantern = o?.head === "lantern";
   const { pole, head, pool } = lantern ? lanternParts() : lampParts();
   const HEAD_AT = lantern ? LANTERN : HEAD;
@@ -159,7 +162,7 @@ export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: num
   if (!spot) parts.push([pool, poolMaterial()]);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
-  const one = new THREE.Vector3(1, 1, 1);
+  const one = new THREE.Vector3(k, k, k);
   const meshes = parts.map(([g, mat]) => {
     const mesh = new THREE.InstancedMesh(g, mat, spots.length);
     spots.forEach((s, i) => mesh.setMatrixAt(i, m.compose(new THREE.Vector3(s.x, s.y ?? 0, s.z), q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), s.ry ?? 0), one)));
@@ -167,7 +170,7 @@ export function buildLampRow(spots: { x: number; y?: number; z: number; ry?: num
     return mesh;
   });
   meshes[0].castShadow = true;
-  const heads = spots.map((s) => HEAD_AT.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry ?? 0).add(new THREE.Vector3(s.x, s.y ?? 0, s.z)));
+  const heads = spots.map((s) => HEAD_AT.clone().multiplyScalar(k).applyAxisAngle(new THREE.Vector3(0, 1, 0), s.ry ?? 0).add(new THREE.Vector3(s.x, s.y ?? 0, s.z)));
   return {
     meshes,
     heads,
@@ -201,9 +204,11 @@ function beam(a: THREE.Vector3, b: THREE.Vector3, w: number, h: number) {
 
 /**
  * A riverside railing along `points` (its foot), 1.1 m: a top rail, a mid
- * rail and posts every 2.5 m, one mesh, dark metal
+ * rail and posts every 2.5 m, one mesh, dark metal. `post`: the posts'
+ * thickness (0.01 by default: 10 cm)
  */
-export function buildRailing(points: THREE.Vector3[]): THREE.Mesh {
+export function buildRailing(points: THREE.Vector3[], o: { post?: number } = {}): THREE.Mesh {
+  const post = o.post ?? 0.01;
   const H = 0.11;
   const parts: THREE.BufferGeometry[] = [];
   for (let i = 0; i + 1 < points.length; i++) {
@@ -215,7 +220,7 @@ export function buildRailing(points: THREE.Vector3[]): THREE.Mesh {
     const n = Math.max(1, Math.round(len / 0.25));
     for (let k = i === 0 ? 0 : 1; k <= n; k++) {
       const p = a.clone().lerp(b, k / n);
-      parts.push(box(0.01, H, 0.01).translate(p.x, p.y + H / 2, p.z));
+      parts.push(box(post, H, post).translate(p.x, p.y + H / 2, p.z));
     }
   }
   const mesh = new THREE.Mesh(merge(parts), surface({ color: METAL }));

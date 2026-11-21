@@ -431,10 +431,10 @@ function build(quality: Quality) {
   // ---- The lane's materials, one merged mesh each
   // after dark the whole lane holds a little warm light (the plate's
   // lanterns all the way down), the brick's courses in it
-  const brickWall = surface({ color: "#ad7260", grime: 0.2, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 }, glow: { tone: "#64382a", strength: 0.28 } });
+  const brickWall = surface({ color: "#ad7260", grime: 0.2, relief: { kind: "brick", course: 0.075 * K, length: 0.22 * K, strength: 0.85 }, glow: { tone: "#4f3448", strength: 0.3 } });
   const MATERIALS: Record<string, THREE.Material> = {
     brick: brickWall,
-    stone: surface({ color: C.stone, grime: 0.1, glow: { tone: "#5a5258", strength: 0.26 } }),
+    stone: surface({ color: C.stone, grime: 0.1, glow: { tone: "#545068", strength: 0.24 } }),
     stoneDark: surface({ color: C.stoneDark, grime: 0.1, glow: { tone: "#3a3640", strength: 0.2 } }),
     door: surface({ color: C.door, glow: { tone: "#3a1612", strength: 0.25 } }),
     roof: surface({ color: C.roof, snow: true }),
@@ -565,10 +565,10 @@ function build(quality: Quality) {
   const lit = LANE.lanterns.slice(0, LANE.pooled);
   const far = LANE.lanterns[LANE.lanterns.length - 1][1];
   const pools: GlowPool[] = [
-    ...lit.map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 1.3) * K, 1.5 * K, z * K], reach: 6 * K, color: "#ffc489", strength: 1.05 })),
+    ...lit.map(([side, z]): GlowPool => ({ pos: [(face(side) - side * 1.3) * K, 1.5 * K, z * K], reach: 4.6 * K, color: "#ffc489", strength: 0.8 })),
     ...([-1, 1] as const).map((side): GlowPool => ({ from: [(face(side) - side * 1.2) * K, 1.5 * K, -2 * K], to: [(face(side) - side * 1.2) * K, 1.5 * K, far * K], reach: 3.4 * K, color: "#ffc489", strength: 0.26 })),
     ...LANE.blades.map(([side, z, y], i): GlowPool => ({ pos: [(face(side) - side * 0.6) * K, y * K, z * K], reach: 3.2 * K, color: SCENE_TONES[tones[i]], strength: 0.45 })),
-    ...near.slice(0, POOL_CAP - LANE.pooled - 2 - LANE.blades.length).map(({ side, z }): GlowPool => ({ pos: [(face(side) - side * 0.8) * K, 1.6 * K, z * K], reach: 3.4 * K, color: "#ffbf78", strength: 1.3 })),
+    ...near.slice(0, POOL_CAP - LANE.pooled - 2 - LANE.blades.length).map(({ side, z }): GlowPool => ({ pos: [(face(side) - side * 0.8) * K, 1.6 * K, z * K], reach: 2.6 * K, color: "#ffbf78", strength: 0.95 })),
   ];
 
   return {

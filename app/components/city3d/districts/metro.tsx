@@ -298,9 +298,11 @@ function build(quality: Quality): Built {
   // the edge beams along each side, at the arches' feet
   for (const x of [C.x0 + 0.03, C.x1 - 0.02]) ribs.push(box(0.05, 0.06, len).translate(x, D + C.spring, zc));
   ribs.push(box(0.03, 0.04, len).translate(C.x1 + 0.33, D + C.spring - 0.03, zc));
-  // (after dark the lamps light them from below: a faint warm glow)
-  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: LAMP, strength: 0.03 } }), "canopy");
-  mesh(merge(posts), surface({ color: CONCRETE, grime: 0.3, glow: { tone: LAMP, strength: 0.025 } }), "columns");
+  // (after dark the lamps light them from below: lit grey steel, as
+  // painted, a little warm where the lamps are, not a dark brown frame;
+  // the columns lit warm from their own lamps)
+  mesh(merge(ribs), surface({ color: STEEL, grime: 0.15, glow: { tone: "#c0c2c6", strength: 0.13 } }), "canopy");
+  mesh(merge(posts), surface({ color: CONCRETE, grime: 0.3, glow: { tone: "#e0c49c", strength: 0.12 } }), "columns");
   mesh(merge(lampParts), neonMaterial(dim(LAMP, 0.42), { dayColor: "#d9dcdf" }), "neon:lamps");
   // the glazing over the arches: one curved sheet, the arch's profile run
   // the canopy's length (the kit's glass, both faces)
@@ -317,7 +319,7 @@ function build(quality: Quality): Built {
     sheet.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     sheet.setIndex(idx);
     sheet.computeVertexNormals();
-    mesh(sheet, glassMaterial({ tint: "#2c4766", opacity: 0.55, sky: 0.9, glow: { tone: "#7d97b8", strength: 0.06 }, double: true }), "glass:canopy");
+    mesh(sheet, glassMaterial({ tint: "#2c4766", opacity: 0.55, sky: 0.9, glow: { tone: "#7d97b8", strength: 0.06 }, double: true, panes: { size: [C.step / 2, 0.2], bar: 0.008 } }), "glass:canopy");
   }
 
   // ---- The departures board, hanging from the canopy on two rods
