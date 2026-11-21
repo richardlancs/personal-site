@@ -76,8 +76,11 @@ export default function CityPage({ id }: { id: SectionId }) {
       <div className="city-band">
         <DistrictBand district={s.district} />
         {/* The band's painting before the scripts (lib/platePreload.ts:
-            cityPlateScript): the page's largest paint */}
-        <script dangerouslySetInnerHTML={{ __html: plateScript(id, s.district) }} />
+            cityPlateScript): the page's largest paint. The script is the
+            div's HTML, not a React element, so the parser runs it on a
+            full load and React never renders a <script> on a client
+            navigation (where it would warn, and never run anyway) */}
+        <div hidden dangerouslySetInnerHTML={{ __html: `<script>${plateScript(id, s.district)}</script>` }} />
       </div>
       {/* The six places, the one you're at marked, with the previous and
           the next: along the foot of the scene on wide screens, at the top
@@ -101,26 +104,35 @@ export default function CityPage({ id }: { id: SectionId }) {
           // aren't there, so the panel doesn't move (city-pages.css)
           <div className="city-picker-slot" data-picks={JSON.stringify(picks[id as keyof Picks])}>
             <PickerGhost id={id as keyof Picks} picks={picks} />
-            <p className="city-picker-off">The scene isn&apos;t drawing, so its keys are put away; all they show is below.</p>
+            <p className="city-picker-off">The 3D view isn&apos;t showing. Everything is listed below.</p>
           </div>
         )}
         {content[id]}
-        <p className="city-panel-foot">
-          {/* The way back, in words, on every section's page (Escape does
-              the same, panels/CityPanel.tsx), drawing or not */}
-          {id !== "home" && (
-            <Link href={cityPath("home")} className="text-link text-link-solo">
-              Back to Home
-            </Link>
-          )}
-          <Link href={twoDHref(s.city)} className="text-link text-link-solo">
-            This section on the 2D page
-          </Link>
-        </p>
-        <footer className="city-colophon">
+        {/* Home's panel is the title card and nothing else: the 2D view is
+            the bar's key, and the credit is a line under the dock (below) */}
+        {id !== "home" && (
+          <>
+            <p className="city-panel-foot">
+              {/* The way back, in words, on every section's page (Escape
+                  does the same, panels/CityPanel.tsx), drawing or not */}
+              <Link href={cityPath("home")} className="text-link text-link-solo">
+                Back to Home
+              </Link>
+              <Link href={twoDHref(s.city)} className="text-link text-link-solo">
+                This section on the 2D page
+              </Link>
+            </p>
+            <footer className="city-colophon">
+              <Colophon />
+            </footer>
+          </>
+        )}
+      </div>
+      {id === "home" && (
+        <footer className="city-colophon city-credit">
           <Colophon />
         </footer>
-      </div>
+      )}
       <Arrivals />
     </main>
   );

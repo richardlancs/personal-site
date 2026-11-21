@@ -69,9 +69,9 @@ export type HomeSign = { spot: Quad; label: UV; size: number };
 export const HOME_SIGNS = {
   // the near riverfront right of the clock tower: the Bund's last
   // building and the promenade's lamps
-  contact: { spot: rect(0.41, 0.455, 0.47, 0.6), label: [0.44, 0.535], size: 0.04 },
+  contact: { spot: rect(0.41, 0.455, 0.5, 0.6), label: [0.462, 0.535], size: 0.04 },
   // the old lane of low brick houses under the metro line
-  about: { spot: rect(0.41, 0.748, 0.585, 0.87), label: [0.497, 0.862], size: 0.04 },
+  about: { spot: rect(0.41, 0.748, 0.585, 0.87), label: [0.497, 0.845], size: 0.04 },
   // the elevated metro line and its train
   experience: { spot: rect(0.47, 0.615, 0.655, 0.735), label: [0.563, 0.655], size: 0.04 },
   // the Lujiazui supertalls across the river: Jin Mao, the World

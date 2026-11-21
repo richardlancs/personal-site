@@ -82,12 +82,12 @@ test("every section's place has its own def and its own scene file, and the load
   assert.doesNotMatch(read(`${city}/Riverside.tsx`), /bearing: -?\d/, "the signs' places are the def's");
 });
 
-test("anchors are named <scene id>:<name>; sign: is the riverside's alone", () => {
+test("anchors are named <scene id>:<name>; sign: and board: are the riverside's alone", () => {
   for (const f of walk(city).filter((f) => /\.(ts|tsx)$/.test(f))) {
     const src = noComments(read(f));
     for (const m of src.matchAll(/anchors\.set\(\s*([^,]+),/g)) {
       const key = m[1].trim();
-      if (f.endsWith("/Riverside.tsx")) assert.match(key, /^`sign:/, `${f}: ${key}`);
+      if (f.endsWith("/Riverside.tsx")) assert.match(key, /^`(sign|board):/, `${f}: ${key}`);
       else assert.match(key, /^anchorKey\(/, `${f}: ${key}`);
     }
   }

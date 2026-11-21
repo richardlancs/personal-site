@@ -67,6 +67,7 @@ const watchDrawing = (onChange: () => void) => {
 };
 const drawing = () => document.documentElement.dataset.city3d === "on" && document.documentElement.hasAttribute("data-arrive");
 const notYet = () => false;
+const arrived = () => document.documentElement.hasAttribute("data-arrive");
 
 // Where the arrow keys belong to what has focus (the place dock leaves them)
 const typing = (el: Element | null) =>
@@ -107,12 +108,37 @@ export default function CityPanel() {
   // selector.ts prevents the default) or a dialog, a menu or the résumé is
   // open; and on the narrow layout the current place is brought into view
   // in the dock's row, without moving the page
+  // (once the page has hydrated: the row's fades are set on its style,
+  // which must not change under React's hydration)
+  const hydrated = useSyncExternalStore(watchDrawing, arrived, notYet);
   useEffect(() => {
-    const dock = section ? document.querySelector<HTMLElement>(`[data-section="${section}"] .place-dock`) : null;
+    const dock = section && hydrated ? document.querySelector<HTMLElement>(`[data-section="${section}"] .place-dock`) : null;
     if (!dock) return;
     const row = dock.querySelector<HTMLElement>(".place-dock-row");
     const here = row?.querySelector<HTMLElement>('[aria-current="page"]');
     if (row && here) row.scrollLeft = here.offsetLeft - row.offsetLeft - (row.clientWidth - here.offsetWidth) / 2;
+    // Where the row scrolls: the side with more fades out, and a key that
+    // takes focus comes into view, clear of the fades (city-pages.css)
+    const fade = () => {
+      if (!row) return;
+      const more = row.scrollWidth - row.clientWidth;
+      row.style.setProperty("--fade-l", row.scrollLeft > 1 ? "24px" : "0px");
+      row.style.setProperty("--fade-r", more - row.scrollLeft > 1 ? "24px" : "0px");
+    };
+    const onFocus = (e: FocusEvent) => (e.target as HTMLElement).scrollIntoView?.({ inline: "nearest", block: "nearest" });
+    // (a mouse's wheel turns the row sideways, while it has further to go)
+    const onWheel = (e: WheelEvent) => {
+      if (!row || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const more = row.scrollWidth - row.clientWidth;
+      if (more <= 1 || (e.deltaY < 0 ? row.scrollLeft <= 0 : row.scrollLeft >= more - 1)) return;
+      e.preventDefault();
+      row.scrollBy({ left: e.deltaY, behavior: "smooth" });
+    };
+    fade();
+    row?.addEventListener("scroll", fade, { passive: true });
+    row?.addEventListener("focusin", onFocus);
+    row?.addEventListener("wheel", onWheel, { passive: false });
+    window.addEventListener("resize", fade);
     const onKey = (e: KeyboardEvent) => {
       if ((e.key !== "ArrowLeft" && e.key !== "ArrowRight") || e.defaultPrevented) return;
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
@@ -122,8 +148,14 @@ export default function CityPanel() {
       dock.querySelector<HTMLElement>(`[data-dock="${e.key === "ArrowLeft" ? "previous" : "next"}"]`)?.click();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [section]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", fade);
+      row?.removeEventListener("scroll", fade);
+      row?.removeEventListener("focusin", onFocus);
+      row?.removeEventListener("wheel", onWheel);
+    };
+  }, [section, hydrated]);
 
   const on = useSyncExternalStore(watchDrawing, drawing, notYet);
   const slot = section ? document.querySelector<HTMLElement>(`[data-section="${section}"] .city-picker-slot`) : null;

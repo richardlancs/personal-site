@@ -8,7 +8,7 @@ import * as THREE from "three";
 import { cityPath, sectionForCityPath } from "../../lib/cityRoutes";
 import { parseSkyParam } from "../../lib/skyParam";
 import { listed, pageSections, section, type SectionId } from "../../sections/registry";
-import { anchors } from "./anchors";
+import { anchors, boardsIn } from "./anchors";
 import { WorldLights } from "./common";
 import Atmosphere from "./atmosphere/Atmosphere";
 import Precipitation, { disposePrecipWarmers, precipWarmers } from "./atmosphere/Precipitation";
@@ -626,6 +626,9 @@ const clash = (a: Box, b: Box) => a.l < b.r + TAG_GAP && a.r > b.l - TAG_GAP && 
 
 // The links, found once when the nav mounts (Tags), not every frame
 let tagLinks: HTMLElement[] = [];
+// Why the links last didn't fit (logged under ?perf, when it changes)
+let lastWhy = "";
+const perfWanted = () => new URLSearchParams(location.search).has("perf");
 
 function TagProjector({ active }: { active: SceneId }) {
   const v = useMemo(() => new THREE.Vector3(), []);
@@ -647,31 +650,70 @@ function TagProjector({ active }: { active: SceneId }) {
     const edge = panelRight(size.width, size.height);
     const left = edge ? edge + 8 : 4;
     let fits = true;
+    let why = "";
     const project = (p: THREE.Vector3 | undefined) => {
       if (!p) {
         fits = false;
+        why ||= "no anchor";
         return [0, 0];
       }
       v.copy(p).project(camera);
-      if (v.z > 1) fits = false;
+      if (v.z > 1) {
+        fits = false;
+        why ||= "behind";
+      }
       return [((v.x + 1) / 2) * size.width, ((1 - v.y) / 2) * size.height];
     };
-    const boxes: Box[] = [];
-    for (const el of tagLinks) {
-      const id = el.dataset.anchor!;
+    // What a link may cover: clear of the bar, the sheet or the dock, the
+    // panel, and the screen's edges
+    const area: Box = { l: left, r: size.width - 4, t: ceiling, b: floor };
+    const extent = (id: string): Box => {
       const [, top] = project(anchors.get(`${id}:top`));
       const [, foot] = project(anchors.get(`${id}:foot`));
       const [l] = project(anchors.get(`${id}:left`));
       const [r] = project(anchors.get(`${id}:right`));
-      const cx = (l + r) / 2;
-      const cy = (top + foot) / 2;
-      const w = Math.max(TAG_MIN, Math.abs(r - l));
-      const h = Math.max(TAG_MIN, Math.abs(foot - top));
-      const box = { l: cx - w / 2, r: cx + w / 2, t: cy - h / 2, b: cy + h / 2 };
-      if (box.t < ceiling || box.b > floor || box.l < left || box.r > size.width - 4 || boxes.some((o) => clash(box, o))) fits = false;
+      return { l: Math.min(l, r), r: Math.max(l, r), t: Math.min(top, foot), b: Math.max(top, foot) };
+    };
+    const covers = (a: Box, b: Box) => a.l <= b.l && a.r >= b.r && a.t <= b.t && a.b >= b.b;
+    const boxes: Box[] = [];
+    boardsIn.value = true;
+    for (const el of tagLinks) {
+      const sign = el.dataset.anchor!;
+      const boardId = sign.replace("sign:", "board:");
+      // the board as drawn (Riverside.tsx), else the place
+      const board = extent(anchors.has(`${boardId}:top`) ? boardId : sign);
+      // At least 44×44 round the board, slid within its growth to stay in
+      // the free area while it still covers all of the board
+      const grow = (b: Box): Box => {
+        const w = Math.max(TAG_MIN, b.r - b.l);
+        const h = Math.max(TAG_MIN, b.b - b.t);
+        const g = { l: (b.l + b.r - w) / 2, r: (b.l + b.r + w) / 2, t: (b.t + b.b - h) / 2, b: (b.t + b.b + h) / 2 };
+        const dy = g.b > area.b && b.b <= area.b ? area.b - g.b : g.t < area.t && b.t >= area.t ? area.t - g.t : 0;
+        const dx = g.r > area.r && b.r <= area.r ? area.r - g.r : g.l < area.l && b.l >= area.l ? area.l - g.l : 0;
+        return { l: g.l + dx, r: g.r + dx, t: g.t + dy, b: g.b + dy };
+      };
+      if (!covers(area, board)) boardsIn.value = false;
+      let box = grow(board);
+      // Wide: the whole place is the link (a bigger target), trimmed to the
+      // free area (the panel may cover a corner of it), as long as it still
+      // covers its board. Narrow: the board only (bigger there), so the
+      // five stand apart on a phone.
+      if (!narrow) {
+        const place = extent(sign);
+        const trimmed = { l: Math.max(place.l, area.l), r: Math.min(place.r, area.r), t: Math.max(place.t, area.t), b: Math.min(place.b, area.b) };
+        if (covers(trimmed, board) && trimmed.r - trimmed.l >= TAG_MIN && trimmed.b - trimmed.t >= TAG_MIN) box = trimmed;
+      }
+      const miss =
+        box.t < area.t ? "ceiling" : box.b > area.b ? "floor" : box.l < area.l ? "left" : box.r > area.r ? "right" : boxes.some((o) => clash(box, o)) ? "clash" : "";
+      if (miss) {
+        fits = false;
+        why ||= `${sign} ${miss}` + (perfWanted() ? ` board ${JSON.stringify(board, (_, n) => (typeof n === "number" ? Math.round(n) : n))} area ${JSON.stringify(area, (_, n) => (typeof n === "number" ? Math.round(n) : n))}` : "");
+      }
       boxes.push(box);
     }
     const html = document.documentElement;
+    if (why !== lastWhy && perfWanted()) console.debug("city:tags", why || "over");
+    lastWhy = why;
     if (!fits) {
       if (html.dataset.cityTags !== "row") html.dataset.cityTags = "row";
       return;

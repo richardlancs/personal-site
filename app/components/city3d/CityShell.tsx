@@ -146,9 +146,16 @@ export default function CityShell() {
     return () => window.clearTimeout(id);
   }, [losses]);
 
+  // The key goes away as it's pressed: focus goes on to the page showing's
+  // heading, not to the document
+  const toHeading = () => {
+    const main = [...document.querySelectorAll<HTMLElement>("main.city-page")].find((m) => m.checkVisibility?.() ?? true);
+    main?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true });
+  };
   const restart = () => {
     setGeneration((g) => g + 1);
     setMode("on");
+    toHeading();
   };
 
   return (
@@ -170,7 +177,7 @@ export default function CityShell() {
       )}
       {mode === "saving" && (
         <p className="city3d-note">
-          <button type="button" className="glass" onClick={() => setMode("on")}>
+          <button type="button" className="glass" onClick={() => (setMode("on"), toHeading())}>
             Load the 3D city (about {SAVE_DATA_MB} MB)
           </button>
         </p>

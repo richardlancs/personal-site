@@ -12,14 +12,19 @@ const read = (path) => readFileSync(`${root}${path}`, "utf8");
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const src = noComments(read("app/components/city3d/Riverside.tsx"));
 
-test("Home is the plate with the rooftop's data; its spots navigate through cityPath, live only while the links stand over them", () => {
+test("Home is the plate with the rooftop's data; its spots navigate through cityPath, live only while their boards show", () => {
   assert.match(src, /import lujiazui, \{ groundDepth, HOME_SIGNS \} from "\.\/districts\/lujiazui\.def";/);
   assert.match(src, /<PlatePlace \{\.\.\.props\} id="lujiazui" def=\{lujiazui\} onSpot=\{\(key\) => navigate\(cityPath\(key as SectionId\)\)\} spotEnabled=\{boardsLive\}>/);
-  assert.match(src, /const boardsLive = \(\) => document\.documentElement\.dataset\.cityTags === "over";/);
+  // (the spots answer while their boards show: wherever the links stand
+  // over them, and on a small phone held upright with every board in the
+  // strip; nowhere they've given way to the dock)
+  assert.match(src, /const boardsShown = \(\) => document\.documentElement\.dataset\.cityTags !== "row" \|\| \(isFlat\(\) && boardsIn\.value\);/);
+  assert.match(src, /const boardsLive = \(\) => !!document\.documentElement\.dataset\.cityTags && boardsShown\(\);/);
+  assert.match(src, /built\.group\.visible = boardsShown\(\);/);
   assert.match(read("app/components/city3d/sceneChunks.ts"), /import Riverside from "\.\/Riverside";/);
 });
 
-test("the anchors are exactly the five sections' signs and their edges, from their spots", async () => {
+test("the anchors are exactly the five sections' signs and their edges, from their spots, and their boards' edges", async () => {
   const { HOME_SIGNS } = await import("../app/components/city3d/districts/lujiazui.def.ts");
   const m = src.match(/const SIGNED: Exclude<SectionId, "home">\[\] = \[([^\]]*)\];/);
   assert.ok(m);
@@ -29,7 +34,7 @@ test("the anchors are exactly the five sections' signs and their edges, from the
   const mid = signed.map((id) => HOME_SIGNS[id].spot.reduce((a, c) => a + c[0], 0) / 4);
   for (let i = 1; i < mid.length; i++) assert.ok(mid[i] > mid[i - 1], signed.join(", "));
   const keys = [...src.matchAll(/anchors\.set\(\s*([^,]+),/g)].map((x) => x[1].trim());
-  assert.deepEqual(keys, ["`sign:${s.id}${k}`"]);
+  assert.deepEqual(keys, ["`sign:${s.id}${k}`", "`board:${b.id}${k}`"]);
   for (const k of ['""', '":top"', '":foot"', '":left"', '":right"']) assert.ok(src.includes(`${k}: new THREE.Vector3(`), k);
   // the world points follow the plate's fit every frame
   assert.match(src, /context\.plate\.cover\(camera\);\s*context\.plate\.group\.updateMatrixWorld\(\);/);

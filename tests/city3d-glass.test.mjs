@@ -31,8 +31,8 @@ test("the glass tokens exist, and the panel and the dock are glass: a tint over 
   assert.match(tokens, /--glass-panel:\s*rgb\(24 27 35 \/ 0\.\d+\);/);
   assert.match(tokens, /--glass-muted:\s*#[0-9a-f]{6};/);
   const wide = noComments(pages.slice(pages.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px)")));
-  const glass = wide.match(/\n {2}\.city-panel,\s*\.place-dock \{([^}]*)\}/);
-  assert.ok(glass, ".city-panel and .place-dock on wide screens");
+  const glass = wide.match(/\n {2}\.city-panel,\s*\.place-dock,\s*\.city-credit \{([^}]*)\}/);
+  assert.ok(glass, ".city-panel, .place-dock and Home's credit on wide screens");
   assert.match(glass[1], /--muted: var\(--glass-muted\);/);
   assert.match(glass[1], /backdrop-filter: var\(--glass-panel-blur\);/);
   assert.match(glass[1], /background: var\(--glass-panel\);/);
@@ -42,7 +42,7 @@ test("the glass tokens exist, and the panel and the dock are glass: a tint over 
 
 test("the glass goes opaque under prefers-contrast: more and in forced colours", () => {
   const css = noComments(pages);
-  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
+  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.city-panel,\s*\.place-dock,\s*\.city-credit \{\s*background: var\(--panel\);\s*backdrop-filter: none;/);
 });
 
 test("Home's title card is the name, the school, the programme, Email me, GitHub, LinkedIn and the résumé, all from the data", () => {
@@ -92,7 +92,7 @@ test("the dock: every listed place in the registry's order, the current one mark
 
 test("← and → go to the previous and the next place, but not while typing, with a modifier, in a row of choices, or with a dialog or menu open", () => {
   // In the panel's behaviour, loaded after the page (CityLoader.tsx), for the page showing
-  assert.match(panelSrc, /const dock = section \? document\.querySelector<HTMLElement>\(`\[data-section="\$\{section\}"\] \.place-dock`\) : null;/);
+  assert.match(panelSrc, /const dock = section && hydrated \? document\.querySelector<HTMLElement>\(`\[data-section="\$\{section\}"\] \.place-dock`\) : null;/);
   assert.match(panelSrc, /if \(\(e\.key !== "ArrowLeft" && e\.key !== "ArrowRight"\) \|\| e\.defaultPrevented\) return;/);
   assert.match(panelSrc, /if \(e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey\) return;/);
   assert.match(panelSrc, /input, textarea, select, \[contenteditable/);
@@ -101,6 +101,20 @@ test("← and → go to the previous and the next place, but not while typing, w
   assert.match(panelSrc, /\[data-dock="\$\{e\.key === "ArrowLeft" \? "previous" : "next"\}"\]/);
   assert.match(dock, /data-dock="previous" aria-keyshortcuts="ArrowLeft"/);
   assert.match(dock, /data-dock="next" aria-keyshortcuts="ArrowRight"/);
+});
+
+test("the dock stands in one place on every page; where its row scrolls, a focused key comes into view, keys snap whole, the far side fades, the wheel turns it (fix round A, ux I1, a11y I2)", () => {
+  const wide = noComments(pages.slice(pages.indexOf("@media (orientation: landscape) and (min-width: 768px) and (min-height: 481px)")));
+  // Home's panel is narrower, but the dock keeps to the places' line
+  assert.match(wide, /\.city-page \{\s*--place-w: min\(46rem, 100% - 3rem, max\(32rem, 50vw\)\);\s*--panel-w: var\(--place-w\);/);
+  assert.match(wide, /\.place-dock \{[^}]*left: calc\(var\(--place-w\) \+ 2\.5rem\);[^}]*max-width: calc\(100% - var\(--place-w\) - 4rem\);/);
+  assert.doesNotMatch(wide, /\.place-dock \{[^}]*var\(--panel-w\)/);
+  const css = noComments(pages);
+  assert.match(css, /\.place-dock-row \{[^}]*scroll-snap-type: x mandatory;[^}]*scroll-padding-inline: 24px;[^}]*mask-image: linear-gradient\(90deg, #0000, #000 var\(--fade-l, 0px\), #000 calc\(100% - var\(--fade-r, 0px\)\), #0000\);/);
+  assert.match(css, /\.place-dock-row > li \{\s*scroll-snap-align: center;/);
+  assert.match(panelSrc, /scrollIntoView\?\.\(\{ inline: "nearest", block: "nearest" \}\)/);
+  assert.match(panelSrc, /row\?\.addEventListener\("focusin", onFocus\);/);
+  assert.match(panelSrc, /row\?\.addEventListener\("wheel", onWheel, \{ passive: false \}\);/);
 });
 
 test("the Sections menu in the city: named Places in 3D, with that heading after the view switch; each entry its place's page, the current marked", () => {

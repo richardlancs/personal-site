@@ -226,7 +226,9 @@ test("the picker's slot holds an unseen, unreachable copy of its row, so the pan
 
 test("a city page's band has its painting before the scripts, from the file its own <img> will ask for (Task 19)", () => {
   const page = read("app/components/city3d/CityPage.tsx");
-  assert.match(page, /<DistrictBand district=\{s\.district\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<script dangerouslySetInnerHTML=\{\{ __html: plateScript\(id, s\.district\) \}\} \/>/);
+  assert.match(page, /<DistrictBand district=\{s\.district\} \/>\s*\{\/\*[\s\S]*?\*\/\}\s*<div hidden dangerouslySetInnerHTML=\{\{ __html: `<script>\$\{plateScript\(id, s\.district\)\}<\/script>` \}\} \/>/);
+  // never a <script> element React renders (it warns on a client navigation, fix round A)
+  assert.doesNotMatch(page, /<script dangerouslySetInnerHTML/);
   assert.match(page, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: BELOW_SIZES \}\)/);
   const preload = read("app/lib/platePreload.ts");
   assert.match(preload, /export function cityPlateScript\(/);
@@ -244,7 +246,15 @@ test("forced colours: a focused place tag gets a two-colour ring that holds over
 
 test("every section's page has a way back to Home in words at its foot (Task 19 review, a11y M1)", () => {
   const page = read("app/components/city3d/CityPage.tsx");
-  assert.match(page, /\{id !== "home" && \(\s*<Link href=\{cityPath\("home"\)\} className="text-link text-link-solo">\s*Back to Home\s*<\/Link>/);
+  assert.match(page, /\{id !== "home" && \(\s*<>\s*<p className="city-panel-foot">[\s\S]*?<Link href=\{cityPath\("home"\)\} className="text-link text-link-solo">\s*Back to Home\s*<\/Link>/);
+});
+
+test("Home's card holds nothing but the card: no 2D link, the credit a line of its own after the panel (fix round A, ux I2)", () => {
+  const page = read("app/components/city3d/CityPage.tsx");
+  const panel = page.slice(page.indexOf('<div className="city-panel">'), page.indexOf("{id === \"home\" && (\n        <footer"));
+  // the foot and the colophon only on the sections' pages
+  assert.match(panel, /\{id !== "home" && \(\s*<>\s*<p className="city-panel-foot">[\s\S]*<footer className="city-colophon">\s*<Colophon \/>\s*<\/footer>\s*<\/>\s*\)\}\s*<\/div>/);
+  assert.match(page, /\{id === "home" && \(\s*<footer className="city-colophon city-credit">\s*<Colophon \/>\s*<\/footer>\s*\)\}/);
 });
 
 test("the place dock lists the places in the registry's order, as the Sections menu does, on every page; Home's row of keys is gone (Task 19 review, ux M3; painted 2.5D Task 2)", () => {
