@@ -1,7 +1,11 @@
-// Interests: the pedestrian street (app/components/city3d/districts/nanjing-road.tsx)
-// and its poses (nanjing-road.def.ts): framed like its paintings, built
-// only from the kit, its three spot lights through SceneLights, the arcade
-// machine's screen the one Hitbox, and no words but the interests' own.
+// Interests, the pedestrian street, as a painted place
+// (districts/nanjing-road.tsx wraps PlatePlace; its data is
+// districts/nanjing-road.def.ts): the def is sound by checkPlace, the
+// depth is a street (facades and paving come out, the sky and skyline
+// stay back, the arcade's front one flat layer), the machine's screen is
+// the one spot and lies on the painted screen in both paintings, the
+// walk up to the machine keeps the painting filling a wide screen, and
+// the component draws the live machine there, from the interests only.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -10,108 +14,144 @@ const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`])\/\/.*$/gm, "$1");
 const src = noComments(read("app/components/city3d/districts/nanjing-road.tsx"));
+const defSrc = noComments(read("app/components/city3d/districts/nanjing-road.def.ts"));
 const machine = noComments(read("app/components/city3d/arcade/arcadeMachine.ts"));
 
-test("the def has a plateFrame, a home view, the machine's focus pose and its riverside sign", async () => {
-  const { scenes } = await import("../app/components/city3d/scenes.ts");
-  const d = scenes["nanjing-road"];
-  assert.ok(d.plateFrame && d.plateFrame.fov > 20 && d.plateFrame.pos.length === 3 && d.plateFrame.target.length === 3);
-  assert.deepEqual(Object.keys(d.focus), ["machine"]);
-  assert.equal(d.frame, "right");
-  assert.deepEqual(d.sign, { bearing: 8.8, distance: 16.2, y: 1.1 }, "the riverside sign moves only with a visibility.mjs run");
-  // the street's far end is inside the fog's far range, the landmarks visible past it
-  assert.ok(d.fog.far > 220);
+const { scenes, isPlace, checkPlace, driftTravel } = await import("../app/components/city3d/scenes.ts");
+const { streetDepth, SCREEN, NANJING } = await import("../app/components/city3d/districts/nanjing-road.def.ts");
+const def = scenes["nanjing-road"];
+
+test("the def is a painted place on the street's painting, and sound", () => {
+  assert.ok(isPlace(def), "a plate");
+  assert.deepEqual(checkPlace(def), []);
+  assert.equal(def.plate.painting, "nanjing-road");
+  assert.equal(def.plate.aspect, 2400 / 1032, "the paintings' shape");
+  assert.ok(driftTravel(def.plate.drift) < 0.01, "drift under 1% in 10 s");
+  assert.doesNotMatch(defSrc, /from "three"|portfolio/, "no three.js or content in the def");
+  const art = read("app/components/city3d/kit/plateArt.ts");
+  for (const f of ["nanjing-road-day.webp", "nanjing-road-night.webp", "masks/nanjing-road-light.webp", "masks/nanjing-road-sky.webp"]) assert.match(art, new RegExp(f.replace(".", "\\.")), f);
 });
 
-test("exactly DISTRICT_LIGHTS spot lights, through SceneLights, and no other light", async () => {
-  const { DISTRICT_LIGHTS } = await import("../app/components/city3d/scenes.ts");
-  assert.equal(DISTRICT_LIGHTS["nanjing-road"], 3);
-  assert.match(src, /<SceneLights id="nanjing-road" spots=\{built\.spots\}/);
-  // three spot lamps (their heads are the spots)
-  assert.equal((src.match(/\{ x: LAMP_[LR], z: LAMPS_[LR]\[SPOT_[LR]( \+ 1)?\]/g) ?? []).length, 3);
-  assert.doesNotMatch(src, /new THREE\.\w*Light\b|<\w*[lL]ight\b(?!s)/);
-  assert.doesNotMatch(src, /<(pointLight|spotLight|ambientLight|hemisphereLight|directionalLight)/);
-});
-
-test("built only from the kit: no material made here, no Math.random, nothing from another scene", () => {
-  assert.doesNotMatch(src, /new THREE\.\w*Material\b|<\w+Material\b/);
-  assert.doesNotMatch(src, /Math\.random/);
-  for (const m of src.matchAll(/from "([^"]+)"/g)) {
-    const path = m[1];
-    assert.ok(!/districts\/|\.\.\/Riverside|^\.\/(?!nanjing-road\.def)/.test(path), `imports ${path}`);
+test("home is the painting's frame, its lens a little narrower (never grown on a wide screen); the arrival comes from in front", () => {
+  assert.deepEqual(def.home.pos, def.plateFrame.pos);
+  assert.deepEqual(def.home.target, def.plateFrame.target);
+  assert.ok(def.fov < def.plateFrame.fov, "the painting stands larger than the wide lens");
+  // a phone's lens (1.2 × the place's, City3D.tsx) is no wider than the painting's
+  assert.ok(def.fov * 1.2 <= def.plateFrame.fov + 1e-9);
+  const d = def.home.target.map((t, i) => t - def.home.pos[i]);
+  const len = Math.hypot(...d);
+  for (const pose of [def.enter, def.exit]) {
+    const along = pose.pos.reduce((a, p, i) => a + (p - def.home.pos[i]) * d[i], 0) / len;
+    assert.ok(along > 0 && along < 0.2 * len, `${along.toFixed(3)} ahead of home`);
+    // looking the same way as home, so the painting stays square to the eye
+    const dir = pose.target.map((t, i) => t - pose.pos[i]);
+    assert.ok(Math.abs(dir[0]) < 1e-9 && Math.abs(dir[1]) < 1e-9 && dir[2] < 0);
   }
-  assert.doesNotMatch(machine, /new THREE\.\w*Material\b/);
 });
 
-test("anything that moves is a Mover run by useMovers; the tram is parked", () => {
-  assert.match(src, /useMovers\(built\.movers, \{ active: on, still \}\)/);
-  assert.match(src, /const screenMover: Mover = \{/);
-  assert.doesNotMatch(src, /buildTrain|buildBoat|aircraftLights|useFrame/);
+test("the riverside's board for Interests stays where visibility.mjs checked it", () => {
+  assert.deepEqual(def.sign, { bearing: 8.8, distance: 16.2, y: 1.1 });
+  assert.equal(def.frame, "right");
 });
 
-test("no words in the scene but the interests' own: decorative signs are mark signs; the machine draws only the data and its rules", () => {
-  assert.doesNotMatch(src, /buildSign\(|fillText|strokeText/);
-  // (the signs are the kit's plain panels, merged: buildPanels; a panel
-  // spec has no text)
-  assert.match(src, /buildPanels\(panels\)/);
-  assert.match(src, /const panels: PanelSpec\[\] = \[\]/);
-  assert.doesNotMatch(src, /text:/);
+test("the depth is a street: facades and paving come out, nearer toward the frame's edges; the sky stays back; the arcade is one layer", () => {
+  // the sky between the roofs, the skyline, the street's far end
+  assert.equal(streetDepth(0.6, 0.1), 0);
+  assert.equal(streetDepth(0.597, 0.3), 0, "the Pearl");
+  assert.ok(streetDepth(0.608, 0.66) < 0.02, "the vanishing point");
+  // nearer toward the edges and the foot
+  assert.ok(streetDepth(0.3, 0.5) > streetDepth(0.45, 0.5));
+  assert.ok(streetDepth(0.95, 0.5) > streetDepth(0.75, 0.5));
+  assert.ok(streetDepth(0.6, 0.99) > streetDepth(0.6, 0.8));
+  // gentle: at most 0.32 anywhere
+  for (let u = 0; u <= 1; u += 0.05) for (let v = 0; v <= 1; v += 0.05) assert.ok(streetDepth(u, v) <= 0.32);
+  // the arcade's front, machine and all, at one depth
+  assert.equal(streetDepth(0.05, 0.1), streetDepth(0.2, 0.7));
+  assert.equal(streetDepth(0.118, 0.63), streetDepth(0.05, 0.1));
+  assert.ok(def.plate.depth.layers.some((l) => l.z === streetDepth(0.118, 0.63)));
+});
+
+test("the machine's screen is the one spot and the one focus key; it lies on the painted screen in both paintings, at the arcade's depth", () => {
+  assert.deepEqual(Object.keys(def.focus), ["machine"]);
+  assert.deepEqual(Object.keys(def.plate.spots), ["machine"]);
+  const z = streetDepth(0.118, 0.63);
+  // read off the paintings (the night screen's glass, the day one's)
+  const night = [[0.108, 0.603], [0.125, 0.604], [0.13, 0.643], [0.111, 0.643]];
+  const day = [[0.103, 0.61], [0.1225, 0.61], [0.127, 0.655], [0.107, 0.655]];
+  for (const [quad, want] of [[SCREEN.night, night], [SCREEN.day, day]])
+    quad.forEach((c, i) => {
+      assert.ok(Math.abs(c[0] - want[i][0]) < 0.003 && Math.abs(c[1] - want[i][1]) < 0.003, `${c} ~ ${want[i]}`);
+      assert.equal(c[2], z);
+    });
+  // the spot holds both
+  const spot = def.plate.spots.machine;
+  const [u0, u1] = [Math.min(...spot.map((c) => c[0])), Math.max(...spot.map((c) => c[0]))];
+  const [v0, v1] = [Math.min(...spot.map((c) => c[1])), Math.max(...spot.map((c) => c[1]))];
+  for (const c of [...SCREEN.night, ...SCREEN.day]) assert.ok(c[0] >= u0 && c[0] <= u1 && c[1] >= v0 && c[1] <= v1);
+});
+
+test("the walk up to the machine: square to the painting, the screen near the view's middle, the painting's left edge past a wide screen's left edge", () => {
+  const pose = def.focus.machine;
+  const dir = pose.target.map((t, i) => t - pose.pos[i]);
+  assert.ok(Math.abs(dir[0]) < 1e-9 && Math.abs(dir[1]) < 1e-9 && dir[2] < 0, "looking straight down -z, as home does");
+  const tanHalf = Math.tan(((def.fov / 2) * Math.PI) / 180);
+  const z = streetDepth(0.118, 0.63);
+  const see = (u, v, pull) => {
+    const p = NANJING.painted(u, v, pull);
+    const d = pose.pos[2] - p[2];
+    assert.ok(d > 0.5, "in front of the eye");
+    return [(p[0] - pose.pos[0]) / d / tanHalf, (p[1] - pose.pos[1]) / d / tanHalf]; // in half-heights of the view
+  };
+  const [sx, sy] = see(0.119, 0.625, z);
+  assert.ok(Math.abs(sx) < 0.3 && Math.abs(sy) < 0.4, `the screen at ${sx.toFixed(2)}, ${sy.toFixed(2)}`);
+  // the painting's left edge (at the arcade's depth) further left than the
+  // screen's left edge at 1280 × 800, 1440 × 900 and 1920 × 1080 (the view's
+  // middle 2.3 half-heights in from the left, the panel's half)
+  const [ex] = see(0, 0.625, z);
+  assert.ok(ex < -2.3, `the left edge at ${ex.toFixed(2)}`);
+  // and every pulled point stays in front of the eye
+  for (let u = 0; u <= 1; u += 0.1) for (let v = 0; v <= 1; v += 0.1) see(u, v, streetDepth(u, v));
+});
+
+test("the component is a thin PlatePlace with the live machine on the spot, from the interests only", () => {
+  assert.match(src, /<PlatePlace \{\.\.\.props\} id="nanjing-road" def=\{def\} onSpot=/);
   assert.match(src, /createMachine\(interests\)/);
   assert.match(src, /import \{ interests \} from "\.\.\/\.\.\/\.\.\/data\/portfolio"/);
-  // the machine: no place names, no CJK, no scanlines, the city's fonts
+  assert.match(src, /spotGeometry\(ctx\.def, ctx\.plate\.frame, SCREEN\.night/);
+  assert.match(src, /spotGeometry\(ctx\.def, ctx\.plate\.frame, SCREEN\.day/);
+  assert.match(src, /screenMaterial\(paintScreen, \{ w: 512, h: 400, key: "nanjing-road:arcade:screen" \}\)/);
+  // no material, light or randomness of its own; nothing from another place
+  assert.doesNotMatch(src, /new THREE\.\w*(Material|Light)\b|<\w*[lL]ight\b|Math\.random/);
+  for (const m of src.matchAll(/from "([^"]+)"/g)) assert.ok(!/districts\/|Riverside|^\.\/(?!nanjing-road\.def)/.test(m[1]), `imports ${m[1]}`);
+  // no words but the machine's (the interests and its rules)
+  assert.doesNotMatch(src, /fillText|strokeText/);
   assert.doesNotMatch(machine, /[぀-ヿ㐀-鿿]/);
   assert.doesNotMatch(machine, /[Ss]canline|INSERT COIN|Nanjing|Shanghai/);
-  assert.match(machine, /fonts\(\)/);
 });
 
-test("the machine's screen is the one Hitbox: it plays, as the panel's Play key does", () => {
-  const boxes = [...src.matchAll(/<Hitbox[\s\S]*?\/>/g)].map((m) => m[0]);
-  assert.equal(boxes.length, 1);
-  assert.match(boxes[0], /id="nanjing-road:machine"/);
-  assert.match(boxes[0], /world\.set\(\{ focus: "machine" \}\)/);
-  // a click aims: the Hitbox's hit point, scaled back to the screen's uv
-  assert.match(boxes[0], /onSelect=\{\(hit\) =>/);
-  assert.match(boxes[0], /play\(u >= 0 && u <= 1 && v >= 0 && v <= 1 \? new THREE\.Vector2\(u, v\) : null\)/);
-  assert.match(src, /built\.machine\.press\(uv, t, s\)/);
-  // the panel's presses and the chosen mode come from the store
+test("the machine: a mover (parked in still view), the store's mode and presses, a click on the screen plays there", () => {
+  assert.match(src, /useMovers\(movers, \{ active: on, still \}\)/);
   assert.match(src, /useWorld\(\(s\) => s\.arcadePress\)/);
   assert.match(src, /useWorld\(\(s\) => s\.sel\.interest\)/);
   assert.match(src, /world\.set\(\{ arcadeStatus: status \}\)/);
-  // the anchor is named for the scene
-  assert.match(src, /anchorKey\("nanjing-road", "machine"\)/);
+  assert.match(src, /built\.machine\.press\(uv, t, s\)/);
+  assert.match(src, /world\.set\(\{ focus: "machine" \}\)/);
+  // a click's point on the spot, back to the screen's own uv
+  assert.match(src, /inQuad\(mixQuad\(SCREEN\.night, SCREEN\.day, plateUniforms\.uDay\.value\), u, v\)/);
+  // the screen follows the day/night blend between the two paintings' screens
+  assert.match(src, /const k = plateUniforms\.uDay\.value/);
 });
 
-test("the paving is planar on the high tier only (TIERS), and reflects what it should", () => {
-  assert.match(src, /mode: TIERS\[quality\]\.reflection/);
-  assert.match(src, /if \(TIERS\[quality\]\.reflection === "planar"\) reflectIn\(/);
-});
-
-test("the kit's new pieces: paving, stone relief on the arcade, planters, light pools; no attach workaround", () => {
-  assert.match(src, /pavingTexture\(\{ seed: 1543, kind: "grid"/);
-  assert.match(src, /relief: \{ kind: "stone"/);
-  assert.match(src, /buildPlanters\(/);
-  assert.match(src, /useGlowPools\("nanjing-road", built\.pools, active\)/);
-  assert.match(src, /useDisposeOnUnmount\(built\)/);
-  assert.doesNotMatch(src, /\battach\b/);
-});
-
-test("the tuning: carved, floodlit stone facades with windows lit by floors, glazed lit shopfronts, the day plate's sun and dapple", async () => {
-  // the left side is the kit's surface with stone relief and a floodlight glow, not window-material towers
-  assert.match(src, /"facades:stone"/);
-  assert.match(src, /relief: \{ kind: "stone", bay: BAY, floor: FLOOR/);
-  assert.match(src, /"windows:lit"/);
-  assert.doesNotMatch(src, /buildTowers\(\[\.\.\.left/);
-  // the shopfronts: kit glass over a lit room, their light on the polished
-  // paving (the kit's polish and line pools, no flat glass laid on it)
-  assert.match(src, /glassMaterial\(\{ tint: "#55697a"/);
-  assert.doesNotMatch(src, /"shops:sheen"/);
-  assert.match(src, /polish: 0\.\d+/);
-  assert.match(src, /\{ from: \[XL \+ 0\.25, 0\.16, l1\], to: \[XL \+ 0\.25, 0\.16, l0\]/);
-  // the floodlight from the foot, softer up the walls; plain glowing panels
-  assert.match(src, /const FLOODLIT = \{ tone: "#[0-9a-f]{6}", strength: 0\.\d+, base: [\d.]+, fade: [\d.]+ \};/);
-  assert.match(src, /buildPanels\(panels\)/);
-  assert.doesNotMatch(src, /kind: "blade"|kind: "board"/);
-  assert.match(src, /useDayShade\("nanjing-road", SHADE, active\)/);
-  const { scenes } = await import("../app/components/city3d/scenes.ts");
-  assert.ok(scenes["nanjing-road"].sun[0] > 0, "the sun from the right, as the day plate");
+test("living light: the paving wet, the glass, the sky; slow beacons on the towers; nothing fast", () => {
+  const kinds = def.plate.regions.map((r) => r.kind).sort();
+  assert.deepEqual(kinds, ["glass", "sky", "wet"]);
+  const movers = def.plate.movers;
+  assert.ok(movers.some((m) => m.kind === "beacon"));
+  for (const m of movers) {
+    if (m.kind === "beacon") assert.ok(m.period >= 4, "a slow swell");
+    else assert.ok(m.period >= 60, "a slow crossing");
+    assert.notEqual(m.night, false, "lights after dark only");
+  }
+  // no traffic: a pedestrian street
+  assert.ok(!movers.some((m) => m.kind === "trail"));
 });
