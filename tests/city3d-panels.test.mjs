@@ -130,7 +130,7 @@ test("CityPage keeps the section's words with where=\"3d\" and puts the panel's 
   // (CityLoader.tsx), never in /city's first load
   assert.match(page, /import type \{ Picks \} from "\.\/panels\/CityPanel";/);
   assert.doesNotMatch(page, /import CityPanel/);
-  assert.match(page, /<\/h1>\s*\)\}\s*\{id in picks && \([\s\S]*?<div className="city-picker-slot" data-picks=\{JSON\.stringify\(picks\[id as keyof Picks\]\)\}>\s*<PickerGhost id=\{id as keyof Picks\} picks=\{picks\} \/>\s*<\/div>\s*\)\}\s*\{content\[id\]\}/);
+  assert.match(page, /<\/h1>\s*\)\}\s*\{id in picks && \([\s\S]*?<div className="city-picker-slot" data-picks=\{JSON\.stringify\(picks\[id as keyof Picks\]\)\}>\s*<PickerGhost id=\{id as keyof Picks\} picks=\{picks\} \/>\s*<p className="city-picker-off">[^<]*<\/p>\s*<\/div>\s*\)\}\s*\{content\[id\]\}/);
   assert.match(read("app/components/city3d/CityLoader.tsx"), /const CityAfter = lazy\(\(\) => import\("\.\/CityAfter"\)\);/);
   assert.match(read("app/components/city3d/CityAfter.tsx"), /import CityPanel from "\.\/panels\/CityPanel";/);
   // The pickers import no data: the portfolio's data stays out of every
@@ -213,7 +213,14 @@ test("the picker's slot holds an unseen, unreachable copy of its row, so the pan
   for (const picker of ["screens", "lines", "arcade"]) assert.match(ghost, new RegExp(`data-picker="${picker}"`));
   const css = read("app/city/city-pages.css");
   assert.match(css, /\.city-picker\[data-ghost\] \{\s*visibility: hidden;/);
-  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*html\[data-city3d="fallback"\] \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\] \{\s*display: none;/);
+  assert.match(css, /html:not\(\[data-still\]\) \.city-picker\[data-ghost\],\s*\.city-picker-slot:has\(> \.city-picker:not\(\[data-ghost\]\)\) > \.city-picker\[data-ghost\] \{\s*display: none;/);
+  // One cell: the copy, the row and the line stacked, so the room is kept
+  // without :has() too; the fallback keeps it, filled by a line (Task 19's
+  // open fallback shift)
+  assert.match(css, /\.city-picker-slot \{\s*display: grid;\s*\}\s*\.city-picker-slot > \* \{\s*grid-area: 1 \/ 1;/);
+  assert.doesNotMatch(css, /html\[data-city3d="fallback"\] \.city-picker\[data-ghost\]/);
+  assert.match(css, /html:is\(\[data-city3d="fallback"\], \[data-city3d="lost"\], \[data-city3d="saving"\]\) \.city-picker-off \{\s*display: block;/);
+  assert.match(read("app/components/city3d/CityPage.tsx"), /<PickerGhost id=\{id as keyof Picks\} picks=\{picks\} \/>\s*<p className="city-picker-off">/);
   assert.doesNotMatch(css, /\.city-picker-slot \{\s*min-height/);
 });
 

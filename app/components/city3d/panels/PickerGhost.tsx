@@ -7,9 +7,9 @@ import type { Picks } from "./CityPanel";
 // up, with the first one chosen, so the slot holds exactly the room the
 // real row will take, at every width and text size. The page under it
 // doesn't move when the row arrives, when a lost context takes it away
-// or when the city comes back. Nothing in it can be reached (inert,
-// aria-hidden); without JavaScript, or where the city can't be drawn, it
-// takes no room at all.
+// or when the city comes back; where the scene isn't drawing, a line
+// (CityPage.tsx: .city-picker-off) fills its room. Nothing in it can be
+// reached (inert, aria-hidden); without JavaScript it takes no room at all.
 export default function PickerGhost({ id, picks }: { id: keyof Picks; picks: Picks }) {
   if (id === "projects")
     return (

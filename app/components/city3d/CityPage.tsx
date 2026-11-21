@@ -107,9 +107,13 @@ export default function CityPage({ id }: { id: SectionId }) {
         {id in picks && (
           // The section's picker goes here (panels/CityPanel.tsx, loaded
           // after the page), with what it lists; until it comes, its
-          // unseen copy holds its room (panels/PickerGhost.tsx)
+          // unseen copy holds its room (panels/PickerGhost.tsx), and
+          // wherever the scene isn't drawing (no WebGL2, a lost context,
+          // Save-Data's key waiting) a line in that room says why the keys
+          // aren't there, so the panel doesn't move (city-pages.css)
           <div className="city-picker-slot" data-picks={JSON.stringify(picks[id as keyof Picks])}>
             <PickerGhost id={id as keyof Picks} picks={picks} />
+            <p className="city-picker-off">The scene isn&apos;t drawing, so its keys are put away; all they show is below.</p>
           </div>
         )}
         {content[id]}
