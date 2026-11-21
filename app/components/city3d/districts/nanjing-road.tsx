@@ -7,11 +7,15 @@ import { interests } from "../../../data/portfolio";
 import { createMachine } from "../arcade/arcadeMachine";
 import { useDisposeOnUnmount, useMovers, type Hit, type Mover, type SceneProps } from "../common";
 import { screenMaterial } from "../kit/neon";
+import { shared } from "../kit/materials";
 import { plateUniforms, spotGeometry } from "../kit/plate";
+import { materialKey } from "../kit/uniforms";
+import { track } from "../kit/textures";
+import { isFlat } from "../flat";
 import PlatePlace, { PlateContext } from "../PlatePlace";
 import type { Quad } from "../scenes";
 import { useWorld, world } from "../store";
-import def, { SCREEN } from "./nanjing-road.def";
+import def, { DAY_SIGNS, SCREEN } from "./nanjing-road.def";
 
 // Interests: the pedestrian street, drawn as its paintings (the data,
 // read off them: nanjing-road.def.ts; the engine: kit/plate.ts,
@@ -33,12 +37,45 @@ import def, { SCREEN } from "./nanjing-road.def";
 // The machine's canvas, read by the screen's paint (its material is shared
 // and outlives a rebuild, so it reads whichever machine is current)
 const current: { canvas: HTMLCanvasElement | null } = { canvas: null };
+// The screen is painted like the painting round it: the eye stands about
+// three times the painting's own size there, so the cabinet's paint is
+// soft; a picture sharper than that looks pasted on. So the machine is
+// drawn at SOFT of the screen's size and grown back (smoothed, a hair of
+// blur), its glass a little darker at the edges and lit in the middle, as
+// the painted screens are. Its words stay readable: the soft is about the
+// painting's own, not more.
+const SOFT = 0.5;
+let small: HTMLCanvasElement | null = null;
 const paintScreen = (g: CanvasRenderingContext2D, w: number, h: number) => {
-  if (current.canvas) g.drawImage(current.canvas, 0, 0, w, h);
-  else {
+  if (!current.canvas) {
     g.fillStyle = "#08090c";
     g.fillRect(0, 0, w, h);
+    return;
   }
+  const sw = Math.round(w * SOFT), sh = Math.round(h * SOFT);
+  if (!small || small.width !== sw || small.height !== sh) {
+    small = document.createElement("canvas");
+    small.width = sw;
+    small.height = sh;
+  }
+  const s = small.getContext("2d")!;
+  s.imageSmoothingEnabled = true;
+  s.imageSmoothingQuality = "high";
+  s.drawImage(current.canvas, 0, 0, sw, sh);
+  g.save();
+  g.imageSmoothingEnabled = true;
+  g.imageSmoothingQuality = "high";
+  g.filter = "blur(0.7px)";
+  g.drawImage(small, 0, 0, w, h);
+  g.restore();
+  // the glass: a soft shade round its edge and a faint light in the middle
+  const r = Math.hypot(w, h) / 2;
+  const glass = g.createRadialGradient(w / 2, h * 0.45, r * 0.25, w / 2, h / 2, r);
+  glass.addColorStop(0, "rgba(255, 250, 240, 0.05)");
+  glass.addColorStop(0.6, "rgba(0, 0, 0, 0)");
+  glass.addColorStop(1, "rgba(6, 8, 14, 0.45)");
+  g.fillStyle = glass;
+  g.fillRect(0, 0, w, h);
 };
 
 const seconds = () => performance.now() / 1000;
@@ -52,6 +89,9 @@ function inQuad(q: Quad, u: number, v: number): [number, number] {
   const det = ax * by - ay * bx;
   return [(px * by - py * bx) / det, (ax * py - ay * px) / det];
 }
+// How far the live screen is toward the day painting's (1) from the
+// night's (0): as the night painting's lights come up (kit/plate.ts: early)
+const screenBlend = () => 1 - THREE.MathUtils.smoothstep(1 - plateUniforms.uDay.value, 0.15, 0.55);
 const mixQuad = (a: Quad, b: Quad, k: number): Quad => a.map((c, i) => c.map((x, j) => x + (b[i][j] - x) * k)) as Quad;
 
 // The live screen, laid on the painted one: its own mesh inside the
@@ -123,11 +163,13 @@ function Screen({ active, still }: { active: boolean; still: boolean }) {
   // times a second, and resting after a minute with no input)
   useMovers(movers, { active: on, still, ambient: true });
 
-  // Where the screen sits: the night painting's, the day one's, or between
-  // (the blend is the plate's own, uDay)
+  // Where the screen sits: the night painting's, the day one's, or between.
+  // It follows the night painting's lit screen, which comes up early in the
+  // dusk (kit/plate.ts: the lights, night 0.15 .. 0.55), the brightest thing
+  // there: so no lit edge of the painted screen shows past the live one
   useFrame(() => {
     if (!active) return;
-    const k = plateUniforms.uDay.value;
+    const k = screenBlend();
     const b = built.blend;
     if (Math.abs(k - b.k) < 0.002) return;
     b.k = k;
@@ -194,16 +236,128 @@ function onScreen(hit: Hit) {
   const u = (u0 + u1) / 2 + hit.point.x * (u1 - u0);
   const v = (v0 + v1) / 2 - hit.point.y * (v1 - v0);
   // the live screen where it is now (between the two paintings')
-  const [s, t] = inQuad(mixQuad(SCREEN.night, SCREEN.day, plateUniforms.uDay.value), u, v);
+  const [s, t] = inQuad(mixQuad(SCREEN.night, SCREEN.day, screenBlend()), u, v);
   clicked?.(s >= 0 && s <= 1 && t >= 0 && t <= 1 ? new THREE.Vector2(s, 1 - t) : null);
+}
+
+// ---------- The signs by day ----------
+//
+// The day painting's signs are blank white boards; by day they show as
+// lit, painted signs in their night colours (nanjing-road.def.ts:
+// DAY_SIGNS). Drawn in the plate's own shader, so they keep to the
+// painting's depth whatever the eye does, and blend into the night
+// painting's own lit signs as the day goes: the plate's material with a
+// few lines added (where the board's paint is pale and plain, inside a
+// sign's outline, the sign's colour over it, the paint's shading kept),
+// on the plate's own uniforms (so its pictures, the hour and the weather
+// reach it as they reach the plate). If the plate's shader changes so the
+// lines have nowhere to go, the plate is left as it is (and the test says
+// so).
+export const SIGN_ANCHOR = "  col = mix(col, vec3(dot(col, LUMA)) * 1.06 + 0.03, 0.18 * uSnow);";
+const SIGN_GLSL = /* glsl */ `
+  vec4 signPaint = texture2D(uSignMap, vUv);
+  if (signPaint.a > 0.002) {
+    // (the outline does most of it; this keeps out what crosses the board:
+    // its dark frame and rods, and the leaves (green), and the warm stone
+    // at its edges. The paint is linear here, and the tint relative: the
+    // boards are a pale grey to cream, at most 0.55 of their least
+    // channel; the stone 1.4 and over, the leaves and glass more)
+    float pale = min(day.r, min(day.g, day.b));
+    float tint = (max(day.r, max(day.g, day.b)) - pale) / max(pale, 0.05);
+    float board = smoothstep(0.1, 0.2, pale) * (1.0 - smoothstep(0.6, 0.9, tint));
+    float shown = signPaint.a * board * (1.0 - smoothstep(0.3, 0.7, n));
+    // lit from inside, by day: the colour a little paled by the sun, the
+    // paint's own light and shade in it
+    vec3 lit = mix(signPaint.rgb, vec3(1.0), 0.14) * (0.5 + 0.48 * dot(day, LUMA)) + 0.05 * pale;
+    col = mix(col, lit, shown);
+  }
+`;
+const SIGN_EDGE = { w: 1024, h: 440 };
+
+function signTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = SIGN_EDGE.w;
+  canvas.height = SIGN_EDGE.h;
+  const g = canvas.getContext("2d")!;
+  g.filter = "blur(1px)";
+  for (const s of DAY_SIGNS) {
+    g.fillStyle = s.color;
+    g.beginPath();
+    s.poly.forEach(([u, v], i) => (i ? g.lineTo(u * SIGN_EDGE.w, v * SIGN_EDGE.h) : g.moveTo(u * SIGN_EDGE.w, v * SIGN_EDGE.h)));
+    g.closePath();
+    g.fill();
+  }
+  const t = track(new THREE.CanvasTexture(canvas));
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+function DaySigns() {
+  const ctx = useContext(PlateContext)!;
+  const material = useMemo(() => {
+    const base = ctx.plate.material;
+    if (!base.fragmentShader.includes(SIGN_ANCHOR)) return null;
+    const tone = "PLATE_UNTONE" in (base.defines ?? {}) ? "hdr" : "screen";
+    // (one per tone, in the kit's cache beside the plate's own, as long)
+    return shared(materialKey("plate-signs", `nanjing-road:${tone}`), () => {
+      const texture = signTexture();
+      const m = base.clone() as THREE.ShaderMaterial;
+      m.fragmentShader = base.fragmentShader.replace("void main() {", "uniform sampler2D uSignMap;\nvoid main() {").replace(SIGN_ANCHOR, SIGN_GLSL + SIGN_ANCHOR);
+      // (the plate's own uniform objects: what the plate sets, this sees)
+      m.uniforms = { ...base.uniforms, uSignMap: { value: texture } };
+      m.customProgramCacheKey = () => materialKey("plate-signs", tone);
+      // (what textureBytes counts: the plate's pictures, as the plate has
+      // them now, and the signs')
+      for (const key of ["plateDay", "plateNight", "plateLight", "plateDepth", "plateRegions"])
+        Object.defineProperty(m, key, { enumerable: true, get: () => (base as unknown as Record<string, unknown>)[key] });
+      (m as unknown as Record<string, unknown>).plateSigns = texture;
+      m.addEventListener("dispose", () => texture.dispose());
+      return m;
+    });
+  }, [ctx]);
+  // While the place is built, its plate draws with the signs
+  useEffect(() => {
+    if (!material) return;
+    const mesh = ctx.plate.mesh;
+    const base = mesh.material;
+    mesh.material = material;
+    return () => {
+      mesh.material = base;
+    };
+  }, [ctx, material]);
+  return null;
+}
+
+// ---------- Arriving ----------
+//
+// On a wide screen the panel's glass lies over the left half, and the
+// machine stands in the painting's left tenth: no framing of the painting
+// at its own size can show it beside the panel (the painting must fill
+// the view, so its left edge is the screen's). So the place arrives at the
+// machine: coming to Interests, the eye comes down the street and walks
+// up to the arcade (focus "machine", the pose the panel's keys choose), in
+// one movement, the flight's own. A phone keeps the street at rest (no
+// panel over it; the machine is one Play away).
+const AT_INTERESTS = /\/interests\/?$/;
+function useArriveAtMachine(active: boolean) {
+  const focus = useWorld((s) => s.focus);
+  const arrived = useWorld((s) => s.arrived);
+  useEffect(() => {
+    if (!active || arrived || focus !== null) return;
+    // (only coming here: leaving, the place is still showing a moment)
+    if (!AT_INTERESTS.test(window.location.pathname) || isFlat()) return;
+    world.set({ focus: "machine" });
+  }, [active, arrived, focus]);
 }
 
 export default function InterestsScene(props: SceneProps) {
   const { active } = props;
   const spotEnabled = useCallback(() => active && world.get().arrived, [active]);
+  useArriveAtMachine(active);
   return (
     <PlatePlace {...props} id="nanjing-road" def={def} onSpot={(_, hit) => onScreen(hit)} spotEnabled={spotEnabled}>
       <Screen active={props.active} still={props.still} />
+      <DaySigns />
     </PlatePlace>
   );
 }

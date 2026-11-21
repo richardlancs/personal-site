@@ -16,6 +16,7 @@ const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:
 const src = noComments(read("app/components/city3d/districts/nanjing-road.tsx"));
 const defSrc = noComments(read("app/components/city3d/districts/nanjing-road.def.ts"));
 const machine = noComments(read("app/components/city3d/arcade/arcadeMachine.ts"));
+const plateSrc = read("app/components/city3d/kit/plate.ts");
 
 const { scenes, isPlace, checkPlace, driftTravel } = await import("../app/components/city3d/scenes.ts");
 const { streetDepth, SCREEN, NANJING } = await import("../app/components/city3d/districts/nanjing-road.def.ts");
@@ -120,7 +121,8 @@ test("the component is a thin PlatePlace with the live machine on the spot, from
   assert.match(src, /spotGeometry\(ctx\.def, ctx\.plate\.frame, SCREEN\.night/);
   assert.match(src, /spotGeometry\(ctx\.def, ctx\.plate\.frame, SCREEN\.day/);
   assert.match(src, /screenMaterial\(paintScreen, \{ w: 512, h: 400, key: "nanjing-road:arcade:screen" \}\)/);
-  // no material, light or randomness of its own; nothing from another place
+  // no material, light or randomness of its own (the day signs are the
+  // plate's own material, cloned into the kit's cache); nothing from another place
   assert.doesNotMatch(src, /new THREE\.\w*(Material|Light)\b|<\w*[lL]ight\b|Math\.random/);
   for (const m of src.matchAll(/from "([^"]+)"/g)) assert.ok(!/districts\/|Riverside|^\.\/(?!nanjing-road\.def)/.test(m[1]), `imports ${m[1]}`);
   // no words but the machine's (the interests and its rules)
@@ -137,9 +139,47 @@ test("the machine: a mover (parked in still view), the store's mode and presses,
   assert.match(src, /built\.machine\.press\(uv, t, s\)/);
   assert.match(src, /world\.set\(\{ focus: "machine" \}\)/);
   // a click's point on the spot, back to the screen's own uv
-  assert.match(src, /inQuad\(mixQuad\(SCREEN\.night, SCREEN\.day, plateUniforms\.uDay\.value\), u, v\)/);
-  // the screen follows the day/night blend between the two paintings' screens
-  assert.match(src, /const k = plateUniforms\.uDay\.value/);
+  assert.match(src, /inQuad\(mixQuad\(SCREEN\.night, SCREEN\.day, screenBlend\(\)\), u, v\)/);
+  // the screen follows the day/night blend between the two paintings'
+  // screens, as the night painting's lit screen comes up (night 0.15 .. 0.55)
+  assert.match(src, /const k = screenBlend\(\);/);
+  assert.match(src, /const screenBlend = \(\) => 1 - THREE\.MathUtils\.smoothstep\(1 - plateUniforms\.uDay\.value, 0\.15, 0\.55\);/);
+  assert.match(plateSrc, /float early = smoothstep\(0\.15, 0\.55, n\);/);
+  // softened to the painting round it: drawn small and grown back
+  assert.match(src, /const SOFT = 0\.5;/);
+});
+
+test("on a wide screen the place arrives at the machine (the panel covers the painting's left, where it stands)", () => {
+  assert.match(src, /function useArriveAtMachine\(active: boolean\)/);
+  assert.match(src, /if \(!active \|\| arrived \|\| focus !== null\) return;/);
+  assert.match(src, /if \(!AT_INTERESTS\.test\(window\.location\.pathname\) \|\| isFlat\(\)\) return;\s*world\.set\(\{ focus: "machine" \}\);/);
+  assert.match(src, /useArriveAtMachine\(active\);/);
+  // the machine's left edge is a tenth in: no framing of the whole
+  // painting can show it beside a panel over the left half
+  for (const c of SCREEN.night) assert.ok(c[0] < 0.14);
+});
+
+test("by day the signs are lit, in their night colours, on the day painting's boards, in the plate's own shader", async () => {
+  const { DAY_SIGNS } = await import("../app/components/city3d/districts/nanjing-road.def.ts");
+  assert.ok(DAY_SIGNS.length >= 8);
+  for (const s of DAY_SIGNS) {
+    assert.match(s.color, /^#[0-9a-f]{6}$/);
+    assert.ok(s.poly.length >= 3);
+    for (const [u, v] of s.poly) assert.ok(u >= 0 && u <= 1 && v >= 0 && v <= 1);
+    // none over the machine, so the live screen is untouched
+    assert.ok(Math.min(...s.poly.map((p) => p[1])) > 0.56 || Math.max(...s.poly.map((p) => p[1])) < 0.6 || Math.min(...s.poly.map((p) => p[0])) > 0.16);
+  }
+  // the lines go where the plate's shader has them go (if it changes, this says so)
+  const anchor = src.match(/export const SIGN_ANCHOR = "([^"]+)";/)[1];
+  assert.ok(plateSrc.includes(anchor), "the plate's shader still has the snow line the signs go before");
+  assert.ok(plateSrc.includes("void main() {"));
+  // gone with the night: the plate's crossover
+  assert.match(src, /float shown = signPaint\.a \* board \* \(1\.0 - smoothstep\(0\.3, 0\.7, n\)\);/);
+  // the plate's own uniforms, its material put back when the place goes
+  assert.match(src, /shared\(materialKey\("plate-signs", `nanjing-road:\$\{tone\}`\), \(\) => \{/);
+  assert.match(src, /m\.uniforms = \{ \.\.\.base\.uniforms, uSignMap: \{ value: texture \} \};/);
+  assert.match(src, /mesh\.material = material;\s*return \(\) => \{\s*mesh\.material = base;/);
+  assert.match(src, /<DaySigns \/>/);
 });
 
 test("living light: the paving wet, the glass, the sky; slow beacons on the towers; nothing fast", () => {

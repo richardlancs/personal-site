@@ -163,6 +163,34 @@ const SEE_MACHINE = {
 };
 export const NANJING = { eye: EYE, distance: DISTANCE, lens: LENS, paintingFov: PAINTING_FOV, aspect: ASPECT, vp: VP, painted, toward: TOWARD };
 
+// ---------- The signs by day ----------
+//
+// The day painting leaves the street's signs as blank white boards; lit at
+// night they're cyan, pink and yellow. By day they show as lit, painted
+// signs in their night colours (nanjing-road.tsx: DaySigns), on the day
+// board's own pale paint (its frame, rods and the leaves over it stay as
+// painted). Each is the day board, generously ([u, v] corners, from the top
+// left), and its night colour; the two paintings put a few boards a little
+// apart, so the outline is the day painting's.
+export const DAY_SIGNS: { poly: UV[]; color: string }[] = [
+  // the arcade's long board over its open front
+  { poly: [[0.07, 0.298], [0.228, 0.413], [0.228, 0.48], [0.07, 0.394]], color: "#52eef2" },
+  // the tall board hanging from its bracket
+  { poly: [[0.275, 0.044], [0.314, 0.044], [0.314, 0.387], [0.275, 0.387]], color: "#ff5ae6" },
+  // the board along the shopfront under it
+  { poly: [[0.286, 0.452], [0.35, 0.47], [0.35, 0.56], [0.286, 0.535]], color: "#ffd84a" },
+  // the small board past the lamp
+  { poly: [[0.39, 0.302], [0.435, 0.302], [0.435, 0.4], [0.39, 0.4]], color: "#58ecf6" },
+  // down the street on the left
+  { poly: [[0.511, 0.4], [0.527, 0.4], [0.527, 0.54], [0.511, 0.54]], color: "#ff5ae6" },
+  { poly: [[0.539, 0.462], [0.554, 0.462], [0.554, 0.558], [0.539, 0.558]], color: "#ffd84a" },
+  // on the right: the big board at the top, and the narrow ones on the towers
+  { poly: [[0.862, 0], [0.893, 0], [0.893, 0.212], [0.862, 0.212]], color: "#ff5ae6" },
+  { poly: [[0.759, 0.06], [0.775, 0.06], [0.775, 0.232], [0.759, 0.232]], color: "#ffb44e" },
+  { poly: [[0.742, 0.28], [0.756, 0.28], [0.756, 0.39], [0.742, 0.39]], color: "#ffd84a" },
+  { poly: [[0.693, 0.465], [0.707, 0.465], [0.707, 0.532], [0.693, 0.532]], color: "#ffd84a" },
+];
+
 // The skyline's towers and their lights, as the night painting draws them
 const BEACONS: UV[] = [
   [0.6876, 0.212], // Shanghai Tower's crown
