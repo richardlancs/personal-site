@@ -1,5 +1,6 @@
 // The mobile audit: the one-page city (`/`) and each of its anchors (/#about,
-// /#projects, /#skills, /#experience, /#interests, /#contact), the Sections
+// /#projects, /#skills, /#experience, /#interests, /#contact), the 3D
+// city's six pages (/city and /city/<section>, Task 19 of the 3D plan), the Sections
 // menu, the weather display, the progress line and the résumé dialog, at
 // phone, tablet, desktop and phone-landscape sizes, against a production
 // build. Headless Chrome with touch emulation and
@@ -52,12 +53,14 @@ mkdirSync(out, { recursive: true });
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 // ROUTES=/,/#contact and ONLY=320,844x390 narrow a run while working on something
-// `/` and every anchor on it, the stations' and their subsections' (Skills)
-const routes = [...new Set(pageSections.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]))].filter(
+// `/` and every anchor on it, the stations' and their subsections' (Skills),
+// then the 3D city's six pages (/city, /city/<section>: the canvas drawing,
+// at the tier each screen gets), all from the registry
+const routes = [...new Set([...pageSections.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]), ...pageSections.map((s) => s.city)])].filter(
   (r) => !process.env.ROUTES || process.env.ROUTES.split(",").includes(r),
 );
 if (!routes.includes("/") || routes.length < 2) console.log(`note: auditing ${routes.join(", ") || "nothing"}`);
-const slug = (route) => (route === "/" ? "home" : route.replace(/^\/#?/, ""));
+const slug = (route) => (route === "/" ? "home" : route.replace(/^\/#?/, "").replaceAll("/", "-"));
 const FAIL_KINDS = ["overflow", "small", "overlap", "close", "tiny-text", "unsafe", "fit", "chain", "clipped", "covers", "tap", "error"];
 
 // Insets of a notched phone held upright (top: the status bar and notch,
@@ -675,14 +678,17 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
   await ctx.close();
 }
 
-// :hover rules a tap could leave behind on a touch screen
-{
+// :hover rules a tap could leave behind on a touch screen: `/`'s
+// stylesheets with the résumé's, then the 3D city's own
+for (const route of ["/", "/city/projects"]) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
-  await visit(page, "/");
+  await visit(page, route);
   const link = page.locator("a[data-resume]:visible").first();
-  await link.click();
-  await page.waitForSelector("dialog.resume[open]", { timeout: 15000 }).catch(() => {});
+  if (await link.count()) {
+    await link.click();
+    await page.waitForSelector("dialog.resume[open]", { timeout: 15000 }).catch(() => {});
+  }
   const ungated = await page.evaluate(() => {
     const found = [];
     const walk = (rules, gated) => {

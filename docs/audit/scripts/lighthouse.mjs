@@ -4,7 +4,14 @@
 // Chrome with a new, empty profile (no cache, no storage).
 //
 //   CHROME_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
-//     node docs/audit/scripts/lighthouse.mjs <url> <out-dir> [runs=3] [profiles=mobile,desktop]
+//     node docs/audit/scripts/lighthouse.mjs <url>[,<url>…] <out-dir> [runs=3] [profiles=mobile,desktop]
+//
+// Several URLs (comma-separated) each get a folder of their own under
+// <out-dir> (its path, "home" for `/`). The 3D city's pages (/city,
+// /city/projects: Task 19 of the 3D plan) are held to their targets: the
+// median largest paint within 2.5 s and no layout shift in any run, in
+// every profile; the script exits 1 otherwise. `/`'s figures are recorded
+// for comparing with the last round's (docs/audit/performance.md).
 //
 // "mobile" is Lighthouse's default (Moto G Power-sized screen, simulated
 // slow 4G, 4x CPU slowdown); "desktop" is its desktop preset. The GPU
@@ -13,11 +20,18 @@
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
-const [url, out, runsArg = "3", profilesArg = "mobile,desktop"] = process.argv.slice(2);
-if (!url || !out) {
-  console.error("usage: node lighthouse.mjs <url> <out-dir> [runs] [profiles]");
+const [urlArg, outRoot, runsArg = "3", profilesArg = "mobile,desktop"] = process.argv.slice(2);
+if (!urlArg || !outRoot) {
+  console.error("usage: node lighthouse.mjs <url>[,<url>…] <out-dir> [runs] [profiles]");
   process.exit(2);
 }
+const urls = urlArg.split(",");
+// The 3D city's targets (docs/superpowers/plans/2026-11-19-shanghai-3d.md, Task 19)
+const CITY_LCP_MS = 2500;
+const misses = [];
+for (const url of urls) {
+const path = new URL(url).pathname;
+const out = urls.length > 1 ? `${outRoot}/${path === "/" ? "home" : path.slice(1).replaceAll("/", "-")}` : outRoot;
 const LIGHTHOUSE = process.env.LIGHTHOUSE || "lighthouse@13.6.0";
 const runs = Number(runsArg);
 const profiles = profilesArg.split(",");
@@ -95,3 +109,11 @@ for (const profile of profiles) {
 writeFileSync(`${out}/summary.json`, JSON.stringify({ url, date: new Date().toISOString(), failures, summary }, null, 2));
 if (failures.length) console.log("failed attempts (retried):", JSON.stringify(failures));
 console.log(JSON.stringify(summary, (k, v) => (typeof v === "number" ? Math.round(v * 1000) / 1000 : v), 2));
+if (/^\/city(\/|$)/.test(path))
+  for (const [profile, sum] of Object.entries(summary)) {
+    if (sum.median.lcp > CITY_LCP_MS) misses.push(`${path} ${profile}: median largest paint ${Math.round(sum.median.lcp)} ms, over ${CITY_LCP_MS}`);
+    if (sum.max.cls > 0) misses.push(`${path} ${profile}: layout shift up to ${sum.max.cls.toFixed(4)}, not 0`);
+  }
+}
+for (const m of misses) console.log(`MISS ${m}`);
+process.exit(misses.length ? 1 : 0);

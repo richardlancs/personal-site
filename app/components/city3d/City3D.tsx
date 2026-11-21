@@ -13,7 +13,7 @@ import { WorldLights } from "./common";
 import Atmosphere from "./atmosphere/Atmosphere";
 import Precipitation from "./atmosphere/Precipitation";
 import { disposeShared } from "./kit/materials";
-import { disposeTextures } from "./kit/textures";
+import { disposeTextures, textureBytes } from "./kit/textures";
 import { glowOn } from "./kit/uniforms";
 import { isFlat } from "./flat";
 import { onIdle } from "./idle";
@@ -710,6 +710,9 @@ type CityHandle = {
   THREE: typeof THREE;
   frames: number; // frames drawn since the canvas started
   frameTimes: number[]; // the last 600 intervals between drawn frames, ms
+  // The tiers' texture measure (kit/textures.ts), for city3d-perf.mjs:
+  // bytes held by root's materials, or by every live kit texture
+  textureBytes: (root?: THREE.Object3D) => number;
 };
 
 // For measuring scripts (docs/city/scripts/visibility.mjs) and the
@@ -732,6 +735,7 @@ function DevHandle({ tier, navigate }: { tier: Quality; navigate: (href: string)
       THREE,
       frames: 0,
       frameTimes: [],
+      textureBytes,
     };
     handle.current = h;
     const w = window as unknown as { __city?: CityHandle };

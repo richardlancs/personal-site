@@ -19,6 +19,7 @@
 // - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS,
 //   loaded only when the résumé is opened: on its own budget, so it can't
 //   hide growth in what every visit downloads
+// - and none in what a prefetch of the routes `/` links to can fetch
 // - the 3D city (/city/*, opt-in): what its pages load that `/` never can
 //   (city3dJs: the canvas, three.js, the scenes), taken out of totalJs so
 //   totalJs keeps meaning the 2D site; within it the chunks that hold the
@@ -179,6 +180,25 @@ const districtChunks = cityOnly.filter((p) => !canvasGroup.has(p) && [...canvasG
 const THREE = /WebGLRenderer/; // also isWebGLRenderer, which minifying keeps
 const withThree = [...reached].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
 
+// The routes `/` links to (its own <a href="/…">, the "3D city" key and
+// the Interests link included): what a prefetch of each could fetch, its
+// HTML's scripts and its client components' chunks (not what those load
+// later by import(), which a prefetch never runs), so a link that loses
+// prefetch={false}, or a route that starts importing three.js statically,
+// can't bring the renderer into a visit to `/`
+const linked = [...new Set([...html.matchAll(/<a[^>]*\shref="(\/[^"#?]*)/g)].map((m) => m[1].replace(/\/$/, "") || "/"))].filter((p) => p !== "/" && !/\.[a-z0-9]+$/i.test(p));
+const prefetchable = new Map(); // chunk path -> the route that names it
+for (const route of linked) {
+  const page = `${dir}/server/app${route}.html`;
+  if (!existsSync(page)) continue;
+  const h = readFileSync(page, "utf8");
+  for (const ref of [...scriptsOf(h), ...preloadsOf(h), ...manifestChunks(`${dir}/server/app${route}/page_client-reference-manifest.js`)]) {
+    const p = chunkPath(ref);
+    if (existsSync(p) && !prefetchable.has(p)) prefetchable.set(p, route);
+  }
+}
+const prefetchThree = [...prefetchable].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
+
 const sumGz = (paths) => paths.reduce((sum, p) => sum + gz(p), 0);
 const measured = {
   homeInitialJs: initial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
@@ -207,6 +227,10 @@ const noThree = withThree.length === 0;
 failed ||= !noThree;
 console.log(`${noThree ? "ok  " : "FAIL"} ${"no three.js on /".padEnd(18)} ${String(withThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${reached.size} that / can load`);
 for (const [p, how] of withThree) console.log(`       ${p.slice(dir.length + 1)} (${how})`);
+const noThreePrefetch = prefetchThree.length === 0;
+failed ||= !noThreePrefetch;
+console.log(`${noThreePrefetch ? "ok  " : "FAIL"} ${"no three.js linked".padEnd(18)} ${String(prefetchThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${prefetchable.size} that a prefetch of /'s ${linked.length} linked route(s) can fetch (${linked.join(", ") || "none"})`);
+for (const [p, route] of prefetchThree) console.log(`       ${p.slice(dir.length + 1)} (${route})`);
 console.log(`/ loads ${initial.length} scripts at first, ${reached.size - initial.length} more with its components or on demand`);
 console.log(`/city loads ${cityInitial.length} scripts at first; only the city loads ${cityOnly.length} chunks (${measured.city3dJs} B): the renderer's ${rendererChunks.length} (${rendererChunks.map((p) => `${p.slice(dir.length + 1)} ${gz(p)}`).join(", ")}), ${districtChunks.length} loaded by it (the scenes': ${districtChunks.map((p) => gz(p)).join(", ")})`);
 process.exit(failed ? 1 : 0);

@@ -162,11 +162,12 @@ export function stepDown(current: Quality, p90Ms: number): Quality {
 }
 
 // What the Save-Data key says the 3D city costs, in MB ("Load the 3D city
-// (about N MB)"): what the press downloads, gzipped, rounded up to a tenth.
-// Measured 20 November 2026 with the kit and the real riverside
-// (docs/audit/scripts/budget.mjs: city3dJs 310,961 bytes: the renderer's
-// chunks 298,747, three.js, R3F, the composer, the canvas, the kit and the
-// riverside, and the five scenes' chunks, about 650 bytes each); every
-// texture is drawn in code, so nothing else is fetched. Re-measure when
-// the scenes land.
-export const SAVE_DATA_MB = 0.4;
+// (about N MB)"): what the press can download, rounded up to a tenth.
+// Measured 20 November 2026, Task 19's audit, on a production build:
+// docs/audit/scripts/budget.mjs city3dJs 369,211 bytes gzipped (the
+// renderer's chunks 308,757: three.js, R3F, the composer, the canvas, the
+// kit and the riverside; the five scenes' chunks, 4,907 to 10,756 each),
+// plus the largest scene's fetched pictures: Projects' five cover
+// screenshots, 729,031 bytes as served from public/projects/ (every other
+// texture is drawn in code). 1,098,242 bytes in all.
+export const SAVE_DATA_MB = 1.1;
