@@ -42,7 +42,10 @@ body:has(.city-page) .top-bar .rh {
 
 .city-title {
   font-family: var(--font-display);
-  font-size: clamp(2.25rem, 1.6rem + 2.5vw, 3.25rem);
+  /* Capped at 13vw, as the 2D page's station titles are, so the longest
+     title ("Experience") stays whole on one line at 320px with 200% text
+     (mobile-audit.mjs) */
+  font-size: min(clamp(2.25rem, 1.6rem + 2.5vw, 3.25rem), 13vw);
   font-weight: 700;
   line-height: 1.05;
   color: var(--text);
