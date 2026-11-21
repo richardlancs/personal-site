@@ -24,6 +24,19 @@ body:has(.city-page) .top-bar .rh {
   aspect-ratio: auto;
   height: 100%;
   max-height: none;
+  /* The painting the inline script (CityPage.tsx, lib/platePreload.ts:
+     cityPlateScript) fetched before the scripts, drawn as the plate's
+     <img> is, under the plates, which then fade in over the same file */
+  background-image: var(--city-plate, none), linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
+  background-size: cover, auto;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 767px) {
+  .city-band .band {
+    background-position: var(--focal, center), center;
+  }
 }
 
 .city-band .band-top {

@@ -1,7 +1,11 @@
+import { getImageProps, type StaticImageData } from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { cityPath, twoDHref } from "../../lib/cityRoutes";
-import { listed, section, type SectionId } from "../../sections/registry";
+import { listed, section, type DistrictId, type SectionId } from "../../sections/registry";
+import { richmondHill } from "../../data/weather";
+import { cityPlateScript } from "../../lib/platePreload";
+import { BELOW_SIZES, plates } from "../city2d/plates";
 import DistrictBand from "../city2d/DistrictBand";
 import About from "../city2d/sections/About";
 import Contact from "../city2d/sections/Contact";
@@ -58,12 +62,21 @@ const picks: Picks = {
   interests: interests.map((i) => ({ name: i.name, scene: i.scene })),
 };
 
+// The band's own srcset (DistrictBand.tsx: BELOW_SIZES, the default
+// quality), day and night, from which the inline script picks the file the
+// band's <img> will ask for
+const srcSet = (plate: StaticImageData) => getImageProps({ src: plate, alt: "", fill: true, sizes: BELOW_SIZES }).props.srcSet ?? "";
+const plateScript = (district: DistrictId) => cityPlateScript(richmondHill, srcSet(plates[district].day), srcSet(plates[district].night));
+
 export default function CityPage({ id }: { id: SectionId }) {
   const s = section(id);
   return (
     <main className="city-page" data-section={id}>
       <div className="city-band">
         <DistrictBand district={s.district} />
+        {/* The band's painting before the scripts (lib/platePreload.ts:
+            cityPlateScript): the page's largest paint */}
+        <script dangerouslySetInnerHTML={{ __html: plateScript(s.district) }} />
       </div>
       <div className="city-panel">
         {id === "home" && (

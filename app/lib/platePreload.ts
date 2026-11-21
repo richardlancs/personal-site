@@ -57,3 +57,30 @@ export function platePreloadScript(place: Place, day: string, night: string, ban
     `var r=document.documentElement;r.style.setProperty("--home-plate",'url("'+url+'")');r.setAttribute("data-home-plate",plate)}catch(e){}})()`
   );
 }
+
+// The same for a 3D city page (/city, /city/<section>, CityPage.tsx): its
+// band's painting, there before the scripts, which were what held the
+// page's largest paint back (about 5 s on Lighthouse's slow phone, the
+// band's <img> mounting only after hydration). Inline right after the
+// band, it picks the plate (day or night in Richmond Hill, as above) and
+// the file the band's <img> will itself ask for (its srcset, at the
+// band's "100vw", plates.ts: BELOW_SIZES; the smallest candidate at least
+// as wide as the window in device pixels, as the browser picks it),
+// preloads it and sets it as --city-plate on that band alone
+// (city-pages.css paints it as the band's background), so a later page
+// of the city, reached in the browser, never shows another's painting.
+// Its only inputs are the clock, the window's width and the pixel ratio.
+export function cityPlateScript(place: Place, day: string, night: string): string {
+  const q = JSON.stringify;
+  return (
+    `(function(){try{var b=document.currentScript&&document.currentScript.previousElementSibling;if(!b)return;var sun=${SUN_JS};` +
+    `var p=new Intl.DateTimeFormat("en-CA",{timeZone:${q(place.timeZone)},year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};` +
+    `p.forEach(function(x){v[x.type]=+x.value});` +
+    `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,` +
+    `set=now>=s[0]&&now<s[1]?${q(day)}:${q(night)},need=window.innerWidth*(window.devicePixelRatio||1),url=null,last=null;` +
+    `set.split(", ").forEach(function(c){var x=c.split(" "),w=parseInt(x[1],10);if(!url&&w>=need)url=x[0];if(w)last=x[0]});` +
+    `url=url||last;if(!url)return;` +
+    `var l=document.createElement("link");l.rel="preload";l.as="image";l.href=url;l.setAttribute("fetchpriority","high");document.head.appendChild(l);` +
+    `b.style.setProperty("--city-plate",'url("'+url+'")')}catch(e){}})()`
+  );
+}
