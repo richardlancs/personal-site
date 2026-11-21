@@ -50,7 +50,7 @@ test("the five sections' spots are the plate's spots, each on its place in the p
   at("experience", 0.56, 0.69); // the train on the metro line
   at("about", 0.5, 0.8); // the old lane's roofs
   at("interests", 0.84, 0.72); // the shopping street
-  at("contact", 0.4, 0.56); // the riverfront building right of the clock tower
+  at("contact", 0.43, 0.56); // the riverfront right of the clock tower
   // no two overlap
   for (const a of SECTIONS)
     for (const b of SECTIONS) {
@@ -59,7 +59,7 @@ test("the five sections' spots are the plate's spots, each on its place in the p
       assert.ok(p.u1 <= q.u0 || q.u1 <= p.u0 || p.v1 <= q.v0 || q.v1 <= p.v0, `${a} and ${b} overlap`);
     }
   // spots sit at the depth of what they're on
-  assert.equal(HOME_SIGNS.about.spot[0][2], +groundDepth((0.748 + 0.885) / 2).toFixed(3));
+  assert.equal(HOME_SIGNS.about.spot[0][2], +groundDepth((0.748 + 0.87) / 2).toFixed(3));
 });
 
 // Where a painting point lands on a wide screen: City3D.tsx's framing
@@ -82,10 +82,14 @@ function project(def, W, H, panelRight) {
   return (u, v) => [((cx + (u - 0.5) * Wp * s - x0) / (x1 - x0)) * W, ((hh - (0.5 - v) * Hp * s) / (2 * hh)) * H];
 }
 
-test("at 1440 × 900 every spot stands right of the card, under the bar, over the dock, 8 px from the others, at least 44 px", () => {
-  // (as measured on the dev server: the card's right edge, the bar's
-  // bottom, the dock's top)
-  const [W, H, card, bar, dock] = [1440, 900, 568, 68, 818];
+// (as measured on the dev server: the card's right edge, the bar's
+// bottom, the dock's top)
+const SCREENS = [
+  [1280, 800, 568, 68, 718],
+  [1440, 900, 568, 68, 818],
+  [1920, 1080, 568, 68, 998],
+];
+for (const [W, H, card, bar, dock] of SCREENS) test(`at ${W} × ${H} every spot stands right of the card, under the bar, over the dock, 8 px from the others, at least 44 px`, () => {
   const at = project(lujiazui, W, H, card);
   const rects = SECTIONS.map((id) => {
     const b = box(HOME_SIGNS[id].spot);

@@ -27,8 +27,8 @@ import type { PlaceDef, PlateDef, Quad, UV } from "../scenes";
 // near riverfront. The clock tower itself stands under the title card on
 // every landscape screen (the card is 568 px wide at 1440, and the
 // painting can only slide so far: kit/plate.ts, cover), so Contact's spot
-// is the riverfront building to the tower's right, the first of the Bund
-// that clears the card.
+// is the riverfront to the tower's right, the first of the Bund that
+// clears the card on a 1280-wide screen.
 //
 // focus keys: none (Home's panel has no picker; its spots navigate).
 
@@ -60,20 +60,23 @@ const rect = (u0: number, v0: number, u1: number, v1: number, depth = groundDept
 // (a Hitbox, and the link laid over it: its focus ring and pointer
 // target); `label`, where the board with the section's name stands, the
 // middle of its bottom edge, inside the spot; `size`, the board's height
-// as a share of the painting's. On a 1440 × 900 screen the spots stand
-// 8 px or more apart and clear of the card and the dock.
+// as a share of the painting's. On 1280 × 800, 1440 × 900 and
+// 1920 × 1080 screens the spots stand 8 px or more apart and clear of the
+// card, the bar and the dock (tests/city3d-lujiazui.test.mjs); on
+// narrower landscape screens the links can't all fit beside the card, and
+// the dock lists the places instead.
 export type HomeSign = { spot: Quad; label: UV; size: number };
 export const HOME_SIGNS = {
-  // the Bund's riverfront building right of the clock tower, its ornate
-  // front over the promenade
-  contact: { spot: rect(0.372, 0.455, 0.44, 0.6), label: [0.406, 0.535], size: 0.04 },
+  // the near riverfront right of the clock tower: the Bund's last
+  // building and the promenade's lamps
+  contact: { spot: rect(0.41, 0.455, 0.47, 0.6), label: [0.44, 0.535], size: 0.04 },
   // the old lane of low brick houses under the metro line
-  about: { spot: rect(0.405, 0.748, 0.585, 0.885), label: [0.495, 0.875], size: 0.04 },
+  about: { spot: rect(0.41, 0.748, 0.585, 0.87), label: [0.497, 0.862], size: 0.04 },
   // the elevated metro line and its train
   experience: { spot: rect(0.47, 0.615, 0.655, 0.735), label: [0.563, 0.655], size: 0.04 },
   // the Lujiazui supertalls across the river: Jin Mao, the World
   // Financial Center and Shanghai Tower (from under the top bar down)
-  projects: { spot: rect(0.66, 0.09, 0.812, 0.37, STANDING), label: [0.736, 0.355], size: 0.04 },
+  projects: { spot: rect(0.66, 0.1, 0.812, 0.37, STANDING), label: [0.736, 0.355], size: 0.04 },
   // the bright shopping street on the right
   interests: { spot: rect(0.792, 0.6, 0.885, 0.87), label: [0.838, 0.835], size: 0.04 },
 } satisfies Record<"about" | "experience" | "projects" | "interests" | "contact", HomeSign>;
@@ -172,7 +175,8 @@ const lujiazui: PlaceDef = {
   // (u 0.54 .. 0.79 on a 390 × 844 phone), a portrait tablet's from the
   // Pearl to the shopping street
   portrait: { yaw: 18, half: 14, lift: 4 },
-  short: -2,
+  // A phone on its side: the skyline and the river in the strip
+  short: -6,
   threshold: "#0c1526",
   fog: { color: "#141a24", near: 400, far: 900, keep: { near: 400, far: 900 } },
   background: "#10141c",
