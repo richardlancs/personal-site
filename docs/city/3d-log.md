@@ -200,3 +200,62 @@ intro-contrast, panel-contrast, ui-shots, trace, motion, matrix).
   no JavaScript), wide and phone, shows its h1, content and band with no console errors; three.js is
   not fetched under Save-Data before the press; JavaScript off: CLS 0 on all twelve.
 - **Cuts**: none in this task (the aircraft lights' blink and Projects' fisheye remain as before).
+
+## Task 19, the reviews' fixes (21 November 2026)
+
+Two reviews (UX, accessibility; `.superpowers/sdd/2026-11-19-shanghai-3d/task19-review-*.md`) found three
+Important issues and some Minor ones. Fixed, then Task 19's Step 4 re-run on a fresh production build (raw
+output in `.superpowers/sdd/2026-11-19-shanghai-3d/task19fix/`).
+
+- **Hydration on /city (fixed).** The band's early plate script wrote `--city-plate` into the band's
+  style, which React owns: every /city page hydrated with a mismatch (the dev overlay's "1 Issue"). It
+  now adds a rule of its own to `<head>` (`.city-page[data-section=…] .city-band .band{--city-plate:…}`).
+  Next dev: 0 console errors and 0 hydration warnings on all six pages, 1440 and 390; the plate is still
+  there before the scripts. Lighthouse mobile LCP kept: /city 2,825 ms (was 2,827), /city/projects
+  3,279 ms (was 3,285); desktop 0.65 / 0.73 s.
+- **Interests' idle cycle (fixed).** It drove the panel's `<details>` too, so rows opened and closed
+  under a reader every 10 s. It now drives the machine only; the panel follows the visitor's choices (a
+  key, the screen, a row). Wheel, touch, and once arrived scroll and focus also count as touched.
+  Checked: untouched, the keys go 1000 → 0100 → 0010 while the rows stay 1000 and the page's height
+  stays put; a scroll stops the cycle.
+- **Projects' picker and panel (fixed).** The project on the screen is `aria-current` in the panel's
+  index (a cyan bar beside its row, a faint wash, a heavier underline). A key also brings its write-up
+  into view on the narrow layout (instant in still view), focus staying on the key. On the wide layout
+  the page doesn't move (the panel scrolls with the page, so "into view inside the panel" would mean
+  scrolling it): the index row marks the choice there.
+- **Forced colours (fixed).** A focused place tag's ring is `CanvasText` on a `Canvas` halo,
+  `forced-color-adjust: none`, visible over the unforced scene.
+- **Fallback shift (fixed).** Where the scene isn't drawing (no WebGL2, a lost context, Save-Data), the
+  pickers' room is kept and filled by a line ("The scene isn't drawing, so its keys are put away; all
+  they show is below."); the slot is one grid cell, so the unseen copy never adds a row even without
+  `:has()`. On wide Home the row of keys stands under the panel, out of its flow. `city3d-fallback.mjs`:
+  every fallback shift is now 0; what remains is the shared time-and-weather capsule's 0.0002 on every
+  wide JavaScript page (18 "failures", all that one figure).
+- **Minor.** Escape back to Home moved from the 3D chunk to the panel, so it works where the scene isn't
+  drawing, and every section's page has "Back to Home" at its foot. Home's row of keys is in the
+  registry's order, as the Sections menu. The Save-Data gap now holds the line above. Not done:
+  `data-webgl2` with WebGL disabled (knowing needs a context on `/`, which `/` must never make); Home's
+  sign tags late in the Tab order on wide screens (needs the canvas layer moved before the page in the
+  DOM, or the row of keys shown on wide Home: a design call).
+
+Step 4, again (build of `de164b4`):
+
+- lint, `tsc`, `npm test`: clean (484 tests, 456 pass, 28 skipped); `SMOKE_URL=http://localhost:3100
+  npm test`: 484 / 484.
+- `budget.mjs`: all inside; homeInitialJs 199,421, cityInitialJs 199,811 (unchanged), city3dChunk
+  308,850, city3dJs 369,670, cityCss 1,889 / 2,000; no three.js on `/` or linked.
+- `city3d-perf.mjs`: all inside budget; worst p95 Contact high 8.0 / 12, low 6.3 / 9, mobile 3.5 / 8
+  (Home); 0 shaders over five skies everywhere; still 0 frames but one turning minute (Interests high);
+  `/` 0 WebGLRenderer responses and 0 contexts.
+- `city3d-fallback.mjs`: 18 of 72 fail, all the capsule's 0.0002 (above); every page shows its h1,
+  content and band; no console errors.
+- `city3d-keyboard.mjs`: pass. `mobile-audit.mjs`: 0 failures, 0 warnings.
+- `bar-fit.mjs` against the baseline: FAIL at one width, `/` at 320×900 128 → 117 px: the bar was
+  shorter, the live weather's words taking one line less in the capsule than when the baseline was
+  made; no `/` or bar file changed, and no width grew.
+- `lighthouse.mjs`: exit 1 as before. `/` mobile 3,053 ms (3,049–3,076), desktop 0.67 s, CLS 0;
+  /city 2,825 / 0.65 s, CLS up to 0.0047 mobile, 0.0205 desktop; /city/projects 3,279 / 0.73 s, CLS up
+  to 0.0014 / 0.0005 (the capsule, as before).
+- next dev: `visibility.mjs` 0 problems; `city3d-contrast.mjs` pass, 240 combinations, lowest panel
+  5.28:1 (Projects' current index row, clear night), top bar 6.03, foot 6.21, keys 14.72;
+  `palette-contrast.mjs` 23/23; `plate-compare.mjs` mean ΔE 15.2 (unchanged).
