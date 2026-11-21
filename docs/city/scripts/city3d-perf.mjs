@@ -24,7 +24,8 @@
 // warm-up done, through clear day, rain at night, snow by day, clear dusk
 // and back to clear night, each blend let run, no shader is compiled. And
 // in still view the place draws nothing on its own: no frame in 6 s once
-// it has arrived and settled.
+// it has arrived and settled (one, if the clock's minute turned meanwhile:
+// the lit windows follow the hour, minutes included).
 //
 // Fails (exit 1) on any draw-call, triangle, texture or p95 figure over its
 // tier's budget, a tier that isn't the one asked for, a console error, a
@@ -214,12 +215,18 @@ for (const [id, path] of Object.entries(pages)) {
       }
       // Settled: the first frames and the idle warm-up behind it
       await page.waitForTimeout(5000);
-      const f0 = await page.evaluate(() => window.__city.frames);
+      const [f0, m0] = await page.evaluate(() => [window.__city.frames, new Date().getMinutes()]);
       await page.waitForTimeout(6000);
-      const drawn = (await page.evaluate(() => window.__city.frames)) - f0;
-      blends.push({ scene: id, tier, stillFrames: drawn });
-      console.log(`${id.padEnd(13)} ${tier.padEnd(7)} still: ${drawn} frame(s) drawn in 6 s`);
-      if (drawn) fail(where, `${drawn} frame(s) drawn in 6 s of still view`);
+      const [f1, m1] = await page.evaluate(() => [window.__city.frames, new Date().getMinutes()]);
+      const drawn = f1 - f0;
+      // The clock's minute: the store's hour carries the minutes, and the
+      // lit windows (and Contact's clock face) follow it, so a minute
+      // turning over draws one frame. That's the time changing, not
+      // anything moving; any other frame fails.
+      const tick = m1 !== m0 ? 1 : 0;
+      blends.push({ scene: id, tier, stillFrames: drawn, minuteTurned: !!tick });
+      console.log(`${id.padEnd(13)} ${tier.padEnd(7)} still: ${drawn} frame(s) drawn in 6 s${tick ? " (the clock's minute turned)" : ""}`);
+      if (drawn > tick) fail(where, `${drawn} frame(s) drawn in 6 s of still view${tick ? " (one allowed: the minute turned)" : ""}`);
       await ctx.close();
     }
   }
