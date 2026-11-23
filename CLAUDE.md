@@ -114,8 +114,7 @@ anything, nothing smooths the wheel, nothing snaps or traps.
   listener writes the transforms each frame.
 - Stops are a screen wide less the peek of the next (`--peek`, 10% of the
   width at every width, at least 1.5rem; on phones a whole screen, the next stretch showing in the
-  painting's strip); Projects and Experience are rows of panels as long
-  as their content. Every stop leaves a slice of the next stretch of city
+  painting's strip); Projects is a row of panels, a screen per panel. Every stop leaves a slice of the next stretch of city
   in view, so the way on needs no arrow.
 - `ArrowLeft`/`ArrowRight` go to the previous or next stop; an anchor (on
   load, a link, Back/Forward) lands on its stop or its panel (`#skills`, a
@@ -173,6 +172,11 @@ All of it driven by the journey's progress (the runway's timeline), so
 scrolling back plays it in reverse and nothing moves at rest; transform,
 opacity and filter only; none of it in still view or with reduced motion.
 
+- While the city travels, a slight sideways motion blur on the panorama
+  (`CityTrack.tsx`: an SVG Gaussian, horizontal only, its deviation the
+  scroll's smoothed speed × `BLUR_PER_SPEED`, at most `BLUR_MAX` 3px),
+  gone (no filter at all) at rest, in still view, with reduced motion and
+  in a hidden tab; the words stay sharp (my words of 2026-11-23).
 - The sky (`.track-sky`) behind the panorama moves at 30% of the street's
   pace (`SKY_DEPTH` 0.7), in the hour's colours; in still view, with the
   street.
@@ -201,7 +205,7 @@ only goes down from here); `resumeJs` ≤ 470,000;
 painted home plate it replaced, at `HOME_QUALITY`. It also fails on
 three.js (`WebGLRenderer`) in any chunk of the build, and on any
 stylesheet `/` doesn't link (besides the résumé's).
-Readings 2026-11-23 (Task 7): 199,510; 205,145; 11,590; 447,950; 1,853.
+Readings 2026-11-23 (Task 8): 199,850; 205,485; 11,932; 447,950; 1,853.
 
 ### Standing rules
 
@@ -274,25 +278,31 @@ weights and generous line-height. Avoid decorative fonts.
 ## Layout
 
 - Generous whitespace, strong vertical rhythm, a few strong elements per
-  section rather than many small cards. Not centred containers: on the
-  journey each panel sits left in its stop, inside the central 80% (the
-  spec).
+  section rather than many small cards. On the journey each stop's
+  panel is centred in its stop and substantial (my words of 2026-11-23,
+  Task 8), inside the central 80%.
 - The central 80%: bulky content (panels, images, cards, the timeline)
   sits within the middle 80% of the screen's width, 10% clear on each
   side at every width from 768px (`--peek`, `max(1.5rem, 10vw)`, uncapped;
   `--side` on the sheets); phones keep their
   16px gutters. The edges are the city.
-- Wide screens: the panorama fills the stage; the words on the street in
-  the lower part of each stop, on see-through dark glass (`.panel`: the
-  city reads through it; a darker feathered scrim behind the words
-  carries their 4.5:1), left in the stop, at most ~42rem (About 60rem),
-  never taller than the stage. Projects and Experience: a row of panels
-  along the street with city between them; Experience's stations hang
-  from one line drawn along the stop.
+- Wide screens: the panorama fills the stage; each stop's words on clear
+  glass (`.panel`: "very very transparent with a very subtle hint", my
+  words: a barest ink and cyan tint, a blur, a fine light edge, the city
+  reading through it), centred in the stop between the bar and the map,
+  as wide as `--w` (the central 80%, 68rem, or 64% of a very wide
+  screen) and at least 72% of the room's height, its content in its
+  middle; wide panels lay their words in columns. The words' 4.5:1 comes
+  from a soft shade behind each block of words (`--shade`, feathered by
+  a mask, as wide as the words) and the blur, with a dark halo
+  (text-shadow) for the eye. Projects: a row of panels, each centred in
+  its own screen, city between them. Experience: one stop, all three
+  entries at once on a simple timeline (three columns on a wide panel, a
+  line down the side on a narrow one).
 - Phones and tall screens (`max-aspect-ratio: 1/1`): the painting in a
   strip at the top (about 30% under the bar), each stop a screen wide,
-  its words a dark sheet below scrolling inside; a row is one sheet a
-  screen wide after another.
+  its words a sheet of tinted glass below (no per-block shade) scrolling
+  inside; a row is one sheet a screen wide after another.
 - Images match their text: as tall as the words beside them, or as wide
   when stacked; covers never cropped awkwardly (a chosen focal point).
 - Sections lay out by their own column width, never the viewport: one
@@ -382,8 +392,10 @@ heading, cover screenshot (never cropped), summary, features (or "My
 part" when it lists contributions), the stack as one muted line, GitHub and an
 optional live demo, the rest in a native `<details>` (it opens inside its
 panel, which then scrolls). On the journey: the index as the row's first
-panel, then one panel per project along the towers (the cover leads,
-not identical), Skills after, inside Projects.
+panel, then one panel per project along the towers, each centred in
+its own screen (on a wide panel, the title and a wide cover in one
+column and what I did in the other; a tall cover beside them), Skills
+after, inside Projects.
 
 Do not invent projects. Keep them polished but restrained: soft surfaces,
 hairlines, gentle hover; no huge shadows, heavy animation or badge
