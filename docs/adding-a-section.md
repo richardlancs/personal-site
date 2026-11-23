@@ -1,14 +1,16 @@
 # Adding a section
 
-The site is one page, `/`: six sections, each under a band of painting
-of its district (never named on the page) (`app/page.tsx`,
-`app/components/city2d/`). A section is two things:
+The site is one page, `/`: six sections, the six stops of one journey
+along a continuous panorama of the city, each stop standing in its own
+stretch of it (never named on the page) (`app/page.tsx`,
+`app/components/city2d/`, `CLAUDE.md`, "The journey"). A section is two
+things:
 
 - one entry in `app/sections/registry.ts`, and
 - one component in `app/components/city2d/sections/`, mounted inside its
   `<Station>` in `app/page.tsx`.
 
-The Sections menu, the progress line, the section shown in the top bar
+The Sections menu, the metro map, the section shown in the top bar
 and the sections' numbers (01 to 06) are all generated from the
 registry, so none of them need editing.
 
@@ -30,7 +32,7 @@ place in the page's order (the sections are numbered by it):
   href: "/#reading",
   title: "Reading",                 // the section's h2, and its name in lists
   listed: false,                    // true once it's ready to be pointed at
-  district: "yuyuan",               // the painting above it (DistrictId)
+  district: "yuyuan",               // its stretch of the panorama (DistrictId)
 }
 ```
 
@@ -49,27 +51,29 @@ Skills).
 The words in `title` and `summary` are interface words;
 anything about Richard belongs in `app/data/portfolio.ts`.
 
-## 2. Give it a district and its plates
+## 2. Give it its stretch of the city
 
-Each section has its own district: add it to `DistrictId` in the
-registry, then:
+Each section stands in its own stretch of the one panorama: add it to
+`DistrictId` in the registry, then:
 
-1. Paint a day and a night plate of one composition, following
-   `docs/city/style.md` (the style paragraph opens every prompt; the
-   prompts used so far are in `docs/city/prompts.md`; record yours there).
-2. Save them as `shanghai-plate-<district>-day.png` and `-night.png` in a
-   folder, add the district to the list at the top of
-   `scripts/city-plates.mjs`, and run
-   `node scripts/city-plates.mjs <folder> [check-sheet.jpg]`. It writes
-   `app/assets/city/<district>-<day|night>.webp` at 2400 × 1032, each at
-   most 600 KB; the sheet lays each pair over itself at 50% so you can
-   check that the buildings line up.
-3. Import both in `app/components/city2d/plates.ts` and add them to
-   `plates`, with the district's `focal` point (where its subject sits, so
-   the phone's 4:3 crop keeps it).
+1. Paint its segment, day and night, following `docs/city/style.md`
+   ("The panorama": the same camera, horizon and empty ground) and the
+   method in `docs/city/prompts.md` (last section): the new segment
+   continues the right third of the one before it, and the one after it
+   (if any) is painted again from the new one, so the city stays one
+   strip. Record the prompts there.
+2. Save every segment as `real-{day,night}-0N.png` in one folder, in
+   order, set `N` at the top of `scripts/city-panorama.mjs` to the new
+   count, and run `node scripts/city-panorama.mjs <folder> [preview folder]`.
+   It writes the tiles to `app/assets/city/panorama/` (one per segment,
+   each at most 600 KB) and `app/components/city2d/panorama.ts`, with
+   each stop's stretch.
+3. Import the new tile's two pictures in
+   `app/components/city2d/panoramaImages.ts` and add them to `pictures`,
+   in order.
 
-Until it has plates, a band is its dark gradient, which already holds its
-height.
+Until it has its segment, a section has no stretch of the city of its
+own: don't list it.
 
 ## 3. Write the component and mount it
 
@@ -82,10 +86,13 @@ replace its placeholders. Then in `app/page.tsx`:
 </Station>
 ```
 
-`<Station>` (`components/city2d/Station.tsx`) draws the band (the plates
-following Richmond Hill's clock, the weather over them), the section's
+`<Station>` (`components/city2d/Station.tsx`) makes it a stop on the
+journey: its words in a dark glass panel on the street (with `row`, a
+row of panels along the street, as Projects and Experience are: the
+section then puts `StationHead` in its first panel), the section's
 number ("02", muted, hidden from screen readers) and its `h2` from
-`title`. No place is ever named on the page. So:
+`title`; read top to bottom, its own stretch of the panorama as a band
+over it. No place is ever named on the page. So:
 
 - the component's headings start at `h3`;
 - it is a server component; a small client child (as Contact's
@@ -107,7 +114,9 @@ number ("02", muted, hidden from screen readers) and its `h2` from
   is at least 16px on phones, and the accents (cyan; the lantern only for
   the primary key's fill and tiny marks) are for edges, chosen states and
   display type of 24px or more, never body text;
-- no words on a painting.
+- no words bare on the painting: they sit in the panel;
+- keep its panel's content in proportion: pictures as tall as the words
+  beside them, and nothing bulky outside the middle 80% of the screen.
 
 ## Photos for an interest
 
@@ -129,6 +138,7 @@ node docs/audit/scripts/budget.mjs
 
 and, against `next dev -p 3101` (the `?sky=` preview is dev only),
 `node docs/ui/scripts/city-contrast.mjs` and, against the build,
+`node docs/ui/scripts/track-journey.mjs http://localhost:3100` and
 `node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 <out-dir>`
 (both need `PLAYWRIGHT` pointing at an installed Playwright: see
 `docs/audit/scripts/pw.mjs`). Add the section's content to the smoke

@@ -2,7 +2,7 @@
 
 My personal portfolio site. I'm a Computer Science student at the University of Waterloo looking for software engineering internship and co-op roles. The site covers who I am, what I've built, my experience, and how to reach me.
 
-The site is one dark page in six sections (Home, About, Projects with Skills, Experience, Interests, Contact). Each section opens under a band of painting of a city street, by day or by night as the clock in Richmond Hill, Ontario has it, with that day's weather over it. A line in the margin (or along the top bar on narrower screens) follows the page and marks the section you're at.
+The site is one journey along a city: six sections (Home, About, Projects with Skills, Experience, Interests, Contact) are six stops along one continuous panorama of Shanghai. Scrolling as usual (wheel, trackpad, keys, the scrollbar, a swipe) moves you sideways along it; the city is shown by day or by night as the clock in Richmond Hill, Ontario has it, with that day's weather over it. A metro-line map along the foot of the screen marks the stop you're at and jumps to the others. Without JavaScript the page reads top to bottom.
 
 ## Tech stack
 
@@ -19,15 +19,16 @@ No UI libraries or icon packs. There is one theme (dark) and no theme toggle.
 
 ```
 app/
-├── page.tsx                 # The one page: six sections, in order
+├── page.tsx                 # The one page: six stops, in order, on the journey
 ├── layout.tsx               # HTML shell, fonts, metadata, the top bar
-├── city.css                 # Tokens, the bands, the progress line, glass keys
+├── city.css                 # Tokens, the bar, the metro map, glass keys
+├── city-track.css           # The journey: the stage, panels, sky and the living city
 ├── data/portfolio.ts        # All the content: profile, projects, experience, …
-├── sections/registry.ts     # The sections: anchors, titles, which painting
-├── lib/                     # Pure helpers (the sky, the progress line, figures, …)
-├── assets/city/             # The paintings, a day and a night plate per section
+├── sections/registry.ts     # The sections: anchors, titles, their stretch of the city
+├── lib/                     # Pure helpers (the sky, the map's progress, figures, …)
+├── assets/city/panorama/    # The panorama's tiles, by day and by night
 └── components/
-    ├── city2d/              # The page: sections, bands, the top bar, the line
+    ├── city2d/              # The page: the journey, the panorama, the top bar, the map
     │   └── sections/        # One component per section
     ├── resume/              # The in-page résumé viewer
     └── weather/             # Richmond Hill's time and weather
@@ -69,6 +70,7 @@ node docs/audit/scripts/budget.mjs                       # JavaScript and CSS si
 The browser audits need an installed Playwright (see `docs/audit/scripts/pw.mjs`; point `PLAYWRIGHT` at its `index.mjs`):
 
 ```bash
+node docs/ui/scripts/track-journey.mjs http://localhost:3100      # wheel, keys, swipes, anchors along the journey
 node docs/ui/scripts/palette-contrast.mjs                         # the palette's text contrast
 node docs/ui/scripts/city-contrast.mjs http://localhost:3101      # every word over every sky (next dev)
 node docs/ui/scripts/mobile-audit.mjs http://localhost:3100 out/  # phones to desktop, 200% text

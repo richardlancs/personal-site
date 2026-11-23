@@ -65,7 +65,9 @@ the shopping street.
 ## Plates
 
 Made in the same chat, 19 November 2026; converted to the site's files by
-`scripts/city-plates.mjs` (2400×1032 WebP in `app/assets/city/`).
+`scripts/city-plates.mjs` (2400×1032 WebP in `app/assets/city/`). History:
+the plates and that script were retired with the horizontal city (the
+panorama, below, replaced them).
 
 What works: paint the DAY plate fresh (the scene's description from above,
 plus the day light below), then ask for the NIGHT plate as an edit of

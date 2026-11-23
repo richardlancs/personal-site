@@ -11,7 +11,7 @@ import { profile } from "../../../data/portfolio";
 //     <Greenhouse />
 //   </Station>
 //
-// The <Station> gives it its band of painting and the section's h2 (the
+// The <Station> makes it a stop on the journey, in its panel, with the section's h2 (the
 // registry's title, with its number beside it). So the component starts at h3, is a server component unless it
 // truly needs the browser, and takes its words from app/data/portfolio.ts:
 // the lines below are placeholders to replace, not content.
