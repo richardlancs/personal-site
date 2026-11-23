@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
-import { SKY_DEPTH, TRACK_MIN, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets } from "./trackMath";
+import { SKY_DEPTH, TRACK_MIN, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets, trackXForPano } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -163,6 +163,13 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
         keys = panoKeys(offsets, vw, pano.offsetHeight / HEIGHT, starts, WIDTH, SEGMENT, still());
         const move = pano.getAnimations().find((a) => a instanceof CSSAnimation)?.effect as KeyframeEffect | undefined;
         move?.setKeyframes(keys.x.map((x, k) => ({ transform: `translateX(${-keys.p[k]}px)`, offset: travel ? x / travel : 0 })));
+        // Where along the journey each tile comes on: its left edge at the
+        // screen's right edge, then at its middle (the twilight windows'
+        // flicker, city-track.css)
+        for (const t of pano.children as HTMLCollectionOf<HTMLElement>) {
+          t.style.setProperty("--lit-from", `${trackXForPano(t.offsetLeft - vw, keys)}px`);
+          t.style.setProperty("--lit-to", `${trackXForPano(t.offsetLeft - vw / 2, keys)}px`);
+        }
       }
       // Each panel's place along the track (--at), where its arrival is
       // drawn on the runway's timeline (city-track.css, "Arrivals")

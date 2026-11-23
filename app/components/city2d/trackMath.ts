@@ -87,3 +87,11 @@ export function panoAt(x: number, keys: { x: number[]; p: number[] }): number {
   for (let k = 1; k < xs.length; k++) if (x <= xs[k]) return p[k - 1] + ((p[k] - p[k - 1]) * (x - xs[k - 1])) / (xs[k] - xs[k - 1] || 1);
   return p[p.length - 1];
 }
+
+/** The first place along the track (x) where the panorama has moved at least `p` (panoKeys): where a point of it reaches a given place on the screen */
+export function trackXForPano(p: number, keys: { x: number[]; p: number[] }): number {
+  const { x: xs, p: ps } = keys;
+  if (p <= ps[0]) return xs[0];
+  for (let k = 1; k < xs.length; k++) if (ps[k] >= p) return xs[k - 1] + ((xs[k] - xs[k - 1]) * (p - ps[k - 1])) / (ps[k] - ps[k - 1] || 1);
+  return xs[xs.length - 1];
+}
