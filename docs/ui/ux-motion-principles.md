@@ -56,7 +56,3 @@ honoured? Apply the ones that fit; never add motion only to tick a box
 (principles 10, 13 and 18 argue for less). Then check: still view and
 reduced motion show the end state with no movement; the keyboard path is
 unchanged; nothing waits on an animation; the budgets still pass.
-
-The same list applies to the 3D city's interface (panels, signs, the 2D/3D
-switch). Camera travel there follows 9, 12, 14 and 15: eased, on an arc,
-short, and interruptible by the next choice.

@@ -39,7 +39,7 @@ docs/                        # How-tos, the style guide, audits and their script
 tests/                       # Unit and source-level tests; smoke tests need a server
 ```
 
-The older 3D park (`app/components/world3d/`, `world/`, `locations/`) is still in the tree but is not loaded by the page.
+The 3D city that was at `/city` was removed on 2026-11-22; its addresses redirect to the page.
 
 ## Running locally
 
