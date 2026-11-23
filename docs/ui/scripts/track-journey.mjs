@@ -93,7 +93,7 @@ try {
     // The menu says where you are, along the way
     await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
     await settle(page, 300);
-    check((await page.evaluate(() => document.querySelector('.progress-point[aria-current="location"]')?.textContent)) === "Contact", "the progress line is at Contact at the end");
+    check((await page.evaluate(() => document.querySelector('.progress-point[aria-current="location"]')?.textContent)) === "Contact", "the metro map is at Contact at the end");
 
     // Keys: ArrowRight stop by stop, ArrowLeft back, PageDown/Space travel
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));

@@ -126,7 +126,7 @@ const collect = (page) =>
       for (let e = el; e; e = e.parentElement) o *= Number(getComputedStyle(e).opacity);
       return o;
     };
-    // The fixed and sticky layers (the top bar, the progress line, an open
+    // The fixed and sticky layers (the top bar, the metro map, an open
     // menu): words under them aren't on screen, and theirs are their own
     const layers = [...document.querySelectorAll(".top-bar, .progress-line, :popover-open, dialog[open]")]
       .filter((e) => e.checkVisibility())
@@ -136,7 +136,7 @@ const collect = (page) =>
       });
     const where = (el) => {
       // The line is mounted in the bar, but is its own layer on wide screens
-      if (el.closest(".progress-line")) return "progress line";
+      if (el.closest(".progress-line")) return "metro map";
       if (el.closest(".top-bar")) return "top bar";
       const station = el.closest("section.station");
       if (station) return `#${station.id}`;
@@ -262,7 +262,7 @@ for (const size of sizes) {
     await page.waitForTimeout(250);
     await page.locator('button[popovertarget="places-menu"]').click();
     await page.waitForTimeout(250);
-    const open = (await collect(page)).filter((r) => r.where === "top bar" || r.where === "progress line");
+    const open = (await collect(page)).filter((r) => r.where === "top bar" || r.where === "metro map");
     if (!open.some((r) => r.menu)) missing.push({ size: size.name, sky, what: "the open menu's rows", sel: "#places-menu" });
     await screen(open.map((r) => ({ ...r, where: `menu open: ${r.menu ? "menu" : r.where}` })));
     await page.keyboard.press("Escape");
