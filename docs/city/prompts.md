@@ -192,3 +192,33 @@ The scenes, each ending with what continues off the right edge:
 6. Contact: the Bund's stone buildings, the Customs House clock tower,
    lamp posts, a glass kiosk; then the river and the towers across it,
    "so the journey ends where it began".
+
+## The hyperrealistic panorama (23 November 2026, replaces the gouache one)
+
+Richard: "tell chatgpt to build directly off a hyperrealistic model of the
+city and find real city skyline photos to use as reference"; the final
+look is hyperrealistic. Made in a fresh ChatGPT chat (Richard's account);
+originals (WebP q92) in `docs/city/concepts/panorama-real/`, PNGs kept
+outside git. `docs/city/concepts/panorama/` (gouache) is superseded.
+
+1. **Research first.** ChatGPT searched the web for real reference photos
+   of each place (Wikimedia Commons, Flickr: the Bund skyline with its
+   documented left-to-right order Oriental Pearl, Jin Mao, World Financial
+   Center, Shanghai Tower; shikumen lanes; the Lujiazui circular walkway;
+   Metro Line 3's viaduct and stations; Nanjing Road's department stores
+   and sightseeing tram; the Customs House and the HSBC dome), listed
+   what each showed, and built a spatial model of the six places along one
+   walk ("cinematic geography": Lujiazui is on the east bank, the rest on
+   the west).
+2. **Segment 1**: "hyperrealistic, like a high-end architectural
+   photograph or a photoreal 3D render of the real city … built directly
+   from the reference photos and the spatial model", with the same rules
+   as before (level, nearly orthographic side-on camera at first-floor
+   height, horizon at 45%, light from the upper left, a plain dark empty
+   ground band across the bottom third), "today's real city only".
+3. **Segments 2–6**: the same seed-canvas method as the gouache panorama,
+   each prompt "built from your [place] references".
+4. **Nights**: each day segment attached, "edit this exact image into its
+   NIGHT version, as a real hyperrealistic night photograph … Change only
+   the light, true to [place] at night", palette "white, warm amber and
+   cyan (no magenta, no purple)".
