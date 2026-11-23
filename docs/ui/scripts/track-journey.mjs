@@ -158,6 +158,43 @@ try {
     await tctx.close();
   }
 
+  // 1c. Closure shows the next stop's city, never its words: at each
+  // settled stop, no text of another stop shows on the screen (a point
+  // in its words that the browser would hit belongs to the stop you're at)
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 640 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
+    const page = await open(ctx, "/", size);
+    for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) {
+      await page.evaluate((i) => {
+        location.hash = i;
+      }, id);
+      await settle(page, 900);
+      const seen = await page.evaluate(() => {
+        const stops = [...document.querySelectorAll(".track > .station")];
+        const here = stops.find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
+        const out = [];
+        const walker = document.createTreeWalker(document.querySelector(".track"), NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const stop = n.parentElement?.closest(".track > .station");
+          if (!n.textContent.trim() || !stop || stop === here || !n.parentElement.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          for (const r of range.getClientRects()) {
+            const x = Math.min(Math.max((r.left + r.right) / 2, r.left + 1), r.right - 1);
+            const pts = [[r.left + 1, r.top + r.height / 2], [x, r.top + r.height / 2], [r.right - 1, r.top + r.height / 2]];
+            for (const [px, py] of pts) {
+              if (px < 0 || px >= innerWidth || py < 0 || py >= innerHeight) continue;
+              const hit = document.elementFromPoint(px, py);
+              if (hit && stop.contains(hit)) out.push(`#${stop.id} "${n.textContent.trim().slice(0, 16)}" at ${Math.round(px)},${Math.round(py)}`);
+            }
+          }
+        }
+        return { here: here?.id, out: [...new Set(out)].slice(0, 4) };
+      });
+      check(seen.here === id && seen.out.length === 0, `${size.width}×${size.height} at ${id}: no other stop's words on the screen${seen.out.length ? ` (${seen.out.join("; ")})` : ""}`);
+    }
+    await page.close();
+  }
+
   // 2. Anchors, cold, at three sizes; Back and Forward
   for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
     for (const id of ["about", "projects", "experience", "interests", "contact"]) {

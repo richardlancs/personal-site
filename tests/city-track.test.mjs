@@ -203,6 +203,12 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(body, /\.track > \[data-open\] > \.station-body \{\s*overflow-y: auto;\s*overscroll-behavior: contain;/);
   // Phones: the painting on top, the words a sheet below
   assert.match(body, /@media \(max-aspect-ratio: 1 \/ 1\)/);
+  // ... where no sheet shows the next one's words: each stop the whole
+  // screen, and the closure in the painting strip (each band reaching back
+  // over the one before by the peek)
+  const phone = body.slice(body.indexOf("@media (max-aspect-ratio: 1 / 1)"));
+  assert.match(phone, /\.track > \.station \{\s*width: 100cqw;/);
+  assert.match(phone, /\.track \.band \{\s*inset: 0 0 auto calc\(-1 \* var\(--peek\)\);/);
 });
 
 test("depth: the sky lags the street, but not in still view; the weather is drawn once, held over the stage", () => {

@@ -184,8 +184,16 @@
       --stop-band: calc(var(--bar-h) + 0.3 * (100dvh - var(--bar-h)));
     }
 
+    /* No peek below the strip: each stop is the whole screen, so a sheet
+       never shows the next one's words. The closure is in the strip: each
+       band reaches back over the one before by the peek, so the next stop's
+       city shows at the right of the painting */
+    :root[data-track="on"] .track > .station {
+      width: 100cqw;
+    }
+
     :root[data-track="on"] .track .band {
-      inset: 0 0 auto;
+      inset: 0 0 auto calc(-1 * var(--peek));
       height: calc(var(--stop-band) + 1rem);
     }
 
