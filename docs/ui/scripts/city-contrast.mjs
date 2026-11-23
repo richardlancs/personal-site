@@ -209,9 +209,9 @@ for (const size of sizes) {
     }
     if (!(await page.locator("section.station").count())) fatal(`no section.station on ${base}/: is this the one-page city?`);
     // Everything at rest, except the journey's own move (the track, the sky
-    // and the weather ride the page's scroll: without it the city never
+    // the weather and the panorama ride the page's scroll: without it the city never
     // goes past its first stop)
-    await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; } :not(.track, .track-sky, .track-weather), ::before, ::after { animation: none !important; } nextjs-portal, [data-dev-sky-panel] { display: none !important; }" });
+    await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; } :not(.track, .track-sky, .track-weather, .pano), ::before, ::after { animation: none !important; } nextjs-portal, [data-dev-sky-panel] { display: none !important; }" });
     // One pass down the page, so every band comes near and mounts its plates
     const height = await page.evaluate(() => document.documentElement.scrollHeight);
     for (let y = 0; y < height; y += Math.round(size.height * 0.6)) {

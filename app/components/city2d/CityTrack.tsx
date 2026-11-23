@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets } from "./trackMath";
+import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
+import { SKY_DEPTH, TRACK_MIN, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -28,6 +29,15 @@ import WeatherOverlay from "./WeatherOverlay";
 // sideways swipe (which no page scroll would answer) travels too. Jumps
 // glide, except in still view, where they cut. Rain and snow are drawn
 // once, over the whole stage (inside the track, held still against it).
+//
+// The city behind the stops is one panorama (`city`: DistrictBand.tsx,
+// panorama.ts, given by the page),
+// drawn as tall as its band and moved along with the journey, but by its
+// own measure: each stop's start shows that stop's stretch of the city,
+// and in between it moves straight from one to the next (panoKeys), so a
+// row of panels several screens long passes slowly over its stretch and
+// the whole track is city, end to end. Where the move is CSS, these keys
+// replace its keyframes (the runway's timeline, as the track's own).
 
 let marks: number[] | null = null;
 // Each stop's scroll position (the page's, not the runway's), while the
@@ -39,7 +49,7 @@ const FLING_MS = 280; // how far a released swipe glides, as time at its speed
 // Where the arrows are someone else's: a field, a dialog, a menu
 const SKIP = "input, textarea, select, [contenteditable], dialog, [popover]";
 
-export default function CityTrack({ children }: { children: ReactNode }) {
+export default function CityTrack({ city, children }: { city: ReactNode; children: ReactNode }) {
   const runway = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,6 +61,8 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     const stops = [...track.querySelectorAll<HTMLElement>(":scope > .station")];
     const panels = track.querySelectorAll<HTMLElement>(".panel");
     const cssDriven = CSS.supports("animation-timeline: view()");
+    const pano = stage.querySelector<HTMLElement>(".pano");
+    let keys = { x: [0], p: [0] };
     let offsets = [0];
     let top = 0;
     let vw = 0;
@@ -109,6 +121,7 @@ export default function CityTrack({ children }: { children: ReactNode }) {
       weather.style.transform = `translateX(${x}px)`;
       // The sky lags (depth 0.7), but moves with the street in still view
       sky.style.transform = `translateX(${-parallax(x, still() ? 0 : SKY_DEPTH)}px)`;
+      if (pano) pano.style.transform = `translateX(${-panoAt(x, keys)}px)`;
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(frame);
@@ -144,6 +157,11 @@ export default function CityTrack({ children }: { children: ReactNode }) {
       run.style.setProperty("--travel", `${travel}px`);
       top = run.getBoundingClientRect().top + scrollY;
       marks = stops.map((_, k) => top + scrollYForStop(k, offsets, vw));
+      if (pano) {
+        keys = panoKeys(offsets, vw, pano.offsetHeight / HEIGHT, starts, WIDTH, SEGMENT);
+        const move = pano.getAnimations().find((a) => a instanceof CSSAnimation)?.effect as KeyframeEffect | undefined;
+        move?.setKeyframes(keys.x.map((x, k) => ({ transform: `translateX(${-keys.p[k]}px)`, offset: travel ? x / travel : 0 })));
+      }
       // Each panel's place along the track (--at), where its arrival is
       // drawn on the runway's timeline (city-track.css, "Arrivals")
       for (const p of panels) {
@@ -259,6 +277,8 @@ export default function CityTrack({ children }: { children: ReactNode }) {
       <div className="track-stage">
         {/* The sky behind the city, slower than the street */}
         <div className="track-sky" aria-hidden="true" />
+        {/* The city: the panorama behind every stop (DistrictBand) */}
+        {city}
         <div className="track">
           {children}
           {/* Rain and snow, once, over the whole stage */}

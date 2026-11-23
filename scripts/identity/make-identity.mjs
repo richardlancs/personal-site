@@ -1,6 +1,6 @@
 // Draws the site's icons and share image from code, like the rest of the
 // art: the mark in mark.svg, the share card from the riverside's night plate
-// (app/assets/city/lujiazui-night.webp) with the name set in the site's own fonts.
+// (app/assets/city/panorama/night-01.webp, the home tile) with the name set in the site's own fonts.
 //
 //   PLAYWRIGHT=/path/to/node_modules/playwright/index.mjs node scripts/identity/make-identity.mjs
 //
@@ -66,7 +66,7 @@ const fonts = `
 const card = `
   <style>${fonts}</style>
   <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#08090c">
-    <img src="${dataUrl(app("assets/city/lujiazui-night.webp"), "image/webp")}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%">
+    <img src="${dataUrl(app("assets/city/panorama/night-01.webp"), "image/webp")}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%">
     <div style="position:absolute;left:56px;top:56px;padding:34px 44px 34px;border-radius:14px;background:rgb(24 27 35 / 0.92);border:1px solid rgb(79 216 238 / 0.35);box-shadow:0 18px 44px -20px rgb(0 0 0 / 0.7)">
       <div style="font-family:Rajdhani;font-weight:700;font-size:88px;line-height:1;color:#e6e9ee;letter-spacing:0.01em">Richard Lan</div>
       <div style="margin-top:12px;font-family:Rajdhani;font-weight:500;font-size:36px;color:#4fd8ee;letter-spacing:0.04em">cs@uwaterloo</div>

@@ -2,7 +2,9 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { getImageProps } from "next/image";
 import CityDriver from "./components/city2d/CityDriver";
-import { BAND_SIZES, BAND_WIDTH, HOME_QUALITY, plates } from "./components/city2d/plates";
+import { HOME_QUALITY, tileSizes } from "./components/city2d/homePlate";
+import { HEIGHT } from "./components/city2d/panorama";
+import { bandTiles } from "./components/city2d/panoramaImages";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -63,11 +65,12 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-// The home band's plate, day and night: the band's own srcset, from which
-// the head script picks one file to fetch and paint before hydration (the
-// band's <img> then uses that same file: homePlate.ts)
-const bandSrcSet = (plate: (typeof plates)["lujiazui"]["day"]) => getImageProps({ src: plate, alt: "", fill: true, sizes: BAND_SIZES, quality: HOME_QUALITY }).props.srcSet ?? "";
-const PLATE_PRELOAD = platePreloadScript(richmondHill, bandSrcSet(plates.lujiazui.day), bandSrcSet(plates.lujiazui.night), BAND_WIDTH);
+// The home tile of the panorama, day and night: the tile's own srcset, from
+// which the head script picks one file to fetch and paint before hydration
+// (the tile's <img> then uses that same file: homePlate.ts)
+const home = bandTiles[0];
+const tileSrcSet = (plate: typeof home.day) => getImageProps({ src: plate, alt: "", fill: true, sizes: tileSizes(home.w), quality: HOME_QUALITY }).props.srcSet ?? "";
+const PLATE_PRELOAD = platePreloadScript(richmondHill, tileSrcSet(home.day), tileSrcSet(home.night), home.w / HEIGHT);
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -85,7 +88,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {/* The horizontal journey, on before the first paint where scripts
             run and the screen has room (lib/track.ts) */}
         <script dangerouslySetInnerHTML={{ __html: TRACK_SCRIPT }} />
-        {/* The home band's plate, by day or by night, fetched and painted
+        {/* The panorama's home tile, by day or by night, fetched and painted
             while the HTML parses (lib/platePreload.ts); not on a deep link */}
         <script dangerouslySetInnerHTML={{ __html: PLATE_PRELOAD }} />
       </head>

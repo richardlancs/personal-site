@@ -635,12 +635,14 @@ a[data-resume][data-opening] {
 }
 
 /* ---------- The band (components/city2d/DistrictBand.tsx) ----------
-   The district's day plate, its night plate over it at --city-night
-   (CityDriver.tsx writes the --city-* variables on <html>), a twilight
-   grade over both, and the lowest 30% fading into the station's ground.
-   Its height is held by aspect-ratio before any image arrives (and capped,
-   so a very wide window still shows what comes under it); the gradient
-   is what shows before the plates, and if one fails. No words on it. */
+   The city's painting, in tiles of the panorama: each tile's day plate,
+   its night plate over it at --city-night (CityDriver.tsx writes the
+   --city-* variables on <html>), a twilight grade over both, and the
+   lowest 30% fading into the station's ground. Read top to bottom, a
+   station's band is its own tile, cropped to 21:9 (capped, so a very wide
+   window still shows what comes under it); on the journey it is the whole
+   panorama (city-track.css). The gradient is what shows before the
+   plates, and if one fails. No words on it. */
 
 .band {
   position: relative;
@@ -654,19 +656,20 @@ a[data-resume][data-opening] {
   isolation: isolate;
 }
 
-/* The home band's plate, painted before hydration: the head script
+/* The home tile's plate, painted before hydration: the head script
    (lib/platePreload.ts) fetched the file and set it as --home-plate, so
-   the page's largest paint doesn't wait for the scripts. Drawn as the
-   plate's <img> is (cover, centred; the focal point on phones), under the
-   plates, which then fade in over the same picture. Without it, the
-   gradient alone. */
-:root[data-home-plate] .band[data-home] {
-  background-image: var(--home-plate), linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
-  background-size: cover, auto;
-  background-position: var(--focal, center), center;
-  background-repeat: no-repeat;
+   the page's largest paint doesn't wait for the scripts; the plates then
+   fade in over the same picture */
+:root[data-home-plate] .band-tile[data-home] {
+  background: var(--home-plate) center / cover no-repeat;
 }
 
+/* The journey's whole panorama, only on the journey (city-track.css) */
+.pano {
+  display: none;
+}
+
+.band-tile,
 .band-plate,
 .band-noscript {
   position: absolute;
@@ -674,16 +677,11 @@ a[data-resume][data-opening] {
   z-index: 0;
 }
 
-/* Where the band crops the plate (phones, the journey's stops), its
-   subject stays in frame (plates.ts: focal, set on the band as --focal;
-   every focal is centred vertically, so a band cropped top and bottom is
-   as before) */
 .band-plate img,
 .band-noscript {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: var(--focal, center);
 }
 
 /* The night plate over the day plate; without the driver (no script),

@@ -1,11 +1,13 @@
 import type { CSSProperties, ReactNode } from "react";
-import { sectionNumber, type Section } from "../../sections/registry";
+import { pageSections, sectionNumber, type Section } from "../../sections/registry";
 import DistrictBand from "./DistrictBand";
+import { bandTiles } from "./panoramaImages";
 
 // One section of the page, one stop of the journey (city.css, "Stations";
-// city-track.css): its district's band of painting, then its words. The
-// band carries no words, and the place it paints isn't named: sections are
-// named as sections.
+// city-track.css): its band of painting (read top to bottom: its stretch of
+// the panorama; on the journey the one panorama behind every stop shows
+// instead, CityTrack.tsx), then its words. The band carries no words, and
+// the place it paints isn't named: sections are named as sections.
 //
 // The words sit in panels (`.panel`): on the journey, dark glass on the
 // street, each scrolling inside once the journey has stopped with all of
@@ -19,7 +21,7 @@ import DistrictBand from "./DistrictBand";
 // It can be focused (tabIndex -1), so the Sections menu moves focus to the
 // section it jumps to. The home section has the hero instead of an h2
 // (sections/Hero.tsx, with the page's h1, id `home-title`): pass it as
-// `heading`. Only the home band loads its plate early.
+// `heading`.
 //
 // Each `.reveal` arrives once as it comes on (reveal.css, "Arrival"),
 // carrying its place in its group from order(), capped at the sixth step.
@@ -47,7 +49,7 @@ export default function Station({ section, heading, row, children }: { section: 
   const id = section.hash || "home";
   return (
     <section id={id} aria-labelledby={`${id}-title`} tabIndex={-1} className="station" data-district={section.district}>
-      <DistrictBand district={section.district} priority={section.id === "home"} />
+      <DistrictBand stop={pageSections.indexOf(section)} tiles={[bandTiles[pageSections.indexOf(section)]]} />
       {row ? (
         <div className="station-row">{children}</div>
       ) : (

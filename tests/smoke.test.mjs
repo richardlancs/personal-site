@@ -173,9 +173,9 @@ test("the copy feedback is a live region drawn on screen, not screen-reader-only
 test("no plate is in the HTML outside <noscript>; the home band's night plate is inside it", { skip }, async () => {
   const { body } = await get("/");
   const outside = body.replace(/<noscript>[\s\S]*?<\/noscript>/g, "");
-  assert.doesNotMatch(outside, /<img[^>]*\/_next\/static\/media\/[a-z-]+-(day|night)\.[0-9a-f]+\.webp/, "a plate <img> outside <noscript>");
+  assert.doesNotMatch(outside, /<img[^>]*\/_next\/static\/media\/(day|night)-\d\d\.[0-9a-z_-]+\.webp/, "a plate <img> outside <noscript>");
   assert.doesNotMatch(outside, /<link[^>]*as="image"[^>]*(day|night)/, "a plate preload");
-  assert.match(await station("home"), /<noscript><img[^>]*src="\/_next\/static\/media\/lujiazui-night\.[^"]+\.webp"/);
+  assert.match(await station("home"), /<noscript><img[^>]*src="\/_next\/static\/media\/night-01\.[^"]+\.webp"/);
 });
 
 test("home is the band and the hero: no caption, no place names, no h2", { skip }, async () => {

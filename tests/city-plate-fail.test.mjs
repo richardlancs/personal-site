@@ -19,7 +19,7 @@ test("every plate failing: each band keeps its gradient and its height, with no 
       const page = await browser.newPage({ viewport: { width, height: 900 } });
       // Every plate: the optimised files and the originals
       const failed = [];
-      await page.route(/\/_next\/image\?url=[^&]*%2F_next%2Fstatic%2Fmedia%2F[a-z-]+-(day|night)\.|\/_next\/static\/media\/[a-z-]+-(day|night)\.[0-9a-f.]*(webp|png|jpg)/, (route) => {
+      await page.route(/\/_next\/image\?url=[^&]*%2F_next%2Fstatic%2Fmedia%2F(day|night)-\d\d\.|\/_next\/static\/media\/(day|night)-\d\d\.[0-9a-z.]*(webp|png|jpg)/, (route) => {
         failed.push(route.request().url());
         return route.abort();
       });
@@ -32,18 +32,19 @@ test("every plate failing: each band keeps its gradient and its height, with no 
       }
       await page.waitForTimeout(800);
       const bands = await page.evaluate(() =>
-        [...document.querySelectorAll(".band")].map((band) => {
+        // The band that shows: on the journey its one panorama, read top to bottom each station's
+        [...document.querySelectorAll(".band")].filter((band) => getComputedStyle(band).display !== "none").map((band) => {
           const r = band.getBoundingClientRect();
           const cs = getComputedStyle(band);
           const shown = [...band.querySelectorAll(".band-plate img")].filter((img) => img.complete && img.naturalWidth === 0 && getComputedStyle(img).opacity !== "0");
-          // On the journey (city-track.css) a band's height is its stop's
-          // (wide screens) or the painting's strip over the sheet (phones):
-          // from the layout, never from a picture
+          // On the journey (city-track.css) the panorama is as tall as the
+          // stage (wide screens) or the painting's strip over the sheet
+          // (phones): from the layout, never from a picture
           const track = document.documentElement.dataset.track === "on";
           const strip = parseFloat(getComputedStyle(document.querySelector(".track-weather")).height);
           return {
             track,
-            stripHeight: innerWidth > innerHeight ? band.parentElement.getBoundingClientRect().height : strip + 16,
+            stripHeight: innerWidth > innerHeight ? document.querySelector(".track-stage").getBoundingClientRect().height : strip + 16,
             id: band.closest("section")?.id,
             width: r.width,
             height: r.height,
@@ -56,7 +57,7 @@ test("every plate failing: each band keeps its gradient and its height, with no 
         }),
       );
       assert.ok(failed.length > 0, `${width}: no plate was asked for, so nothing was tested`);
-      assert.equal(bands.length, 6, `${width}: six bands`);
+      assert.equal(bands.length, bands[0]?.track ? 1 : 6, `${width}: the journey's panorama, or six bands`);
       for (const b of bands) {
         assert.ok(b.gradient, `${width} ${b.id}: the gradient is gone`);
         assert.equal(b.broken, 0, `${width} ${b.id}: a broken image shows`);

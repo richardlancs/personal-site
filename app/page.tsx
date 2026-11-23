@@ -1,4 +1,6 @@
 import CityTrack from "./components/city2d/CityTrack";
+import DistrictBand from "./components/city2d/DistrictBand";
+import { bandTiles } from "./components/city2d/panoramaImages";
 import Station from "./components/city2d/Station";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
@@ -23,7 +25,7 @@ export const metadata = sectionMetadata("home");
 export default function Home() {
   return (
     <main>
-      <CityTrack>
+      <CityTrack city={<DistrictBand tiles={bandTiles} />}>
         <Station section={section("home")} heading={<Hero />} />
         <Station section={section("about")}>
           <About />

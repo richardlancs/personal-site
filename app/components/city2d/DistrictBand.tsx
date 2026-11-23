@@ -3,86 +3,93 @@
 import Image from "next/image";
 import { useRef, useState, type CSSProperties } from "react";
 import { platesNeeded, type Plate } from "../../lib/cityLook";
-import type { DistrictId } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
-import { paintedHomePlate } from "./homePlate";
-import { BAND_SIZES, BELOW_SIZES, HOME_QUALITY, focal, plates } from "./plates";
+import { HOME_QUALITY, paintedHomePlate, tileSizes } from "./homePlate";
+import { HEIGHT } from "./panorama";
+import type { BandTile } from "./panoramaImages";
 import { useNear } from "./useNear";
 
-// A station's band of painting: its district by day, by night, or one
-// fading into the other, as Richmond Hill's clock has it (CityDriver.tsx
-// sets the blend; city.css, "The band", does the fading, the twilight
-// grade and the fade into the ground at the foot). Decorative: the
-// station's header names the place in words.
+// The city's painting: the panorama's tiles (panorama.ts), each by day, by
+// night, or one fading into the other, as Richmond Hill's clock has it
+// (CityDriver.tsx sets the blend; city.css, "The band", does the fading,
+// the twilight grade and the fade into the ground at the foot).
+// Decorative: the stations' headings name them in words.
 //
-// Before the driver has run (the server's HTML, the first paint) it is the
-// dark gradient alone, which already holds the band's height. Then only
-// the plates in use are mounted, and only once the band is near the screen
-// (useNear.ts: within half a screen); the home band (`priority`) mounts at
-// once and asks for its plate first; its plate is usually already painted
-// as its background by the head script (lib/platePreload.ts), and its
-// <img> reuses that very file. Each plate stays clear until it has
-// loaded, then fades in over the gradient (no blurred placeholder to snap
-// out of; no fade in still view). A plate that fails to load is dropped for
-// good, leaving the gradient: the band is decoration, so it isn't retried.
-// Without scripts, the night plate (lazy below the first band). On the
-// journey (city-track.css) the band is its stop's stretch of the city,
-// behind the stop's panel; the weather is drawn once over the whole stage
-// (CityTrack.tsx), not per band. Today's six plates stand in for the
-// continuous panorama: `plates` (plates.ts) is the one place they come from.
+// Two of them: on the journey (city-track.css) the whole panorama, one
+// row of tiles behind every stop, which CityTrack.tsx moves along with the
+// street (each stop's start shows its own stretch of the city); read top to
+// bottom (no scripts, a tiny screen, print) each station's band shows its
+// own tile (`stop`). Only the one that shows loads anything. The tiles come
+// as props from server components (panoramaImages.ts: bandTiles), so the
+// pictures' imports stay out of the page's JS.
+//
+// Before the driver has run (the server's HTML, the first paint) a tile is
+// the dark gradient alone. Then only the plates in use are mounted, and
+// only once the tile is near the screen (useNear.ts); the first tile of the
+// band that shows mounts at once and asks for its plate first, usually
+// already painted as its background by the head script
+// (lib/platePreload.ts), and its <img> reuses that very file. Each plate
+// stays clear until it has loaded, then fades in over the gradient. A
+// plate that fails to load is dropped for good, leaving the gradient.
+// Without scripts, the night plate.
 
-// Opened on a deep link (/#projects, …), which lands below the home band
+// Opened on a deep link (/#projects, …), which lands past the home stop
 function deepLinked(): boolean {
   if (typeof location === "undefined") return false;
   const hash = location.hash;
   return hash !== "" && hash !== "#" && hash !== "#home";
 }
 
-export default function DistrictBand({ district, priority = false }: { district: DistrictId; priority?: boolean }) {
+// Whether this band is the one that shows: the journey's, or a station's
+function showing(whole: boolean): boolean {
+  return typeof document !== "undefined" && (document.documentElement.dataset.track === "on") === whole;
+}
+
+function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  // The home band loads at once, unless the page opened on a deep link
-  // (/#projects, …), which lands below it: then it waits to come near like
-  // the others (and the head script left it alone too: lib/platePreload.ts).
-  // Read during hydration, but nothing it decides is drawn until the sky
-  // is known, after hydration.
-  const near = useNear(ref, priority && !deepLinked());
+  const home = i === 0 && whole;
+  // Read during hydration, but nothing it decides is drawn until the sky is known
+  const near = useNear(ref, home && showing(whole) && !deepLinked());
   const blend = useCityBlend();
   const [failed, setFailed] = useState<Plate[]>([]);
   const [loaded, setLoaded] = useState<Plate[]>([]);
-  const pair = plates[district];
   const shown = blend === null || !near ? [] : platesNeeded(blend).filter((p) => !failed.includes(p));
-  // The home plate the head script already fetched and painted as the
-  // band's background (city.css: .band[data-home]): the same file, so it
-  // comes from the cache. Read only once plates mount, after hydration.
-  const painted = priority && shown.length ? paintedHomePlate() : null;
+  // The plate the head script already fetched and painted as this tile's
+  // background (city.css: [data-home]): the same file, from the cache
+  const painted = home && shown.length ? paintedHomePlate() : null;
 
   return (
-    <div ref={ref} className="band" data-home={priority ? "" : undefined} aria-hidden="true" style={{ "--focal": focal[district] } as CSSProperties}>
+    <div ref={ref} className="band-tile" data-home={home ? "" : undefined} style={whole ? ({ aspectRatio: `${tile.w} / ${HEIGHT}` } as CSSProperties) : undefined}>
       {shown.map((plate) => (
         <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
-            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: pair[plate], sizes: priority ? BAND_SIZES : BELOW_SIZES, quality: priority ? HOME_QUALITY : undefined })}
+            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: tile[plate], sizes: whole ? tileSizes(tile.w) : "100vw", quality: home ? HOME_QUALITY : undefined })}
             alt=""
             fill
-            loading={priority ? "eager" : undefined}
-            fetchPriority={priority ? "high" : "low"}
+            // (mounted only once near: useNear is the lazy loading; the browser's own would wait for the stage's clip)
+            loading="eager"
+            fetchPriority={home ? "high" : "low"}
             onLoad={() => setLoaded((l) => (l.includes(plate) ? l : [...l, plate]))}
             onError={() => setFailed((f) => (f.includes(plate) ? f : [...f, plate]))}
           />
         </div>
       ))}
-      <noscript>
-        {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
-        <img
-          src={pair.night.src}
-          alt=""
-          width={pair.night.width}
-          height={pair.night.height}
-          loading={priority ? undefined : "lazy"}
-          decoding="async"
-          className="band-noscript"
-        />
-      </noscript>
+      {!whole && (
+        <noscript>
+          {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
+          <img src={tile.night.src} alt="" width={tile.night.width} height={tile.night.height} loading={i ? "lazy" : undefined} decoding="async" className="band-noscript" />
+        </noscript>
+      )}
+    </div>
+  );
+}
+
+/** A station's band (`stop`: its index, `tiles`: its own tile), or without one the journey's whole panorama (`tiles`: all of them) */
+export default function DistrictBand({ tiles, stop }: { tiles: BandTile[]; stop?: number }) {
+  const whole = stop === undefined;
+  return (
+    <div className={whole ? "band pano" : "band"} aria-hidden="true">
+      {whole ? tiles.map((tile, i) => <Tile key={i} tile={tile} i={i} whole />) : <Tile tile={tiles[0]} i={stop} whole={false} />}
     </div>
   );
 }

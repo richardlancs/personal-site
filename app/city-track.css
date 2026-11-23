@@ -76,16 +76,26 @@
     width: 100cqw;
   }
 
-  /* The painting fills the stop, its top melting into the sky behind and
-     its sides into the next stop's (today's six plates stand in for one
-     continuous panorama) */
-  :root[data-track="on"] .track .band {
+  /* The city: one panorama behind every stop (CityTrack moves it), its
+     tiles side by side as tall as the stage, its top melting into the sky
+     behind. The stations' own bands are for the page read top to bottom */
+  :root[data-track="on"] .station > .band {
+    display: none;
+  }
+
+  :root[data-track="on"] .pano {
     position: absolute;
-    inset: 0;
+    inset: 0 auto 0 0;
+    display: flex;
+    width: auto;
     max-height: none;
     aspect-ratio: auto;
-    mask-image: linear-gradient(to bottom, transparent, #000 16%), linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
-    mask-composite: intersect;
+    mask-image: linear-gradient(transparent, #000 16%);
+  }
+
+  :root[data-track="on"] .band-tile {
+    position: relative;
+    flex: none;
   }
 
   /* The words: dark glass panels on the street (.panel), each scrolling
@@ -142,14 +152,6 @@
      wide as its row, which leaves a peek of city after its last panel */
   :root[data-track="on"] .track > .station:has(> .station-row) {
     width: auto;
-  }
-
-  /* Its painting keeps its own shape (today's stand-in plates are one
-     screen's stretch each), its far edge melting into the sky */
-  :root[data-track="on"] .track .band:has(~ .station-row) {
-    right: auto;
-    width: calc(var(--band-h, 100dvh) * 7 / 3);
-    max-width: 100%;
   }
 
   :root[data-track="on"] .track .station-row {
@@ -239,13 +241,9 @@
     max-height: calc(100dvh - var(--rail-y) - 1.5rem - max(1rem, env(safe-area-inset-bottom)));
   }
 
-  /* Contact, the journey's end, is its best-lit stop: the painting
-     brighter, the panel lighter with a cyan edge along its top, and the
-     whole edge lit once an address is copied (the success moment) */
-  :root[data-track="on"] #contact .band {
-    filter: brightness(1.2) saturate(1.1);
-  }
-
+  /* Contact, the journey's end, is its best-lit stop: the panel lighter
+     with a cyan edge along its top, and the whole edge lit once an
+     address is copied (the success moment) */
   :root[data-track="on"] #contact .panel {
     border-top: 2px solid var(--cyan);
   }
@@ -285,7 +283,7 @@
       view-timeline: --runway block;
     }
 
-    :root[data-track="on"] :is(.track, .track-sky, .track-weather) {
+    :root[data-track="on"] :is(.track, .track-sky, .track-weather, .pano) {
       /* linear: the scroll's own pace, one pixel along for one down */
       animation: track-move linear both;
       animation-timeline: --runway;
@@ -346,15 +344,15 @@
     }
 
     /* No peek below the strip: each stop is the whole screen, so a sheet
-       never shows the next one's words. The closure is in the strip: each
-       band reaches back over the one before by the peek, so the next stop's
-       city shows at the right of the painting */
+       never shows the next one's words. The closure is in the strip: the
+       panorama runs on past the stop, so the next stop's city shows at the
+       right of the painting */
     :root[data-track="on"] .track > .station {
       width: 100cqw;
     }
 
-    :root[data-track="on"] .track .band {
-      inset: 0 0 auto calc(-1 * var(--peek));
+    :root[data-track="on"] .pano {
+      bottom: auto;
       height: var(--band-h);
     }
 

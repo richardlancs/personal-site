@@ -37,7 +37,8 @@ function within(el: Element, ahead: number) {
   const r = el.getBoundingClientRect();
   const m = window.innerHeight * ahead;
   const n = window.innerWidth * ahead;
-  return r.bottom > -m && r.top < window.innerHeight + m && r.right > -n && r.left < window.innerWidth + n;
+  // (nothing hidden is near: a station's band on the journey, the journey's panorama off it)
+  return r.width > 0 && r.bottom > -m && r.top < window.innerHeight + m && r.right > -n && r.left < window.innerWidth + n;
 }
 
 function arrive(el: Element) {
@@ -45,8 +46,10 @@ function arrive(el: Element) {
   release(el);
 }
 
-// After the first scroll, look half a screen ahead (the observer won't
-// report again for bands already inside its margin)
+// After the first scroll, look half a screen ahead, and again at every
+// scroll while anything waits: the observer won't report again for bands
+// already inside its margin, nor ever for the journey's tiles off the
+// stage's edge (its clip hides them from it), which move with the scroll
 function onFirstScroll() {
   scrolled = true;
   for (const el of [...waiting.keys()]) if (within(el, AHEAD)) arrive(el);
@@ -76,12 +79,13 @@ function watch(el: Element, onNear: () => void) {
         window.removeEventListener("scrollend", done);
         clearTimeout(timer);
         if (!scrolled) onFirstScroll();
+        window.addEventListener("scroll", onFirstScroll, { passive: true });
       };
       const timer = setTimeout(done, JUMP_WAIT);
       window.addEventListener("scrollend", done, { passive: true });
     } else {
       scrolled = window.scrollY > 0;
-      if (!scrolled) window.addEventListener("scroll", onFirstScroll, { once: true, passive: true });
+      window.addEventListener("scroll", onFirstScroll, { passive: true });
     }
     observer = new IntersectionObserver(
       (entries) => {

@@ -1,15 +1,14 @@
-// The bands of painting at the top of each station (components/city2d/
-// DistrictBand.tsx), the driver that sets their sky on <html> from
-// Richmond Hill's clock (CityDriver.tsx), the plates themselves
-// (app/assets/city/) and the hero over the first band (sections/Hero.tsx).
+// The city's painting (components/city2d/DistrictBand.tsx: the journey's
+// panorama, or a station's band read top to bottom), the driver that sets
+// its sky on <html> from Richmond Hill's clock (CityDriver.tsx), the tiles
+// themselves (app/assets/city/panorama/; their joins: city-panorama.test)
+// and the hero over the first stop (sections/Hero.tsx).
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { test } from "node:test";
-import { pageSections } from "../app/sections/registry.ts";
 
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
-const districts = [...new Set(pageSections.map((s) => s.district))];
 
 // A WebP's pixel size from its header: lossy (VP8), lossless (VP8L) or
 // extended (VP8X)
@@ -44,12 +43,9 @@ test("the band keeps its gradient when a plate fails, and has a no-script plate"
   assert.match(src, /alt=""/);
   assert.doesNotMatch(src, /alt="[^"]+"/, "every plate is decorative");
   assert.match(src, /platesNeeded\(/, "only the plates in use are mounted");
-  // The home band: (max-width: 767px) 175vw, 100vw, so the phone crop asks
-  // for a wide enough plate; the bands below ask for the screen's width
-  // (a phone-sized file on a phone)
-  assert.match(src, /sizes: priority \? BAND_SIZES : BELOW_SIZES/);
-  assert.match(read("app/components/city2d/plates.ts"), /export const BELOW_SIZES = "100vw";/);
-  assert.match(read("app/components/city2d/plates.ts"), /BAND_WIDTH = \{ phoneMax: 767, phoneScale: 1\.75 \}/);
+  // The journey's tiles ask for their drawn width (as tall as the stage, or
+  // the strip on phones); a station's band, read top to bottom, the screen's
+  assert.match(src, /sizes: whole \? tileSizes\(tile\.w\) : "100vw"/);
   // No blurred stand-in to snap out of: the plate fades in once loaded
   assert.doesNotMatch(src, /placeholder="blur"/);
   assert.match(src, /onLoad=/);
@@ -60,32 +56,37 @@ test("the band keeps its gradient when a plate fails, and has a no-script plate"
   // A short fade on the motion tokens (--t-slow, under 300 ms), never a long one
   assert.match(css, /:root:not\(\[data-still="on"\]\) \.band-plate img \{\s*transition: opacity var\(--t-slow\)/);
   assert.match(css, /--t-slow: 280ms;/);
-  // Below the first band the no-script plate is lazy too
-  assert.match(src, /loading=\{priority \? undefined : "lazy"\}/);
+  // Below the first tile the no-script plate is lazy too
+  assert.match(src, /loading=\{i \? "lazy" : undefined\}/);
 });
 
 test("the bands wait on one shared observer, half a screen ahead", () => {
   const near = read("app/components/city2d/useNear.ts");
   assert.equal((near.match(/new IntersectionObserver\(/g) ?? []).length, 1, "one observer");
   assert.match(near, /if \(!observer\) \{/, "made once, shared by every band");
-  assert.match(near, /addEventListener\("scroll", onFirstScroll, \{ once: true, passive: true \}\)/, "no look-ahead before the first scroll");
+  // No look-ahead before the first scroll; after it, at every scroll (the
+  // journey's tiles off the stage's clipped edge are never reported)
+  assert.match(near, /addEventListener\("scroll", onFirstScroll, \{ passive: true \}\)/);
   assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   assert.match(near, /rootMargin: ROOT_MARGIN/);
   // Half a screen every way: down the stacked page, along the journey
   assert.match(near, /const ROOT_MARGIN = "50%"/);
   assert.match(near, /r\.right > -n && r\.left < window\.innerWidth \+ n/, "ahead sideways too");
+  assert.match(near, /r\.width > 0 &&/, "nothing hidden is near (a station's band on the journey)");
   assert.match(near, /unobserve\(/, "each band is let go once seen");
   const band = read("app/components/city2d/DistrictBand.tsx");
-  assert.match(band, /useNear\(ref, priority && !deepLinked\(\)\)/, "home skips the wait");
-  assert.match(band, /blend === null \|\| !near \? \[\]/, "no plate before the band is near");
-  assert.match(band, /fetchPriority=\{priority \? "high" : "low"\}/);
+  assert.match(band, /useNear\(ref, home && showing\(whole\) && !deepLinked\(\)\)/, "the home tile of the band that shows skips the wait");
+  assert.match(band, /blend === null \|\| !near \? \[\]/, "no plate before the tile is near");
+  assert.match(band, /fetchPriority=\{home \? "high" : "low"\}/);
 });
 
-test("each district's crop keeps its subject, on both plates", () => {
-  const plates = read("app/components/city2d/plates.ts");
-  for (const d of ["lujiazui", "longtang", "towers", "metro", '"nanjing-road"', "bund"]) assert.match(plates, new RegExp(`\\n  ${d}: "\\d+% \\d+%"`), d);
-  assert.match(read("app/components/city2d/DistrictBand.tsx"), /"--focal": focal\[district\]/);
-  assert.match(read("app/city.css"), /object-position: var\(--focal, center\)/);
+test("each station's band, read top to bottom, is its own stop's tile", () => {
+  const station = read("app/components/city2d/Station.tsx");
+  assert.match(station, /<DistrictBand stop=\{pageSections\.indexOf\(section\)\} /);
+  const band = read("app/components/city2d/DistrictBand.tsx");
+  assert.match(station, /tiles=\{\[bandTiles\[pageSections\.indexOf\(section\)\]\]\}/);
+  assert.match(band, /whole \? tiles\.map\(\(tile, i\) => <Tile key=\{i\} tile=\{tile\} i=\{i\} whole \/>\) : <Tile tile=\{tiles\[0\]\} i=\{stop\} whole=\{false\} \/>/);
+  assert.match(read("app/city.css"), /\.band-plate img,\s*\.band-noscript \{[^}]*object-fit: cover;/);
 });
 
 test("about, experience and contact sit on the lighter ground, and each band fades into its own", () => {
@@ -94,14 +95,17 @@ test("about, experience and contact sit on the lighter ground, and each band fad
   assert.match(css, /\.band::before \{[^}]*var\(--ground/);
 });
 
-test("only the home band loads early; the others wait until they're near", () => {
-  const station = read("app/components/city2d/Station.tsx");
-  assert.match(station, /<DistrictBand district=\{section\.district\}/);
+test("only the home tile loads early; the others wait until they're near", () => {
   const band = read("app/components/city2d/DistrictBand.tsx");
-  // Eager loading only behind the prop; next/image is lazy otherwise
-  assert.doesNotMatch(band, /loading="eager"|priority=\{true\}|preload/);
-  assert.match(band, /loading=\{priority \? "eager" : undefined\}/);
-  assert.match(station, /priority=\{section\.id === "home"\}/);
+  // Mounted only once near (useNear is the lazy loading: the browser's own
+  // would wait until a tile is past the stage's clip, on the screen), and
+  // only the journey's home tile skips the wait and asks first
+  assert.doesNotMatch(band, /priority=\{true\}|preload/);
+  assert.match(band, /const home = i === 0 && whole;/);
+  assert.match(band, /loading="eager"/);
+  assert.match(band, /fetchPriority=\{home \? "high" : "low"\}/);
+  // The journey's panorama is CityTrack's, once, in the stage
+  assert.match(read("app/page.tsx"), /<DistrictBand tiles=\{bandTiles\} \/>/);
 });
 
 test("the driver waits for the clock and writes the sky on <html>", () => {
@@ -137,17 +141,17 @@ test("the band's day/night cross-fade, grade and bottom fade, still in still vie
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\)[^{]*\.band/);
 });
 
-test("every district has both plates, the same size, none over 600 KB", () => {
-  assert.equal(districts.length, 6);
-  const plates = read("app/components/city2d/plates.ts");
-  for (const d of districts) {
-    const [day, night] = ["day", "night"].map((t) => `${root}app/assets/city/${d}-${t}.webp`);
+test("every tile of the panorama has both plates, the same size, none over 600 KB", () => {
+  const pano = read("app/components/city2d/panoramaImages.ts");
+  const count = (pano.match(/\{ day: day\d\d, night: night\d\d \}/g) ?? []).length;
+  assert.equal(count, 6);
+  for (let i = 1; i <= count; i++) {
+    const [day, night] = ["day", "night"].map((t) => `${root}app/assets/city/panorama/${t}-0${i}.webp`);
     for (const f of [day, night]) {
       assert.ok(existsSync(f), f);
       assert.ok(statSync(f).size <= 600 * 1024, `${f} is ${statSync(f).size} bytes`);
-      assert.ok(plates.includes(`/assets/city/${f.split("/").pop()}"`), `plates.ts imports ${f}`);
     }
-    assert.deepEqual(webpSize(day), webpSize(night), `${d}: the day and night plates differ in size`);
+    assert.deepEqual(webpSize(day), webpSize(night), `tile ${i}: the day and night plates differ in size`);
   }
 });
 
@@ -182,8 +186,9 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   // a few widths, and on a deep link
   const place = { latitude: 43.87111, longitude: -79.43725, timeZone: "America/Toronto" };
   const srcset = (p) => [640, 1080, 1920, 3840].map((w) => `/img/${p}?w=${w} ${w}w`).join(", ");
-  const band = { phoneMax: 767, phoneScale: 1.75 };
-  const run = (iso, { width = 1440, dpr = 1, hash = "", pathname = "/" } = {}) => {
+  // The home tile: 1672 x 941, so drawn 1.777 times the stage's height (or the phone's strip, 30% of it and 64px)
+  const ratio = 1672 / 941;
+  const run = (iso, { width = 1440, height = 900, dpr = 1, hash = "", pathname = "/", track = "on" } = {}) => {
     const added = [];
     const vars = {};
     const attrs = {};
@@ -193,26 +198,28 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
     const document = {
       createElement: () => ({ setAttribute(k, v) { this[k] = v; } }),
       head: { appendChild: (l) => added.push(l) },
-      documentElement: { style: { setProperty: (k, v) => (vars[k] = v) }, setAttribute: (k, v) => (attrs[k] = v) },
+      documentElement: { style: { setProperty: (k, v) => (vars[k] = v) }, setAttribute: (k, v) => (attrs[k] = v), getAttribute: (k) => (k === "data-track" ? track : null) },
     };
-    const window = { innerWidth: width, devicePixelRatio: dpr };
-    new Function("document", "Date", "window", "location", platePreloadScript(place, srcset("day"), srcset("night"), band))(document, FakeDate, window, { hash, pathname });
+    const window = { innerWidth: width, innerHeight: height, devicePixelRatio: dpr };
+    new Function("document", "Date", "window", "location", platePreloadScript(place, srcset("day"), srcset("night"), ratio))(document, FakeDate, window, { hash, pathname });
     return { links: added.map((l) => `${l.rel} ${l.as} ${l.href} ${l.fetchpriority}`), plate: vars["--home-plate"] ?? null, which: attrs["data-home-plate"] ?? null };
   };
   const noon = run("2026-06-21T16:00:00Z");
-  assert.deepEqual(noon, { links: ["preload image /img/day?w=1920 high"], plate: 'url("/img/day?w=1920")', which: "day" }, "noon, 1440 at 1x");
+  // 900 tall: drawn 1599 px wide, so the 1920 file of this list
+  assert.deepEqual(noon, { links: ["preload image /img/day?w=1920 high"], plate: 'url("/img/day?w=1920")', which: "day" }, "noon, 1440 x 900 at 1x");
   assert.deepEqual(run("2026-06-21T04:00:00Z").which, "night", "midnight");
   // The preload and the painted background are one URL, picked from the
-  // band's sizes: 412px at 1.75x on a phone draws 412 * 1.75 * 1.5 (the
-  // phone's cap) = 1082 device px, so the 1920 file of this list; 390 at
-  // 1x, 1080; 390 at 3x, capped, 1024, so 1080
-  const phone = run("2026-06-21T16:00:00Z", { width: 412, dpr: 1.75 });
-  assert.equal(phone.links[0], "preload image /img/day?w=1920 high");
-  assert.equal(phone.plate, 'url("/img/day?w=1920")');
-  assert.equal(run("2026-06-21T16:00:00Z", { width: 390, dpr: 3 }).plate, 'url("/img/day?w=1080")', "a phone's density capped at 1.5");
+  // tile's sizes: a phone's strip, 390 x 844, is 0.3 * 844 + 64 = 317 tall,
+  // drawn 563 wide; at 3x, capped at 1.5, 845 device px, so 1080; at 1x, 640
+  const phone = run("2026-06-21T16:00:00Z", { width: 390, height: 844, dpr: 3 });
+  assert.equal(phone.links[0], "preload image /img/day?w=1080 high");
+  assert.equal(phone.plate, 'url("/img/day?w=1080")', "a phone's density capped at 1.5");
+  assert.equal(run("2026-06-21T16:00:00Z", { width: 390, height: 844 }).plate, 'url("/img/day?w=640")');
   assert.equal(run("2026-06-21T16:00:00Z", { width: 1440, dpr: 2 }).plate, 'url("/img/day?w=3840")', "no cap on wide screens");
-  assert.equal(run("2026-06-21T16:00:00Z", { width: 390 }).plate, 'url("/img/day?w=1080")');
-  assert.equal(run("2026-06-21T16:00:00Z", { width: 2560, dpr: 2 }).plate, 'url("/img/day?w=3840")', "the largest when none is wide enough");
+  assert.equal(run("2026-06-21T16:00:00Z", { width: 844, height: 390 }).plate, 'url("/img/day?w=1080")', "a phone on its side: the stage's height");
+  assert.equal(run("2026-06-21T16:00:00Z", { width: 2560, height: 1440, dpr: 2 }).plate, 'url("/img/day?w=3840")', "the largest when none is wide enough");
+  // Read top to bottom (no journey), the stations' bands have no home tile: nothing fetched
+  assert.deepEqual(run("2026-06-21T16:00:00Z", { track: null }), { links: [], plate: null, which: null });
   // Twilight: the plate the blend is closer to (day before sunset, night after)
   const { sunset } = solarSun("2026-06-21", 43.87111, -79.43725);
   assert.equal(run(new Date((sunset - 600) * 1000).toISOString()).which, "day", "ten minutes before sunset");
@@ -226,28 +233,27 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   assert.match(layout, /__html: PLATE_PRELOAD/);
 });
 
-test("the head script and the home band take the plate's URL from one source", () => {
-  // The script's candidates are the band's own srcset (getImageProps with
-  // the band's sizes) and the band's widths; the band's <img> for the
-  // painted plate reuses the exact URL the script set, read back off <html>
+test("the head script and the home tile take the plate's URL from one source", () => {
+  // The script's candidates are the tile's own srcset (getImageProps with
+  // the tile's sizes) and its shape; the tile's <img> for the painted plate
+  // reuses the exact URL the script set, read back off <html>
   const layout = read("app/layout.tsx");
-  assert.match(layout, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: BAND_SIZES, quality: HOME_QUALITY \}\)/, "the band's own srcset and sizes");
-  assert.match(layout, /platePreloadScript\(richmondHill, bandSrcSet\(plates\.lujiazui\.day\), bandSrcSet\(plates\.lujiazui\.night\), BAND_WIDTH\)/);
-  const plates = read("app/components/city2d/plates.ts");
-  assert.match(plates, /BAND_SIZES = `\(max-width: \$\{BAND_WIDTH\.phoneMax\}px\) \$\{BAND_WIDTH\.phoneScale \* 100\}vw, 100vw`/, "sizes and the script's widths are one definition");
+  assert.match(layout, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: tileSizes\(home\.w\), quality: HOME_QUALITY \}\)/, "the tile's own srcset and sizes");
+  assert.match(layout, /platePreloadScript\(richmondHill, tileSrcSet\(home\.day\), tileSrcSet\(home\.night\), home\.w \/ HEIGHT\)/);
+  const helper = read("app/components/city2d/homePlate.ts");
+  assert.match(helper, /\(max-aspect-ratio: 1\/1\) calc\(\$\{\+\(r \* 30\)\.toFixed\(2\)\}vh \+ \$\{Math\.round\(r \* 64\)\}px\), \$\{\+\(r \* 100\)\.toFixed\(2\)\}vh/, "sizes and the script's widths agree");
   const script = read("app/lib/platePreload.ts");
+  assert.match(script, /need=\$\{ratio\}\*\(ph\?0\.3\*vh\+64:vh\)/);
   assert.match(script, /l\.href=url/);
   assert.match(script, /setProperty\("--home-plate",'url\("'\+url\+'"\)'\)/, "the painted URL is the preloaded one");
-  const helper = read("app/components/city2d/homePlate.ts");
   assert.match(helper, /getPropertyValue\("--home-plate"\)/);
   assert.match(helper, /getAttribute\("data-home-plate"\)/);
   const band = read("app/components/city2d/DistrictBand.tsx");
   assert.match(band, /paintedHomePlate\(\)/);
   assert.match(band, /painted\?\.plate === plate \? \{ src: painted\.src, unoptimized: true \}/, "the painted plate's <img> asks for that same file");
-  assert.match(band, /data-home=\{priority \? "" : undefined\}/);
+  assert.match(band, /data-home=\{home \? "" : undefined\}/);
   const css = read("app/city.css");
-  assert.match(css, /:root\[data-home-plate\] \.band\[data-home\] \{\s*background-image: var\(--home-plate\)/);
-  assert.match(css, /background-size: cover/);
+  assert.match(css, /:root\[data-home-plate\] \.band-tile\[data-home\] \{\s*background: var\(--home-plate\) center \/ cover no-repeat;/);
 });
 
 test("a deep link fetches no home plate: the head script and the bands wait for the jump", () => {
@@ -256,6 +262,6 @@ test("a deep link fetches no home plate: the head script and the bands wait for 
   assert.match(near, /addEventListener\("scrollend", done/, "the smooth jump's end, not its first step");
   assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   const band = read("app/components/city2d/DistrictBand.tsx");
-  assert.match(band, /useNear\(ref, priority && !deepLinked\(\)\)/);
-  assert.match(read("app/lib/platePreload.ts"), /var h=location\.hash;if\(location\.pathname!=="\/"\|\|h&&h!=="#"&&h!=="#home"\)return;/);
+  assert.match(band, /useNear\(ref, home && showing\(whole\) && !deepLinked\(\)\)/);
+  assert.match(read("app/lib/platePreload.ts"), /var h=location\.hash;if\(location\.pathname!=="\/"\|\|h&&h!=="#"&&h!=="#home"\|\|document\.documentElement\.getAttribute\("data-track"\)!=="on"\)return;/);
 });

@@ -38,3 +38,35 @@ export const SKY_DEPTH = 0.7;
 
 /** Whether a screen this size takes the journey (smaller: the page reads top to bottom). Also in the head script (TRACK_SCRIPT). */
 export const TRACK_MIN = { width: 320, height: 320 } as const;
+
+/**
+ * The panorama along the journey (CityTrack.tsx): how far it has moved left
+ * (`p`, pixels) at each place along the track (`x`), straight between them.
+ * At each stop's start it stands at that stop's stretch (`starts`, in the
+ * panorama's own pixels, drawn `scale` times as big): its segment
+ * (`segment` wide) from its left edge, or centred where the screen is
+ * narrower than a segment; at the journey's end, its own end. Never past
+ * either end, never back.
+ */
+export function panoKeys(offsets: number[], vw: number, scale: number, starts: number[], width: number, segment: number): { x: number[]; p: number[] } {
+  const n = offsets.length - 1;
+  const travel = Math.max(0, offsets[n] - vw);
+  const end = Math.max(0, width * scale - vw);
+  const x: number[] = [];
+  const p: number[] = [];
+  for (let k = 0; k < n && offsets[k] < travel; k++) {
+    x.push(offsets[k]);
+    p.push(Math.min(end, Math.max(p[k - 1] ?? 0, scale * (starts[k] ?? 0) + Math.max(0, (scale * segment - vw) / 2))));
+  }
+  x.push(travel);
+  p.push(end);
+  return { x, p };
+}
+
+/** Where the panorama stands (panoKeys) at x along the track */
+export function panoAt(x: number, keys: { x: number[]; p: number[] }): number {
+  const { x: xs, p } = keys;
+  if (x <= xs[0]) return p[0];
+  for (let k = 1; k < xs.length; k++) if (x <= xs[k]) return p[k - 1] + ((p[k] - p[k - 1]) * (x - xs[k - 1])) / (xs[k] - xs[k - 1] || 1);
+  return p[p.length - 1];
+}

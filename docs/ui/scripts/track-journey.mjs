@@ -62,7 +62,7 @@ const newContext = async (opts = {}) => {
       CSS.supports = (a, b) => (/animation-timeline/.test(String(a)) ? false : b === undefined ? supports(a) : supports(a, b));
       addEventListener("DOMContentLoaded", () => {
         const s = document.createElement("style");
-        s.textContent = ".track, .track-sky, .track-weather { animation: none !important; }";
+        s.textContent = ".track, .track-sky, .track-weather, .pano { animation: none !important; }";
         document.head.append(s);
       });
     });
