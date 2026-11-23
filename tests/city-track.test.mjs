@@ -256,7 +256,9 @@ test("fix round 1: glass the city reads through, a scrim behind the words, city 
   assert.match(body, /\.track \.panel :is\(\.station-head, h3, h4, p, li, summary\) \{\s*background: rgb\(8 9 12 \/ 0\.62\);/);
   assert.doesNotMatch(body, /#contact \.panel \{[^}]*background/, "Contact the same glass");
   // From a panel at the inset, the next starts past the screen's edge
-  assert.match(body, /gap: max\(2 \* var\(--peek\), 100cqw - var\(--peek\) - 1rem - min\(28rem, 100cqw - 2 \* var\(--peek\) - 2rem\)\);/);
+  assert.match(body, /--past: max\(2 \* var\(--peek\), 100cqw - var\(--peek\) - 1rem - min\(28rem, 100cqw - 2 \* var\(--peek\) - 2rem\)\);\s*gap: var\(--past\);/);
+  // ... and after a row's last panel, before the next stop
+  assert.match(body, /padding: var\(--stop-top\) var\(--past\) /);
   // The arrivals never animate a key or a link itself (GlassPress's give is its scale)
   const set = body.match(/:is\(\.track \.panel, \.panel :is\(([^)]*)\)\)/)[1];
   assert.doesNotMatch(set, /glass|text-link/);

@@ -92,7 +92,12 @@ test("the cover leads, matched to its words: a wide one heads them at their widt
   // Tall (a phone's screen or a pair): beside the words from 27.5rem
   assert.match(source, /const side = Boolean\(cover && tall\(cover\)\)/);
   assert.match(row, /@min-\[27\.5rem\]:grid-cols-\[auto_minmax\(0,1fr\)\]/);
-  assert.match(row, /pair \? "@min-\[27\.5rem\]:w-80" : "@min-\[27\.5rem\]:w-48"/);
+  // ... and on a narrow panel heads them centred at that size (never a
+  // phone's screen as tall as the sheet)
+  assert.match(row, /mx-auto max-w-full @min-\[27\.5rem\]:order-none/);
+  assert.match(row, /pair \? "w-80" : "w-48"/);
+  // A pair's frame is exactly its two pictures: no gap, no band
+  assert.doesNotMatch(source, /justify-center gap-3/);
   assert.match(source, /"--panel-w": small \? "34rem" : "40rem"/);
   // Its corners are the panel's less its padding
   assert.match(source, /rounded-\[var\(--radius-in\)\]/);

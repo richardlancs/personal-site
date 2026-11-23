@@ -213,18 +213,28 @@ try {
     await page.close();
   }
 
-  // 1d. The edges are city: at every settled stop at 1440 and 768, no
-  // panel's words lie in the outer 10% of the screen on either side
+  // 1d. The edges are city: at every settled stop at 1440 and 768, and at
+  // the panels in a row and each row's end (Skills, the last project, the
+  // last role), no panel's words lie in the outer 10% of the screen on
+  // either side. It counts the words it saw, so it can't pass on none.
   for (const size of [{ width: 1440, height: 900 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }]) {
     const page = await open(ctx, "/", size);
-    for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) {
+    const lastRole = await page.evaluate(() => {
+      const p = [...document.querySelectorAll("#experience .exp-stop > .panel")].pop();
+      p.id ||= "journey-last-role";
+      return p.id;
+    });
+    for (const id of ["home", "about", "projects", "marketlab", "garagepoker", "skills", "experience", lastRole, "interests", "contact"]) {
+      // (the last role has no address of its own: its panel is brought on as
+      // a link to it would)
       await page.evaluate((i) => (location.hash = i), id);
       await settle(page, 300);
       await rest(page);
       await settle(page, 300);
-      const out = await page.evaluate(() => {
+      const [out, seen] = await page.evaluate(() => {
         const edge = innerWidth * 0.1;
         const found = [];
+        let seen = 0;
         const walker = document.createTreeWalker(document.querySelector(".track"), NodeFilter.SHOW_TEXT);
         for (let n = walker.nextNode(); n; n = walker.nextNode()) {
           const el = n.parentElement;
@@ -236,12 +246,13 @@ try {
           for (const q of range.getClientRects()) {
             const r = { left: Math.max(q.left, box.left), right: Math.min(q.right, box.right), top: q.top, bottom: q.bottom };
             if (r.right <= r.left || r.right <= 0 || r.left >= innerWidth || r.bottom <= 0 || r.top >= innerHeight) continue;
+            seen++;
             if (r.left < edge - 0.5 || r.right > innerWidth - edge + 0.5) found.push(`"${n.textContent.trim().slice(0, 16)}" at ${Math.round(r.left)}–${Math.round(r.right)}`);
           }
         }
-        return [...new Set(found)].slice(0, 3);
+        return [[...new Set(found)].slice(0, 3), seen];
       });
-      check(out.length === 0, `${size.width}×${size.height} at ${id}: the outer 10% each side is city, no panel's words${out.length ? ` (${out.join("; ")})` : ""}`);
+      check(seen > 0 && out.length === 0, `${size.width}×${size.height} at #${id}: the outer 10% each side is city, no panel's words (${seen} lines on screen)${out.length ? ` (${out.join("; ")})` : ""}`);
     }
     await page.close();
   }

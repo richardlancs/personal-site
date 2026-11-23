@@ -56,7 +56,7 @@ function Picture({ shots }: { shots: Screenshot[] }) {
   return (
     <div className="depth rounded-[var(--radius-in)]" data-tilt="">
       <figure
-        className="flex items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
+        className="flex items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
         style={{ aspectRatio: `${shots.reduce((w, s) => w + s.width / s.height, 0)}` }}
       >
         {shots.map((shot) => (
@@ -162,7 +162,8 @@ export default function Projects() {
           // Every other panel a size smaller, its cover with it
           const small = index % 2 === 1;
           // A tall cover (a phone's screen, or a pair) stands beside the
-          // words, as tall as they are; a wide one heads them, as wide
+          // words, as tall as they are (on a narrow panel it heads them,
+          // centred, at the same size); a wide one heads them, as wide
           const side = Boolean(cover && tall(cover));
           return (
             <article
@@ -185,7 +186,7 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className={`-order-1 min-w-0 ${side ? `@min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : ""}`}>
+                <div className={`-order-1 min-w-0 ${side ? `mx-auto max-w-full @min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "w-80" : "w-48"}` : ""}`}>
                   <Picture shots={shown} />
                 </div>
               )}
