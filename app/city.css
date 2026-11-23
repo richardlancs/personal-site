@@ -122,7 +122,7 @@ html {
    welcome (the still script sets data-still before the first paint).
    Not the landing: a deep link (/#experience) opens at its section at
    once, rather than gliding there from the top, so the page and its
-   progress line arrive together (ProgressLine.tsx sets data-landed once
+   metro map arrive together (ProgressLine.tsx sets data-landed once
    the page has loaded) */
 @media (prefers-reduced-motion: no-preference) {
   :root[data-still="off"][data-landed] {
@@ -630,9 +630,11 @@ a[data-resume][data-opening] {
 }
 
 /* ---------- Stations (components/city2d/Station.tsx) ----------
-   The page is six sections. Each opens with its district's band of
-   painting across the full width, then a centred column: the section's
-   number beside its heading, and the section. */
+   The page is six sections, the journey's six stops (city-track.css lays
+   them side by side). Read top to bottom (no scripts, a tiny screen,
+   print), each opens with its own stretch of the panorama across the full
+   width, then a centred column: the section's number beside its heading,
+   and the section. */
 
 .station {
   position: relative;
@@ -1142,6 +1144,7 @@ a[data-resume][data-opening] {
 :root[data-bar-tall] .progress-label {
   position: absolute;
   opacity: 0;
+  pointer-events: none;
 }
 
 :root[data-bar-tall] .progress-track {
@@ -1186,6 +1189,12 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 }
 
 @media (min-width: 53rem) {
+  /* (it comes after the keys in the bar's order, for Tab: drawn here) */
+  .top-bar-name,
+  .top-bar-here {
+    order: -1;
+  }
+
   .top-bar-name {
     margin-right: 0;
   }

@@ -1,7 +1,7 @@
 // The sections of the site, and everything the rest of the site needs to
 // know about each one: its anchor on the one page, its name and the
-// district painted above it. The Sections menu and the progress line are
-// generated from this list, and both name a section by its title.
+// stretch of the city it stands in. The Sections menu and the metro map
+// are generated from this list, and both name a section by its title.
 //
 // The words themselves (projects, experience, the notebook) stay in
 // app/data/portfolio.ts; this is only the sections' metadata. Each
@@ -10,8 +10,8 @@
 
 export type SectionId = "home" | "about" | "projects" | "experience" | "interests" | "contact";
 
-// The six districts of the city, one per section (docs/city/style.md,
-// docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md)
+// The six stretches of the city, one per section, in the panorama's
+// order (docs/city/style.md, "The panorama")
 export type DistrictId = "lujiazui" | "longtang" | "towers" | "metro" | "nanjing-road" | "bund";
 
 export type Section = {
@@ -23,7 +23,7 @@ export type Section = {
   // In the menu and the lists. A section that isn't listed is still on
   // the page; it's just not pointed at.
   listed: boolean;
-  district: DistrictId; // the painting above it (never named on the page)
+  district: DistrictId; // its stretch of the panorama (never named on the page)
   // Deeper anchors inside the section, for the menu
   subsections?: { title: string; href: `/#${string}` }[];
 };
@@ -86,7 +86,7 @@ export const sections = pageSections;
 
 export const section = (id: SectionId): Section => pageSections.find((s) => s.id === id)!;
 
-// The sections that are pointed at: in the menu, the progress line and
+// The sections that are pointed at: in the menu, the metro map and
 // the numbering; an unlisted one is still on the page, unnumbered
 export const listed = pageSections.filter((s) => s.listed);
 

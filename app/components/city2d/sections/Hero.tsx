@@ -11,8 +11,8 @@ const school = experience.find((entry) => entry.kind === "education");
 // headline; the school and programme; the one way in, "View projects"
 // (the page's one primary action here); and the other ways, as text links:
 // Contact, then GitHub, LinkedIn, the résumé and the email. No paragraph,
-// no caption and no list of sections (the Sections menu and the progress
-// line have them). On first load the four settle in one after another
+// no caption and no list of sections (the Sections menu and the metro
+// map have them). On first load the four settle in one after another
 // (reveal.css, "The hero"), visible from the first paint.
 export default function Hero() {
   const email = profile.emails[0];

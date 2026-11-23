@@ -7,22 +7,18 @@ import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 
 // The bar along the top of every page (city.css, "The top bar"): the
-// name, the way home; the section you're at and the metro map at the foot
-// of the screen (ProgressLine.tsx); Richmond Hill's time and weather, only to read;
-// the Sections menu, built
-// from the registry; Still view; and the music
-// (its note, if the song can't load, hangs under its key). It stays
-// at the top while the page scrolls under it, clear of a notch.
+// name, the way home; the section you're at; Richmond Hill's time and
+// weather, only to read; the Sections menu, built from the registry;
+// Still view; and the music (its note, if the song can't load, hangs
+// under its key); then the metro map, fixed along the foot of the screen
+// (ProgressLine.tsx). It stays at the top while the page scrolls under
+// it, clear of a notch.
 export default function TopBar() {
   return (
     <header className="top-bar">
       <Link href="/" className="top-bar-name">
         {profile.name}
       </Link>
-      {/* The section you're at, in words on mid-width screens, and the
-          metro map, fixed along the foot of the screen on the journey
-          (ProgressLine.tsx) */}
-      <ProgressLine />
       <WeatherClock />
       <div className="top-bar-end">
         {/* A popover button: the browser exposes it as expanded or
@@ -39,6 +35,11 @@ export default function TopBar() {
           <MusicToggle backgroundMusic={backgroundMusic} />
         </span>
       </div>
+      {/* The section you're at, in words on mid-width screens (drawn
+          beside the name: city.css), and the metro map, fixed along the
+          foot of the screen on the journey: after the bar's keys, so Tab
+          reaches the bar's own keys first, then the map */}
+      <ProgressLine />
       <SectionsMenu />
     </header>
   );

@@ -4,10 +4,10 @@ import { useSyncExternalStore } from "react";
 import type { SectionId } from "../../sections/registry";
 
 // Which section you're at, the one source of it for the whole page. The
-// progress line (ProgressLine.tsx) works it out from the scroll, with the
-// line's own dead zone so it doesn't flicker at a threshold, and writes it
-// here; the line itself and the Sections menu (SectionsMenu.tsx) read it.
-// It observes nothing on its own. On the server, and before the line has
+// metro map (ProgressLine.tsx) works it out from the scroll, with the
+// map's own dead zone so it doesn't flicker at a threshold, and writes it
+// here; the map itself and the Sections menu (SectionsMenu.tsx) read it.
+// It observes nothing on its own. On the server, and before the map has
 // run, you're at home.
 
 let current: SectionId = "home";

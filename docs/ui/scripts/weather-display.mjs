@@ -1,5 +1,5 @@
 // The time and weather display is something to read, not a control, and the
-// home page's introduction still leads everywhere it did.
+// hero still leads everywhere it did.
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/weather-display.mjs http://localhost:3100
 // Desktop (mouse and keyboard) and phone (touch), on a production build.
 import { launch } from "../../audit/scripts/pw.mjs";
@@ -84,14 +84,15 @@ for (const view of ["desktop", "phone"]) {
   // (On the fake clock, hours from the real reading, it's too old to show:
   // "unavailable". The live reading is checked below, on the real clock.)
 
-  // The introduction: exact subtitle, no paragraph, every link
+  // The hero (sections/Hero.tsx): exact headline, no paragraph, every link
   const intro = await page.evaluate(() => ({
-    subtitle: document.querySelector(".park-headline")?.textContent,
-    paragraph: !!document.querySelector(".park-about"),
-    links: [...document.querySelectorAll(".park-intro a")].map((a) => [a.textContent.replace(/\s*\(opens in a new tab\)/, "").trim(), a.getAttribute("href")]),
+    subtitle: document.querySelector(".hero-headline")?.textContent,
+    // The headline and the school's line are the hero's only words
+    paragraph: document.querySelectorAll(".hero p").length > 2,
+    links: [...document.querySelectorAll(".hero a")].map((a) => [a.textContent.replace(/\s*\(opens in a new tab\)/, "").trim(), a.getAttribute("href")]),
   }));
   check(`${view}: the subtitle is exactly cs@uwaterloo, and there's no paragraph`, intro.subtitle === "cs@uwaterloo" && !intro.paragraph, intro);
-  const want = { "View projects": "/projects", Contact: "/contact", GitHub: "https://github.com/richardlancs", LinkedIn: "https://www.linkedin.com/in/richard-lan-0312072a8", "Résumé": "/resume/richard-lan-resume.pdf" };
+  const want = { "View projects": "#projects", Contact: "#contact", GitHub: "https://github.com/richardlancs", LinkedIn: "https://www.linkedin.com/in/richard-lan-0312072a8", "Résumé": "/resume/richard-lan-resume.pdf" };
   check(`${view}: View projects, Contact, GitHub, LinkedIn and Résumé, with their addresses`, Object.entries(want).every(([t, h]) => intro.links.some(([lt, lh]) => lt === t && lh === h)), intro.links);
   await ctx.close();
 
@@ -114,15 +115,16 @@ for (const view of ["desktop", "phone"]) {
     live.api?.ok ? live.status === "fresh" && live.shown.replace(/\s/g, "").includes(`${temp.replace("-", "−")}°C`) : live.shown.includes("Weather unavailable"),
     { status: live.status, shown: live.shown, temperatureC: live.api?.reading?.temperatureC },
   );
-  for (const [label, path] of [["View projects", "/projects"], ["Contact", "/contact"]]) {
+  // (Both are anchors on the one page: the journey brings their stop on)
+  for (const [label, hash] of [["View projects", "#projects"], ["Contact", "#contact"]]) {
     await p2.goto(base + "/", { waitUntil: "load" });
-    const a = p2.locator(".park-intro a", { hasText: label });
+    const a = p2.locator(".hero a", { hasText: label }).first();
     await (phone ? a.tap() : a.click());
-    await p2.waitForURL((u) => u.pathname === path, { timeout: 10000 }).catch(() => {});
-    check(`${view}: ${label} goes to ${path}`, new URL(p2.url()).pathname === path, p2.url());
+    await p2.waitForURL((u) => u.hash === hash, { timeout: 10000 }).catch(() => {});
+    check(`${view}: ${label} goes to ${hash}`, new URL(p2.url()).hash === hash, p2.url());
   }
   await p2.goto(base + "/", { waitUntil: "load" });
-  const resume = p2.locator(".park-intro a[data-resume]");
+  const resume = p2.locator(".hero a[data-resume]");
   await (phone ? resume.tap() : resume.click());
   const opened = await p2.waitForSelector("dialog.resume[open] .resume-page[data-drawn]", { timeout: 20000 }).then(() => true, () => false);
   check(`${view}: Résumé opens the viewer`, opened);

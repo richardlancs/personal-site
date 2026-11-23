@@ -1,6 +1,6 @@
 import type { Daylight, SkyState, WeatherPreset } from "./sky";
 
-// How the 2D city follows the sky. Each district is painted twice, a day
+// How the city follows the sky. The panorama is painted twice, a day
 // plate and a night plate of one composition; the clock decides which is
 // shown (or how far one has faded into the other), and the weather how
 // much haze lies over it. Pure: components/city2d/CityDriver.tsx writes

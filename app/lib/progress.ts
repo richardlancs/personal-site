@@ -1,4 +1,4 @@
-// Where the page is, as a position on the progress line
+// Where the page is, as a position on the metro map's line
 // (components/city2d/ProgressLine.tsx): 0 at the first section, 5 at the
 // sixth, and fractions in between, so the line's fill can follow the
 // scroll continuously. Pure, so it is tested without a browser.

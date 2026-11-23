@@ -238,7 +238,7 @@ test("arrivals: each panel and its pieces enter on the runway's timeline from th
   assert.match(block, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root\[data-track="on"\]:not\(\[data-still="on"\]\) :is\(\.track \.panel, \.panel :is\(/);
   assert.match(block, /animation: arrive var\(--ease-out\) both;\s*animation-timeline: --runway;/);
   assert.match(block, /animation-range: contain calc\(var\(--at\) - 100vw \+ var\(--k, 0\) \* 4vw\) contain calc\(var\(--at\) - 50vw/);
-  assert.match(block, /@supports \(order: sibling-index\(\)\) \{\s*\.panel \* \{\s*--k: min\(sibling-index\(\), 6\);/, "pieces in sequence");
+  assert.match(block, /@supports \(order: sibling-index\(\)\) \{\s*\.panel \* \{\s*--k: min\(sibling-index\(\) - 1, 5\);/, "pieces in sequence");
   // Transform and opacity only
   for (const name of ["arrive"]) {
     const kf = body.match(new RegExp(`@keyframes ${name} \\{([\\s\\S]*?)\\n\\}`))[1];

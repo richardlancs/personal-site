@@ -48,8 +48,10 @@ function showing(whole: boolean): boolean {
 function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const home = i === 0 && whole;
-  // Read during hydration, but nothing it decides is drawn until the sky is known
-  const near = useNear(ref, home && showing(whole) && !deepLinked());
+  // The first tile of whichever band shows (the journey's, or Home's
+  // station's read top to bottom) skips the wait. Read during hydration,
+  // but nothing it decides is drawn until the sky is known
+  const near = useNear(ref, i === 0 && showing(whole) && !deepLinked());
   const blend = useCityBlend();
   const [failed, setFailed] = useState<Plate[]>([]);
   const [loaded, setLoaded] = useState<Plate[]>([]);

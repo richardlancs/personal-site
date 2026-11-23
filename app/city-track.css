@@ -406,7 +406,7 @@
 
       @supports (order: sibling-index()) {
         .panel * {
-          --k: min(sibling-index(), 6);
+          --k: min(sibling-index() - 1, 5);
         }
       }
 
@@ -624,5 +624,13 @@
   15%,
   45% {
     opacity: calc(var(--city-night, 0) * 1.2);
+  }
+}
+
+/* Rain, snow and the drifting light belong to the journey's stage, not
+   to a printed page */
+@media print {
+  .track-weather {
+    display: none;
   }
 }

@@ -4,9 +4,10 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { FRAME_MS, MAX_DPR, PRECIP_SEED, RAIN_SLANT, flakeX, seedParticles, stepParticles, type Particle, type PrecipKind } from "../../lib/precip";
 import { REDUCED_MOTION } from "../../lib/still";
 
-// The weather over a district's band (city.css, "The band's weather"):
-// inside the band, over its plates, under its foot's fade. Decorative, so
-// all of it is aria-hidden and takes no clicks.
+// The weather over the city (city.css, "The band's weather"): once, over
+// the journey's whole stage, under the panels (CityTrack.tsx,
+// city-track.css: .track-weather; none on the page read top to bottom).
+// Decorative, so all of it is aria-hidden and takes no clicks.
 //
 // - The haze: cloud over the towers' tops, as thick as the weather's
 //   --city-haze (lib/cityLook.ts), darker rather than paler at night.

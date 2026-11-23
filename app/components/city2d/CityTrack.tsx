@@ -43,7 +43,7 @@ import WeatherOverlay from "./WeatherOverlay";
 
 let marks: number[] | null = null;
 // Each stop's scroll position (the page's, not the runway's), while the
-// journey is on: the progress line reads these as its sections' places
+// journey is on: the metro map reads these as its sections' places
 export const trackMarks = () => marks;
 
 const SETTLE_MS = 150; // still this long, the journey has stopped
@@ -282,6 +282,10 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       clearTimeout(aimTimer);
       clearTimeout(settleTimer);
       marks = null;
+      // Gone from the page (another route): the page there reads as any
+      // page does (a fallback, the head script's for the visit, stays)
+      if (on()) delete html.dataset.track;
+      html.removeAttribute("data-track-ready");
     };
   }, []);
 

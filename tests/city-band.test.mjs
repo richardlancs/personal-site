@@ -75,7 +75,7 @@ test("the bands wait on one shared observer, half a screen ahead", () => {
   assert.match(near, /r\.width > 0 &&/, "nothing hidden is near (a station's band on the journey)");
   assert.match(near, /unobserve\(/, "each band is let go once seen");
   const band = read("app/components/city2d/DistrictBand.tsx");
-  assert.match(band, /useNear\(ref, home && showing\(whole\) && !deepLinked\(\)\)/, "the home tile of the band that shows skips the wait");
+  assert.match(band, /useNear\(ref, i === 0 && showing\(whole\) && !deepLinked\(\)\)/, "the home tile of the band that shows skips the wait");
   assert.match(band, /blend === null \|\| !near \? \[\]/, "no plate before the tile is near");
   assert.match(band, /fetchPriority=\{home \? "high" : "low"\}/);
 });
@@ -266,6 +266,6 @@ test("a deep link fetches no home plate: the head script and the bands wait for 
   assert.match(near, /addEventListener\("scrollend", done/, "the smooth jump's end, not its first step");
   assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   const band = read("app/components/city2d/DistrictBand.tsx");
-  assert.match(band, /useNear\(ref, home && showing\(whole\) && !deepLinked\(\)\)/);
+  assert.match(band, /useNear\(ref, i === 0 && showing\(whole\) && !deepLinked\(\)\)/);
   assert.match(read("app/lib/platePreload.ts"), /var h=location\.hash;if\(location\.pathname!=="\/"\|\|h&&h!=="#"&&h!=="#home"\|\|document\.documentElement\.getAttribute\("data-track"\)!=="on"\)return;/);
 });

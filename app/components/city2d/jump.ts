@@ -1,7 +1,7 @@
 import type { MouseEvent } from "react";
 
 // A jump to a section from a list of them (the Sections menu, the
-// progress line): the link's own navigation scrolls to the anchor; this hands
+// metro map): the link's own navigation scrolls to the anchor; this hands
 // focus to the section there (each can take focus, tabIndex -1), so the
 // keyboard carries on from it. Home is the top of the page, so its focus
 // scrolls there too. A click with a modifier key or another button is

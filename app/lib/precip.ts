@@ -1,4 +1,4 @@
-// Rain and snow over a district's band (components/city2d/WeatherOverlay.tsx):
+// Rain and snow over the city (components/city2d/WeatherOverlay.tsx):
 // the particles' maths, pure, so it can be tested without a canvas. The
 // overlay seeds a band's particles once for its size and steps them each
 // frame; nothing here draws.
