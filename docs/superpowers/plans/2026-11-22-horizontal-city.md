@@ -13,7 +13,7 @@ Content panels sit on the street in dark glass. A metro-line map at the foot is 
 **Tech Stack:** Next.js 16.4 App Router, React 19.3, TypeScript, Tailwind 4, `next/image`, sharp (scripts only).
 
 **Spec:** `docs/superpowers/specs/2026-11-22-horizontal-city-design.md`. Reel notes:
-`.superpowers/sdd/2026-11-22-horizontal-city/insta-report.md`.
+`docs/ui/reels.md`.
 
 ## Global Constraints
 

@@ -77,8 +77,7 @@ portfolio's job first: a recruiter finds the name, the projects and the
 contact links in seconds. Source documents: the spec
 `docs/superpowers/specs/2026-11-22-horizontal-city-design.md` (and its
 "Amendment, 2026-11-23", my words), the reels I saved
-(`.superpowers/sdd/2026-11-22-horizontal-city/insta-report.md`: the
-design language), the style sheet `docs/city/style.md` (palette, type,
+(`docs/ui/reels.md`: the design language), the style sheet `docs/city/style.md` (palette, type,
 the panorama) and the prompts in `docs/city/prompts.md`. Where a spec and
 later rulings differ (no magenta, no Chinese signs), the code and
 `style.md` win. `docs/world/` (the retired park) and the earlier city
@@ -103,7 +102,10 @@ anything, nothing smooths the wheel, nothing snaps or traps.
 
 - On: `<html data-track="on">`, set before the first paint by the head
   script (`lib/track.ts`) on `/` with scripts and a screen of at least
-  320 × 320 (`trackMath.ts: TRACK_MIN`). `CityTrack` sets the runway's
+  320 × 320 and 22em tall in the root's text size (`trackMath.ts:
+  TRACK_MIN`, `trackFits`; `CityTrack`'s measure applies the same rule):
+  so 200% text on a short screen (844 × 390, 320 × 640) reads stacked
+  rather than leaving each panel a slit under the tall bar. `CityTrack` sets the runway's
   height from the track's width (`--travel`) and sets `data-track-ready`;
   if it never does within 3 s of load, the head script falls back to the
   stacked page (`data-track="fallback"`) for the visit.
@@ -111,7 +113,7 @@ anything, nothing smooths the wheel, nothing snaps or traps.
   timeline where supported; elsewhere `CityTrack`'s one passive scroll
   listener writes the transforms each frame.
 - Stops are a screen wide less the peek of the next (`--peek`, 10% of the
-  width; on phones a whole screen, the next stretch showing in the
+  width at every width, at least 1.5rem; on phones a whole screen, the next stretch showing in the
   painting's strip); Projects and Experience are rows of panels as long
   as their content. Every stop leaves a slice of the next stretch of city
   in view, so the way on needs no arrow.
@@ -125,7 +127,7 @@ anything, nothing smooths the wheel, nothing snaps or traps.
   has stopped with all of it on the screen (`data-open`); at its end the
   scroll chains on along the city. While the city moves, no panel
   catches the scroll.
-- Without scripts, under 320 × 320, in print, or after the fallback,
+- Without scripts, under 320 × 320 or 22em tall, in print, or after the fallback,
   the page reads top to bottom: each station with its own stretch of the
   panorama as a band over it.
 
@@ -192,9 +194,9 @@ The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
 
 Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 200,848
 (and the journey may not grow it by more than 3 KB over the 2026-11-22
-reading); `totalJs` ≤ 214,000; `totalCss` ≤ 10,760 in `budget.mjs`,
-**pending my ruling**: the journey and the "highly animated" amendment
-read 11,590 (2026-11-23), over that limit; `resumeJs` ≤ 470,000;
+reading); `totalJs` ≤ 214,000; `totalCss` ≤ 12,000, raised at my
+ruling on 23 November 2026 for the highly animated horizontal city (it
+only goes down from here); `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. The panorama's first tile at most the bytes of the
 painted home plate it replaced, at `HOME_QUALITY`. It also fails on
 three.js (`WebGLRenderer`) in any chunk of the build, and on any
@@ -271,9 +273,14 @@ weights and generous line-height. Avoid decorative fonts.
 
 ## Layout
 
+- Generous whitespace, strong vertical rhythm, a few strong elements per
+  section rather than many small cards. Not centred containers: on the
+  journey each panel sits left in its stop, inside the central 80% (the
+  spec).
 - The central 80%: bulky content (panels, images, cards, the timeline)
   sits within the middle 80% of the screen's width, 10% clear on each
-  side at every width from 768px (`--peek`, `--side`); phones keep their
+  side at every width from 768px (`--peek`, `max(1.5rem, 10vw)`, uncapped;
+  `--side` on the sheets); phones keep their
   16px gutters. The edges are the city.
 - Wide screens: the panorama fills the stage; the words on the street in
   the lower part of each stop, on see-through dark glass (`.panel`: the
@@ -313,7 +320,9 @@ weights and generous line-height. Avoid decorative fonts.
   a larger, filled dot, not colour alone). A fill follows the scroll
   continuously and locks onto a station as it arrives (a pulse); on
   phones only the current name shows, on short screens the dots alone,
-  at 200% text the dots, and no map under 700px tall. It is the page's
+  and with a very tall bar (large text, `data-bar-tall`) the dots alone,
+  with no map at all if the screen is also under 700px tall. (At 200%
+  text a screen under 22em, 704px, reads stacked, with no map.) It is the page's
   one source of where you are (`useSection.ts`).
 - The Sections menu (`SectionsMenu.tsx`, a popover) grows from its key,
   the city dims behind it, and it jumps along the journey and moves focus
@@ -450,7 +459,8 @@ Semantic landmarks, one `h1` per page, headings in order, a skip link,
 visible focus, keyboard access to everything, no information by colour
 alone, all painting `alt=""`. The journey reads in order for a keyboard
 and a screen reader (focus brings its stop on); the page reads top to
-bottom without scripts. Under `prefers-contrast: more`, no glow.
+bottom without scripts. Under `prefers-contrast: more` the panels are
+opaque (`city-track.css`: solid `--ink`, no blur), with no glow.
 Do not sacrifice accessibility for visual styling.
 
 ---

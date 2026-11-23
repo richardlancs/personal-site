@@ -12,7 +12,7 @@ skyline, and the words live in that city, not under it. The 3D city goes away.
 
 The portfolio's job still comes first: a recruiter finds the name, the projects and the contact links in seconds.
 
-## Sources: the owner's saved "Design" reels (`.superpowers/sdd/2026-11-22-horizontal-city/insta-report.md`)
+## Sources: the owner's saved "Design" reels (`docs/ui/reels.md`)
 
 Taken into this design:
 1. **Closure:** every stop leaves a slice of the next stretch of city in view, so going sideways needs no arrow.
@@ -113,4 +113,4 @@ What that means here (builder's reading; overrides "Motion: subtle" in CLAUDE.md
   a chosen focal point).
 - **The central 80%:** bulky content (panels, images, cards, timelines) sits within the middle 80% of the screen's
   width (10% clear on each side at every width ≥ 768px; phones keep their 16px gutters); the edges are the city.
-- **The reels:** keep using `.superpowers/sdd/2026-11-22-horizontal-city/insta-report.md` for the design language.
+- **The reels:** keep using `docs/ui/reels.md` for the design language.
