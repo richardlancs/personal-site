@@ -6,26 +6,17 @@
 //   node docs/audit/scripts/budget.mjs [.next]
 //
 // The site is one page, `/` (the Shanghai city: six stations, painted
-// bands, no 3D). What's checked:
-// - no three.js in anything `/` loads: its HTML's scripts, the chunks its
-//   client components need (the route's client reference manifest), and
-//   every chunk those name for loading later (followed until there are no
-//   more). three.js is found by its renderer's name, `WebGLRenderer`.
+// bands). The 3D city was removed on 22 November 2026; its budgets went
+// with it. What's checked:
+// - no three.js anywhere in the build (found by its renderer's name,
+//   `WebGLRenderer`), and so none in anything `/` loads
 // - initial JS of `/`: the scripts its HTML loads before anything else
 // - all JS in the build, except the résumé viewer's
-// - the CSS `/` links (totalCss: every visit's stylesheet); and the CSS
-//   only the 3D city's pages (/city/*) load, on a budget of its own
-//   (cityCss), so the city's styles never hide in, or grow, the 2D page's
+// - all CSS in the build but the résumé's (totalCss: every visit's
+//   stylesheet; `/` must link all of it)
 // - the résumé viewer's JS (pdf.js, its worker and the viewer) and CSS,
 //   loaded only when the résumé is opened: on its own budget, so it can't
 //   hide growth in what every visit downloads
-// - and none in what a prefetch of the routes `/` links to can fetch
-// - the 3D city (/city/*, opt-in): what its pages load that `/` never can
-//   (city3dJs: the canvas, three.js, the scenes), taken out of totalJs so
-//   totalJs keeps meaning the 2D site; within it the chunks that hold the
-//   renderer (city3dChunk: three.js, R3F, the composer, City3D and the
-//   riverside) and the largest section's scene (districtChunk); and
-//   /city's own first load (cityInitialJs: the scripts its HTML loads)
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { gzipSync } from "node:zlib";
 
@@ -46,41 +37,15 @@ const HOME_JS_LIMIT = 200_848;
 // unloaded park code, docs and tests (city.css, @source not). Round 2 had
 // grown it from 9,646 to 10,653 (the four rebuilt sections, the progress
 // line, figures, the list marker).
-// Since the 3D city's pages (Task 2 of the 3D plan, 20 November 2026) this
-// is the CSS `/` links, which then was every CSS file but the résumé's;
-// the city's own stylesheet (app/city/city-pages.css) has CITY_CSS_LIMIT.
 const TOTAL_CSS_LIMIT = 10_760;
-// The /city pages' own layout (564 measured, Task 2); the canvas's panels
-// and tags come later
-const CITY_CSS_LIMIT = 2_000;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;
 
-// The 3D city's (docs/superpowers/plans/2026-11-19-shanghai-3d.md,
-// "Bundle budgets"), first measured on 20 November 2026 (wave 1 fix
-// report: .superpowers/sdd/2026-11-19-shanghai-3d/wave1-fix-report.md)
-// with the grey stand-ins, so the room above each reading is what the
-// kit and the five scenes may add:
-// - /city's first load, no more than the home page's
-const CITY_INITIAL_JS_LIMIT = 200_848;
-// - the renderer's chunks: the park's world chunk was 304,203 with three
-//   and R3F; the plan's cap
-const CITY3D_CHUNK_LIMIT = 330_000;
-// - one section's scene, the largest
-const DISTRICT_CHUNK_LIMIT = 32_000;
-// - everything only /city loads
-const CITY3D_JS_LIMIT = 480_000;
-
 const budgets = {
   homeInitialJs: HOME_JS_LIMIT,
-  cityInitialJs: CITY_INITIAL_JS_LIMIT,
-  city3dChunk: CITY3D_CHUNK_LIMIT,
-  districtChunk: DISTRICT_CHUNK_LIMIT,
-  city3dJs: CITY3D_JS_LIMIT,
   totalJs: TOTAL_JS_LIMIT,
   totalCss: TOTAL_CSS_LIMIT,
-  cityCss: CITY_CSS_LIMIT,
   // feature/baby-blue-glass-resume: pdfjs-dist 5.4.624's legacy build
   // (141,641), its worker (301,558) and the viewer (4,726)
   resumeJs: 470_000, // 447,925
@@ -149,66 +114,17 @@ function reach(initialRefs, pageRefs) {
   }
   return out;
 }
-const scriptsOf = (page) => [...new Set([...page.matchAll(/<script[^>]*\ssrc="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]))];
-const preloadsOf = (page) => [...page.matchAll(/<link[^>]*rel="preload"[^>]*as="script"[^>]*href="\/_next\/(static\/[^"]+\.js)"/g)].map((m) => m[1]);
-const manifestChunks = (file) => (existsSync(file) ? [...readFileSync(file, "utf8").matchAll(/"\/?(?:_next\/)?(static\/chunks\/[^"]+\.js)"/g)].map((m) => m[1]) : []);
 const reached = reach(initial, [...preloaded, ...fromManifest]);
 
-// ---------- What the 3D city's pages load ----------
-
-const cityPages = ["city", ...(existsSync(`${dir}/server/app/city`) ? readdirSync(`${dir}/server/app/city`).filter((f) => f.endsWith(".html")).map((f) => `city/${f.slice(0, -5)}`) : [])];
-if (!existsSync(`${dir}/server/app/city.html`)) die(`no prerendered ${dir}/server/app/city.html: is /city still static?`);
-const cityHtml = readFileSync(`${dir}/server/app/city.html`, "utf8");
-const cityInitial = scriptsOf(cityHtml);
-const cityReached = new Map();
-for (const page of cityPages) {
-  const h = readFileSync(`${dir}/server/app/${page}.html`, "utf8");
-  for (const [p, how] of reach(scriptsOf(h), [...preloadsOf(h), ...manifestChunks(`${dir}/server/app/${page}/page_client-reference-manifest.js`)])) if (!cityReached.has(p)) cityReached.set(p, how);
-}
-// Only the city's: what no 2D page can load
-const cityOnly = [...cityReached.keys()].filter((p) => !reached.has(p) && !isResume(p));
-const cityOnlySet = new Set(cityOnly);
-const holdsRenderer = (p) => /WebGLRenderer/.test(readFileSync(p, "utf8"));
-const rendererChunks = cityOnly.filter(holdsRenderer);
-// A section's scene: a chunk that the canvas's own chunks (the ones loaded
-// together with the renderer's, by the same import()) load on demand
-// (sceneChunks.ts: one import() per place)
-const names = (p) => new Set([...readFileSync(p, "utf8").matchAll(/static\/chunks\/[\w.-]+\.js/g)].map((m) => chunkPath(m[0])));
-const canvasGroup = new Set(cityOnly.filter((p) => [...names(p)].some((n) => rendererChunks.includes(n))).flatMap((p) => [...names(p)]));
-const districtChunks = cityOnly.filter((p) => !canvasGroup.has(p) && [...canvasGroup].some((g) => names(g).has(p)));
-
 const THREE = /WebGLRenderer/; // also isWebGLRenderer, which minifying keeps
-const withThree = [...reached].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
+const withThree = allJs.filter((c) => THREE.test(readFileSync(c.f, "utf8"))).map((c) => c.f);
+// Every stylesheet but the résumé's is one `/` links
+const unlinkedCss = css.filter((c) => !homeCss.has(c.f)).map((c) => c.f);
 
-// The routes `/` links to (its own <a href="/…">, the "3D city" key and
-// the Interests link included): what a prefetch of each could fetch, its
-// HTML's scripts and its client components' chunks (not what those load
-// later by import(), which a prefetch never runs), so a link that loses
-// prefetch={false}, or a route that starts importing three.js statically,
-// can't bring the renderer into a visit to `/`
-const linked = [...new Set([...html.matchAll(/<a[^>]*\shref="(\/[^"#?]*)/g)].map((m) => m[1].replace(/\/$/, "") || "/"))].filter((p) => p !== "/" && !/\.[a-z0-9]+$/i.test(p));
-const prefetchable = new Map(); // chunk path -> the route that names it
-for (const route of linked) {
-  const page = `${dir}/server/app${route}.html`;
-  if (!existsSync(page)) continue;
-  const h = readFileSync(page, "utf8");
-  for (const ref of [...scriptsOf(h), ...preloadsOf(h), ...manifestChunks(`${dir}/server/app${route}/page_client-reference-manifest.js`)]) {
-    const p = chunkPath(ref);
-    if (existsSync(p) && !prefetchable.has(p)) prefetchable.set(p, route);
-  }
-}
-const prefetchThree = [...prefetchable].filter(([p]) => THREE.test(readFileSync(p, "utf8")));
-
-const sumGz = (paths) => paths.reduce((sum, p) => sum + gz(p), 0);
 const measured = {
   homeInitialJs: initial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
-  cityInitialJs: cityInitial.reduce((sum, src) => sum + gz(`${dir}/${src}`), 0),
-  city3dChunk: sumGz(rendererChunks),
-  districtChunk: Math.max(0, ...districtChunks.map(gz)),
-  city3dJs: sumGz(cityOnly),
-  totalJs: js.filter((c) => !cityOnlySet.has(c.f)).reduce((a, b) => a + b.gz, 0),
-  totalCss: css.filter((c) => homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
-  cityCss: css.filter((c) => !homeCss.has(c.f)).reduce((a, b) => a + b.gz, 0),
+  totalJs: js.reduce((a, b) => a + b.gz, 0),
+  totalCss: css.reduce((a, b) => a + b.gz, 0),
   resumeJs: allJs.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
   resumeCss: allCss.filter((c) => c.resume).reduce((a, b) => a + b.gz, 0),
 };
@@ -225,12 +141,11 @@ for (const [key, limit] of Object.entries(budgets)) {
 }
 const noThree = withThree.length === 0;
 failed ||= !noThree;
-console.log(`${noThree ? "ok  " : "FAIL"} ${"no three.js on /".padEnd(18)} ${String(withThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${reached.size} that / can load`);
-for (const [p, how] of withThree) console.log(`       ${p.slice(dir.length + 1)} (${how})`);
-const noThreePrefetch = prefetchThree.length === 0;
-failed ||= !noThreePrefetch;
-console.log(`${noThreePrefetch ? "ok  " : "FAIL"} ${"no three.js linked".padEnd(18)} ${String(prefetchThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${prefetchable.size} that a prefetch of /'s ${linked.length} linked route(s) can fetch (${linked.join(", ") || "none"})`);
-for (const [p, route] of prefetchThree) console.log(`       ${p.slice(dir.length + 1)} (${route})`);
+console.log(`${noThree ? "ok  " : "FAIL"} ${"no three.js".padEnd(18)} ${String(withThree.length).padStart(10)} chunk(s) with WebGLRenderer, of ${allJs.length} in the build`);
+for (const p of withThree) console.log(`       ${p.slice(dir.length + 1)}${reached.has(p) ? ` (/ loads it: ${reached.get(p)})` : ""}`);
+const allLinked = unlinkedCss.length === 0;
+failed ||= !allLinked;
+console.log(`${allLinked ? "ok  " : "FAIL"} ${"CSS all on /".padEnd(18)} ${String(unlinkedCss.length).padStart(10)} stylesheet(s) / doesn't link, besides the résumé's`);
+for (const p of unlinkedCss) console.log(`       ${p.slice(dir.length + 1)}`);
 console.log(`/ loads ${initial.length} scripts at first, ${reached.size - initial.length} more with its components or on demand`);
-console.log(`/city loads ${cityInitial.length} scripts at first; only the city loads ${cityOnly.length} chunks (${measured.city3dJs} B): the renderer's ${rendererChunks.length} (${rendererChunks.map((p) => `${p.slice(dir.length + 1)} ${gz(p)}`).join(", ")}), ${districtChunks.length} loaded by it (the scenes': ${districtChunks.map((p) => gz(p)).join(", ")})`);
 process.exit(failed ? 1 : 0);

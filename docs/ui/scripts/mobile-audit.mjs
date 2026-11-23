@@ -1,6 +1,5 @@
 // The mobile audit: the one-page city (`/`) and each of its anchors (/#about,
-// /#projects, /#skills, /#experience, /#interests, /#contact), the 3D
-// city's six pages (/city and /city/<section>, Task 19 of the 3D plan), the Sections
+// /#projects, /#skills, /#experience, /#interests, /#contact), the Sections
 // menu, the weather display, the progress line and the résumé dialog, at
 // phone, tablet, desktop and phone-landscape sizes, against a production
 // build. Headless Chrome with touch emulation and
@@ -54,9 +53,8 @@ if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
 // ROUTES=/,/#contact and ONLY=320,844x390 narrow a run while working on something
 // `/` and every anchor on it, the stations' and their subsections' (Skills),
-// then the 3D city's six pages (/city, /city/<section>: the canvas drawing,
-// at the tier each screen gets), all from the registry
-const routes = [...new Set([...pageSections.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]), ...pageSections.map((s) => s.city)])].filter(
+// all from the registry
+const routes = [...new Set(pageSections.flatMap((s) => [s.href, ...(s.subsections ?? []).map((sub) => sub.href)]))].filter(
   (r) => !process.env.ROUTES || process.env.ROUTES.split(",").includes(r),
 );
 if (!routes.includes("/") || routes.length < 2) console.log(`note: auditing ${routes.join(", ") || "nothing"}`);
@@ -168,8 +166,8 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   const scrollX0 = scrollX;
   const scrollY0 = scrollY;
   // What of a target can be tapped: its box cut by the ancestors that
-  // scroll it sideways (a row of keys that scrolls, the place dock's): a
-  // key scrolled out of its row isn't under its neighbours
+  // scroll it sideways (a row of keys that scrolls): a key scrolled out of
+  // its row isn't under its neighbours
   const tappable = (el, r) => {
     let { left, right } = r;
     for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
@@ -697,8 +695,8 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
 }
 
 // :hover rules a tap could leave behind on a touch screen: `/`'s
-// stylesheets with the résumé's, then the 3D city's own
-for (const route of ["/", "/city/projects"]) {
+// stylesheets with the résumé's
+for (const route of ["/"]) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await visit(page, route);

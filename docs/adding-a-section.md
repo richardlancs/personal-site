@@ -31,7 +31,6 @@ place in the page's order (the sections are numbered by it):
   title: "Reading",                 // the section's h2, and its name in lists
   listed: false,                    // true once it's ready to be pointed at
   district: "yuyuan",               // the painting above it (DistrictId)
-  scene: { id: "park", focus: null },  // the 3D city's (Plan B); any SceneId for now
 }
 ```
 

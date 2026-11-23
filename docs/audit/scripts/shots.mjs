@@ -1,6 +1,6 @@
 // node docs/audit/scripts/shots.mjs <baseUrl> <outDir> [settleMs]: the seven
 // routes at 1440x1000 and 390x844 (JPEG), and a JSON log of titles,
-// horizontal overflow, WebGL and errors
+// horizontal overflow, a canvas and errors
 import { mkdirSync, writeFileSync } from "node:fs";
 import { listed } from "../../../app/sections/registry.ts";
 import { launch } from "./pw.mjs";
@@ -28,7 +28,6 @@ for (const [name, width, height] of views) {
       title: document.title,
       hOverflow: document.documentElement.scrollWidth > innerWidth,
       canvas: !!document.querySelector("canvas"),
-      webgl: !!document.createElement("canvas").getContext("webgl2"),
     }));
     log.push({ view: name, route, ...info });
   }

@@ -1,6 +1,5 @@
-// The main pages at every width the mobile brief names, for before/after:
-// the 2D page and the 3D city's six (from the registry; repointed from the
-// park's pages in Task 19 of the 3D plan).
+// The page at every width the mobile brief names, for before/after: its
+// top and each section's anchor (from the registry).
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/responsive-shots.mjs <base> <outDir> <prefix>
 // Phones are emulated (isMobile, touch, DPR 2), not real devices.
 import { mkdirSync } from "node:fs";
@@ -9,7 +8,7 @@ import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3100", out = "docs/ui/screenshots", prefix = "shot"] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
-const routes = ["/", ...pageSections.map((s) => s.city)];
+const routes = ["/", ...pageSections.filter((s) => s.hash).map((s) => `/#${s.hash}`)];
 const phone = { isMobile: true, hasTouch: true, deviceScaleFactor: 2 };
 const views = {
   w320: { viewport: { width: 320, height: 640 }, ...phone },
@@ -29,11 +28,10 @@ for (const [view, opts] of Object.entries(views)) {
   page.on("pageerror", (e) => errors.push(`${view}: ${e}`));
   for (const route of routes) {
     await page.goto(base + route, { waitUntil: "load" });
-    if (route.startsWith("/city")) await page.waitForSelector(".city3d[data-arrived]", { timeout: 30000 }).catch(() => {});
     await page.waitForTimeout(2500);
     const sw = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     if (sw > 0) overflow.push(`${view} ${route} +${sw}px`);
-    const tag = route === "/" ? "home" : route.slice(1).replaceAll("/", "-");
+    const tag = route === "/" ? "home" : route.slice(2);
     await page.screenshot({ path: `${out}/${prefix}-${view}-${tag}.jpg`, type: "jpeg", quality: 72 });
   }
   await ctx.close();
