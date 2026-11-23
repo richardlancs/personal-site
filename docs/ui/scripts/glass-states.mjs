@@ -101,7 +101,7 @@ const controls = {
   desktop: [
     { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
     { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
-    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass:not(.glass-primary)" },
+    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass" },
     { name: "project", path: "/#marketlab", group: "#marketlab p:has(> a.glass)", other: "#marketlab a.glass:not(.glass-primary)" },
     { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
     { name: "profile", path: "/#contact", group: '#contact ul[aria-label="Links"]', other: "#contact .profile-key" },
@@ -111,7 +111,7 @@ const controls = {
   phone: [
     { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
     { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
-    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass:not(.glass-primary)" },
+    { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass" },
     { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
     { name: "profile", path: "/#contact", group: '#contact ul[aria-label="Links"]', other: "#contact .profile-key" },
     { name: "resume", path: "/", resume: true, group: ".resume-bar", chosen: '.resume-fit[aria-pressed="true"]', other: ".resume-close" },

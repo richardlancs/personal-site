@@ -2,7 +2,7 @@
 // /#projects, /#skills, /#experience, /#interests, /#contact), each the
 // journey's stop it lands on (CityTrack.tsx: the stops side by side, the
 // page's scroll moving along them), the Sections
-// menu, the weather display, the progress line and the résumé dialog, at
+// menu, the weather display, the metro map and the résumé dialog, at
 // phone, tablet, desktop and phone-landscape sizes, against a production
 // build. Headless Chrome with touch emulation and
 // emulated safe-area insets (CDP Emulation.setSafeAreaInsetsOverride, so
@@ -29,20 +29,22 @@
 // - tiny-text: visible text under 12px
 // - unsafe: a control or text (fixed ones anywhere, the rest sideways)
 //   under an emulated safe-area inset, or out of the viewport (the top
-//   bar and the progress line are checked again at the foot of the page)
+//   bar and the metro map are checked again at the foot of the page)
 // - fit: an open menu, slip or dialog taller or wider than the safe
 //   viewport, or one with more content than room that can't scroll; the
-//   stop's panel past the stage (under the bar, or the home bar), or one
+//   stop's panel past the stage (under the bar, or the metro map and the
+//   home bar), or one
 //   with more than fits that can't scroll once the journey has stopped
 // - stop: an anchor that didn't land on its stop (the journey on)
 // - chain: an open menu or slip, or a stop's panel, that scrolls but lets
 //   the scroll run on to the page behind it (touch scroll gesture, CDP):
 //   for a panel, the city moving
 // - clipped: a button's label cut off by its own box (200% text)
-// - covers: the progress line (fixed in the margin, from 97rem) lying
-//   over the page's words or controls, at the top, middle and foot; and,
-//   in the top bar (below 97rem), the section's name ("03 / 06 ·
-//   Projects") running into the bar's name, time and weather or keys
+// - covers: the metro map (fixed at the foot of the screen, on the
+//   journey) lying over the page's words or controls, at the top, middle
+//   and foot (words a panel has scrolled out of its own box don't count);
+//   and, in the top bar, the section's name ("03 / 06 · Projects")
+//   running into the bar's name, time and weather or keys
 // - tap: a tap on a main action that didn't do its job
 // Warnings (listed, not failures): body text under 16px on phones, :hover
 // rules outside @media (hover: hover), and backdrop-filtered elements on
@@ -82,7 +84,6 @@ const profiles = [
   { name: "1024p", width: 1024, height: 1366, touch: true, insets: PAD },
   { name: "1024l", width: 1024, height: 768, touch: true, insets: PAD },
   { name: "1440", width: 1440, height: 900, touch: false, insets: NONE },
-  // The progress line in the margin (from 97rem): its labelled points
   { name: "1600", width: 1600, height: 1000, touch: false, insets: NONE },
   { name: "844x390", width: 844, height: 390, touch: true, phone: true, insets: PHONE_LAND },
   { name: "667x375", width: 667, height: 375, touch: true, phone: true, insets: NONE },
@@ -122,7 +123,7 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   const vh = height;
   const root = scope ? document.querySelector(scope) : document;
   const empty = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
-  // A scope that isn't on this screen (the margin's line shows from 97rem)
+  // A scope that isn't on this screen (the map shows only on the journey)
   if (!root || (scope && !root.checkVisibility())) return empty;
   const describe = (el) => {
     const id = el.id ? `#${el.id}` : "";
@@ -383,12 +384,12 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   return out;
 };
 
-// The progress line over the page: any word or control of the page (not
-// the line's own, nor the top bar's) under the line's box, where it is
-// fixed in the right margin (from 97rem); it must never lie over the
-// column. Below 97rem it is part of the top bar (a 3px line along its
-// foot): then the bar's section name must not run into the bar's other
-// parts.
+// The metro map over the page: any word or control of the page (not the
+// map's own, nor the top bar's) under the map's parts, where it is fixed
+// at the foot of the screen (on the journey); it must never lie over a
+// panel's words. Words a panel has scrolled out of its own box are hidden
+// by it, so only what shows counts. And the bar's section name must not
+// run into the bar's other parts.
 const covers = () => {
   const out = [];
   const box = (el) => el && el.checkVisibility() && el.getBoundingClientRect();
@@ -401,9 +402,17 @@ const covers = () => {
   const hit = (r) => parts.some((q) => r.left < q.right - 0.5 && r.right > q.left + 0.5 && r.top < q.bottom - 0.5 && r.bottom > q.top + 0.5);
   const label = (el) => `${el.tagName.toLowerCase()}${[...el.classList].slice(0, 2).map((c) => `.${c}`).join("")} "${(el.innerText || el.textContent || "").replace(/\s+/g, " ").trim().slice(0, 24)}"`;
   const skip = (el) => el.closest(".progress-line, .top-bar, [popover]:not(:popover-open), script, style, noscript, .sr-only") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true });
+  // Only the part a panel shows: what it has scrolled (or not yet
+  // scrolled) out of its own box is hidden by it
+  const inPanel = (el, r) => {
+    const panel = el.parentElement?.closest(".panel");
+    const q = panel && getComputedStyle(panel).overflow !== "visible" ? panel.getBoundingClientRect() : { left: -1e9, right: 1e9, top: -1e9, bottom: 1e9 };
+    return { left: Math.max(r.left, q.left), right: Math.min(r.right, q.right), top: Math.max(r.top, q.top), bottom: Math.min(r.bottom, q.bottom), width: Math.min(r.right, q.right) - Math.max(r.left, q.left), height: Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top) };
+  };
   for (const el of document.body.querySelectorAll("a[href], button, input, select, summary")) {
     if (skip(el)) continue;
-    if (hit(el.getBoundingClientRect())) out.push(`control ${label(el)}`);
+    const r = inPanel(el, el.getBoundingClientRect());
+    if (r.width > 0 && r.height > 0 && hit(r)) out.push(`control ${label(el)}`);
   }
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -411,10 +420,11 @@ const covers = () => {
     if (!n.textContent.trim() || !el || skip(el)) continue;
     const range = document.createRange();
     range.selectNodeContents(n);
-    // Text cut off by its own box (an ellipsis) only counts where it shows
+    // Text cut off by its own box (an ellipsis), or scrolled out of its
+    // panel, only counts where it shows
     const box = getComputedStyle(el).overflowX !== "visible" ? el.getBoundingClientRect() : null;
-    const clip = (r) => (box ? { left: Math.max(r.left, box.left), right: Math.min(r.right, box.right), top: Math.max(r.top, box.top), bottom: Math.min(r.bottom, box.bottom), width: Math.min(r.right, box.right) - Math.max(r.left, box.left) } : r);
-    if ([...range.getClientRects()].map(clip).some((r) => r.width > 0 && hit(r))) out.push(`text ${label(el)}`);
+    const clip = (r) => inPanel(el, box ? { left: Math.max(r.left, box.left), right: Math.min(r.right, box.right), top: Math.max(r.top, box.top), bottom: Math.min(r.bottom, box.bottom) } : r);
+    if ([...range.getClientRects()].map(clip).some((r) => r.width > 0 && r.height > 0 && hit(r))) out.push(`text ${label(el)}`);
   }
   return out;
 };
@@ -533,15 +543,16 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
         const panel = inRow ? el : at?.querySelector(".panel");
         const r = panel?.getBoundingClientRect();
         const bar = document.querySelector(".top-bar").getBoundingClientRect();
+        const map = document.querySelector(".progress-line");
         return {
           landed: !!at && at === target,
           id: at?.id,
           // (one element: a row's first panel is its first child)
           panel: panel && (inRow ? `#${id}` : at.querySelector(".station-row") ? `#${at.id} .station-row > :first-child` : `#${at.id} .panel`),
           under: r && r.top < bar.bottom - 0.5 ? Math.round(bar.bottom - r.top) : 0,
-          // A sheet (a tall screen: city-track.css) runs to the screen's
-          // foot on purpose and pads its words clear of the home bar
-          past: !r ? 0 : innerHeight >= innerWidth ? Math.round(insets.bottom - parseFloat(getComputedStyle(panel).paddingBottom)) : Math.round(r.bottom - (height - insets.bottom)),
+          // (a sheet, on a tall screen, too: it ends above the metro map,
+          // which clears the home bar)
+          past: !r ? 0 : Math.round(r.bottom - Math.min(height - insets.bottom, map?.checkVisibility() ? map.getBoundingClientRect().top : height)),
           more: panel ? panel.scrollHeight > panel.clientHeight + 1 : false,
           scrolls: panel ? getComputedStyle(panel).overflowY : "",
         };
@@ -560,13 +571,13 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       }
     }
     step = "page";
-    // The progress line over the page, where this anchor lands
-    for (const d of await page.evaluate(covers)) report("covers", where, d.startsWith("the bar") ? d : `the progress line lies over ${d}`);
+    // The metro map over the page, where this anchor lands
+    for (const d of await page.evaluate(covers)) report("covers", where, d.startsWith("the bar") ? d : `the metro map lies over ${d}`);
     // Fixed things again at the foot of the page
     await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
     await page.waitForTimeout(300);
     for (const scope of FIXED) file(profile, route, `scrolled ${scope}`, await page.evaluate(measure, { scope, insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
-    for (const d of await page.evaluate(covers)) report("covers", `${where} [foot]`, d.startsWith("the bar") ? d : `the progress line lies over ${d}`);
+    for (const d of await page.evaluate(covers)) report("covers", `${where} [foot]`, d.startsWith("the bar") ? d : `the metro map lies over ${d}`);
     if (SHOTS && !profile.text && SHOT_SIZES.has(profile.name) && SHOT_PAGES.has(route)) {
       await page.evaluate(() => scrollTo(0, 0));
       await page.waitForTimeout(400);
@@ -744,12 +755,12 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       await press(profile, page.locator("#places-menu").getByRole("link", { name: /Experience/ }).first());
       await landed("#experience", "the menu's Experience");
       if (await page.evaluate(() => !!document.querySelector("#places-menu:popover-open"))) report("tap", where, "the menu stayed open after choosing a section");
-      // The progress line (labelled links from 97rem): a point takes you there
+      // The metro map (on the journey): a station takes you there
       await visit(page, "/");
       const point = page.locator(".progress-line a.progress-point").first();
       if (await page.locator(".progress-line").isVisible() && (await point.isVisible())) {
         await press(profile, page.locator(".progress-line").getByRole("link", { name: /Contact/ }));
-        await landed("#contact", "the progress line's Contact");
+        await landed("#contact", "the metro map's Contact");
       }
     } catch (e) {
       report("tap", where, String(e.message).split("\n")[0]);

@@ -13,12 +13,14 @@ import { useSection } from "./useSection";
 // focus to that section (each can take focus, tabIndex -1), so the
 // keyboard carries on from there (jump.ts). A click with a modifier key
 // or the middle button is left to the browser. The section you're at
-// (useSection.ts, from the progress line) is marked: aria-current="location", and a filled dot as
-// well as the chosen glass, so not by colour alone.
+// (useSection.ts, from the metro map) is marked: aria-current="location", and a filled dot as
+// well as the chosen glass, so not by colour alone. It grows out of its
+// key, and the city dims behind it (city.css).
 //
 // It also measures the bar it sits in: the bar's real height (--bar-h,
 // the page's scroll padding) and where the Sections button ends
-// (--menu-top), written on <html>, so a jump to part of the page clears
+// (--menu-top) and how far its middle is from the right edge (--menu-x),
+// written on <html>, so a jump to part of the page clears
 // the bar and the menu opens under its button however the bar wraps or
 // however large the text (city.css has fallbacks for before this runs).
 // When the bar is taller than a quarter of the screen (very large text on
@@ -51,15 +53,23 @@ export default function SectionsMenu() {
       // The bar is sticky at the top: the button's place in it is its
       // place on the screen
       html.style.setProperty("--menu-top", `${button.offsetTop + button.offsetHeight + 6}px`);
+      // How far the button's middle is from the screen's right edge: the
+      // menu grows out of it (city.css)
+      const key = button.getBoundingClientRect();
+      html.style.setProperty("--menu-x", `${html.clientWidth - key.left - key.width / 2}px`);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(bar, { box: "border-box" });
-    // The screen's height matters too (a phone turned, the toolbar)
+    // The screen's height matters too (a phone turned, the toolbar); and
+    // the keys can shift in a bar that keeps its size (the weather's words)
     window.addEventListener("resize", measure);
+    const menu = nav.current;
+    menu?.addEventListener("beforetoggle", measure);
     return () => {
       observer.disconnect();
       window.removeEventListener("resize", measure);
+      menu?.removeEventListener("beforetoggle", measure);
     };
   }, []);
 

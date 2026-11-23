@@ -91,11 +91,16 @@ test("the shake exists and is used only on a failed copy", () => {
 });
 
 test("the Sections menu grows from its key, opens slower than it closes, and is a transition", () => {
-  assert.match(city, /\.sections-menu \{[^}]*transform-origin: top right;[^}]*transition:[^}]*var\(--t-fast\)[^}]*allow-discrete/);
-  assert.match(city, /\.sections-menu:popover-open \{[^}]*transition-duration: var\(--t-base\)/);
+  // From under the Sections button's middle (--menu-x, measured by the menu)
+  assert.match(city, /\.sections-menu \{[^}]*transform-origin: calc\(100% \+ max\(1\.25rem, env\(safe-area-inset-right\)\) - var\(--menu-x, 6rem\)\) top;[^}]*transition:[^}]*var\(--t-fast\)[^}]*allow-discrete/);
+  assert.match(read("app/components/city2d/SectionsMenu.tsx"), /setProperty\("--menu-x"/);
+  assert.match(city, /\.sections-menu:popover-open::backdrop \{[^}]*transition-duration: var\(--t-base\)/);
   assert.match(city, /@starting-style \{\s*:root:not\(\[data-still="on"\]\) \.sections-menu:popover-open/);
   assert.doesNotMatch(city, /@keyframes menu-in/);
   assert.match(city, /\.sections-menu \{[^}]*overscroll-behavior: contain/);
+  // The city dims behind it (figure-ground), and the dimming takes no
+  // clicks, so a click outside still closes it (light dismiss)
+  assert.match(city, /\n\.sections-menu::backdrop \{\s*background: rgb\(8 9 12 \/ 0\.5\);\s*pointer-events: none;/);
   assert.match(resume, /\.resume \{[^}]*overscroll-behavior: contain/);
 });
 

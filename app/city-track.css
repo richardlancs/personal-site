@@ -23,8 +23,22 @@
     overflow-anchor: none;
     /* How much of the next stop shows at the right */
     --peek: clamp(1.5rem, 10vw, 11rem);
-    /* The panels clear the bar */
+    /* The panels clear the bar, and the metro map at the foot (its
+       height, --map-h, city.css) */
     --stop-top: calc(var(--bar-h) + 0.75rem);
+    --map-h: calc(44px + 2rem);
+    --foot: calc(var(--map-h) + max(8px, env(safe-area-inset-bottom)) + 0.5rem);
+  }
+
+  :root[data-track="on"][data-bar-tall] {
+    --foot: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  /* A short screen: the map is its dots alone */
+  @media (max-height: 500px) {
+    :root[data-track="on"] {
+      --map-h: calc(44px + 0.75rem);
+    }
   }
 
   /* The bar floats over the stage (in the page's flow it would push the
@@ -135,11 +149,11 @@
      the next stop that shows at the right is its city, not its panel */
   :root[data-track="on"] .track .station-body {
     position: absolute;
-    bottom: max(1rem, env(safe-area-inset-bottom));
+    bottom: var(--foot);
     left: max(var(--peek) + 1rem, env(safe-area-inset-left));
     z-index: 2;
     width: min(var(--panel-w, 42rem), 100% - var(--peek) - 2rem);
-    max-height: calc(100% - var(--stop-top) - max(1rem, env(safe-area-inset-bottom)));
+    max-height: calc(100% - var(--stop-top) - var(--foot));
     margin: 0;
   }
 
@@ -168,7 +182,7 @@
     width: max-content;
     height: 100%;
     margin: 0;
-    padding: var(--stop-top) var(--past) max(1rem, env(safe-area-inset-bottom)) max(var(--peek) + 1rem, env(safe-area-inset-left));
+    padding: var(--stop-top) var(--past) var(--foot) max(var(--peek) + 1rem, env(safe-area-inset-left));
   }
 
   /* (each panel's own width, --panel-w, is set where it is made) */
@@ -238,7 +252,7 @@
   }
 
   :root[data-track="on"] #experience :is(.exp-stop, .station-row) > .panel {
-    max-height: calc(100dvh - var(--rail-y) - 1.5rem - max(1rem, env(safe-area-inset-bottom)));
+    max-height: calc(100dvh - var(--rail-y) - 1.5rem - var(--foot));
   }
 
   /* Contact, the journey's end, is its best-lit stop: the panel lighter
@@ -359,7 +373,7 @@
     :root[data-track="on"] .track .panel {
       --pad: 1.25rem;
       /* (a phone's gutters; from 768px wide, 10% of the width clear) */
-      padding: 1.25rem var(--side) max(1.5rem, env(safe-area-inset-bottom));
+      padding: 1.25rem var(--side) 1.5rem;
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       background: var(--ground);
@@ -367,7 +381,7 @@
     }
 
     :root[data-track="on"] .track .station-body {
-      inset: var(--stop-band) 0 0;
+      inset: var(--stop-band) 0 var(--foot);
       width: auto;
       max-height: none;
     }
@@ -379,7 +393,7 @@
       --rail-y: var(--stop-band);
       align-items: stretch;
       gap: 0;
-      padding: var(--stop-band) 0 0;
+      padding: var(--stop-band) 0 var(--foot);
     }
 
     :root[data-track="on"] :is(.station-row .panel, .exp-stop) {

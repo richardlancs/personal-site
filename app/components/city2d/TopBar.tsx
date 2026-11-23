@@ -7,8 +7,8 @@ import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 
 // The bar along the top of every page (city.css, "The top bar"): the
-// name, the way home; the progress line and the section you're at
-// (ProgressLine.tsx); Richmond Hill's time and weather, only to read;
+// name, the way home; the section you're at and the metro map at the foot
+// of the screen (ProgressLine.tsx); Richmond Hill's time and weather, only to read;
 // the Sections menu, built
 // from the registry; Still view; and the music
 // (its note, if the song can't load, hangs under its key). It stays
@@ -20,8 +20,8 @@ export default function TopBar() {
         {profile.name}
       </Link>
       {/* The section you're at, in words on mid-width screens, and the
-          progress line: along the bar's foot, or in the right margin on
-          wide screens (ProgressLine.tsx) */}
+          metro map, fixed along the foot of the screen on the journey
+          (ProgressLine.tsx) */}
       <ProgressLine />
       <WeatherClock />
       <div className="top-bar-end">

@@ -1,6 +1,6 @@
-// The progress line (components/city2d/ProgressLine.tsx, lib/progress.ts):
-// one line with a point per section that follows the scroll continuously
-// and locks onto each section as it is reached, without ever touching the
+// The metro map (components/city2d/ProgressLine.tsx, lib/progress.ts): one
+// line with a station per section that follows the journey continuously
+// and locks onto each station as it is reached, without ever touching the
 // page's own scrolling.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
@@ -150,25 +150,35 @@ test("the snap: eased only on arriving at a point in a slow scroll, never armed 
   assert.match(read("app/city.css"), /body:not\(:has\(#home\)\) :is\(\.progress-line, \.top-bar-here\) \{\s*display: none;/);
 });
 
-test("the line's CSS: transforms only, the fill eased only when it locks, and nothing moves in still view", () => {
+test("the map's CSS: transforms only, the fill eased only when it locks, and nothing moves in still view", () => {
   const css = read("app/city.css");
   // The fill's length is a transform of --progress
   assert.match(css, /\.progress-fill \{[^}]*transform: scaleX\(calc\(var\(--progress, 0\) \/ var\(--last, 5\)\)\)/);
-  // The ease and the pulse sit under motion-welcome only
+  // The ease, the pulse and the current station's growth sit under motion-welcome only
   const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.progress-line\[data-snap\] \.progress-fill \{[^}]*\}[\s\S]*?\n\}/)?.[0];
   assert.ok(block, "the motion block");
   assert.match(block, /transition: transform var\(--t-fast\) var\(--ease-out\)/);
   assert.match(block, /animation: progress-pulse var\(--t-base\)/);
-  assert.match(css, /@keyframes progress-pulse \{[^}]*scale: 1\.35/);
-  // Outside that block, no transition or animation on the line
+  assert.match(block, /:is\(\.progress-dot, \.progress-label\) \{\s*transition: scale var\(--t-base\) var\(--ease-spring\), opacity var\(--t-base\) var\(--ease-out\);/);
+  assert.match(css, /@keyframes progress-pulse \{[^}]*scale: 2/);
+  // Outside that block, no transition or animation on the map
   const outside = css.replace(block, "");
   assert.doesNotMatch(outside.match(/\.progress-[a-z]+[^{]*\{[^}]*\}/g)?.join("\n") ?? "", /transition|animation/);
-  // The reached point: a taller tick, its shape as well as its colour (not by colour alone)
-  assert.match(css, /\n\.progress-point\[aria-current="location"\] \.progress-dot \{\s*height: 13px;/);
-  // Along the bar's foot at every width: the margin's labelled line is gone
-  // (the metro map at the foot replaces it, Task 5)
+  // The current station: a larger, filled dot, its shape as well as its colour (not by colour alone)
+  assert.match(css, /\n\.progress-point\[aria-current="location"\] \.progress-dot \{\s*scale: 1\.5;\s*background: var\(--cyan\);/);
   assert.doesNotMatch(css, /97rem|96\.99rem/);
-  assert.match(css, /\n\.progress-line \{\s*position: absolute;/);
+  // Only on the journey, fixed at the foot of the screen, clear of the home bar
+  assert.match(css, /\n\.progress-line \{\s*display: none;/);
+  assert.match(css, /:root\[data-track="on"\] \.progress-line \{\s*position: fixed;[^}]*inset: auto [^;]*max\(8px, env\(safe-area-inset-bottom\)\)/);
+  // Every station a 44px target, 8px apart
+  assert.match(css, /\.progress-points \{[^}]*gap: 8px;/);
+  assert.match(css, /\.progress-dot \{\s*width: 12px;\s*height: 12px;\s*margin: 16px 0;/);
+  // Phones and short screens: the current name alone (the others stay each link's name)
+  assert.match(css, /@media \(max-width: 47\.99rem\), \(max-height: 500px\) \{[\s\S]*?\.progress-point:not\(\[aria-current\]\) \.progress-label \{\s*opacity: 0;/);
+  // The panels clear it (city-track.css: --foot from --map-h)
+  const track = read("app/city-track.css");
+  assert.match(track, /--foot: calc\(var\(--map-h\) \+ max\(8px, env\(safe-area-inset-bottom\)\) \+ 0\.5rem\);/);
+  assert.match(track, /\.track \.station-body \{[^}]*bottom: var\(--foot\);/);
   // The section in the top bar from 53rem on
   assert.match(css, /@media \(min-width: 53rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
 });

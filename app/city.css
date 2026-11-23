@@ -243,7 +243,7 @@ button.text-link,
 
 /* The bar's frosted ground, on a layer of its own under its contents: a
    backdrop-filter on the bar itself would make it the containing block
-   of the progress line, which is fixed in the margin on wide screens */
+   of the metro map, which is fixed at the foot of the screen */
 .top-bar::before {
   content: "";
   position: absolute;
@@ -480,17 +480,25 @@ button.text-link,
   box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
 }
 
-/* It grows out of its key (the top right corner, under the button) and
-   folds back into it: one transition between two states, so a second
-   press mid-way simply reverses it. Open over --t-base, closed faster
-   (--t-fast). Where @starting-style or discrete transitions aren't
-   supported it simply appears and goes; in still view and with reduced
-   motion, at once. */
+/* The city dims behind it (figure-ground). The dimming takes no clicks: a
+   click outside still closes the menu (light dismiss) and lands where it
+   falls, as with no dimming */
+.sections-menu::backdrop {
+  background: rgb(8 9 12 / 0.5);
+  pointer-events: none;
+}
+
+/* It grows out of its key (from under the Sections button's middle,
+   --menu-x: SectionsMenu.tsx) and folds back into it, the dimming with it:
+   one transition between two states, so a second press mid-way simply
+   reverses it. Open over --t-base, closed faster (--t-fast). Where
+   @starting-style or discrete transitions aren't supported it simply
+   appears and goes; in still view and with reduced motion, at once. */
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .sections-menu {
-    transform-origin: top right;
+    transform-origin: calc(100% + max(1.25rem, env(safe-area-inset-right)) - var(--menu-x, 6rem)) top;
     opacity: 0;
-    scale: 0.96;
+    scale: 0.9;
     transition:
       opacity var(--t-fast) var(--ease-out),
       scale var(--t-fast) var(--ease-out),
@@ -498,7 +506,13 @@ button.text-link,
       display var(--t-fast) allow-discrete;
   }
 
-  :root:not([data-still="on"]) .sections-menu:popover-open {
+  :root:not([data-still="on"]) .sections-menu::backdrop {
+    opacity: 0;
+    transition: inherit;
+  }
+
+  :root:not([data-still="on"]) .sections-menu:popover-open,
+  :root:not([data-still="on"]) .sections-menu:popover-open::backdrop {
     opacity: 1;
     scale: 1;
     transition-duration: var(--t-base);
@@ -506,8 +520,12 @@ button.text-link,
 
   @starting-style {
     :root:not([data-still="on"]) .sections-menu:popover-open {
+      scale: 0.9;
+    }
+
+    :root:not([data-still="on"]) .sections-menu:popover-open,
+    :root:not([data-still="on"]) .sections-menu:popover-open::backdrop {
       opacity: 0;
-      scale: 0.96;
     }
   }
 }
@@ -592,7 +610,7 @@ a[data-resume][data-opening] {
 /* Very large text on a phone: a bar taller than a quarter of the screen
    (SectionsMenu.tsx sets data-bar-tall) stops being sticky and scrolls
    away with the top of the page, so it never covers what you're reading
-   (and the progress line along its foot goes with it).
+   (the metro map stays at the foot).
    Jumps then stop at the very top, and the menu opens under its button
    where the button is on the page. */
 :root[data-bar-tall] {
@@ -628,7 +646,7 @@ a[data-resume][data-opening] {
 }
 
 /* Stations, Skills and the page's content take focus only so a jump can
-   hand focus to them (the Sections menu, the progress line): no ring on them, even
+   hand focus to them (the Sections menu, the metro map): no ring on them, even
    when Chrome counts a programmatic focus after a key press as visible */
 [tabindex="-1"]:focus {
   outline: none;
@@ -971,33 +989,51 @@ a[data-resume][data-opening] {
   margin-top: 1.25rem;
 }
 
-/* ---------- The progress line (components/city2d/ProgressLine.tsx) ----------
-   One line with a point per section. Its fill is one transform of
-   --progress (0 to 5, written on .progress-line from the scroll), so the
-   line never asks for layout as the page moves. It is a 3px line along
-   the foot of the top bar, full width, with six small ticks: the links
-   and their labels are hidden (visibility, so they can't be focused),
-   only the track and the ticks drawn (the metro map at the foot, Task 5,
-   is the labelled one). */
+/* ---------- The metro map (components/city2d/ProgressLine.tsx) ----------
+   The journey's stops as stations on one line, in a strip of the bar's
+   glass along the foot of the screen (only on the journey; read top to
+   bottom, the Sections menu serves). Each station is a link, 44px or more
+   each way and 8px apart: its name over a dot on the line. The fill is one
+   transform of --progress (0 to 5, written on .progress-line from the
+   scroll), so the map never asks for layout as the city moves. Passed
+   stations have a cyan ring; the current one a larger, filled dot and its
+   name in --text (not by colour alone). Its height is --map-h
+   (city-track.css), which the panels clear. */
 
 .progress-line {
-  position: absolute;
-  inset: auto 0 -1px;
-  height: 3px;
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
+}
+
+:root[data-track="on"] .progress-line {
+  position: fixed;
+  /* (px: six 44px stations 8px apart fit a 320px screen at any text size) */
+  inset: auto max(8px, env(safe-area-inset-right), 50% - 30rem) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left), 50% - 30rem);
+  display: block;
+  padding: 0.375rem 0;
+  border-radius: var(--radius-lg);
+  background: rgb(8 9 12 / 0.86);
+  box-shadow: inset 0 0 0 1px var(--line);
+  backdrop-filter: blur(12px);
+}
+
+/* Not where the bar already takes over a quarter of the screen (very large
+   text on a phone, data-bar-tall): the panels need what is left; the
+   Sections menu, the keys and a swipe serve */
+:root[data-bar-tall] .progress-line {
+  display: none;
 }
 
 .progress-rail {
-  position: absolute;
-  inset: 0;
+  position: relative;
 }
 
+/* The line from the first dot's middle to the last's (the stations share
+   the width, 8px apart) */
 .progress-track {
   position: absolute;
-  inset: 0;
+  inset: calc(1.25rem + 21px) calc((100% - var(--last) * 8px) / (2 * var(--last) + 2)) auto;
+  height: 2px;
   overflow: hidden;
-  visibility: visible;
   background: var(--line);
 }
 
@@ -1010,46 +1046,94 @@ a[data-resume][data-opening] {
   will-change: transform;
 }
 
+/* (over the line: a tap on a dot is the station's) */
 .progress-points {
-  position: absolute;
-  inset: 0;
+  position: relative;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
-/* A tick at each section's place along the bar: the first flush with the
-   left edge, the last with the right */
-.progress-points > li {
-  position: absolute;
-  bottom: 0;
-  left: calc((100% - 3px) * var(--i) / var(--last, 5));
-}
-
 .progress-point {
-  display: block;
-}
-
-.progress-label {
-  display: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
 .progress-dot {
-  display: block;
-  width: 3px;
-  height: 9px;
-  border-radius: 1px;
-  visibility: visible;
-  background: var(--muted);
+  width: 12px;
+  height: 12px;
+  margin: 16px 0;
+  border: 2px solid;
+  border-radius: 50%;
+  background: var(--ink);
 }
 
 .progress-point[data-lit] .progress-dot {
+  border-color: var(--cyan);
+}
+
+.progress-point[aria-current="location"] {
+  color: var(--text);
+}
+
+.progress-point[aria-current="location"] .progress-dot {
+  scale: 1.5;
   background: var(--cyan);
 }
 
-/* Where you are: a taller tick (its shape as well as its colour) */
-.progress-point[aria-current="location"] .progress-dot {
-  height: 13px;
+@media (hover: hover) {
+  .progress-point:hover {
+    color: var(--text);
+  }
+}
+
+/* Phones and short screens: the current station's name alone (the others
+   are still each link's name, read out), beside its dot */
+@media (max-width: 47.99rem), (max-height: 500px) {
+  .progress-label {
+    align-self: flex-start;
+    pointer-events: none;
+  }
+
+  .progress-point:not([aria-current]) .progress-label {
+    opacity: 0;
+  }
+
+  .progress-points > :nth-child(n + 4) .progress-label {
+    align-self: flex-end;
+  }
+}
+
+/* Short screens: the dots alone at the right, the name beside the row */
+@media (max-height: 500px) {
+  .progress-points {
+    grid-auto-columns: 44px;
+    justify-content: end;
+  }
+
+  .progress-track {
+    inset: 21px 22px auto auto;
+    width: calc(var(--last) * 52px);
+  }
+
+  .progress-label {
+    position: absolute;
+    top: 50%;
+    left: 1rem;
+    translate: 0 -50%;
+  }
 }
 
 /* Until the line has run (the page has loaded; never without JavaScript)
@@ -1101,11 +1185,11 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   }
 }
 
-/* The lock: the fill eases onto (or off) a point over --t-fast, only at that
-   moment (ProgressLine sets data-snap for it), and the point reached
-   pulses once, 1 to 1.35 to 1 over --t-base. Only where motion is welcome:
-   in still view and with reduced motion the fill steps and nothing
-   pulses. */
+/* The lock: the fill eases onto (or off) a station over --t-fast, only at
+   that moment (ProgressLine sets data-snap for it), and the station reached
+   pulses once, over --t-base; the current dot grows and the current name
+   fades in. Only where motion is welcome: in still view and with reduced
+   motion the fill steps and nothing eases or pulses. */
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .progress-line[data-snap] .progress-fill {
     transition: transform var(--t-fast) var(--ease-out);
@@ -1114,11 +1198,15 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   :root:not([data-still="on"]) .progress-point[data-pulse] .progress-dot {
     animation: progress-pulse var(--t-base) var(--ease-out);
   }
+
+  :root:not([data-still="on"]) :is(.progress-dot, .progress-label) {
+    transition: scale var(--t-base) var(--ease-spring), opacity var(--t-base) var(--ease-out);
+  }
 }
 
 @keyframes progress-pulse {
   50% {
-    scale: 1.35;
+    scale: 2;
   }
 }
 

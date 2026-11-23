@@ -8,26 +8,31 @@ import { trackMarks } from "./CityTrack";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { setSection, useSection } from "./useSection";
 
-// The progress line (city.css, "The progress line"): one line with a point
-// for each section, named by its title (Home, About, …). A fill runs along
-// it and follows the scroll continuously, so it is partway between two
-// points when the page is partway between two sections (lib/progress.ts).
-// When the fill comes within a few percent of a point (either way) it
-// locks on: it eases the last bit onto the point over 0.12s, the point's
-// tick pulses once, and it stays lit. Anywhere
+// The metro map (city.css, "The metro map"): the journey's six stops as
+// stations on one line along the foot of the screen, each a link named by
+// its title (Home, About, …), the current one lit (aria-current="location":
+// a larger, filled dot, as well as its colour). A fill runs along the line
+// and follows the scroll continuously, so it is partway between two
+// stations when the journey is partway between two stops, and runs back
+// when you go back (lib/progress.ts). When the fill comes within a few
+// percent of a station (either way) it locks on: it eases the last bit onto
+// it over 0.12s, the station's dot pulses once, and it stays lit. Anywhere
 // else it is exactly the scroll; in a fast scroll nothing is eased (a
-// point it lands on may still pulse), so it never trails.
+// station it lands on may still pulse), so it never trails.
 // The page's own scrolling is never touched: nothing here snaps, slows or
-// redirects it.
+// redirects it; a station is a plain link to its anchor (CityTrack.tsx
+// brings the stop on).
 //
-// It is a 3px line along the foot of the top bar with six small ticks,
-// not links (too small to tap: the Sections menu serves; the metro map at
-// the foot, Task 5, will be the labelled one), and the bar names the
-// section in words ("03 / 06 · Projects", from 53rem). In still view and with reduced motion the fill
-// steps from point to point and nothing pulses.
+// On wide screens every station is named above its dot; on phones only
+// the current one, beside its dot; on short screens (a phone on its side)
+// the dots alone, the current name beside the row. It is drawn only on the
+// journey (data-track="on"): read top to bottom, the Sections menu serves.
+// The bar names the section in words too ("03 / 06 · Projects", from
+// 53rem). In still view and with reduced motion the fill steps from
+// station to station and nothing pulses or eases.
 //
 // One passive scroll listener, throttled to animation frames, reads only
-// scrollY; the sections' places are measured once and again only when the
+// scrollY; the stops' places are measured once and again only when the
 // page or the bar changes size. It writes one variable, --progress (0 to
 // 5), on its own element; CSS turns that into the fill's transform. The
 // section reached is the page's one source of where you are (useSection).
@@ -189,7 +194,7 @@ export default function ProgressLine() {
   return (
     <>
       {/* The section you're at, in words, on mid-width screens. Not a
-          control; hidden from assistive technology: the line's points and
+          control; hidden from assistive technology: the map's stations and
           the Sections menu mark it with aria-current="location", and words
           that change as the page scrolls would only be noise read out */}
       <p className="top-bar-here" aria-hidden="true">
@@ -205,7 +210,7 @@ export default function ProgressLine() {
           </span>
           <ol className="progress-points">
             {points.map((s, i) => (
-              <li key={s.id} style={{ "--i": i } as CSSProperties}>
+              <li key={s.id}>
                 <a
                   href={jumpHref(s.href)}
                   onClick={go(jumpHref(s.href))}
@@ -213,8 +218,8 @@ export default function ProgressLine() {
                   data-lit={i <= hereIndex ? "" : undefined}
                   aria-current={s.id === here ? "location" : undefined}
                 >
-                  <span className="progress-dot" aria-hidden="true" />
                   <span className="progress-label">{s.title}</span>
+                  <span className="progress-dot" aria-hidden="true" />
                 </a>
               </li>
             ))}
