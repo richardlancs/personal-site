@@ -4,6 +4,7 @@ import { useEffect, useRef, type CSSProperties, type MouseEvent } from "react";
 import { FAST, lockedAt, progressAt, reached, shown, type Marks } from "../../lib/progress";
 import { listed, sectionNumber } from "../../sections/registry";
 import { REDUCED_MOTION } from "../../lib/still";
+import { trackMarks } from "./CityTrack";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { setSection, useSection } from "./useSection";
 
@@ -84,10 +85,12 @@ export default function ProgressLine() {
     };
 
     // Where each section starts, as the scroll that brings it under the
-    // bar (a jump to its anchor lands exactly there), and the page's size
+    // bar (a jump to its anchor lands exactly there), and the page's size.
+    // On the journey (CityTrack.tsx), the scroll that brings each stop to
+    // the left edge (trackMath.ts: scrollYForStop)
     const measure = () => {
       const offset = parseFloat(getComputedStyle(html).scrollPaddingTop) || 0;
-      marks = sections.map((el, i) => (i === 0 || !el ? 0 : Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset)));
+      marks = trackMarks() ?? sections.map((el, i) => (i === 0 || !el ? 0 : Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset)));
       viewport = window.innerHeight;
       pageHeight = html.scrollHeight;
     };
@@ -156,6 +159,7 @@ export default function ProgressLine() {
     else window.addEventListener("load", land, { once: true });
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", remeasure);
+    window.addEventListener("trackmeasure", remeasure);
     // The page grows as pictures load; the bar as it wraps
     const resize = new ResizeObserver(remeasure);
     const main = document.querySelector("main");
@@ -172,6 +176,7 @@ export default function ProgressLine() {
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", remeasure);
+      window.removeEventListener("trackmeasure", remeasure);
       window.removeEventListener("load", land);
       resize.disconnect();
       still.disconnect();

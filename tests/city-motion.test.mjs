@@ -13,7 +13,7 @@ const motion = read("app/motion.css");
 const resume = read("app/components/resume/resume.css");
 const press = read("app/components/ui/GlassPress.tsx");
 const copy = read("app/components/city2d/sections/CopyButton.tsx");
-const sheets = { "app/city.css": city, "app/motion.css": motion, "app/components/resume/resume.css": resume };
+const sheets = { "app/city.css": city, "app/motion.css": motion, "app/components/resume/resume.css": resume, "app/city-track.css": read("app/city-track.css") };
 const uncomment = (css) => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
 test("the seven motion tokens are in city.css with their values", () => {
@@ -39,6 +39,9 @@ test("no transition or animation writes a duration or a curve of its own", () =>
     assert.ok(decls.length > 0, `${file} has motion`);
     for (const [, prop, value] of decls) {
       if (/^(transition|animation)-(property|name|behavior|fill-mode|iteration-count|direction|play-state|composition|timeline|range.*)$/.test(prop)) continue;
+      // The journey's move is the scroll itself, not a motion with a pace
+      // of its own: linear, one pixel along for one down (city-track.css)
+      if (file === "app/city-track.css" && value === "track-move linear both") continue;
       assert.doesNotMatch(value.replace(/\b0m?s\b/g, ""), /\d(?:\.\d+)?m?s\b/, `${file}: ${prop}: ${value}`);
       assert.doesNotMatch(value, /cubic-bezier|(?<!-)\b(?:linear|ease(?:-in|-out|-in-out)?)\b(?!-)/, `${file}: ${prop}: ${value}`);
     }

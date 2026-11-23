@@ -8,7 +8,8 @@ import { useEffect, useState, type RefObject } from "react";
 // paintings it shows.
 //
 // "Near" is on the screen, or, once the page has been scrolled (by hand,
-// a jump down the page, or a deep link), within half a screen of it. On a
+// a jump down the page, or a deep link), within half a screen of it
+// (down the stacked page, or along the journey: CityTrack.tsx). On a
 // phone the next band starts just under the fold; looking ahead before
 // any scroll would fetch it alongside the home plate, the page's largest
 // paint. A band that is on the screen at once (a tall window) loads at
@@ -18,8 +19,8 @@ import { useEffect, useState, type RefObject } from "react";
 // each element is let go once it has been seen. Where there's no
 // IntersectionObserver, everything counts as near.
 
-const AHEAD = 0.5; // of the screen's height
-const ROOT_MARGIN = "50% 0px";
+const AHEAD = 0.5; // of the screen's height (or width, on the journey)
+const ROOT_MARGIN = "50%";
 const JUMP_WAIT = 1500; // ms: the longest a deep link's smooth jump is waited for
 
 const waiting = new Map<Element, () => void>();
@@ -31,10 +32,12 @@ function release(el: Element) {
   observer?.unobserve(el);
 }
 
+// Both ways: the stacked page goes down, the journey (CityTrack.tsx) sideways
 function within(el: Element, ahead: number) {
   const r = el.getBoundingClientRect();
   const m = window.innerHeight * ahead;
-  return r.bottom > -m && r.top < window.innerHeight + m;
+  const n = window.innerWidth * ahead;
+  return r.bottom > -m && r.top < window.innerHeight + m && r.right > -n && r.left < window.innerWidth + n;
 }
 
 function arrive(el: Element) {

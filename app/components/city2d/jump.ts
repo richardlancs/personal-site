@@ -12,7 +12,9 @@ export function isPlainClick(e: MouseEvent) {
 
 export function focusAnchor(href: string) {
   const hash = href.split("#")[1];
-  document.getElementById(hash || "home")?.focus({ preventScroll: Boolean(hash) });
+  // On the journey the stop is brought on by CityTrack.tsx, never by focus
+  const track = document.documentElement.dataset.track === "on";
+  document.getElementById(hash || "home")?.focus({ preventScroll: Boolean(hash) || track });
 }
 
 // Where a list's link to a section points: home is the top of the page, so

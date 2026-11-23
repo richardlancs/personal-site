@@ -9,10 +9,12 @@ import GlassPress from "./components/ui/GlassPress";
 import { STILL_SCRIPT } from "./lib/still";
 import { richmondHill } from "./data/weather";
 import { platePreloadScript } from "./lib/platePreload";
+import { TRACK_SCRIPT } from "./lib/track";
 import { siteUrl } from "./sections/registry";
 import "./city.css";
 import "./motion.css";
 import "./reveal.css";
+import "./city-track.css";
 
 // Headings and station names: Rajdhani, a squared, narrow sans with the
 // look of signage. Text: Nunito, a rounded sans, friendly and easy to read
@@ -73,13 +75,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-scroll-behavior="smooth"
       className={`${display.variable} ${text.variable}`}
-      // The script below sets data-still on <html> before React hydrates
+      // The scripts below set data-still and data-track on <html> before React hydrates
       suppressHydrationWarning
     >
       <head>
         {/* Still view, before the first paint: the visitor's saved choice,
             or the system's reduced-motion setting (lib/still.ts) */}
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
+        {/* The horizontal journey, on before the first paint where scripts
+            run and the screen has room (lib/track.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: TRACK_SCRIPT }} />
         {/* The home band's plate, by day or by night, fetched and painted
             while the HTML parses (lib/platePreload.ts); not on a deep link */}
         <script dangerouslySetInnerHTML={{ __html: PLATE_PRELOAD }} />

@@ -8,7 +8,6 @@ import { useCityBlend } from "./citySky";
 import { paintedHomePlate } from "./homePlate";
 import { BAND_SIZES, BELOW_SIZES, HOME_QUALITY, focal, plates } from "./plates";
 import { useNear } from "./useNear";
-import WeatherOverlay from "./WeatherOverlay";
 
 // A station's band of painting: its district by day, by night, or one
 // fading into the other, as Richmond Hill's clock has it (CityDriver.tsx
@@ -26,8 +25,11 @@ import WeatherOverlay from "./WeatherOverlay";
 // loaded, then fades in over the gradient (no blurred placeholder to snap
 // out of; no fade in still view). A plate that fails to load is dropped for
 // good, leaving the gradient: the band is decoration, so it isn't retried.
-// Over the plates, the weather (WeatherOverlay.tsx). Without scripts, the
-// night plate (lazy below the first band).
+// Without scripts, the night plate (lazy below the first band). On the
+// journey (city-track.css) the band is its stop's stretch of the city,
+// behind the stop's panel; the weather is drawn once over the whole stage
+// (CityTrack.tsx), not per band. Today's six plates stand in for the
+// continuous panorama: `plates` (plates.ts) is the one place they come from.
 
 // Opened on a deep link (/#projects, …), which lands below the home band
 function deepLinked(): boolean {
@@ -69,8 +71,6 @@ export default function DistrictBand({ district, priority = false }: { district:
           />
         </div>
       ))}
-      {/* Haze, rain or snow over the plates (WeatherOverlay.tsx) */}
-      <WeatherOverlay />
       {/* Every band but the first comes out of the ground above it
           (city.css, .band-top) */}
       {!priority && <div className="band-top" />}

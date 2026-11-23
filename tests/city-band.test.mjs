@@ -71,7 +71,9 @@ test("the bands wait on one shared observer, half a screen ahead", () => {
   assert.match(near, /addEventListener\("scroll", onFirstScroll, \{ once: true, passive: true \}\)/, "no look-ahead before the first scroll");
   assert.match(near, /scrolled \|\| \(!deepLink\(\) && within\(entry\.target, 0\)\)/);
   assert.match(near, /rootMargin: ROOT_MARGIN/);
-  assert.match(near, /const ROOT_MARGIN = "50% 0px"/);
+  // Half a screen every way: down the stacked page, along the journey
+  assert.match(near, /const ROOT_MARGIN = "50%"/);
+  assert.match(near, /r\.right > -n && r\.left < window\.innerWidth \+ n/, "ahead sideways too");
   assert.match(near, /unobserve\(/, "each band is let go once seen");
   const band = read("app/components/city2d/DistrictBand.tsx");
   assert.match(band, /useNear\(ref, priority && !deepLinked\(\)\)/, "home skips the wait");

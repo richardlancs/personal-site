@@ -1,0 +1,278 @@
+/* ---------- The journey (components/city2d/CityTrack.tsx) ----------
+   With <html data-track="on"> (lib/track.ts, before the first paint) the
+   six stations stand side by side, one city you travel along: a runway as
+   tall as the track is wide (--travel, from CityTrack) holds a full-screen
+   stage that stays put while the track in it moves left exactly as far as
+   the page has scrolled. Each station is a stop: its band of painting
+   fills it, its words sit on the street in a dark glass panel, and the
+   next stop's city shows at the right (--peek), so the way on needs no
+   arrow. Without the attribute (no scripts, a tiny screen, print) none of
+   this applies and the page reads top to bottom.
+
+   The move is a scroll-driven animation where there is one (the runway's
+   view timeline: its "contain" range is exactly the runway's scroll) and
+   --x written by CityTrack each frame elsewhere. It is the scroll itself,
+   so it runs in still view too; the sky's parallax doesn't. */
+
+@media screen {
+  :root[data-track="on"] {
+    /* A jump stops where the stop starts; nothing pads the view timeline */
+    scroll-padding-top: 0;
+    /* The browser never shifts the scroll to keep something in place: a
+       resize is CityTrack's to keep */
+    overflow-anchor: none;
+    /* How much of the next stop shows at the right */
+    --peek: clamp(2.5rem, 10vw, 11rem);
+    /* The panels clear the bar */
+    --stop-top: calc(var(--bar-h) + 0.75rem);
+  }
+
+  /* The bar floats over the stage (in the page's flow it would push the
+     stage down and the first scroll would move the page, not the city);
+     a very tall one (data-bar-tall) scrolls away with the top of the page */
+  :root[data-track="on"] .top-bar {
+    position: fixed;
+    inset: 0 0 auto;
+  }
+
+  :root[data-track="on"][data-bar-tall] .top-bar {
+    position: absolute;
+  }
+
+  :root[data-track="on"][data-bar-tall] {
+    --stop-top: 0.75rem;
+  }
+
+  :root[data-track="on"] .track-runway {
+    height: calc(var(--travel, 0px) + 100dvh);
+  }
+
+  :root[data-track="on"] .track-stage {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    /* clip, not hidden: nothing (a jump, focus) can scroll it sideways */
+    overflow: clip;
+    container-type: inline-size;
+    background: var(--ink);
+    /* Up and down are the page's; a sideways swipe travels (CityTrack) */
+    touch-action: pan-y pinch-zoom;
+  }
+
+  :root[data-track="on"] .track {
+    position: relative;
+    display: flex;
+    width: max-content;
+    height: 100%;
+    transform: translateX(var(--x, 0px));
+  }
+
+  /* A stop: as wide as the stage less the peek of the next; the last one
+     the whole stage (nothing after it) */
+  :root[data-track="on"] .track > .station {
+    flex: none;
+    width: calc(100cqw - var(--peek));
+    height: 100%;
+    background: none;
+  }
+
+  :root[data-track="on"] .track > .station:last-of-type {
+    width: 100cqw;
+  }
+
+  /* The painting fills the stop, its top melting into the sky behind and
+     its sides into the next stop's (today's six plates stand in for one
+     continuous panorama) */
+  :root[data-track="on"] .track .band {
+    position: absolute;
+    inset: 0;
+    max-height: none;
+    aspect-ratio: auto;
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%), linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, transparent, #000 16%), linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
+    mask-composite: intersect;
+  }
+
+  :root[data-track="on"] .track :is(.band-plate img, .band-noscript),
+  :root[data-track="on"][data-home-plate] .track .band[data-home] {
+    object-position: var(--focal, center);
+    background-position: var(--focal, center), center;
+  }
+
+  :root[data-track="on"] .band-top {
+    display: none;
+  }
+
+  /* The words: a dark glass panel on the street, at the foot of the stop
+     and to its left, never taller than the stage (it scrolls inside, and
+     its scrolling never runs on into the page: the city stays put). It
+     starts a peek's width in, so the slice of the next stop that shows at
+     the right is its city, not its panel. */
+  :root[data-track="on"] .track .station-body {
+    position: absolute;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    left: max(var(--peek) + 1rem, env(safe-area-inset-left));
+    z-index: 2;
+    width: min(42rem, 100% - var(--peek) - 2rem);
+    max-height: calc(100% - var(--stop-top) - max(1rem, env(safe-area-inset-bottom)));
+    margin: 0;
+    padding: clamp(1rem, 2.5cqw, 1.75rem);
+    overflow-y: hidden;
+    scrollbar-gutter: stable;
+    touch-action: pan-y pinch-zoom;
+    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    border-radius: var(--radius-lg);
+    background: rgb(8 9 12 / 0.86);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+
+  /* Scrollable once the journey has stopped with all of it on the screen,
+     and only if it has more than it shows (CityTrack: data-open): a panel
+     sliding past, or one that fits, never catches the scroll */
+  :root[data-track="on"] .track > [data-open] > .station-body {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  :root[data-track="on"] .track .hero {
+    margin-top: 0;
+  }
+
+  :root[data-track="on"] .track .page-foot {
+    margin-top: 2rem;
+    padding: 1.25rem 0 0;
+    box-shadow: none;
+    clip-path: none;
+    background: none;
+  }
+
+  /* The sky behind the city: slower than the street (it moves 30% as far),
+     in the hour's colours, with a faint plan's grid so the depth reads */
+  :root[data-track="on"] .track-sky {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc(100% + 0.3 * var(--travel, 0px));
+    background:
+      repeating-linear-gradient(90deg, rgb(230 233 238 / 0.04) 0 1px, transparent 1px 7rem),
+      linear-gradient(
+        to bottom,
+        color-mix(in srgb, #081222 calc(var(--city-night, 1) * 100%), #5f84ad),
+        color-mix(in srgb, #0e1d31 calc(var(--city-night, 1) * 100%), #aebfd0) 50%,
+        var(--seam) 85%
+      );
+    transform: translateX(calc(0.3 * var(--x, 0px)));
+  }
+
+  /* Rain and snow, once over the stage: inside the track (under the
+     panels), held still against its move */
+  .track-weather {
+    display: none;
+  }
+
+  :root[data-track="on"] .track-weather {
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 1;
+    display: block;
+    width: 100cqw;
+    pointer-events: none;
+    transform: translateX(calc(-1 * var(--x, 0px)));
+  }
+
+  @supports (animation-timeline: view()) {
+    :root[data-track="on"] .track-runway {
+      view-timeline: --runway block;
+    }
+
+    :root[data-track="on"] :is(.track, .track-sky, .track-weather) {
+      /* linear: the scroll's own pace, one pixel along for one down */
+      animation: track-move linear both;
+      animation-timeline: --runway;
+      animation-range: contain 0% contain 100%;
+    }
+
+    :root[data-track="on"] .track-sky {
+      animation-name: track-sky;
+    }
+
+    :root[data-track="on"] .track-weather {
+      animation-name: track-hold;
+    }
+  }
+
+  /* Still view and reduced motion: the sky moves with the street, one
+     picture, no depth */
+  :root[data-track="on"][data-still="on"] .track-sky {
+    width: calc(100% + var(--travel, 0px));
+    transform: translateX(var(--x, 0px));
+    animation-name: track-move;
+  }
+
+  /* Phones and tall screens: the painting in the top of the stage (the bar
+     over it), the words a dark sheet below it, scrolling inside */
+  @media (max-aspect-ratio: 1 / 1) {
+    :root[data-track="on"] {
+      --stop-band: calc(var(--bar-h) + 0.3 * (100dvh - var(--bar-h)));
+    }
+
+    :root[data-track="on"] .track .band {
+      inset: 0 0 auto;
+      height: calc(var(--stop-band) + 1rem);
+    }
+
+    :root[data-track="on"] .track .station-body {
+      inset: var(--stop-band) 0 0;
+      width: auto;
+      max-height: none;
+      padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+      border-width: 1px 0 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      background: var(--ground);
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+
+    :root[data-track="on"] .track-weather {
+      bottom: auto;
+      height: var(--stop-band);
+    }
+  }
+}
+
+@keyframes track-move {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-1 * var(--travel, 0px)));
+  }
+}
+
+@keyframes track-sky {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-0.3 * var(--travel, 0px)));
+  }
+}
+
+@keyframes track-hold {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(var(--travel, 0px));
+  }
+}
+
+/* Under prefers-contrast the panels are solid */
+@media (prefers-contrast: more) {
+  :root[data-track="on"] .track .station-body {
+    background: var(--ink);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

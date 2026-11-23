@@ -1,3 +1,4 @@
+import CityTrack from "./components/city2d/CityTrack";
 import Station from "./components/city2d/Station";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
@@ -12,32 +13,37 @@ import { section } from "./sections/registry";
 
 export const metadata = sectionMetadata("home");
 
-// The whole site, one page: six sections, in the registry's order. Each
-// has its anchor (/#about, …); the old addresses redirect here
-// (next.config.ts). The home section is the hero; Skills is part of
-// Projects (its own section, inside Projects.tsx).
+// The whole site, one page: six sections, in the registry's order, the six
+// stops of one journey along the city (CityTrack.tsx: side by side, the
+// page's scroll moving you along them; stacked top to bottom without
+// scripts). Each has its anchor (/#about, …); the old addresses redirect
+// here (next.config.ts). The home section is the hero; Skills is part of
+// Projects (its own section, inside Projects.tsx). The foot of the page,
+// the colophon, ends the last stop.
 export default function Home() {
   return (
     <main>
-      <Station section={section("home")} heading={<Hero />} />
-      <Station section={section("about")}>
-        <About />
-      </Station>
-      <Station section={section("projects")}>
-        <Projects />
-      </Station>
-      <Station section={section("experience")}>
-        <Experience />
-      </Station>
-      <Station section={section("interests")}>
-        <Interests />
-      </Station>
-      <Station section={section("contact")}>
-        <Contact />
-      </Station>
-      <footer className="page-foot">
-        <Colophon />
-      </footer>
+      <CityTrack>
+        <Station section={section("home")} heading={<Hero />} />
+        <Station section={section("about")}>
+          <About />
+        </Station>
+        <Station section={section("projects")}>
+          <Projects />
+        </Station>
+        <Station section={section("experience")}>
+          <Experience />
+        </Station>
+        <Station section={section("interests")}>
+          <Interests />
+        </Station>
+        <Station section={section("contact")}>
+          <Contact />
+          <footer className="page-foot">
+            <Colophon />
+          </footer>
+        </Station>
+      </CityTrack>
       <Arrivals />
     </main>
   );
