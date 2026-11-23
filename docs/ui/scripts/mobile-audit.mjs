@@ -92,6 +92,8 @@ const profiles = [
   { name: "320-text200", width: 320, height: 640, touch: true, phone: true, insets: { ...PHONE, top: 20, bottom: 0 }, text: 2 },
   { name: "390-text200", width: 390, height: 844, touch: true, phone: true, insets: PHONE, text: 2 },
   { name: "844x390-text200", width: 844, height: 390, touch: true, phone: true, insets: PHONE_LAND, text: 2 },
+  // A tablet with large text: the metro map's names by its own width in em
+  { name: "768-text200", width: 768, height: 1024, touch: true, insets: PAD, text: 2 },
 ];
 const SHOT_SIZES = new Set(["320", "390", "844x390", "768"]);
 const SHOT_PAGES = new Set(["/", "/#projects", "/#contact"]);

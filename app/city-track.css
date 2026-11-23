@@ -30,8 +30,16 @@
     --foot: calc(var(--map-h) + max(8px, env(safe-area-inset-bottom)) + 0.5rem);
   }
 
+  /* Very large text on a phone: the map is its dots alone, and under
+     700px tall it isn't drawn (city.css) */
   :root[data-track="on"][data-bar-tall] {
-    --foot: max(1rem, env(safe-area-inset-bottom));
+    --map-h: calc(44px + 0.75rem);
+  }
+
+  @media (max-height: 699px) {
+    :root[data-track="on"][data-bar-tall] {
+      --foot: max(1rem, env(safe-area-inset-bottom));
+    }
   }
 
   /* A short screen: the map is its dots alone */

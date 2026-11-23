@@ -174,7 +174,14 @@ test("the map's CSS: transforms only, the fill eased only when it locks, and not
   assert.match(css, /\.progress-points \{[^}]*gap: 8px;/);
   assert.match(css, /\.progress-dot \{\s*width: 12px;\s*height: 12px;\s*margin: 16px 0;/);
   // Phones and short screens: the current name alone (the others stay each link's name)
-  assert.match(css, /@media \(max-width: 47\.99rem\), \(max-height: 500px\) \{[\s\S]*?\.progress-point:not\(\[aria-current\]\) \.progress-label \{\s*opacity: 0;/);
+  // (a narrow strip, by its own width in em, so 200% text counts; and short screens)
+  assert.match(css, /container-type: inline-size;/);
+  assert.match(css, /@container \(width < 36em\) \{[\s\S]*?\.progress-point:not\(\[aria-current\]\) \.progress-label \{\s*opacity: 0;/);
+  assert.match(css, /@media \(max-height: 500px\) \{[\s\S]*?\.progress-point:not\(\[aria-current\]\) \.progress-label \{\s*opacity: 0;/);
+  // Very large text on a phone: the dots alone, and no map at all only under 700px tall
+  assert.match(css, /\n:root\[data-bar-tall\] \.progress-label \{\s*position: absolute;\s*opacity: 0;/);
+  assert.match(css, /@media \(max-height: 699px\) \{\s*:root\[data-bar-tall\] \.progress-line \{\s*display: none;/);
+  assert.doesNotMatch(css, /\n:root\[data-bar-tall\] \.progress-line \{/);
   // The panels clear it (city-track.css: --foot from --map-h)
   const track = read("app/city-track.css");
   assert.match(track, /--foot: calc\(var\(--map-h\) \+ max\(8px, env\(safe-area-inset-bottom\)\) \+ 0\.5rem\);/);

@@ -23,7 +23,8 @@
 // after one pass down the page so every band has mounted its plates.
 //
 // Prints, per sky, the lowest reading in each station (and the bar, the
-// progress line and the page's foot), then every failing run with its text,
+// metro map and the page's foot; and, with the Sections menu open over the
+// dimmed city, the bar, the map and the menu's rows), then every failing run with its text,
 // a selector and its reading. Exits 1 on any failure, 2 if the page isn't
 // what this script expects (the sky override ignored, no stations).
 import { launch } from "../../audit/scripts/pw.mjs";
@@ -33,7 +34,7 @@ const WEATHERS = ["clear", "cloudy", "rain", "snow", "neutral"];
 const DAYLIGHTS = ["dawn", "day", "dusk", "night"];
 // Dawn and dusk at their middle, where the grade is strongest
 const skies = skyArg ? skyArg.split(",") : WEATHERS.flatMap((w) => DAYLIGHTS.map((d) => `${w}-${d}-0.5`));
-// 1600 wide too: the progress line's labels show only from 97rem (1552px)
+// 1600 wide too: the widest strip of the metro map
 const sizes = (sizeArg || "1440x900,1600x900,390x844").split(",").map((s) => {
   const [width, height] = s.split("x").map(Number);
   return { name: s, width, height };
@@ -165,6 +166,7 @@ const collect = (page) =>
         sel: describe(el),
         required: [".hero-name", ".station-title"].filter((s) => el.closest(s)),
         where: where(el),
+        menu: !!el.closest("#places-menu"),
         color: cs.color,
         opacity: opacityOf(el),
         large: size >= 24 || (size >= 18.66 && weight >= 700),
@@ -225,31 +227,45 @@ for (const size of sizes) {
 
     const row = {};
     const seenRequired = new Set();
+    // Photograph the screen twice and read each run against what's under it
+    const screen = async (runs) => {
+      if (!runs.length) return;
+      await paint(page, "transparent");
+      const under = await page.screenshot();
+      await paint(page, "rgb(255, 0, 255)");
+      const lit = await page.screenshot();
+      await page.evaluate(() => document.getElementById("measure-style")?.remove());
+      const results = await measure(under, lit, runs);
+      runs.forEach((run, k) => {
+        const res = results[k];
+        if (!res) return;
+        for (const s of run.required) seenRequired.add(s);
+        const need = run.large ? LARGE : NORMAL;
+        if (!row[run.where] || res.p2 < row[run.where]) row[run.where] = res.p2;
+        if (res.p2 < need) failures.push({ size: size.name, sky, where: run.where, text: run.text, sel: run.sel, ratio: res.p2, min: res.min, need, color: run.color, px: run.size });
+      });
+    };
     const bar = await page.evaluate(() => document.querySelector(".top-bar")?.getBoundingClientRect().height ?? 0);
     const step = Math.max(200, size.height - Math.round(bar) - 40);
     const full = await page.evaluate(() => document.documentElement.scrollHeight);
     for (let y = 0; ; y += step) {
       await page.evaluate((y) => scrollTo(0, y), y);
       await page.waitForTimeout(250);
-      const runs = await collect(page);
-      if (runs.length) {
-        await paint(page, "transparent");
-        const under = await page.screenshot();
-        await paint(page, "rgb(255, 0, 255)");
-        const lit = await page.screenshot();
-        await page.evaluate(() => document.getElementById("measure-style")?.remove());
-        const results = await measure(under, lit, runs);
-        runs.forEach((run, k) => {
-          const res = results[k];
-          if (!res) return;
-          for (const s of run.required) seenRequired.add(s);
-          const need = run.large ? LARGE : NORMAL;
-          if (!row[run.where] || res.p2 < row[run.where]) row[run.where] = res.p2;
-          if (res.p2 < need) failures.push({ size: size.name, sky, where: run.where, text: run.text, sel: run.sel, ratio: res.p2, min: res.min, need, color: run.color, px: run.size });
-        });
-      }
+      await screen(await collect(page));
       if (y + size.height >= full) break;
     }
+    // The Sections menu open, a third of the way along: the city dims
+    // behind it, but the bar, the metro map and the menu's rows keep their
+    // contrast (only theirs are measured: the page's words are under the
+    // dimming on purpose)
+    await page.evaluate(() => scrollTo(0, Math.round(document.documentElement.scrollHeight / 3)));
+    await page.waitForTimeout(250);
+    await page.locator('button[popovertarget="places-menu"]').click();
+    await page.waitForTimeout(250);
+    const open = (await collect(page)).filter((r) => r.where === "top bar" || r.where === "progress line");
+    if (!open.some((r) => r.menu)) missing.push({ size: size.name, sky, what: "the open menu's rows", sel: "#places-menu" });
+    await screen(open.map((r) => ({ ...r, where: `menu open: ${r.menu ? "menu" : r.where}` })));
+    await page.keyboard.press("Escape");
     for (const r of REQUIRED) if (!seenRequired.has(r.sel)) missing.push({ size: size.name, sky, what: r.what, sel: r.sel });
     table.push({ size: size.name, sky, row });
     console.log(`${size.name.padEnd(9)} ${sky.padEnd(16)} ${Object.entries(row).map(([k, v]) => `${k} ${v}`).join("  ")}`);
