@@ -146,3 +146,49 @@ low brick lane houses with lanterns. Thin wisps of low cloud.
 A depth map was tried ("a depth map of exactly that image"): ChatGPT
 repaints the scene with a different composition, so it can't be used.
 Depth is made in code from layers and polygons instead.
+
+## The continuous panorama (22 November 2026)
+
+Made in ChatGPT (Richard's account) in one chat, for the horizontal city:
+six day segments of one side-on panorama, then each segment's night
+version. About 1670×941 each; originals (WebP q92) in
+`docs/city/concepts/panorama/{day,night}-0N.webp`, PNGs kept outside git.
+
+**Method.** Segment 1 painted fresh. For each later segment, a canvas
+the size of the last one was made in code: its left third is the previous
+segment's right third, the rest flat grey; it was attached with "the
+attached image's left third is the right third of segment N; the grey
+area is blank. Paint the full 16:9 image: its left third must continue
+that exact content (…), and the rest continues the city sideways to the
+right with no seam." ChatGPT keeps the left third close, not exact, so
+the join script aligns and feathers each overlap. Night versions: the
+day segment attached, "Edit this exact image into its NIGHT version: do
+not move, add, remove or reshape anything … Change only the light", plus
+the segment's lights (as for the plates, above). Type each prompt as one
+paragraph: a newline in the box sends the message.
+
+**Segment 1's prompt** began with the style paragraph (cyan and lantern
+amber, no magenta, "very rich fine detail", "Wide 16:9 landscape
+format"), then: "This is segment 1 of 6 of ONE long continuous
+side-scrolling panorama … a flat side-on view, camera level at about
+first-floor height looking straight across, no vanishing point in the
+middle … The horizon line sits at exactly 45% of the height. Across the
+bottom third, a calm, plain, dark riverside promenade with a low railing
+runs straight across the full width as a horizontal band … empty of
+objects (text will sit over it)."
+
+The scenes, each ending with what continues off the right edge:
+1. Home: the Lujiazui skyline across the river, side-on; the bank rising
+   into the first grey-brick roofs of an old lane quarter.
+2. About: a row of shikumen houses with stone gate arches, laundry poles,
+   plants, a bicycle; the towers small behind; then glass tower bases.
+3. Projects: Shanghai Tower, Jin Mao and the World Financial Center at
+   street level, the circular walkway, large screens; then a metro
+   viaduct.
+4. Experience: the elevated metro and an open-air station with a curved
+   canopy and a departure board; then the old shopping street.
+5. Interests: ornate department stores with sign boxes, an arcade
+   shopfront with one cabinet, a sightseeing tram; then the riverfront.
+6. Contact: the Bund's stone buildings, the Customs House clock tower,
+   lamp posts, a glass kiosk; then the river and the towers across it,
+   "so the journey ends where it began".
