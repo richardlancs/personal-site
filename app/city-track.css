@@ -10,9 +10,9 @@
    this applies and the page reads top to bottom.
 
    The move is a scroll-driven animation where there is one (the runway's
-   view timeline: its "contain" range is exactly the runway's scroll) and
-   --x written by CityTrack each frame elsewhere. It is the scroll itself,
-   so it runs in still view too; the sky's parallax doesn't. */
+   view timeline: its "contain" range is exactly the runway's scroll), and
+   transforms CityTrack writes each frame elsewhere. It is the scroll
+   itself, so it runs in still view too; the sky's parallax doesn't. */
 
 @media screen {
   :root[data-track="on"] {
@@ -22,7 +22,7 @@
        resize is CityTrack's to keep */
     overflow-anchor: none;
     /* How much of the next stop shows at the right */
-    --peek: clamp(2.5rem, 10vw, 11rem);
+    --peek: clamp(1.5rem, 10vw, 11rem);
     /* The panels clear the bar */
     --stop-top: calc(var(--bar-h) + 0.75rem);
   }
@@ -64,7 +64,6 @@
     display: flex;
     width: max-content;
     height: 100%;
-    transform: translateX(var(--x, 0px));
   }
 
   /* A stop: as wide as the stage less the peek of the next; the last one
@@ -88,20 +87,14 @@
     inset: 0;
     max-height: none;
     aspect-ratio: auto;
-    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%), linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
-    -webkit-mask-composite: source-in;
     mask-image: linear-gradient(to bottom, transparent, #000 16%), linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
     mask-composite: intersect;
   }
 
-  :root[data-track="on"] .track :is(.band-plate img, .band-noscript),
+  :root[data-track="on"] .track .band-plate img,
   :root[data-track="on"][data-home-plate] .track .band[data-home] {
     object-position: var(--focal, center);
     background-position: var(--focal, center), center;
-  }
-
-  :root[data-track="on"] .band-top {
-    display: none;
   }
 
   /* The words: a dark glass panel on the street, at the foot of the stop
@@ -124,7 +117,6 @@
     border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
     border-radius: var(--radius-lg);
     background: rgb(8 9 12 / 0.86);
-    -webkit-backdrop-filter: blur(10px);
     backdrop-filter: blur(10px);
   }
 
@@ -140,14 +132,6 @@
     margin-top: 0;
   }
 
-  :root[data-track="on"] .track .page-foot {
-    margin-top: 2rem;
-    padding: 1.25rem 0 0;
-    box-shadow: none;
-    clip-path: none;
-    background: none;
-  }
-
   /* The sky behind the city: slower than the street (it moves 30% as far),
      in the hour's colours, with a faint plan's grid so the depth reads */
   :root[data-track="on"] .track-sky {
@@ -156,13 +140,7 @@
     width: calc(100% + 0.3 * var(--travel, 0px));
     background:
       repeating-linear-gradient(90deg, rgb(230 233 238 / 0.04) 0 1px, transparent 1px 7rem),
-      linear-gradient(
-        to bottom,
-        color-mix(in srgb, #081222 calc(var(--city-night, 1) * 100%), #5f84ad),
-        color-mix(in srgb, #0e1d31 calc(var(--city-night, 1) * 100%), #aebfd0) 50%,
-        var(--seam) 85%
-      );
-    transform: translateX(calc(0.3 * var(--x, 0px)));
+      linear-gradient(color-mix(in srgb, #0b1a2e calc(var(--city-night, 1) * 100%), #7d9cbf), var(--seam) 85%);
   }
 
   /* Rain and snow, once over the stage: inside the track (under the
@@ -178,7 +156,6 @@
     display: block;
     width: 100cqw;
     pointer-events: none;
-    transform: translateX(calc(-1 * var(--x, 0px)));
   }
 
   @supports (animation-timeline: view()) {
@@ -206,7 +183,6 @@
      picture, no depth */
   :root[data-track="on"][data-still="on"] .track-sky {
     width: calc(100% + var(--travel, 0px));
-    transform: translateX(var(--x, 0px));
     animation-name: track-move;
   }
 
@@ -230,7 +206,6 @@
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       background: var(--ground);
-      -webkit-backdrop-filter: none;
       backdrop-filter: none;
     }
 
@@ -272,7 +247,6 @@
 @media (prefers-contrast: more) {
   :root[data-track="on"] .track .station-body {
     background: var(--ink);
-    -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
 }

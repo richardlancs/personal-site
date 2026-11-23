@@ -71,9 +71,6 @@ export default function DistrictBand({ district, priority = false }: { district:
           />
         </div>
       ))}
-      {/* Every band but the first comes out of the ground above it
-          (city.css, .band-top) */}
-      {!priority && <div className="band-top" />}
       <noscript>
         {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
         <img

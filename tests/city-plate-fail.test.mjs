@@ -36,7 +36,14 @@ test("every plate failing: each band keeps its gradient and its height, with no 
           const r = band.getBoundingClientRect();
           const cs = getComputedStyle(band);
           const shown = [...band.querySelectorAll(".band-plate img")].filter((img) => img.complete && img.naturalWidth === 0 && getComputedStyle(img).opacity !== "0");
+          // On the journey (city-track.css) a band's height is its stop's
+          // (wide screens) or the painting's strip over the sheet (phones):
+          // from the layout, never from a picture
+          const track = document.documentElement.dataset.track === "on";
+          const strip = parseFloat(getComputedStyle(document.querySelector(".track-weather")).height);
           return {
+            track,
+            stripHeight: innerWidth > innerHeight ? band.parentElement.getBoundingClientRect().height : strip + 16,
             id: band.closest("section")?.id,
             width: r.width,
             height: r.height,
@@ -53,6 +60,10 @@ test("every plate failing: each band keeps its gradient and its height, with no 
       for (const b of bands) {
         assert.ok(b.gradient, `${width} ${b.id}: the gradient is gone`);
         assert.equal(b.broken, 0, `${width} ${b.id}: a broken image shows`);
+        if (b.track) {
+          assert.ok(b.height > 100 && Math.abs(b.height - b.stripHeight) < 2, `${width} ${b.id}: height ${b.height}, expected ${b.stripHeight}`);
+          continue;
+        }
         // Its height still comes from its aspect ratio (capped), not from a picture
         const [w, h] = b.aspect.split("/").map(Number);
         const expected = Math.min((b.width * h) / w, b.maxHeight || Infinity);

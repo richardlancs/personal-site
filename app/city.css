@@ -615,10 +615,8 @@ a[data-resume][data-opening] {
 .station {
   position: relative;
   /* The ground the band fades into at its foot (the dark navy it passes
-     through on the way is --seam, on :root), and the ground above it,
-     the previous section's, for its top shade */
+     through on the way is --seam, on :root) */
   --ground: var(--ink);
-  --prev-ground: var(--ink-2);
   /* A station's band's height (below): its aspect, capped */
   --band-h: min(calc(100vw * 9 / 21), 52vh);
   background: var(--ground);
@@ -634,7 +632,6 @@ a[data-resume][data-opening] {
    on the lighter ink, so each station reads as its own stop */
 .station:is(#about, #experience, #contact) {
   --ground: var(--ink-2);
-  --prev-ground: var(--ink);
   --seam: var(--seam-2);
 }
 
@@ -687,12 +684,6 @@ a[data-resume][data-opening] {
   background-size: cover, auto;
   background-position: center;
   background-repeat: no-repeat;
-}
-
-@media (max-width: 767px) {
-  :root[data-home-plate] .band[data-home] {
-    background-position: var(--focal, center), center;
-  }
 }
 
 .band-plate,
@@ -766,18 +757,6 @@ a[data-resume][data-opening] {
     var(--seam) calc(62% + 18% * var(--day)),
     var(--ground, var(--ink)) calc(76% + 12% * var(--day))
   );
-  pointer-events: none;
-}
-
-/* Every band but the first comes out of the dark: a 20px shade of the
-   ground above it (the previous section's) along its top edge, so the sky
-   doesn't start on a ruled line */
-.band-top {
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: 2;
-  height: 20px;
-  background: linear-gradient(to bottom, var(--prev-ground), transparent);
   pointer-events: none;
 }
 
@@ -919,19 +898,15 @@ a[data-resume][data-opening] {
   }
 }
 
+/* A station's header (or the hero's name) starts in its band's foot, on
+   the solid part of the fade (the last 11% or so of the band; this rises
+   8% of it), so the painting heads the station without a stretch of
+   empty ground under it */
 .station-body {
   position: relative;
   width: min(72rem, 100%);
-  margin-inline: auto;
-  padding: clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-right)) clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-left));
-}
-
-/* A station's header starts in its band's foot, on the solid part of the
-   fade (the last 11% or so of the band; this rises 8% of it), so the
-   painting heads the station without a stretch of empty ground under it */
-.station-body:not(.station-body-home) {
-  margin-top: calc(-0.08 * var(--band-h));
-  padding-top: 0.25rem;
+  margin: calc(-0.08 * var(--band-h)) auto 0;
+  padding: 0.25rem max(1.25rem, env(safe-area-inset-right)) clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-left));
 }
 
 /* The section's number and its heading, on one baseline */
@@ -966,16 +941,8 @@ a[data-resume][data-opening] {
 /* ---------- The hero (components/city2d/sections/Hero.tsx) ----------
    The home section's opening, straight after its band (nothing between):
    the name on its own near-solid backing, the headline, the two ways in
-   and the links. On wide screens the backing sits centred on the band's
-   bottom edge (the one place words meet a painting, and they sit on the
-   black); under 1024px it is all under the band. */
-
-/* Under 1024px the name starts in the band's foot, on the solid part of
-   the fade, as every section's heading does */
-.station-body-home {
-  margin-top: calc(-0.08 * var(--band-h));
-  padding-top: 0.25rem;
-}
+   and the links. On the journey it is the first stop's panel
+   (city-track.css); stacked, it is all under the band. */
 
 .hero {
   position: relative;
@@ -1035,28 +1002,6 @@ a[data-resume][data-opening] {
   column-gap: 1.5rem;
   row-gap: 0.5rem;
   margin-top: 1.25rem;
-}
-
-/* From 1024px the backing rises onto the band's bottom edge */
-@media (min-width: 1024px) {
-  .station-body-home {
-    margin-top: 0;
-    padding-top: 0;
-  }
-
-  .station-body-home {
-    padding-bottom: clamp(2rem, 4vw, 3rem);
-  }
-
-  .station-body-home > .hero {
-    /* The backing centred on the painting's bottom edge, where it sinks
-       into the black (about a fifth of the band up from its foot, which
-       is solid ground): half the backing's height (the name's line, its
-       padding, its edge) above that line. The home band is 21:9 up to
-       70% of the screen. */
-    --home-band-h: min(calc(100vw * 9 / 21), 70vh);
-    margin-top: calc(-0.5 * (var(--name-size) * 1.1 + 2 * var(--backing-pad) + 2px) - 0.19 * var(--home-band-h));
-  }
 }
 
 /* ---------- The progress line (components/city2d/ProgressLine.tsx) ----------

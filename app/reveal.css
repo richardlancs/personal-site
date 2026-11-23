@@ -56,32 +56,6 @@
   }
 }
 
-/* ---------- The bands, settling in ----------
-   Every band below the first settles as it comes up the screen: its
-   plates from 1.02 to their size over the band's entry, then still (no
-   parallax through the rest of the scroll). The plates' own fade-in
-   (city.css, "The band") is on their <img>; this is on the plate. */
-
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    :root:not([data-still="on"]) .band:not([data-home]) {
-      view-timeline: --band;
-    }
-
-    :root:not([data-still="on"]) .band:not([data-home]) .band-plate {
-      animation: settle both var(--ease-out);
-      animation-timeline: --band;
-      animation-range: entry;
-    }
-  }
-}
-
-@keyframes settle {
-  from {
-    transform: scale(1.02);
-  }
-}
-
 /* ---------- Depth (principles 17, 7, 11) ----------
    The project pictures and the interest photos (`.depth`, around each
    frame, with its frame's corner radius) lift toward a fine pointer: up

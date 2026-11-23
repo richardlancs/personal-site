@@ -39,14 +39,11 @@ const inKeyframes = (b) => b.context.some((c) => c.startsWith("@keyframes"));
 
 test("every animation is behind the reduced-motion and still-view guard; none is scroll-driven", () => {
   const animated = all.filter((b) => !inKeyframes(b) && /(^|;|\s)animation(-name)?\s*:/.test(b.body) && !/animation:\s*none/.test(b.body));
-  assert.ok(animated.length >= 2, "the hero and the bands");
+  assert.ok(animated.length >= 1, "the hero");
   for (const b of animated) assert.ok(guarded(b), `unguarded animation: ${b.prelude}`);
   // Content arrives once, on a transition: never on a scroll-linked
-  // (reversible) timeline; only the band's settle is scroll-driven
-  for (const b of all.filter((b) => /animation-timeline:/.test(b.body))) {
-    assert.ok(b.prelude.includes(".band"), `scroll-driven: ${b.prelude}`);
-    assert.ok(b.context.includes("@supports (animation-timeline: view())"), `not behind @supports: ${b.prelude}`);
-  }
+  // (reversible) timeline (the journey's move is city-track.css's)
+  assert.doesNotMatch(css, /animation-timeline:/);
   assert.doesNotMatch(css, /\.reveal[^{]*\{[^}]*animation/, "no animation on an arriving item");
 });
 
@@ -101,7 +98,7 @@ test("the resting state is visible: no opacity 0 outside a keyframe's start", ()
 
 test("keyframes and the arrival move only transforms and opacity", () => {
   const frames = all.filter(inKeyframes);
-  assert.ok(frames.length >= 2);
+  assert.ok(frames.length >= 1);
   for (const b of frames) {
     for (const decl of b.body.split(";").map((d) => d.trim()).filter(Boolean)) {
       assert.match(decl.split(":")[0].trim(), /^(transform|translate|opacity)$/, `${b.context.at(-1)}: ${decl}`);

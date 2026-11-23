@@ -9,7 +9,9 @@
 //    moves the city (wheel and touch);
 // 5. without JavaScript, and with the page's scripts failing, the page
 //    reads top to bottom.
-// Exits 1 on any failure. Headless Chrome (pw.mjs).
+// Exits 1 on any failure. Headless Chrome (pw.mjs). NO_TIMELINE=1 runs it
+// as a browser without scroll-driven animations would (Firefox, older
+// Safari): the timeline switched off, so CityTrack's frame does the move.
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const base = process.argv[2] || "http://localhost:3110";
@@ -37,8 +39,23 @@ const open = async (ctx, route, size = { width: 1440, height: 900 }) => {
 };
 
 const browser = await launch();
+const NO_TIMELINE = process.env.NO_TIMELINE === "1";
+const newContext = async (opts = {}) => {
+  const c = await browser.newContext(opts);
+  if (NO_TIMELINE)
+    await c.addInitScript(() => {
+      const supports = CSS.supports.bind(CSS);
+      CSS.supports = (a, b) => (/animation-timeline/.test(String(a)) ? false : b === undefined ? supports(a) : supports(a, b));
+      addEventListener("DOMContentLoaded", () => {
+        const s = document.createElement("style");
+        s.textContent = ".track, .track-sky, .track-weather { animation: none !important; }";
+        document.head.append(s);
+      });
+    });
+  return c;
+};
 try {
-  const ctx = await browser.newContext();
+  const ctx = await newContext();
 
   // 1. Wheel over the painting, to the end and back
   {
@@ -116,7 +133,7 @@ try {
 
   // 1b. Touch: a phone, swiping up (a page scroll) and sideways (CityTrack)
   {
-    const tctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const tctx = await newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
     const page = await open(tctx, "/", { width: 390, height: 844 });
     const cdp = await tctx.newCDPSession(page);
     const swipe = (x, y, dx, dy) => cdp.send("Input.synthesizeScrollGesture", { x, y, xDistance: dx, yDistance: dy, gestureSourceType: "touch", speed: 1600, preventFling: true });
@@ -213,7 +230,7 @@ try {
     check(after[1] > 0, "the wheel scrolls the panel");
     check(after[0] === y0, `and never the city, even past the panel's end (${y0} → ${after[0]})`);
     await page.close();
-    const tctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const tctx = await newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
     const phone = await open(tctx, "/#projects", { width: 390, height: 844 });
     const cdp = await tctx.newCDPSession(phone);
     const py0 = await phone.evaluate(() => scrollY);
@@ -230,7 +247,7 @@ try {
     ["without JavaScript", { javaScriptEnabled: false }, null],
     ["with the page's scripts failing", {}, (r) => (/\/_next\/static\/chunks\/.*\.js(\?|$)/.test(r.request().url()) ? r.abort() : r.continue())],
   ]) {
-    const c = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts });
+    const c = await newContext({ viewport: { width: 1440, height: 900 }, ...opts });
     const page = await c.newPage();
     if (route) await page.route("**/*", route);
     await page.goto(base + "/", { waitUntil: "load" });

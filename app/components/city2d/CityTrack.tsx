@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
-import { TRACK_MIN, scrollYForStop, stopAt, stopOffsets } from "./trackMath";
+import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -19,7 +19,8 @@ import WeatherOverlay from "./WeatherOverlay";
 // track moves) and measures again whenever a stop or the stage changes
 // size, keeping you at the same place in the same stop. Where the browser
 // has scroll-driven animations the move is CSS (the runway's view
-// timeline); elsewhere its scroll listener writes --x each frame.
+// timeline); elsewhere its scroll listener writes the transforms each
+// frame (the track, the sky at 30% of its pace, the weather held still).
 //
 // It also carries what a sideways page needs: ArrowLeft/ArrowRight to the
 // previous or next stop, an anchor (on load, a link, Back/Forward) to its
@@ -36,7 +37,8 @@ export const trackMarks = () => marks;
 const PAD = 16; // px: room left beside something brought into view
 const SETTLE_MS = 150; // still this long, the journey has stopped
 const FLING_MS = 280; // how far a released swipe glides, as time at its speed
-const SKIP = "input, textarea, select, [contenteditable], dialog, [popover], [role=slider], [role=tablist], [role=radiogroup], [role=listbox]";
+// Where the arrows are someone else's: a field, a dialog, a menu
+const SKIP = "input, textarea, select, [contenteditable], dialog, [popover]";
 
 export default function CityTrack({ children }: { children: ReactNode }) {
   const runway = useRef<HTMLDivElement>(null);
@@ -97,9 +99,16 @@ export default function CityTrack({ children }: { children: ReactNode }) {
         s.toggleAttribute("data-open", k === here && r.left >= -1 && r.right <= vw + 1 && p.scrollHeight > p.clientHeight + 1);
       });
     };
+    const sky = stage.firstElementChild as HTMLElement;
+    const weather = track.lastElementChild as HTMLElement;
     const frame = () => {
       raf = 0;
-      if (!cssDriven) stage.style.setProperty("--x", `${-along()}px`);
+      if (cssDriven) return;
+      const x = along();
+      track.style.transform = `translateX(${-x}px)`;
+      weather.style.transform = `translateX(${x}px)`;
+      // The sky lags (depth 0.7), but moves with the street in still view
+      sky.style.transform = `translateX(${-parallax(x, still() ? 0 : SKY_DEPTH)}px)`;
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(frame);
@@ -122,8 +131,7 @@ export default function CityTrack({ children }: { children: ReactNode }) {
       if (!on()) {
         marks = null;
         run.style.removeProperty("--travel");
-        dispatchEvent(new Event("trackmeasure"));
-        return;
+        return dispatchEvent(new Event("trackmeasure"));
       }
       // Where you were, in the old measure: which stop, and how far in
       const x = along();
@@ -211,33 +219,33 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     measure();
     const sizes = new ResizeObserver(() => measure());
     sizes.observe(stage);
-    for (const s of stops) sizes.observe(s);
-    addEventListener("scroll", onScroll, { passive: true });
-    addEventListener("keydown", onKey);
-    addEventListener("hashchange", onHash);
-    addEventListener("popstate", onHash);
-    document.addEventListener("click", onClick);
-    document.addEventListener("focusin", onFocus);
-    stage.addEventListener("pointerdown", down, { passive: true });
-    stage.addEventListener("pointermove", move, { passive: true });
-    stage.addEventListener("pointerup", up, { passive: true });
-    stage.addEventListener("pointercancel", up, { passive: true });
+    // A stop that grows (its content), and a panel's words growing (fonts,
+    // pictures, a fold opened): whether it scrolls inside is asked again
+    for (const s of stops) {
+      sizes.observe(s);
+      for (const c of s.lastElementChild!.children) sizes.observe(c);
+    }
+    // Every listener, let go at once on unmount
+    const off = new AbortController();
+    const signal = off.signal;
+    const passive = { passive: true, signal };
+    addEventListener("scroll", onScroll, passive);
+    addEventListener("keydown", onKey, { signal });
+    addEventListener("hashchange", onHash, { signal });
+    addEventListener("popstate", onHash, { signal });
+    document.addEventListener("click", onClick, { signal });
+    document.addEventListener("focusin", onFocus, { signal });
+    stage.addEventListener("pointerdown", down, passive);
+    stage.addEventListener("pointermove", move, passive);
+    stage.addEventListener("pointerup", up, passive);
+    stage.addEventListener("pointercancel", up, passive);
 
     return () => {
+      off.abort();
       sizes.disconnect();
       cancelAnimationFrame(raf);
       clearTimeout(aimTimer);
       clearTimeout(settleTimer);
-      removeEventListener("scroll", onScroll);
-      removeEventListener("keydown", onKey);
-      removeEventListener("hashchange", onHash);
-      removeEventListener("popstate", onHash);
-      document.removeEventListener("click", onClick);
-      document.removeEventListener("focusin", onFocus);
-      stage.removeEventListener("pointerdown", down);
-      stage.removeEventListener("pointermove", move);
-      stage.removeEventListener("pointerup", up);
-      stage.removeEventListener("pointercancel", up);
       marks = null;
     };
   }, []);

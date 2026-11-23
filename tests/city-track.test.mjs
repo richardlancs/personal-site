@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets } from "../app/components/city2d/trackMath.ts";
+import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets } from "../app/components/city2d/trackMath.ts";
 import { TRACK_SCRIPT, TRACK_WAIT_MS } from "../app/lib/track.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -88,7 +88,8 @@ test("no scroll-jacking: no wheel or touchmove listener, nothing prevented, noth
   assert.doesNotMatch(src, /"wheel"|"mousewheel"|"touchmove"|"touchstart"|onWheel|onTouchMove/);
   assert.doesNotMatch(src, /preventDefault|stopPropagation|stopImmediatePropagation/);
   // Every listener it adds that sees scrolling input is passive
-  for (const m of src.matchAll(/addEventListener\("(scroll|pointer\w+)", \w+(, \{[^}]*\})?\)/g)) assert.match(m[2] ?? "", /passive: true/, m[0]);
+  assert.match(src, /const passive = \{ passive: true, signal \};/);
+  for (const m of src.matchAll(/addEventListener\("(scroll|pointer\w+)", \w+(, \w+)?\)/g)) assert.equal(m[2], ", passive", m[0]);
   // A sideways swipe travels, but up and down stay the browser's, and pinch zoom
   assert.match(src, /e\.pointerType === "touch"/);
   const css = read("app/city-track.css");
@@ -102,7 +103,7 @@ test("the keys: ArrowLeft/ArrowRight go a stop, never from a field, a menu or a 
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /e\.key !== "ArrowLeft" && e\.key !== "ArrowRight"/);
   assert.match(src, /e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey/, "Alt+Left is Back");
-  assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]/);
+  assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]"/);
   assert.match(src, /behavior: instant \? "instant" : "smooth"/);
   assert.match(src, /const glide = \(x: number, instant = still\(\)\)/, "a glide cuts in still view");
   assert.match(src, /html\.dataset\.still === "on"/);
@@ -111,10 +112,10 @@ test("the keys: ArrowLeft/ArrowRight go a stop, never from a field, a menu or a 
 test("anchors, Back/Forward, links and focus all bring their stop on", () => {
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /if \(location\.hash\.length > 1\) toHash\(location\.hash, true\)/, "cold: straight there");
-  assert.match(src, /addEventListener\("hashchange", onHash\)/);
-  assert.match(src, /addEventListener\("popstate", onHash\)/);
-  assert.match(src, /document\.addEventListener\("click", onClick\)/, "a link to where the address already is");
-  assert.match(src, /document\.addEventListener\("focusin", onFocus\)/);
+  assert.match(src, /addEventListener\("hashchange", onHash, \{ signal \}\)/);
+  assert.match(src, /addEventListener\("popstate", onHash, \{ signal \}\)/);
+  assert.match(src, /document\.addEventListener\("click", onClick, \{ signal \}\)/, "a link to where the address already is");
+  assert.match(src, /document\.addEventListener\("focusin", onFocus, \{ signal \}\)/);
   // A part of a section (Skills): its panel scrolls to it, never the page
   assert.match(src, /panel\.scrollTo\(/);
   assert.doesNotMatch(src, /scrollIntoView/);
@@ -126,7 +127,8 @@ test("measure: the runway from the track's width, again on any resize, keeping t
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /new ResizeObserver\(/);
   assert.match(src, /sizes\.observe\(stage\)/);
-  assert.match(src, /for \(const s of stops\) sizes\.observe\(s\)/, "a stop that grows (its content)");
+  assert.match(src, /sizes\.observe\(s\);/, "a stop that grows (its content)");
+  assert.match(src, /for \(const c of s\.lastElementChild!\.children\) sizes\.observe\(c\)/, "a panel's words growing");
   assert.match(src, /run\.style\.setProperty\("--travel"/);
   assert.match(src, /glide\(offsets\[i\] \+ f \* \(offsets\[i \+ 1\] - offsets\[i\]\), true\)/, "the same place in the same stop, at once");
   assert.match(src, /html\.setAttribute\("data-track-ready", ""\)/);
@@ -184,7 +186,11 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(body, /\.track-runway \{\s*height: calc\(var\(--travel, 0px\) \+ 100dvh\);/);
   assert.match(body, /@supports \(animation-timeline: view\(\)\) \{[\s\S]*view-timeline: --runway block;[\s\S]*animation-range: contain 0% contain 100%;/);
   assert.match(body, /animation: track-move linear both;/, "one pixel along for one down");
-  assert.match(body, /transform: translateX\(var\(--x, 0px\)\);/, "the script's --x where there's no timeline");
+  // Where there's no timeline, the script writes the transforms each frame
+  const src = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(src, /track\.style\.transform = `translateX\(\$\{-x\}px\)`/);
+  assert.match(src, /weather\.style\.transform = `translateX\(\$\{x\}px\)`/);
+  assert.match(src, /sky\.style\.transform = `translateX\(\$\{-parallax\(x, still\(\) \? 0 : SKY_DEPTH\)\}px\)`/);
   assert.match(body, /scroll-padding-top: 0;/, "nothing pads the view timeline");
   // The bar floats over the stage (no first scroll that moves the page, not the city)
   assert.match(body, /:root\[data-track="on"\] \.top-bar \{\s*position: fixed;/);
@@ -201,9 +207,10 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
 
 test("depth: the sky lags the street, but not in still view; the weather is drawn once, held over the stage", () => {
   const body = code(read("app/city-track.css"));
-  assert.match(body, /\.track-sky \{[^}]*transform: translateX\(calc\(0\.3 \* var\(--x, 0px\)\)\);/);
+  assert.equal(SKY_DEPTH, 0.7);
+  assert.match(body, /\.track-sky \{[^}]*width: calc\(100% \+ 0\.3 \* var\(--travel, 0px\)\);/, "wide enough for its 30%");
   assert.match(body, /@keyframes track-sky \{[\s\S]*?translateX\(calc\(-0\.3 \* var\(--travel, 0px\)\)\)/);
-  assert.match(body, /:root\[data-track="on"\]\[data-still="on"\] \.track-sky \{[^}]*transform: translateX\(var\(--x, 0px\)\);[^}]*animation-name: track-move;/);
+  assert.match(body, /:root\[data-track="on"\]\[data-still="on"\] \.track-sky \{[^}]*width: calc\(100% \+ var\(--travel, 0px\)\);[^}]*animation-name: track-move;/);
   assert.match(body, /@keyframes track-hold \{[\s\S]*?translateX\(var\(--travel, 0px\)\)/);
   const track = read("app/components/city2d/CityTrack.tsx");
   assert.equal((track.match(/<WeatherOverlay \/>/g) ?? []).length, 1);

@@ -33,5 +33,8 @@ export function parallax(x: number, depth: number): number {
   return x * (1 - Math.min(Math.max(depth, 0), 1));
 }
 
+/** The sky behind the city (city-track.css: it moves 30% as far as the street) */
+export const SKY_DEPTH = 0.7;
+
 /** Whether a screen this size takes the journey (smaller: the page reads top to bottom). Also in the head script (TRACK_SCRIPT). */
 export const TRACK_MIN = { width: 320, height: 320 } as const;
