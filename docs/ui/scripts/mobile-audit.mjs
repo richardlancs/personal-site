@@ -34,7 +34,8 @@
 //   viewport, or one with more content than room that can't scroll; the
 //   stop's panel past the stage (under the bar, or the metro map and the
 //   home bar), or one
-//   with more than fits that can't scroll once the journey has stopped
+//   with more than fits that can't scroll once the journey has stopped,
+//   or one that shows less than 6 root ems of its words (a slit)
 // - stop: an anchor that didn't land on its stop (the journey on)
 // - chain: an open menu or slip, or a stop's panel, that scrolls but lets
 //   the scroll run on to the page behind it (touch scroll gesture, CDP):
@@ -448,12 +449,12 @@ async function open(profile) {
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Emulation.setSafeAreaInsetsOverride", { insets: profile.insets });
   page.on("pageerror", (e) => errors.push(`${profile.name}: ${e}`));
+  // (from the document's start, before the head scripts run, as a
+  // browser's own text size would be: an adopted sheet needs no <head>)
   if (profile.text) await page.addInitScript((k) => {
-    addEventListener("DOMContentLoaded", () => {
-      const s = document.createElement("style");
-      s.textContent = `html { font-size: ${16 * k}px !important; }`;
-      document.head.append(s);
-    });
+    const s = new CSSStyleSheet();
+    s.replaceSync(`html { font-size: ${16 * k}px !important; }`);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, s];
   }, profile.text);
   return { ctx, page, cdp };
 }
@@ -541,7 +542,7 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
         const r0 = el?.getBoundingClientRect();
         const inRow = el && el !== target && el.matches(".panel");
         const at = inRow ? (r0.left >= 0 && r0.right <= innerWidth + 1 ? target : null) : [...document.querySelectorAll(".track > .station")].find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
-        // (a row's first panel: its heading's)
+        // (a row's: its first panel)
         const panel = inRow ? el : at?.querySelector(".panel");
         const r = panel?.getBoundingClientRect();
         const bar = document.querySelector(".top-bar").getBoundingClientRect();
@@ -549,9 +550,15 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
         return {
           landed: !!at && at === target,
           id: at?.id,
-          // (one element: a row's first panel is its first child)
-          panel: panel && (inRow ? `#${id}` : at.querySelector(".station-row") ? `#${at.id} .station-row > :first-child` : `#${at.id} .panel`),
+          // (one element: the panel itself, marked for the locator)
+          panel: panel && (document.querySelectorAll("[data-audit-stop]").forEach((e) => e.removeAttribute("data-audit-stop")), panel.setAttribute("data-audit-stop", ""), "[data-audit-stop]"),
           under: r && r.top < bar.bottom - 0.5 ? Math.round(bar.bottom - r.top) : 0,
+          // How much of the panel shows (between the bar, where it is on
+          // the screen, and the map or the screen's foot), against what
+          // it holds and the root's text size
+          shows: !r ? 0 : Math.round(Math.min(r.bottom, map?.checkVisibility() ? map.getBoundingClientRect().top : innerHeight) - Math.max(r.top, bar.bottom > 0 ? bar.bottom : 0)),
+          holds: panel ? panel.scrollHeight : 0,
+          rem: parseFloat(getComputedStyle(document.documentElement).fontSize),
           // (a sheet, on a tall screen, too: it ends above the metro map,
           // which clears the home bar)
           past: !r ? 0 : Math.round(r.bottom - Math.min(height - insets.bottom, map?.checkVisibility() ? map.getBoundingClientRect().top : height)),
@@ -565,6 +572,9 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       if (!stop.landed) report("stop", where, `landed on ${stop.id ?? "no stop"}`);
       if (stop.under > 0) report("fit", where, `the stop's panel runs ${stop.under}px under the bar`);
       if (stop.past > 0.5) report("fit", where, `the stop's panel (or a sheet's words) runs ${stop.past}px past the foot of the safe screen`);
+      // Readable: a panel cut short shows at least 6 lines' worth (6 root
+      // ems), never a slit under a tall bar (200% text on a short screen)
+      if (stop.panel && stop.shows < Math.min(stop.holds, 6 * stop.rem) - 0.5) report("fit", where, `the stop's panel shows only ${stop.shows}px of its ${stop.holds}px (at least ${Math.min(stop.holds, 6 * stop.rem)}px: 6 root ems)`);
       if (stop.more && !/auto|scroll/.test(stop.scrolls)) report("fit", where, `the stop's panel has more than fits but can't scroll (overflow-y ${stop.scrolls})`);
       if (stop.more && profile.touch && stop.panel) {
         const moved = await chains(page, cdp, stop.panel, true);

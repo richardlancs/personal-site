@@ -1,7 +1,7 @@
 // Richmond Hill's weather, as pure functions: the Open-Meteo request, the
 // strict reading of its response, what a WMO weather code is called and
 // how the world draws it, and how old a reading may be before it's shown
-// as stale or not at all. No fetching, React or three.js here; the route
+// as stale or not at all. No fetching or React here; the route
 // (app/api/weather/route.ts), the client hook and the tests all use it.
 //
 // Value imports stay out of this file (only `import type`), so the tests

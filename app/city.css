@@ -915,6 +915,12 @@ a[data-resume][data-opening] {
   background: var(--ink);
 }
 
+/* The first group's name, in the newest role's panel after the heading */
+.exp-label-in {
+  width: fit-content;
+  margin: 1rem 0 0.75rem;
+}
+
 /* The section's number and its heading, on one baseline */
 .station-head {
   display: flex;

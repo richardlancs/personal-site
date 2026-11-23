@@ -2,7 +2,7 @@ import { TRACK_MIN } from "../components/city2d/trackMath.ts";
 
 // The journey's switch, before the first paint (layout.tsx puts it in the
 // page's <head>): on `/`, with scripts running and a screen of at least
-// TRACK_MIN, <html data-track="on">, and city-track.css lays the stations
+// TRACK_MIN (its height also in the root's text size), <html data-track="on">, and city-track.css lays the stations
 // side by side from the first frame. Without scripts there is no
 // attribute, and the page reads top to bottom.
 //
@@ -13,4 +13,4 @@ import { TRACK_MIN } from "../components/city2d/trackMath.ts";
 // back to the stacked page (data-track="fallback") for the visit.
 export const TRACK_WAIT_MS = 3000;
 
-export const TRACK_SCRIPT = `(function(){try{var r=document.documentElement;if(location.pathname!=="/"||innerWidth<${TRACK_MIN.width}||innerHeight<${TRACK_MIN.height})return;r.setAttribute("data-track","on");addEventListener("load",function(){setTimeout(function(){if(!r.hasAttribute("data-track-ready"))r.setAttribute("data-track","fallback")},${TRACK_WAIT_MS})})}catch(e){}})()`;
+export const TRACK_SCRIPT = `(function(){try{var r=document.documentElement;var f=16;try{f=parseFloat(getComputedStyle(r).fontSize)||16}catch(e){}if(location.pathname!=="/"||innerWidth<${TRACK_MIN.width}||innerHeight<Math.max(${TRACK_MIN.height},${TRACK_MIN.ems}*f))return;r.setAttribute("data-track","on");addEventListener("load",function(){setTimeout(function(){if(!r.hasAttribute("data-track-ready"))r.setAttribute("data-track","fallback")},${TRACK_WAIT_MS})})}catch(e){}})()`;

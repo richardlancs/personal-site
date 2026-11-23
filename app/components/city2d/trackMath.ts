@@ -36,8 +36,20 @@ export function parallax(x: number, depth: number): number {
 /** The sky behind the city (city-track.css: it moves 30% as far as the street) */
 export const SKY_DEPTH = 0.7;
 
-/** Whether a screen this size takes the journey (smaller: the page reads top to bottom). Also in the head script (TRACK_SCRIPT). */
-export const TRACK_MIN = { width: 320, height: 320 } as const;
+/**
+ * Whether a screen this size takes the journey (smaller: the page reads top
+ * to bottom). Also in the head script (TRACK_SCRIPT). The height counts in
+ * the root's text size too (`ems`): at 200% text a phone on its side, or a
+ * 640px-tall phone, would leave each stop's panel a slit a line or two
+ * tall under the bar, so it reads stacked instead (22em: 704px at 200%,
+ * 352px at 100%).
+ */
+export const TRACK_MIN = { width: 320, height: 320, ems: 22 } as const;
+
+/** Whether a screen of `w` × `h` with root text of `rem` px takes the journey. */
+export function trackFits(w: number, h: number, rem = 16): boolean {
+  return w >= TRACK_MIN.width && h >= Math.max(TRACK_MIN.height, TRACK_MIN.ems * (rem || 16));
+}
 
 /**
  * The panorama along the journey (CityTrack.tsx): how far it has moved left

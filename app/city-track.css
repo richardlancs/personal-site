@@ -21,8 +21,9 @@
     /* The browser never shifts the scroll to keep something in place: a
        resize is CityTrack's to keep */
     overflow-anchor: none;
-    /* How much of the next stop shows at the right */
-    --peek: clamp(1.5rem, 10vw, 11rem);
+    /* How much of the next stop shows at the right: 10% of the width at
+       every width, so the panels keep to the central 80% */
+    --peek: max(1.5rem, 10vw);
     /* The panels clear the bar, and the metro map at the foot (its
        height, --map-h, city.css) */
     --stop-top: calc(var(--bar-h) + 0.75rem);
@@ -225,7 +226,9 @@
 
   /* The line: Experience's stations hang from one line drawn along the
      stop, a stop on it for each (lit while the role is running), each
-     group's name on a plate over the line where its stations begin */
+     group's name on a plate over the line where its stations begin (the
+     first group's in its first panel, under the heading), city between
+     the stations as between any row's panels */
   :root[data-track="on"] #experience .station-row {
     /* (never under 45% down: a very tall bar, at 200% text, has scrolled away) */
     --rail-y: min(max(var(--stop-top) + 1.5rem, min(42dvh, 100dvh - 30rem)), 45dvh);
@@ -246,6 +249,7 @@
   :root[data-track="on"] :is(.exp-group, .exp-stations) {
     flex-direction: row;
     align-items: flex-start;
+    gap: var(--past);
   }
 
   /* The group's name on the line, over its first station (beside its stop) */
@@ -254,6 +258,11 @@
     left: 3rem;
     z-index: 2;
     translate: 0 calc(-50% - 1.5rem);
+  }
+
+  :root[data-track="on"] .exp-label-in {
+    position: static;
+    translate: none;
   }
 
   :root[data-track="on"] :is(.exp-group, .exp-stop) {

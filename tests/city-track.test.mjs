@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets } from "../app/components/city2d/trackMath.ts";
+import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets, trackFits } from "../app/components/city2d/trackMath.ts";
 import { TRACK_SCRIPT, TRACK_WAIT_MS } from "../app/lib/track.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -144,7 +144,7 @@ test("the head script turns the journey on before the first paint, only on / wit
   assert.match(layout, /<script dangerouslySetInnerHTML=\{\{ __html: TRACK_SCRIPT \}\} \/>/);
   assert.ok(layout.indexOf("TRACK_SCRIPT }}") < layout.indexOf("<body>"), "in <head>");
   assert.match(layout, /import "\.\/city-track\.css";/);
-  const run = (w, h, path = "/", ready = false) => {
+  const run = (w, h, path = "/", ready = false, rem = "16px") => {
     const attrs = {};
     const timers = [];
     const html = {
@@ -157,6 +157,7 @@ test("the head script turns the journey on before the first paint, only on / wit
       location: { pathname: path },
       innerWidth: w,
       innerHeight: h,
+      getComputedStyle: () => ({ fontSize: rem }),
       addEventListener: (t, f) => (listeners[t] = f),
       setTimeout: (f, ms) => timers.push([f, ms]),
     });
@@ -168,6 +169,17 @@ test("the head script turns the journey on before the first paint, only on / wit
   assert.equal(run(TRACK_MIN.width - 1, 900).attrs["data-track"], undefined);
   assert.equal(run(800, TRACK_MIN.height - 1).attrs["data-track"], undefined);
   assert.equal(run(1440, 900, "/nope").attrs["data-track"], undefined, "only the one page");
+  // 200% text: the height counts in ems (TRACK_MIN.ems), so a short screen reads stacked
+  assert.equal(run(844, 390, "/", false, "32px").attrs["data-track"], undefined, "a phone on its side at 200% text");
+  assert.equal(run(320, 640, "/", false, "32px").attrs["data-track"], undefined, "a small phone at 200% text");
+  assert.equal(run(390, 844, "/", false, "32px").attrs["data-track"], "on", "a tall phone at 200% text");
+  assert.equal(run(667, 375).attrs["data-track"], "on", "a small phone on its side at 100%");
+  // The same rule in CityTrack's measure
+  for (const [w, h, rem] of [[844, 390, 32], [320, 640, 32], [390, 844, 32], [667, 375, 16], [319, 900, 16]]) {
+    const html = run(w, h, "/", false, `${rem}px`).attrs["data-track"] === "on";
+    assert.equal(trackFits(w, h, rem), html, `${w}×${h} at ${rem}px: the head script and measure() agree`);
+  }
+  assert.match(code(read("app/components/city2d/CityTrack.tsx")), /trackFits\(innerWidth, innerHeight, parseFloat\(getComputedStyle\(html\)\.fontSize\)\)/);
   // The runway never measured (the scripts failed): the stacked page
   const failed = run(1440, 900);
   assert.equal(failed.fire()["data-track"], "fallback");

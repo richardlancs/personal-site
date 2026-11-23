@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
-import { SKY_DEPTH, TRACK_MIN, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets, trackXForPano } from "./trackMath";
+import { SKY_DEPTH, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -138,7 +138,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     let first = true;
     const measure = () => {
       // The journey needs room; a fallback (the head script gave up) stays
-      const fits = innerWidth >= TRACK_MIN.width && innerHeight >= TRACK_MIN.height;
+      const fits = trackFits(innerWidth, innerHeight, parseFloat(getComputedStyle(html).fontSize));
       if (html.dataset.track !== "fallback") {
         if (fits) html.dataset.track = "on";
         else delete html.dataset.track;

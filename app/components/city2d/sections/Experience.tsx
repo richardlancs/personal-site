@@ -60,10 +60,13 @@ function Row({ entry }: { entry: Entry }) {
   );
 }
 
-// A row of panels along the metro line (Station's `row`): first the
-// section's heading and the résumé, then one station per role, newest
-// first, work and education apart, each group's name on a plate where its
-// stations begin. On the journey the line is drawn along the stations'
+// A row of panels along the metro line (Station's `row`): one station per
+// role, newest first, work and education apart, each group's name on a
+// plate where its stations begin. The section's heading and the résumé
+// open the newest role's panel (as Projects' heading opens its index), so
+// the stop lands on a real role, never an empty panel; that first group's
+// name follows them in the panel, in reading order, rather than on the
+// line. On the journey the line is drawn along the stations'
 // tops, a stop on it for each role (lit for the one still running), and
 // each role's panel hangs from its stop (city-track.css, "The line");
 // stacked, the panels run down the page. Each station arrives as it comes
@@ -78,29 +81,40 @@ export default function Experience() {
 
   return (
     <>
-      <div className="panel reveal">
-        <StationHead section={section("experience")} />
-        <p className="mt-4">
-          {/* Opens the résumé over the page (components/resume) */}
-          <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
-        </p>
-      </div>
-      {groups.map((group) => (
-        <div key={group.id} className="exp-group">
-          <p id={group.id} className="exp-label text-sm font-semibold text-text">
+      {groups.map((group, g) => {
+        const label = (
+          <p id={group.id} className={`exp-label text-sm font-semibold text-text${g === 0 ? " exp-label-in" : ""}`}>
             {group.label}
           </p>
-          <ol role="list" aria-labelledby={group.id} className="exp-stations">
-            {group.entries.map((entry, i) => (
-              <li key={`${entry.role}-${entry.organization}`} className="exp-stop" data-current={isCurrent(entry) || undefined} style={order(i + 1)}>
-                <div className="panel @container">
-                  <Row entry={entry} />
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      ))}
+        );
+        return (
+          <div key={group.id} className="exp-group">
+            {g > 0 && label}
+            <ol role="list" aria-labelledby={group.id} className="exp-stations">
+              {group.entries.map((entry, i) => (
+                <li key={`${entry.role}-${entry.organization}`} className="exp-stop" data-current={isCurrent(entry) || undefined} style={order(i + 1)}>
+                  <div className="panel @container">
+                    {g === 0 && i === 0 && (
+                      <div className="reveal">
+                        {/* (the résumé beside the heading, so the role starts high in the panel) */}
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                          <StationHead section={section("experience")} />
+                          <p>
+                            {/* Opens the résumé over the page (components/resume); in a <p>, so it has the words' scrim */}
+                            <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
+                          </p>
+                        </div>
+                        {label}
+                      </div>
+                    )}
+                    <Row entry={entry} />
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })}
     </>
   );
 }

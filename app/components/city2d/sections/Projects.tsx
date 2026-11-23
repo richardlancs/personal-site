@@ -173,7 +173,7 @@ export default function Projects() {
               className="panel project @container reveal"
               style={{ ...order(index + 1), "--panel-w": small ? "34rem" : "40rem" } as CSSProperties}
             >
-              <div className={`grid gap-y-5 ${side ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6" : ""}`}>
+              <div className={`grid grid-cols-1 gap-y-5 ${side ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6" : ""}`}>
               <header className={`min-w-0 break-words ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
                 <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
