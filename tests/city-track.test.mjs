@@ -94,7 +94,7 @@ test("no scroll-jacking: no wheel or touchmove listener, nothing prevented, noth
   assert.match(src, /e\.pointerType === "touch"/);
   const css = read("app/city-track.css");
   assert.match(css, /\.track-stage \{[^}]*touch-action: pan-y pinch-zoom;/);
-  assert.match(css, /\.track \.station-body \{[^}]*touch-action: pan-y pinch-zoom;/, "the panels too (a scroller sets its own)");
+  assert.match(css, /\.track \.panel \{[^}]*touch-action: pan-y pinch-zoom;/, "the panels too (a scroller sets its own)");
   // No snapping that could trap
   assert.doesNotMatch(css, /scroll-snap/);
 });
@@ -116,9 +116,10 @@ test("anchors, Back/Forward, links and focus all bring their stop on", () => {
   assert.match(src, /addEventListener\("popstate", onHash, \{ signal \}\)/);
   assert.match(src, /document\.addEventListener\("click", onClick, \{ signal \}\)/, "a link to where the address already is");
   assert.match(src, /document\.addEventListener\("focusin", onFocus, \{ signal \}\)/);
-  // A part of a section (Skills): its panel scrolls to it, never the page
-  assert.match(src, /panel\.scrollTo\(/);
-  assert.doesNotMatch(src, /scrollIntoView/);
+  // A panel in a row (Skills, a project): the journey stops with that
+  // panel on, never scrolling the page or a panel to it
+  assert.match(src, /el\.closest\("\.panel"\) \?\? el/);
+  assert.doesNotMatch(src, /scrollIntoView|panel\.scrollTo\(/);
   // The jump's focus never scrolls on the journey
   assert.match(read("app/components/city2d/jump.ts"), /preventScroll: Boolean\(hash\) \|\| track/);
 });
@@ -127,8 +128,7 @@ test("measure: the runway from the track's width, again on any resize, keeping t
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /new ResizeObserver\(/);
   assert.match(src, /sizes\.observe\(stage\)/);
-  assert.match(src, /sizes\.observe\(s\);/, "a stop that grows (its content)");
-  assert.match(src, /for \(const c of s\.lastElementChild!\.children\) sizes\.observe\(c\)/, "a panel's words growing");
+  assert.match(src, /for \(const el of \[\.\.\.stops, \.\.\.track\.querySelectorAll\("\.panel > \*"\)\]\) sizes\.observe\(el\)/, "a stop that grows, and a panel's words growing");
   assert.match(src, /run\.style\.setProperty\("--travel"/);
   assert.match(src, /glide\(offsets\[i\] \+ f \* \(offsets\[i \+ 1\] - offsets\[i\]\), true\)/, "the same place in the same stop, at once");
   assert.match(src, /html\.setAttribute\("data-track-ready", ""\)/);
@@ -197,10 +197,17 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   // Closure: every stop but the last leaves the next one's peek in view
   assert.match(body, /\.track > \.station \{[^}]*width: calc\(100cqw - var\(--peek\)\);/);
   assert.match(body, /\.track > \.station:last-of-type \{\s*width: 100cqw;/);
-  // Panels: never taller than the stage, scroll inside only when open, never chaining then
+  // Panels: never taller than the stage, scroll inside only when open,
+  // and at their end chain on to the page (the journey goes on)
   assert.match(body, /\.track \.station-body \{[^}]*max-height: calc\(100% - var\(--stop-top\)/);
-  assert.match(body, /\.track \.station-body \{[^}]*overflow-y: hidden;/);
-  assert.match(body, /\.track > \[data-open\] > \.station-body \{\s*overflow-y: auto;\s*overscroll-behavior: contain;/);
+  assert.match(body, /\.station-row \.panel \{[^}]*max-height: 100%;/);
+  assert.match(body, /\.track \.panel \{[^}]*overflow-y: hidden;/);
+  assert.match(body, /\.track \[data-open\] \{\s*overflow-y: auto;\s*\}/);
+  assert.doesNotMatch(body, /overscroll-behavior/, "an open panel at its end hands the scroll on");
+  const src2 = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(src2, /p\.toggleAttribute\("data-open", r\.left >= -1 && r\.right <= vw \+ 1 && p\.scrollHeight > p\.clientHeight \+ 1\)/, "each panel, wholly on the screen, with more than it shows");
+  // A stop of a row of panels is as wide as its row
+  assert.match(body, /\.track > \.station:has\(> \.station-row\) \{\s*width: auto;/);
   // Phones: the painting on top, the words a sheet below
   assert.match(body, /@media \(max-aspect-ratio: 1 \/ 1\)/);
   // ... where no sheet shows the next one's words: each stop the whole
@@ -222,5 +229,23 @@ test("depth: the sky lags the street, but not in still view; the weather is draw
   assert.equal((track.match(/<WeatherOverlay \/>/g) ?? []).length, 1);
   assert.doesNotMatch(read("app/components/city2d/DistrictBand.tsx"), /WeatherOverlay/, "not one per band");
   // Under prefers-contrast the panels are solid
-  assert.match(body, /@media \(prefers-contrast: more\) \{[\s\S]*\.station-body \{[^}]*background: var\(--ink\);/);
+  assert.match(body, /@media \(prefers-contrast: more\) \{[\s\S]*\.track \.panel \{[^}]*background: var\(--ink\);/);
+});
+
+test("arrivals: each panel and its pieces enter on the runway's timeline from the panel's place, reversing with the scroll; none in still view", () => {
+  const body = code(read("app/city-track.css"));
+  const block = body.slice(body.indexOf("@supports (animation-timeline: view())"));
+  assert.match(block, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root\[data-track="on"\]:not\(\[data-still="on"\]\) :is\(\.track \.panel, \.panel :is\(/);
+  assert.match(block, /animation: arrive var\(--ease-out\) both;\s*animation-timeline: --runway;/);
+  assert.match(block, /animation-range: contain calc\(var\(--at\) - 100vw \+ var\(--k, 0\) \* 4vw\) contain calc\(var\(--at\) - 50vw/);
+  assert.match(block, /@supports \(order: sibling-index\(\)\) \{\s*\.panel \* \{\s*--k: min\(sibling-index\(\), 6\);/, "pieces in sequence");
+  // Transform and opacity only
+  for (const name of ["arrive"]) {
+    const kf = body.match(new RegExp(`@keyframes ${name} \\{([\\s\\S]*?)\\n\\}`))[1];
+    for (const prop of kf.matchAll(/^\s*([a-z-]+):/gm)) assert.ok(["opacity", "translate", "scale"].includes(prop[1]), `${name}: ${prop[1]}`);
+  }
+  // Each panel's place along the track, from its layout (not its transforms)
+  const src = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(src, /x \+= e\.offsetLeft;/);
+  assert.match(src, /p\.style\.setProperty\("--at", `\$\{x\}px`\)/);
 });

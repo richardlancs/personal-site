@@ -58,7 +58,7 @@ const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 // 69.5rem).
 export default function Interests() {
   return (
-    <div className="@container interests mt-10 border-b border-line">
+    <div className="@container interests mt-6 border-b border-line">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
         return (

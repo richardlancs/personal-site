@@ -151,17 +151,22 @@ test("every district has both plates, the same size, none over 600 KB", () => {
   }
 });
 
-test("the hero has the name, the headline, two actions and three links, and no paragraph", () => {
+test("the hero has the name, the headline, the school, one primary action and the links as text, and no paragraph", () => {
   const src = read("app/components/city2d/sections/Hero.tsx");
   assert.ok(!src.includes('"use client"'), "the hero is a server component");
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
-  assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
+  // Words only from the data: the headline, and the school and programme
+  // (the education entry); no other paragraph
   assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
-  // Anchors on the page
+  assert.match(src, /experience\.find\(\(entry\) => entry\.kind === "education"\)/);
+  assert.match(src, /\{school\.role\}, \{school\.organization\}/);
+  assert.equal((src.match(/<p[ >]/g) ?? []).length, 2, "the headline and the school, nothing else");
+  // One primary action; Contact, the shared links and the email as text links
+  assert.equal((src.match(/className="glass/g) ?? []).length, 1);
   assert.match(src, /<a href="#projects" className="glass glass-primary">/);
-  assert.match(src, /<a href="#contact" className="glass">/);
-  // GitHub, LinkedIn and the résumé: the shared links, as text links
+  assert.match(src, /<a href="#contact" className="text-link text-link-solo">/);
   assert.match(src, /<ProfileLinks variant="text" \/>/);
+  assert.match(src, /href=\{`mailto:\$\{email\.address\}`\} className="text-link text-link-solo"/);
 });
 
 test("the home plate's head script: the same sun as the site's clock, a file from the band's own srcset, painted before hydration", async () => {

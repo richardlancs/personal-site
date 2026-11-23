@@ -178,8 +178,17 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     }
     return false;
   };
+  // On the journey, a panel that isn't wholly on the screen is a glimpse
+  // of what comes next along the street (the closure): its words are a
+  // peek, not something to read or tap there (a tap or focus brings it on)
+  const peek = (el) => {
+    const p = el.closest(".track .panel, .track .exp-label");
+    if (!p || document.documentElement.dataset.track !== "on") return false;
+    const r = p.getBoundingClientRect();
+    return r.left < -1 || r.right > innerWidth + 1;
+  };
   const targets = [...root.querySelectorAll("a[href], button, [role=tab], input, select, summary, [tabindex='0']")].filter(
-    (el) => visible(el) && !clippedOut(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link, .resume-doc"),
+    (el) => visible(el) && !clippedOut(el) && !peek(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link, .resume-doc"),
   );
   const out = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
   const scrollX0 = scrollX;
@@ -298,7 +307,7 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     const tr = range.getBoundingClientRect();
     if (tr.width === 0) continue;
     const shown = shownPart(tr, n); // from the text's own element up
-    if (shown && unsafeAt(shown, fixed) && !(!fixed && r.bottom < 0))
+    if (shown && unsafeAt(shown, fixed) && !(!fixed && r.bottom < 0) && !peek(el))
       out.unsafe.push(`text ${describe(el)} at ${Math.round(shown.left)},${Math.round(shown.top)}–${Math.round(shown.right)},${Math.round(shown.bottom)}`);
   }
   // Controls under a safe area
@@ -474,13 +483,16 @@ function file(profile, route, state, m) {
 }
 
 // A real touch scroll (CDP), inside an element: does the page behind move?
-async function chains(page, cdp, selector) {
+// A touch scroll in `selector`, from its end (a menu: it never runs on into
+// the page) or, `fromTop`, from its start (a stop's panel: it scrolls first,
+// and only at its end goes on along the city): how far the page moved
+async function chains(page, cdp, selector, fromTop = false) {
   const box = await page.locator(selector).boundingBox();
   if (!box) return null;
-  await page.evaluate((s) => {
+  await page.evaluate(([s, top]) => {
     const el = document.querySelector(s);
-    el.scrollTop = el.scrollHeight;
-  }, selector);
+    el.scrollTop = top ? 0 : el.scrollHeight;
+  }, [selector, fromTop]);
   const before = await page.evaluate(() => scrollY);
   await cdp.send("Input.synthesizeScrollGesture", {
     x: Math.round(box.x + box.width / 2),
@@ -510,15 +522,22 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       ({ route, insets, height }) => {
         if (document.documentElement.dataset.track !== "on") return null;
         const id = route.split("#")[1] || "home";
-        const target = document.getElementById(id)?.closest(".track > .station");
-        const at = [...document.querySelectorAll(".track > .station")].find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
-        const panel = at?.querySelector(":scope > .station-body");
+        const el = document.getElementById(id);
+        const target = el?.closest(".track > .station");
+        // A panel in a row (Skills): the journey stops with it wholly on
+        // the screen, its stop's start somewhere to the left
+        const r0 = el?.getBoundingClientRect();
+        const inRow = el && el !== target && el.matches(".panel");
+        const at = inRow ? (r0.left >= 0 && r0.right <= innerWidth + 1 ? target : null) : [...document.querySelectorAll(".track > .station")].find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
+        // (a row's first panel: its heading's)
+        const panel = inRow ? el : at?.querySelector(".panel");
         const r = panel?.getBoundingClientRect();
         const bar = document.querySelector(".top-bar").getBoundingClientRect();
         return {
           landed: !!at && at === target,
           id: at?.id,
-          panel: panel && `#${at.id} > .station-body`,
+          // (one element: a row's first panel is its first child)
+          panel: panel && (inRow ? `#${id}` : at.querySelector(".station-row") ? `#${at.id} .station-row > :first-child` : `#${at.id} .panel`),
           under: r && r.top < bar.bottom - 0.5 ? Math.round(bar.bottom - r.top) : 0,
           // A sheet (a tall screen: city-track.css) runs to the screen's
           // foot on purpose and pads its words clear of the home bar
@@ -535,8 +554,8 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
       if (stop.past > 0.5) report("fit", where, `the stop's panel (or a sheet's words) runs ${stop.past}px past the foot of the safe screen`);
       if (stop.more && !/auto|scroll/.test(stop.scrolls)) report("fit", where, `the stop's panel has more than fits but can't scroll (overflow-y ${stop.scrolls})`);
       if (stop.more && profile.touch && stop.panel) {
-        const moved = await chains(page, cdp, stop.panel);
-        if (moved) report("chain", where, `a touch scroll in the stop's panel moved the city ${moved}px`);
+        const moved = await chains(page, cdp, stop.panel, true);
+        if (moved) report("chain", where, `a touch scroll at the top of the stop's panel moved the city ${moved}px, not the panel`);
         await page.evaluate((s) => (document.querySelector(s).scrollTop = 0), stop.panel);
       }
     }

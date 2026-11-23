@@ -88,39 +88,165 @@
     mask-composite: intersect;
   }
 
-  :root[data-track="on"][data-home-plate] .track .band[data-home] {
-    background-position: var(--focal, center), center;
-  }
-
-  /* The words: a dark glass panel on the street, at the foot of the stop
-     and to its left, never taller than the stage (it scrolls inside, and
-     its scrolling never runs on into the page: the city stays put). It
-     starts a peek's width in, so the slice of the next stop that shows at
-     the right is its city, not its panel. */
-  :root[data-track="on"] .track .station-body {
-    position: absolute;
-    bottom: max(1rem, env(safe-area-inset-bottom));
-    left: max(var(--peek) + 1rem, env(safe-area-inset-left));
-    z-index: 2;
-    width: min(42rem, 100% - var(--peek) - 2rem);
-    max-height: calc(100% - var(--stop-top) - max(1rem, env(safe-area-inset-bottom)));
-    margin: 0;
-    padding: clamp(1rem, 2.5cqw, 1.75rem);
+  /* The words: dark glass panels on the street (.panel), each scrolling
+     inside once the journey has stopped with all of it on the screen, and
+     only if it has more than it shows (CityTrack: data-open), so a panel
+     sliding past, or one that fits, never catches the scroll. At its end
+     an open panel's scroll chains on to the page (overscroll-behavior
+     left at auto), so the wheel, Space and PageDown go on along the city.
+     Its corners are --radius-lg; what sits inside takes --radius-in, the
+     outer radius less the padding. */
+  :root[data-track="on"] .track .panel {
+    --pad: clamp(1rem, 2.5cqw, 1.75rem);
+    padding: var(--pad);
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
     border: 1px solid rgb(45 50 61 / 0.8);
     border-radius: var(--radius-lg);
-    background: rgb(8 9 12 / 0.86);
-    backdrop-filter: blur(10px);
+    background: rgb(8 9 12 / 0.75);
+    backdrop-filter: blur(16px);
   }
 
-  /* Scrollable once the journey has stopped with all of it on the screen,
-     and only if it has more than it shows (CityTrack: data-open): a panel
-     sliding past, or one that fits, never catches the scroll */
-  :root[data-track="on"] .track > [data-open] > .station-body {
+  :root[data-track="on"] .track [data-open] {
     overflow-y: auto;
-    overscroll-behavior: contain;
+  }
+
+  /* A stop of one panel: at the foot of the stop and to its left, never
+     taller than the stage. It starts a peek's width in, so the slice of
+     the next stop that shows at the right is its city, not its panel */
+  :root[data-track="on"] .track .station-body {
+    position: absolute;
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    left: max(var(--peek) + 1rem, env(safe-area-inset-left));
+    z-index: 2;
+    width: min(var(--panel-w, 42rem), 100% - var(--peek) - 2rem);
+    max-height: calc(100% - var(--stop-top) - max(1rem, env(safe-area-inset-bottom)));
+    margin: 0;
+  }
+
+  /* About's groups two across */
+  #about {
+    --panel-w: 60rem;
+  }
+
+  /* A stop of a row of panels along the street (Projects, Experience): as
+     wide as its row, which leaves a peek of city after its last panel */
+  :root[data-track="on"] .track > .station:has(> .station-row) {
+    width: auto;
+  }
+
+  /* Its painting keeps its own shape (today's stand-in plates are one
+     screen's stretch each), its far edge melting into the sky */
+  :root[data-track="on"] .track .band:has(~ .station-row) {
+    right: auto;
+    width: calc(var(--band-h, 100dvh) * 7 / 3);
+    max-width: 100%;
+  }
+
+  :root[data-track="on"] .track .station-row {
+    position: relative;
+    z-index: 2;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: calc(2 * var(--peek));
+    width: max-content;
+    height: 100%;
+    margin: 0;
+    padding: var(--stop-top) var(--peek) max(1rem, env(safe-area-inset-bottom)) max(var(--peek) + 1rem, env(safe-area-inset-left));
+  }
+
+  /* (each panel's own width, --panel-w, is set where it is made) */
+  :root[data-track="on"] .station-row .panel {
+    flex: none;
+    width: min(var(--panel-w, 28rem), 100cqw - 2 * var(--peek) - 2rem);
+    max-height: 100%;
+  }
+
+  /* Beside its words, the cover's frame is as tall as they are, the
+     picture whole inside it (never cropped) */
+  @container (min-width: 48rem) {
+    :root[data-track="on"] .project :is(.depth, figure) {
+      height: 100%;
+      aspect-ratio: auto;
+    }
+  }
+
+  /* On a short screen the cover leaves room for the words */
+  :root[data-track="on"] .project .depth {
+    max-width: calc((100dvh - var(--stop-top)) * 0.8);
+  }
+
+  /* The line: Experience's stations hang from one line drawn along the
+     stop, a stop on it for each (lit while the role is running), each
+     group's name on a plate over the line where its stations begin */
+  :root[data-track="on"] #experience .station-row {
+    /* (never under 45% down: a very tall bar, at 200% text, has scrolled away) */
+    --rail-y: min(max(var(--stop-top) + 1.5rem, min(42dvh, 100dvh - 30rem)), 45dvh);
+    align-items: flex-start;
+    padding-top: var(--rail-y);
+  }
+
+  :root[data-track="on"] #experience .station-row::before {
+    content: "";
+    position: absolute;
+    inset: calc(var(--rail-y) - 1px) 0 auto calc(var(--peek) + 1rem);
+    z-index: 1;
+    height: 2px;
+    background: rgb(79 216 238 / 0.7);
+  }
+
+  :root[data-track="on"] :is(.exp-group, .exp-stations) {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  :root[data-track="on"] .exp-label {
+    position: relative;
+    z-index: 2;
+    translate: 0 -50%;
+  }
+
+  :root[data-track="on"] :is(.exp-stop, #experience .station-row > .panel) {
+    position: relative;
+    margin-top: 1.5rem;
+  }
+
+  :root[data-track="on"] .exp-stop::before {
+    content: "";
+    position: absolute;
+    top: calc(-1.5rem - 6px);
+    left: 1.5rem;
+    z-index: 2;
+    width: 12px;
+    height: 12px;
+    border: 2px solid var(--cyan);
+    border-radius: 50%;
+    background: var(--ink);
+  }
+
+  :root[data-track="on"] .exp-stop[data-current]::before {
+    background: var(--cyan);
+  }
+
+  :root[data-track="on"] #experience :is(.exp-stop, .station-row) > .panel {
+    max-height: calc(100dvh - var(--rail-y) - 1.5rem - max(1rem, env(safe-area-inset-bottom)));
+  }
+
+  /* Contact, the journey's end, is its best-lit stop: the painting
+     brighter, the panel lighter with a cyan edge along its top, and the
+     whole edge lit once an address is copied (the success moment) */
+  :root[data-track="on"] #contact .band {
+    filter: brightness(1.2) saturate(1.1);
+  }
+
+  :root[data-track="on"] #contact .panel {
+    border-top: 2px solid var(--cyan);
+    background: rgb(24 27 35 / 0.92);
+  }
+
+  :root[data-track="on"] #contact .panel:has([data-copied]) {
+    border-color: var(--cyan);
   }
 
   /* The sky behind the city: slower than the street (it moves 30% as far),
@@ -168,6 +294,32 @@
     :root[data-track="on"] .track-weather {
       animation-name: track-hold;
     }
+
+    /* Arrivals: as the journey brings a panel on, it glides in from its
+       stop's own direction (--arrive, reveal.css), then its pieces
+       (heading, pictures, points, keys, links) one after another; all of
+       it drawn on the runway's own timeline from the panel's place along
+       the track (--at, CityTrack), so scrolling back plays it in reverse.
+       Transform and opacity only (translate, scale); none in still view or with
+       reduced motion. Where there's no timeline, arrive.ts's arrivals. */
+    @media (prefers-reduced-motion: no-preference) {
+      :root[data-track="on"]:not([data-still="on"]) :is(.track .panel, .panel :is(.reveal, .station-head, h3, figure, .points > li, .glass, .text-link-solo)) {
+        animation: arrive var(--ease-out) both;
+        animation-timeline: --runway;
+        animation-range: contain calc(var(--at) - 100vw + var(--k, 0) * 4vw) contain calc(var(--at) - 50vw + var(--k, 0) * 4vw);
+      }
+
+      @supports (order: sibling-index()) {
+        .panel * {
+          --k: min(sibling-index(), 6);
+        }
+      }
+
+      /* A picture grows into its frame as it comes */
+      .panel figure {
+        --zoom: 0.92;
+      }
+    }
   }
 
   /* Still view and reduced motion: the sky moves with the street, one
@@ -182,6 +334,7 @@
   @media (max-aspect-ratio: 1 / 1) {
     :root[data-track="on"] {
       --stop-band: calc(var(--bar-h) + 0.3 * (100dvh - var(--bar-h)));
+      --band-h: calc(var(--stop-band) + 1rem);
     }
 
     /* No peek below the strip: each stop is the whole screen, so a sheet
@@ -194,18 +347,64 @@
 
     :root[data-track="on"] .track .band {
       inset: 0 0 auto calc(-1 * var(--peek));
-      height: calc(var(--stop-band) + 1rem);
+      height: var(--band-h);
+    }
+
+    :root[data-track="on"] .track .panel {
+      --pad: 1.25rem;
+      padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+      border-width: 1px 0 0;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      background: var(--ground);
+      backdrop-filter: none;
     }
 
     :root[data-track="on"] .track .station-body {
       inset: var(--stop-band) 0 0;
       width: auto;
       max-height: none;
-      padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
-      border-width: 1px 0 0;
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      background: var(--ground);
-      backdrop-filter: none;
+    }
+
+    /* A row: one sheet a screen wide after another, the line along their
+       tops */
+    :root[data-track="on"] .track .station-row,
+    :root[data-track="on"] #experience .station-row {
+      --rail-y: var(--stop-band);
+      align-items: stretch;
+      gap: 0;
+      padding: var(--stop-band) 0 0;
+    }
+
+    :root[data-track="on"] :is(.station-row .panel, .exp-stop) {
+      width: 100cqw;
+      max-height: none;
+    }
+
+    :root[data-track="on"] :is(.exp-group, .exp-stations) {
+      align-items: stretch;
+      gap: 0;
+    }
+
+    :root[data-track="on"] .exp-group {
+      position: relative;
+    }
+
+    :root[data-track="on"] .exp-label {
+      position: absolute;
+      left: 3rem;
+    }
+
+    :root[data-track="on"] :is(.exp-stop, #experience .station-row > .panel) {
+      margin-top: 0;
+    }
+
+    :root[data-track="on"] .exp-stop::before {
+      top: -6px;
+    }
+
+    :root[data-track="on"] #experience :is(.exp-stop, .station-row) > .panel {
+      height: 100%;
+      max-height: none;
     }
 
     :root[data-track="on"] .track-weather {
@@ -233,6 +432,19 @@
   }
 }
 
+@keyframes arrive {
+  from {
+    opacity: 0;
+    translate: var(--arrive, 0 2rem);
+    scale: var(--zoom, 1);
+  }
+  to {
+    opacity: 1;
+    translate: none;
+    scale: none;
+  }
+}
+
 @keyframes track-hold {
   from {
     transform: translateX(0);
@@ -242,9 +454,16 @@
   }
 }
 
-/* Under prefers-contrast the panels are solid */
+/* Under prefers-contrast, and where nothing blurs behind them, the panels
+   are solid */
+@supports not (backdrop-filter: blur(1px)) {
+  :root[data-track="on"] .track .panel {
+    background: var(--ink);
+  }
+}
+
 @media (prefers-contrast: more) {
-  :root[data-track="on"] .track .station-body {
+  :root[data-track="on"] .track .panel {
     background: var(--ink);
     backdrop-filter: none;
   }

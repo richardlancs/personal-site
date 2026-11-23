@@ -17,13 +17,10 @@ test("exactly one marker definition: a 6px cyan square turned 45°, centred on t
   assert.match(body, /width: 6px;\s*height: 6px;/);
   assert.match(body, /background: var\(--cyan\);/);
   assert.match(body, /top: calc\(0\.5lh - 3px\);/, "on the middle of the first line, whatever its height");
-  const glow = body.match(/box-shadow: 0 0 (\d+)px/);
-  assert.ok(glow && Number(glow[1]) <= 4, "a glow of 4px at most");
+  assert.doesNotMatch(body, /box-shadow/, "no glow");
   assert.doesNotMatch(body, /animation|transition/, "nothing moves");
-  // Muted and without glow for the folded, secondary points
-  assert.match(css, /\.points-quiet > li::before \{\s*background: var\(--muted\);\s*box-shadow: none;/);
-  // The glow goes under prefers-contrast
-  assert.match(css, /@media \(prefers-contrast: more\) \{[\s\S]*?\.points > li::before \{\s*box-shadow: none;/);
+  // Muted for the folded, secondary points
+  assert.match(css, /\.points-quiet > li::before \{\s*background: var\(--muted\);\s*\}/);
   // The list keeps no bullets of its own, and text hangs clear of the marker
   assert.match(css, /\.points \{[^}]*list-style: none;/);
   assert.match(css, /\.points > li \{[^}]*padding-left: 1\.25rem;/);

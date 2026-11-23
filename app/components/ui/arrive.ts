@@ -1,6 +1,9 @@
 // The page's one-time arrival (reveal.css, "Arrival"): each `.reveal` item
 // below the fold rises and fades in the first time its top edge comes a
 // little way (5% of the screen) up over the foot of the screen, once.
+// That is the stacked page's; on the journey everything is on the screen's
+// height at once, so nothing waits here: the stops' arrivals are CSS, on
+// the journey's own timeline (city-track.css, "Arrivals").
 //
 // Items are visible by default. Only this script ever hides one, and only
 // after the page is hydrated: it runs from Arrivals.tsx's effect, rendered

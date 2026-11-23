@@ -24,8 +24,8 @@
   cyan and the warm lantern, only for edges, marks, chosen states and
   display type of 24px or larger, never body text.
   There is no light theme and no toggle; nothing here is keyed on the
-  system's appearance. Glow (text-shadow and box-shadow glows) is never
-  what gives words their contrast, and it goes under prefers-contrast.
+  system's appearance. No words glow; the glass's faint glow is never
+  what gives anything its contrast, and it goes under prefers-contrast.
 */
 :root {
   color-scheme: dark;
@@ -617,15 +617,7 @@ a[data-resume][data-opening] {
   /* The ground the band fades into at its foot (the dark navy it passes
      through on the way is --seam, on :root) */
   --ground: var(--ink);
-  /* A station's band's height (below): its aspect, capped */
-  --band-h: min(calc(100vw * 9 / 21), 52vh);
   background: var(--ground);
-}
-
-@media (max-width: 767px) {
-  .station {
-    --band-h: min(75vw, 52vh);
-  }
 }
 
 /* The grounds alternate down the line: About, Experience and Contact sit
@@ -655,22 +647,11 @@ a[data-resume][data-opening] {
   overflow: hidden;
   width: 100%;
   aspect-ratio: 21 / 9;
-  max-height: 70vh;
+  min-height: 12rem;
+  max-height: 52vh;
   background: linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
   /* Its layers (plates, weather, grade, fade) stack among themselves only */
   isolation: isolate;
-}
-
-@media (max-width: 767px) {
-  .band {
-    aspect-ratio: 4 / 3;
-  }
-}
-
-/* Below the first station the painting is a header, not an interruption:
-   at most about half the screen (the home band keeps its 70vh) */
-.band:not([data-home]) {
-  max-height: 52vh;
 }
 
 /* The home band's plate, painted before hydration: the head script
@@ -682,7 +663,7 @@ a[data-resume][data-opening] {
 :root[data-home-plate] .band[data-home] {
   background-image: var(--home-plate), linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
   background-size: cover, auto;
-  background-position: center;
+  background-position: var(--focal, center), center;
   background-repeat: no-repeat;
 }
 
@@ -725,33 +706,15 @@ a[data-resume][data-opening] {
   pointer-events: none;
 }
 
-/* The foot of the band fades into the ground the section's words sit on,
-   over its last 42%: the painting's navy sinks into shadow first (eased,
-   light over the reflections, so the river still shines), through the
-   dark navy --seam, and only then into the black ground, so there is no
-   line and no grey band. Solid for its last tenth or so (the section's
-   header starts there, below: words on the ground, never on the
-   painting). docs/city/style.md, "The seam". */
+/* The foot of the band fades into the ground the words sit on, over its
+   last 42%, through the dark navy --seam, so there is no line and no grey
+   band. docs/city/style.md, "The seam". */
 .band::before {
-  /* By day the plate's foot is bright paving and water, which a quick
-     fade cuts off: in daylight (and through dawn and dusk, as much as the
-     day plate shows: --day, from --city-night) the fade starts a little
-     higher and its middle runs longer, so the brightness falls away
-     gradually. The night stops are the ones above, as specified. */
-  --day: calc(1 - var(--city-night, 1));
   content: "";
   position: absolute;
-  inset: calc(58% - 4% * var(--day)) 0 0;
+  inset: 58% 0 0;
   z-index: 2;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    color-mix(in srgb, var(--seam) 14%, transparent) 20%,
-    color-mix(in srgb, var(--seam) 40%, transparent) calc(38% + 4% * var(--day)),
-    color-mix(in srgb, var(--seam) 72%, transparent) calc(52% + 16% * var(--day)),
-    var(--seam) calc(62% + 18% * var(--day)),
-    var(--ground, var(--ink)) calc(76% + 12% * var(--day))
-  );
+  background: linear-gradient(transparent, var(--seam) 62%, var(--ground, var(--ink)) 80%);
   pointer-events: none;
 }
 
@@ -897,11 +860,37 @@ a[data-resume][data-opening] {
    the solid part of the fade (the last 11% or so of the band; this rises
    8% of it), so the painting heads the station without a stretch of
    empty ground under it */
-.station-body {
+.station-body,
+.station-row {
   position: relative;
   width: min(72rem, 100%);
-  margin: calc(-0.08 * var(--band-h)) auto 0;
+  margin: -1.5rem auto 0;
   padding: 0.25rem max(1.25rem, env(safe-area-inset-right)) clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-left));
+}
+
+/* A row of panels (Projects, Experience; on the journey side by side,
+   city-track.css), stacked: one under the other. Experience's groups and
+   stations likewise; each group's name is on a plate. A panel's inner
+   corners (--radius-in) are its own less its padding (--pad, on the
+   journey) */
+.station-row,
+.exp-group,
+.exp-stations {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.panel {
+  --radius-in: max(0.25rem, var(--radius-lg) - var(--pad, 0px));
+}
+
+.exp-label {
+  align-self: flex-start;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--ink);
 }
 
 /* The section's number and its heading, on one baseline */
@@ -939,21 +928,12 @@ a[data-resume][data-opening] {
    and the links. On the journey it is the first stop's panel
    (city-track.css); stacked, it is all under the band. */
 
-.hero {
-  position: relative;
-  z-index: 3;
-  /* The name's size and the backing's padding, so the backing's height
-     (and half of it, below) can be worked out */
-  --name-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
-  --backing-pad: clamp(0.5rem, 1.2vw, 0.875rem);
-}
-
 .hero-backing {
   display: inline-block;
   max-width: 100%;
-  padding: var(--backing-pad) clamp(0.875rem, 2vw, 1.5rem);
+  padding: 0.5rem 1rem;
   border: 1px solid rgb(45 50 61 / 0.7);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-in, var(--radius-lg));
   background: rgb(8 9 12 / 0.94);
 }
 
@@ -961,14 +941,11 @@ a[data-resume][data-opening] {
    phone's width) */
 .hero-name {
   color: var(--text);
-  font-size: var(--name-size);
+  font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: 0.02em;
   overflow-wrap: break-word;
-  /* Decoration only: the words have their contrast without it. Fainter
-     than on navy: on black the same glow read as neon */
-  text-shadow: 0 0 28px rgb(79 216 238 / 0.24);
 }
 
 /* Display type at 24px and over, so it may be neon. Keep it at 1.5rem or
@@ -1180,13 +1157,10 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   height: 6px;
   background: var(--cyan);
   rotate: 45deg;
-  /* Decoration only; gone under prefers-contrast */
-  box-shadow: 0 0 4px rgb(79 216 238 / 0.5);
 }
 
 .points-quiet > li::before {
   background: var(--muted);
-  box-shadow: none;
 }
 
 /* A point that is a link standing alone (44px tall): the diamond at the
@@ -1587,13 +1561,4 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
     --glass-border: var(--muted);
   }
 
-  .points > li::before {
-    box-shadow: none;
-  }
-
-  *,
-  *::before,
-  *::after {
-    text-shadow: none !important;
-  }
 }

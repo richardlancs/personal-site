@@ -1,9 +1,11 @@
 import Image from "next/image";
+import type { CSSProperties } from "react";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
 import Heading from "../Heading";
-import { order } from "../Station";
+import { section } from "../../../sections/registry";
+import { StationHead, order } from "../Station";
 import Tilt from "../Tilt";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -16,11 +18,11 @@ const tall = (shot: Screenshot) => shot.height > shot.width;
 
 const plural = (n: number) => `${n} more screenshot${n === 1 ? "" : "s"}`;
 
-// How wide a picture is drawn: the full column (the station's 72rem less
-// its gutters) under 1024px; the right 7 of 12 columns from 1024px, and
-// the right half from 1280px. A portrait pair takes half of that each.
-const coverSizes = "(min-width: 1280px) min(33rem, 46vw), (min-width: 1024px) 55vw, calc(100vw - 2.5rem)";
-const pairSizes = "(min-width: 1280px) min(16.5rem, 23vw), (min-width: 1024px) 28vw, calc(50vw - 1.5rem)";
+// How wide a picture is drawn: half of its panel (60rem at most) where the
+// panel is wide, else the panel's width (the screen's, on a phone). A
+// portrait pair takes half of that each.
+const coverSizes = "(min-width: 1024px) 32rem, (min-width: 768px) 60vw, 100vw";
+const pairSizes = "(min-width: 1024px) 16rem, (min-width: 768px) 30vw, 50vw";
 
 // "My part" shows its first four points; the rest wait in the row's
 // <details>, under "More of my part", so nothing is dropped
@@ -54,9 +56,9 @@ function Keys({ project }: { project: Project }) {
 // a fine pointer (reveal.css, "Depth"; Tilt.tsx).
 function Picture({ shots }: { shots: Screenshot[] }) {
   return (
-    <div className="depth rounded-[var(--radius-lg)]" data-tilt="">
+    <div className="depth rounded-[var(--radius-in)]" data-tilt="">
       <figure
-        className={`flex aspect-[16/10] items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-lg)] border border-line bg-ink-2 ${
+        className={`flex aspect-[16/10] items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${
           tall(shots[0]) ? "p-3" : ""
         }`}
       >
@@ -89,32 +91,31 @@ const h4 = "font-display text-xl font-semibold text-text";
 // A heading inside the fold: smaller, the fold's summary is above it
 const h5 = "font-display text-lg font-semibold text-text";
 
-// The projects section (the site's most important content), then Skills.
-// First an index of the projects, each a link to its row. Then one row
-// per project, hairlines between them and no panels: from 1024px its text
-// in the left 5 of 12 columns and its picture in the right 7 (from 1280px
-// half and half, so the text runs wider and the row shorter), the picture
-// staying in view while the text goes by; under 1024px title, summary,
-// role, picture, then the rest. The text: the keys first, then what I did
-// ("My part", under a cyan rule, its first four points) or, when the data
-// has no contributions, what it does; then the stack on one line. The rest
-// of my part, the team's features (when my part took their place) and the
-// other screenshots fold into a <details>.
-// Then Skills, on its own edged panel. Everything is in the HTML.
-// The index, each row's header, picture and text, and Skills arrive as
-// they scroll in (reveal.css); the pictures' tilt is Tilt.tsx, mounted
+// The projects section (the site's most important content), then Skills:
+// a row of panels along the towers (Station's `row`), each its own stop on
+// the street. First the index, under the section's heading, each project a
+// link to its panel. Then one panel per project, never all alike: the
+// cover leads (on a wide panel it takes one half, on the left for the
+// first, third and fifth and on the right for the others; on a narrow one
+// it heads the panel), the text beside or under it: title, summary, role,
+// the keys, then what I did ("My part", under a cyan rule, its first four
+// points) or, when the data has no contributions, what it does; then the
+// stack on one line. The rest of my part, the team's features (when my
+// part took their place) and the other screenshots fold into a <details>,
+// which opens inside the panel (the panel scrolls). Then Skills, the
+// row's last panel. Everything is in the HTML; each panel arrives sideways
+// as it comes on (reveal.css), and the pictures' tilt is Tilt.tsx, mounted
 // here once for the whole page.
-// The rows lay themselves out by the section's own width, not the window's
-// (@container; the column is the window less 2.5rem, up to 72rem): the
-// index two across from 45.5rem, the row's columns and the sticky picture
-// from 61.5rem (a 1024px window), half and half from 69.5rem (the full
-// 72rem column, from a 1152px window).
+// Each panel lays itself out by its own width (@container): the cover
+// beside the text from 48rem.
 export default function Projects() {
   return (
-    <div className="@container mt-10">
+    <>
       <Tilt />
-      <nav aria-label="Projects" className="reveal">
-        <ol className="grid grid-cols-1 border-t border-line @min-[45.5rem]:grid-cols-2 @min-[45.5rem]:gap-x-10">
+      <div className="panel project-index reveal">
+        <StationHead section={section("projects")} />
+        <nav aria-label="Projects">
+        <ol className="mt-6 grid grid-cols-1 border-t border-line">
           {projects.map((project, index) => (
             <li key={project.title} className="min-w-0 border-b border-line">
               <a
@@ -125,7 +126,7 @@ export default function Projects() {
                   {String(index + 1).padStart(2, "0")}
                 </span>
                 {/* One line each: a long gloss ends in an ellipsis (the
-                    whole summary is in the row) */}
+                    whole summary is in the panel) */}
                 <span className="flex min-w-0 items-baseline gap-2">
                   <span className="max-w-full shrink-0 break-words font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
                     {project.title}
@@ -136,10 +137,10 @@ export default function Projects() {
             </li>
           ))}
         </ol>
-      </nav>
+        </nav>
+      </div>
 
-      <div className="mt-6 divide-y divide-line">
-        {projects.map((project, index) => {
+      {projects.map((project, index) => {
           const shots = project.screenshots ?? [];
           const coverIndex = project.cover ?? 0;
           const cover = shots[coverIndex];
@@ -163,14 +164,18 @@ export default function Projects() {
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
+          // The cover on the right for every other project
+          const flip = index % 2 === 1;
           return (
             <article
               key={project.title}
               id={slug(project.title)}
               aria-labelledby={titleId}
-              className="py-10 @min-[37.5rem]:py-14 @min-[61.5rem]:grid @min-[61.5rem]:grid-cols-12 @min-[61.5rem]:grid-rows-[auto_1fr] @min-[61.5rem]:gap-x-12 @min-[69.5rem]:gap-x-10"
+              className="panel project @container reveal"
+              style={{ ...order(index + 1), "--panel-w": "60rem" } as CSSProperties}
             >
-              <header className="reveal min-w-0 break-words @min-[61.5rem]:col-span-5 @min-[61.5rem]:col-start-1 @min-[61.5rem]:row-start-1 @min-[69.5rem]:col-span-6">
+              <div className="grid gap-y-5 @min-[48rem]:grid-cols-2 @min-[48rem]:grid-rows-[auto_1fr] @min-[48rem]:gap-x-8">
+              <header className={`min-w-0 break-words @min-[48rem]:row-start-1 ${flip ? "@min-[48rem]:col-start-1" : "@min-[48rem]:col-start-2"}`}>
                 <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
@@ -182,12 +187,12 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className="reveal mt-6 min-w-0 @min-[61.5rem]:sticky @min-[61.5rem]:top-[calc(var(--bar-h)+1.5rem)] @min-[61.5rem]:col-span-7 @min-[61.5rem]:col-start-6 @min-[61.5rem]:row-span-2 @min-[61.5rem]:row-start-1 @min-[61.5rem]:mt-0 @min-[61.5rem]:self-start @min-[69.5rem]:col-span-6 @min-[69.5rem]:col-start-7" style={order(1)}>
+                <div className={`-order-1 min-w-0 @min-[48rem]:order-none @min-[48rem]:row-span-2 @min-[48rem]:row-start-1 ${flip ? "@min-[48rem]:col-start-2" : "@min-[48rem]:col-start-1"}`}>
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className="reveal mt-6 min-w-0 break-words @min-[61.5rem]:col-span-5 @min-[61.5rem]:col-start-1 @min-[61.5rem]:row-start-2 @min-[69.5rem]:col-span-6" style={order(2)}>
+              <div className={`min-w-0 break-words @min-[48rem]:row-start-2 ${flip ? "@min-[48rem]:col-start-1" : "@min-[48rem]:col-start-2"}`}>
                 <Keys project={project} />
 
                 {part.length > 0 ? (
@@ -277,16 +282,16 @@ export default function Projects() {
                   </details>
                 )}
               </div>
+              </div>
             </article>
           );
         })}
-      </div>
 
-      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="reveal mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 @min-[22.5rem]:p-5 @min-[37.5rem]:p-8">
+      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="panel project-skills @container reveal break-words" style={{ ...order(projects.length + 1), "--panel-w": "34rem" } as CSSProperties}>
         <Heading level={3} id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
         </Heading>
-        <div className="mt-6 grid gap-8 @min-[37.5rem]:grid-cols-2 @min-[61.5rem]:grid-cols-3">
+        <div className="mt-6 grid gap-8 @min-[27.5rem]:grid-cols-2">
           {skillGroups.map((group) => (
             <div key={group.category} className="border-t border-line pt-4">
               <Heading level={4} className="text-base font-semibold text-muted">{group.category}</Heading>
@@ -299,6 +304,6 @@ export default function Projects() {
           ))}
         </div>
       </section>
-    </div>
+    </>
   );
 }

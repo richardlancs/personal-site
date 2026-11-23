@@ -28,10 +28,10 @@ export default function Home() {
         <Station section={section("about")}>
           <About />
         </Station>
-        <Station section={section("projects")}>
+        <Station section={section("projects")} row>
           <Projects />
         </Station>
-        <Station section={section("experience")}>
+        <Station section={section("experience")} row>
           <Experience />
         </Station>
         <Station section={section("interests")}>

@@ -2,18 +2,21 @@
    Tokens live in city.css. */
 
 /* ---------- Arrival (principles 3, 9, 11, 18) ----------
-   As a section scrolls in, its items arrive in order, once: the section's
-   number and heading (Station.tsx), then its blocks (About's groups, each
-   project row's header, picture and text, Experience's rows, the
-   interests). Each `.reveal` carries its place in its group as --i
-   (Station.tsx: order(), 0 to 5).
+   As a stop comes on, its items arrive in order, once: About's groups,
+   Projects' panels, Experience's stations, the interests, Contact's
+   panel. Each `.reveal` carries its place in its group as --i
+   (Station.tsx: order(), 0 to 5). Each stop arrives its own way
+   (--arrive, from where it comes): About's groups rise, Projects' panels
+   come in from the right along the street, Experience's stations drop
+   onto the line, the interests only fade, Contact rises a little further.
 
    Items are visible by default. Once the page is hydrated, one observer
    for the page (components/ui/arrive.ts, started by Arrivals.tsx inside
    the page) marks the items below the fold waiting (data-arrive-wait);
-   each comes in the first time its top edge comes a little way up over
-   the foot of the screen, then is let go: data-arrived "in" (it rises 8px
-   and fades in over --t-slow, --stagger apart). It never goes back. The
+   each comes in the first time it comes a little way on (up over the
+   foot of the screen, or in from the right on the journey), then is let
+   go: data-arrived "in" (it moves from --arrive and fades in over
+   --t-slow, --stagger apart). It never goes back. The
    waiting state applies only to marked items once the script has marked
    the page (html[data-arrive]), so with JavaScript off, in still view,
    with reduced motion and in print nothing is ever hidden; focus moving
@@ -23,7 +26,23 @@
 @media screen and (prefers-reduced-motion: no-preference) {
   :root[data-arrive]:not([data-still="on"]) .reveal[data-arrive-wait]:not(:focus-within, :target *) {
     opacity: 0.001;
-    translate: 0 8px;
+    translate: var(--arrive, 0 8px);
+  }
+
+  :root[data-track="on"] #projects {
+    --arrive: 3rem 0;
+  }
+
+  #experience {
+    --arrive: 0 -0.75rem;
+  }
+
+  #interests {
+    --arrive: 0 0;
+  }
+
+  #contact {
+    --arrive: 0 1.25rem;
   }
 
   :root:not([data-still="on"]) .reveal[data-arrived="in"] {

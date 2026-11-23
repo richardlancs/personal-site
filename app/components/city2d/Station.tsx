@@ -2,48 +2,57 @@ import type { CSSProperties, ReactNode } from "react";
 import { sectionNumber, type Section } from "../../sections/registry";
 import DistrictBand from "./DistrictBand";
 
-// One section of the page (city.css, "Stations"): its district's band of
-// painting across the full width (DistrictBand, following Richmond Hill's
-// clock), then a centred column with the section's number ("02", beside
-// its heading on the same baseline, outside it and hidden from assistive
-// technology, so the heading is named by its title alone), and the
-// section itself. The band carries no words,
-// and the place it paints isn't named: sections are named as sections.
+// One section of the page, one stop of the journey (city.css, "Stations";
+// city-track.css): its district's band of painting, then its words. The
+// band carries no words, and the place it paints isn't named: sections are
+// named as sections.
+//
+// The words sit in panels (`.panel`): on the journey, dark glass on the
+// street, each scrolling inside once the journey has stopped with all of
+// it on the screen (CityTrack.tsx). A stop of one panel (Home, About,
+// Interests, Contact) gets it from here, its number and heading at its
+// top; a stop of several in a row along the street (`row`: Projects,
+// Experience) gets the row, and its section puts the heading
+// (StationHead) in the first of its own panels. Stacked (no scripts),
+// panels are plain blocks one under the other.
 //
 // It can be focused (tabIndex -1), so the Sections menu moves focus to the
 // section it jumps to. The home section has the hero instead of an h2
 // (sections/Hero.tsx, with the page's h1, id `home-title`): pass it as
-// `heading`; nothing comes between the band and the hero. Only the home
-// band loads its plate early.
+// `heading`. Only the home band loads its plate early.
 //
-// The number and the heading arrive first as the section scrolls in, then
-// the section's own items (reveal.css, "Arrival"): each `.reveal` carries
-// its place in its group from order(), capped at the sixth step.
+// Each `.reveal` arrives once as it comes on (reveal.css, "Arrival"),
+// carrying its place in its group from order(), capped at the sixth step.
 export const order = (i: number) => ({ "--i": Math.min(i, 5) }) as CSSProperties;
 
-export default function Station({ section, heading, children }: { section: Section; heading?: ReactNode; children?: ReactNode }) {
-  const id = section.hash || "home";
-  const titleId = `${id}-title`;
+// The section's number ("02") beside its heading on one baseline: outside
+// the heading and hidden from assistive technology, so the heading is named
+// by its title alone
+export function StationHead({ section }: { section: Section }) {
   return (
-    <section id={id} aria-labelledby={titleId} tabIndex={-1} className="station" data-district={section.district}>
+    <div className="station-head">
+      {section.listed && (
+        <span className="station-number" aria-hidden="true">
+          {sectionNumber(section)}{" "}
+        </span>
+      )}
+      <h2 id={`${section.hash || "home"}-title`} className="station-title">
+        {section.title}
+      </h2>
+    </div>
+  );
+}
+
+export default function Station({ section, heading, row, children }: { section: Section; heading?: ReactNode; row?: boolean; children?: ReactNode }) {
+  const id = section.hash || "home";
+  return (
+    <section id={id} aria-labelledby={`${id}-title`} tabIndex={-1} className="station" data-district={section.district}>
       <DistrictBand district={section.district} priority={section.id === "home"} />
-      {heading ? (
-        <div className="station-body station-body-home">
-          {heading}
-          {children}
-        </div>
+      {row ? (
+        <div className="station-row">{children}</div>
       ) : (
-        <div className="station-body">
-          <div className="station-head">
-            {section.listed && (
-              <span className="station-number reveal" aria-hidden="true" style={order(0)}>
-                {sectionNumber(section)}{" "}
-              </span>
-            )}
-            <h2 id={titleId} className="station-title reveal" style={order(1)}>
-              {section.title}
-            </h2>
-          </div>
+        <div className="station-body panel">
+          {heading ?? <StationHead section={section} />}
           {children}
         </div>
       )}

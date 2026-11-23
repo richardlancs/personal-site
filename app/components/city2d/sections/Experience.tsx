@@ -4,7 +4,8 @@ import { machineDate } from "../../../lib/machineDate";
 import ResumeLink from "../../resume/ResumeLink";
 import Figures from "../Figures";
 import Heading from "../Heading";
-import { order } from "../Station";
+import { section } from "../../../sections/registry";
+import { StationHead, order } from "../Station";
 
 // A date as written in the data, in a <time> only when it is a real date
 // ("Present" is plain words: a <time> must hold a valid date)
@@ -59,12 +60,15 @@ function Row({ entry }: { entry: Entry }) {
   );
 }
 
-// Plain dated rows, newest first, work and education apart, each group
-// under a small label on a hairline. No card, no board and no timeline
-// line (the page's progress line is the one line). Ends with the résumé.
-// Each label and row arrives as it scrolls in (reveal.css). The rows lay
-// themselves out by the section's own width (@container: the dates' column
-// from 37.5rem, a 640px window).
+// A row of panels along the metro line (Station's `row`): first the
+// section's heading and the résumé, then one station per role, newest
+// first, work and education apart, each group's name on a plate where its
+// stations begin. On the journey the line is drawn along the stations'
+// tops, a stop on it for each role (lit for the one still running), and
+// each role's panel hangs from its stop (city-track.css, "The line");
+// stacked, the panels run down the page. Each station arrives as it comes
+// on (reveal.css). A role's panel lays itself out by its own width
+// (@container: the dates' column from 37.5rem).
 export default function Experience() {
   const { work, education } = groupByKind(sortNewestFirst(experience));
   const groups = [
@@ -73,25 +77,30 @@ export default function Experience() {
   ].filter((group) => group.entries.length > 0);
 
   return (
-    <div className="@container mt-10">
+    <>
+      <div className="panel reveal">
+        <StationHead section={section("experience")} />
+        <p className="mt-4">
+          {/* Opens the résumé over the page (components/resume) */}
+          <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
+        </p>
+      </div>
       {groups.map((group) => (
-        <div key={group.id} className="mb-14">
-          <p id={group.id} className="reveal border-b border-line pb-3 text-sm font-semibold uppercase tracking-[0.14em] text-muted">
+        <div key={group.id} className="exp-group">
+          <p id={group.id} className="exp-label text-sm font-semibold text-text">
             {group.label}
           </p>
-          <ol role="list" aria-labelledby={group.id} className="mt-8 space-y-12">
+          <ol role="list" aria-labelledby={group.id} className="exp-stations">
             {group.entries.map((entry, i) => (
-              <li key={`${entry.role}-${entry.organization}`} className="reveal" style={order(i + 1)}>
-                <Row entry={entry} />
+              <li key={`${entry.role}-${entry.organization}`} className="exp-stop" data-current={isCurrent(entry) || undefined} style={order(i + 1)}>
+                <div className="panel @container">
+                  <Row entry={entry} />
+                </div>
               </li>
             ))}
           </ol>
         </div>
       ))}
-      <p className="reveal">
-        {/* Opens the résumé over the page (components/resume) */}
-        <ResumeLink className="text-link text-link-solo">Résumé</ResumeLink>
-      </p>
-    </div>
+    </>
   );
 }

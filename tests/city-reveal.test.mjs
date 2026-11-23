@@ -66,7 +66,14 @@ test("nothing loops; an item arrives once, and only once the script has marked t
   assert.ok(waiting.prelude.startsWith(":root[data-arrive]"), waiting.prelude);
   assert.ok(waiting.context.includes("@media screen and (prefers-reduced-motion: no-preference)"), "screen only");
   assert.match(waiting.prelude, /\.reveal\[data-arrive-wait\]:not\(:focus-within, :target \*\)/);
-  assert.match(waiting.body, /translate: 0 8px/, "a short rise, no turn or scale");
+  assert.match(waiting.body, /translate: var\(--arrive, 0 8px\)/, "a short move (a rise by default), no turn or scale");
+  // Each stop its own way: Projects from the right (on the journey only,
+  // so nothing overflows a stacked page), Experience down onto the line,
+  // the interests a fade, Contact a longer rise
+  assert.match(css, /:root\[data-track="on"\] #projects \{\s*--arrive: 3rem 0;/);
+  assert.match(css, /#experience \{\s*--arrive: 0 -0\.75rem;/);
+  assert.match(css, /#interests \{\s*--arrive: 0 0;/);
+  assert.match(css, /#contact \{\s*--arrive: 0 1\.25rem;/);
   // The arrival is a transition on the mark, within --t-slow, --stagger apart
   const arriving = all.find((b) => b.prelude.includes('.reveal[data-arrived="in"]'));
   assert.match(arriving.body, /opacity var\(--t-slow\) var\(--ease-out\)/);
@@ -143,8 +150,8 @@ test("the sections stay server components; the items carry their order", () => {
   const station = read("app/components/city2d/Station.tsx");
   assert.doesNotMatch(station, /^["']use client["']/m);
   assert.match(station, /export const order = \(i: number\) => \(\{ "--i": Math\.min\(i, 5\) \}\)/, "at most six steps");
-  assert.match(station, /className="station-number reveal"[^>]*style=\{order\(0\)\}/);
-  assert.match(station, /className="station-title reveal" style=\{order\(1\)\}/);
+  // The stops' panels and blocks arrive (the heading with its panel)
+  for (const n of ["Projects", "Experience", "Contact"]) assert.match(read(`app/components/city2d/sections/${n}.tsx`), /className="[^"]*\breveal\b/, n);
   // The pictures have their depth wrapper, with the tilt hook
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /<div className="depth [^"]*" data-tilt="">/);
   assert.match(read("app/components/city2d/sections/Interests.tsx"), /<span className="depth [^"]*" data-tilt="">/);

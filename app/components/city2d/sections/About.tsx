@@ -13,7 +13,7 @@ import { order } from "../Station";
 // own column is 45.5rem wide (a 768px window).
 export default function About() {
   return (
-    <div className="@container mt-10">
+    <div className="@container mt-6">
     <div className="about grid gap-x-12 gap-y-10 @min-[45.5rem]:grid-cols-2">
       {about.map((entry, i) => (
         <section key={entry.heading} className="about-entry reveal border-t border-line pt-6" style={order(i)}>

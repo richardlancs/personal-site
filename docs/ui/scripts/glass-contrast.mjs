@@ -64,7 +64,23 @@ for (const preset of presets) {
     for (const t of targets) {
       const el = page.locator(t.sel).first();
       if (!(await el.count()) || !(await el.isVisible())) continue;
-      await el.scrollIntoViewIfNeeded();
+      // On the journey the stops are side by side: go to the target's panel
+      // (or its stop) and let the glide come to rest; stacked, scroll to it
+      await el.evaluate(async (n) => {
+        const at = n.closest(".panel[id]") || n.closest(".station");
+        if (!at) return; // the bar: always on the screen
+        if (document.documentElement.dataset.track !== "on") return n.scrollIntoView({ block: "center" });
+        location.hash = at.id;
+        let last = -1;
+        for (let still = 0; still < 10; ) {
+          await new Promise((r) => requestAnimationFrame(r));
+          still = scrollY === last ? still + 1 : 0;
+          last = scrollY;
+        }
+        // and, in a panel that scrolls inside (a phone's sheet), to the key
+        const p = n.closest(".panel");
+        if (p) p.scrollTop += n.getBoundingClientRect().top - p.getBoundingClientRect().top - 48;
+      });
       // An item that arrives on scroll (reveal.css): measure it at rest
       if (await el.evaluate((n) => Boolean(n.closest(".reveal")))) {
         await el.evaluate((n) => new Promise((done) => { const r = n.closest(".reveal"); const t = () => (r.hasAttribute("data-arrived") ? done() : requestAnimationFrame(t)); t(); }));

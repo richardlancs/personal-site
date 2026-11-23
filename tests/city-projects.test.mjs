@@ -1,8 +1,9 @@
 // The projects section, with Skills inside it
-// (components/city2d/sections/Projects.tsx): an index of the projects,
-// then one row per project from app/data/portfolio.ts (keys at the top,
-// one picture frame, "My part" apart from the team's features, the rest
-// folded into a <details>), then the skill groups.
+// (components/city2d/sections/Projects.tsx): a row of panels along the
+// street: the index under the section's heading, then one panel per
+// project from app/data/portfolio.ts (the cover leading, on alternate
+// sides; keys at the top of the text, "My part" apart from the team's
+// features, the rest folded into a <details>), then the skill groups.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -43,11 +44,14 @@ test("the index's gloss is the summary up to its first colon, comma or full stop
   }
 });
 
-test("every row is an article with a level-3 heading, never a boxed rounded panel", () => {
+test("every project is an article with a level-3 heading, a panel of the row (its look the journey's, not its own)", () => {
   assert.match(row, /<Heading level=\{3\}/);
   const opening = row.match(/<article\b[\s\S]*?>/)[0];
+  assert.match(opening, /className="panel project @container reveal"/);
   assert.doesNotMatch(opening, /rounded|bg-panel|\bp-\d/);
-  assert.match(source, /divide-y divide-line/);
+  // The index panel opens the row, under the section's heading
+  const index = source.slice(source.indexOf('className="panel project-index'), source.indexOf("</nav>"));
+  assert.ok(index.indexOf("<StationHead") < index.indexOf("<nav"), "the heading, then the index");
 });
 
 test("the keys come before the lists, and Live demo only when there is one", () => {
@@ -79,9 +83,14 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
 });
 
-test("on the full 72rem column (69.5rem of content) text and picture share the row half and half", () => {
-  assert.match(row, /<header className="[^"]*@min-\[61\.5rem\]:col-span-5[^"]*@min-\[69\.5rem\]:col-span-6/);
-  assert.match(row, /@min-\[61\.5rem\]:col-span-7 @min-\[61\.5rem\]:col-start-6[^"]*@min-\[69\.5rem\]:col-span-6 @min-\[69\.5rem\]:col-start-7/);
+test("the cover leads: beside the text from 48rem, on alternate sides; above it on a narrow panel", () => {
+  assert.match(row, /@min-\[48rem\]:grid-cols-2/);
+  assert.match(source, /const flip = index % 2 === 1;/);
+  // The cover's column is the text's other one
+  assert.match(row, /-order-1 [^`]*\$\{flip \? "@min-\[48rem\]:col-start-2" : "@min-\[48rem\]:col-start-1"\}/);
+  assert.match(row, /<header className=\{`[^`]*\$\{flip \? "@min-\[48rem\]:col-start-1" : "@min-\[48rem\]:col-start-2"\}/);
+  // Its corners are the panel's less its padding
+  assert.match(source, /rounded-\[var\(--radius-in\)\]/);
 });
 
 test("the index's glosses stay on one line", () => {
@@ -106,7 +115,7 @@ test("the cover is screenshots[cover ?? 0]; a portrait pair shares the frame; no
   assert.match(source, /object-contain/);
   assert.doesNotMatch(source, /object-cover/);
   assert.match(source, /tall\(cover\) && next && tall\(next\)/);
-  assert.match(source, /@min-\[61\.5rem\]:sticky/);
+  assert.doesNotMatch(source, /sticky/);
 });
 
 test("Skills is a section with id skills, a level-3 heading and a level-4 one per group", () => {

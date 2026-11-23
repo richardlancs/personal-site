@@ -33,18 +33,16 @@ test("no section keys its layout on the viewport", () => {
 
 test("each section measures its own column: one @container on a wrapper, then @min-[…]: variants", () => {
   for (const [name, source] of Object.entries(sections)) {
-    assert.match(source, /className="@container[\s"]/, `${name}: an @container wrapper`);
+    // A wrapper, or (a row's sections) each panel, is the container
+    assert.match(source, /className="[^"]*@container[\s"]/, `${name}: an @container`);
     assert.match(source, /@min-\[\d+(\.\d+)?rem\]:/, `${name}: container variants`);
   }
-  // The column (.station-body's content box, the window less 2.5rem, up
-  // to 72rem) gives the old breakpoints their container sizes
+  // The panels' and the column's sizes the layouts break at
   const all = Object.values(sections).join("\n");
   const used = new Set([...all.matchAll(/@min-\[([\d.]+rem)\]:/g)].map((m) => m[1]));
-  for (const size of used) assert.ok(["22.5rem", "27.5rem", "37.5rem", "45.5rem", "61.5rem", "69.5rem"].includes(size), `unexpected container size ${size}`);
-  // The sticky picture is still sticky on a wide column
-  assert.match(sections.Projects, /@min-\[61\.5rem\]:sticky/);
+  for (const size of used) assert.ok(["22.5rem", "27.5rem", "37.5rem", "45.5rem", "48rem", "61.5rem", "69.5rem"].includes(size), `unexpected container size ${size}`);
   // Image sizes stay viewport-based (they choose a file, not a layout)
-  assert.match(sections.Projects, /const coverSizes = "\(min-width: 1280px\)/);
+  assert.match(sections.Projects, /const coverSizes = "\(min-width: 1024px\)/);
 });
 
 test("every section uses Heading for its headings", () => {

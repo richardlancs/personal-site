@@ -34,7 +34,6 @@ let marks: number[] | null = null;
 // journey is on: the progress line reads these as its sections' places
 export const trackMarks = () => marks;
 
-const PAD = 16; // px: room left beside something brought into view
 const SETTLE_MS = 150; // still this long, the journey has stopped
 const FLING_MS = 280; // how far a released swipe glides, as time at its speed
 // Where the arrows are someone else's: a field, a dialog, a menu
@@ -50,6 +49,7 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     if (!run || !stage || !track) return;
     const html = document.documentElement;
     const stops = [...track.querySelectorAll<HTMLElement>(":scope > .station")];
+    const panels = track.querySelectorAll<HTMLElement>(".panel");
     const cssDriven = CSS.supports("animation-timeline: view()");
     let offsets = [0];
     let top = 0;
@@ -65,39 +65,38 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     const glide = (x: number, instant = still()) => {
       scrollTo({ top: top + Math.min(Math.max(x, 0), travel), behavior: instant ? "instant" : "smooth" });
     };
-    // Where to stop to show `el`: its stop's start, unless that leaves it
-    // past the right edge (a wide stop), then just before it
+    // Where to stop to show `el` (its panel, if it is in one): its stop's
+    // start, unless that leaves it past the right edge (a stop of a row of
+    // panels), then with that panel where the row's first one stands (the
+    // row's own inset: clear of a notch; none for a phone's sheets)
     const xFor = (el: Element, i: number) => {
-      const r = el.getBoundingClientRect();
+      const p = el.closest(".panel") ?? el;
+      const r = p.getBoundingClientRect();
       const x = r.left - track.getBoundingClientRect().left;
-      return x + Math.min(r.width, vw) > offsets[i] + vw ? x - PAD : offsets[i];
+      return x + Math.min(r.width, vw) > offsets[i] + vw ? x - parseFloat(getComputedStyle(p.closest(".station-row") ?? p).paddingLeft) : offsets[i];
     };
     const stopOf = (el: Element) => stops.findIndex((s) => s.contains(el));
 
-    // The stop an address names (#projects, or #skills inside it), there
+    // The stop an address names (#projects), or the panel in it (#skills,
+    // a project), there
     const toHash = (hash: string, instant?: boolean) => {
       const el = document.getElementById(decodeURIComponent(hash.slice(1)) || "home");
       const i = el ? stopOf(el) : -1;
-      if (!el || i < 0) return;
-      glide(xFor(el, i), instant);
-      // A part of a section (Skills): its panel scrolls to it
-      const panel = el.closest(".station-body");
-      if (panel && el !== stops[i]) panel.scrollTo({ top: panel.scrollTop + el.getBoundingClientRect().top - panel.getBoundingClientRect().top - PAD, behavior: instant || still() ? "instant" : "smooth" });
+      if (el && i >= 0) glide(xFor(el, i), instant);
     };
 
     // A panel scrolls inside only if it has more than it shows, and only
-    // once the journey has stopped at its stop with all of it on the
-    // screen (data-open on the stop). While the city moves, no panel
-    // sliding under the pointer or the finger can catch the scroll; over
-    // the next stop's panel, or one that fits, it always moves the city.
+    // once the journey has stopped with all of it on the screen (data-open).
+    // While the city moves, no panel sliding under the pointer or the
+    // finger can catch the scroll; over a panel half on, or one that fits,
+    // it always moves the city. At its end an open panel hands the scroll
+    // on (city-track.css: it chains), so the journey goes on.
     let settleTimer = 0;
     const settle = () => {
-      const here = stopAt(along(), offsets);
-      stops.forEach((s, k) => {
-        const p = s.lastElementChild as HTMLElement;
+      for (const p of panels) {
         const r = p.getBoundingClientRect();
-        s.toggleAttribute("data-open", k === here && r.left >= -1 && r.right <= vw + 1 && p.scrollHeight > p.clientHeight + 1);
-      });
+        p.toggleAttribute("data-open", r.left >= -1 && r.right <= vw + 1 && p.scrollHeight > p.clientHeight + 1);
+      }
     };
     const sky = stage.firstElementChild as HTMLElement;
     const weather = track.lastElementChild as HTMLElement;
@@ -112,7 +111,7 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(frame);
-      if (!settleTimer) for (const s of stops) s.removeAttribute("data-open");
+      if (!settleTimer) for (const p of panels) p.removeAttribute("data-open");
       clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         settleTimer = 0;
@@ -144,6 +143,13 @@ export default function CityTrack({ children }: { children: ReactNode }) {
       run.style.setProperty("--travel", `${travel}px`);
       top = run.getBoundingClientRect().top + scrollY;
       marks = stops.map((_, k) => top + scrollYForStop(k, offsets, vw));
+      // Each panel's place along the track (--at), where its arrival is
+      // drawn on the runway's timeline (city-track.css, "Arrivals")
+      for (const p of panels) {
+        let x = 0;
+        for (let e: HTMLElement | null = p; e && e !== track; e = e.offsetParent as HTMLElement | null) x += e.offsetLeft;
+        p.style.setProperty("--at", `${x}px`);
+      }
       html.setAttribute("data-track-ready", "");
       dispatchEvent(new Event("trackmeasure"));
       if (first) {
@@ -221,10 +227,7 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     sizes.observe(stage);
     // A stop that grows (its content), and a panel's words growing (fonts,
     // pictures, a fold opened): whether it scrolls inside is asked again
-    for (const s of stops) {
-      sizes.observe(s);
-      for (const c of s.lastElementChild!.children) sizes.observe(c);
-    }
+    for (const el of [...stops, ...track.querySelectorAll(".panel > *")]) sizes.observe(el);
     // Every listener, let go at once on unmount
     const off = new AbortController();
     const signal = off.signal;

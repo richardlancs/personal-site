@@ -43,8 +43,10 @@ test("every palette token in docs/city/style.md is defined in city.css with the 
 test("glow is dropped for prefers-contrast: more", () => {
   // Within that block (it runs to the next line that closes a top-level rule)
   const block = read("app/city.css").match(/@media \(prefers-contrast: more\) \{[\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(block, /text-shadow:\s*none/);
   assert.match(block, /--glow-cyan: 0 0 #0000/);
+  // No text glows at all (the hero's name and the point marks lost theirs)
+  for (const f of ["app/city.css", "app/city-track.css", "app/motion.css", "app/reveal.css"]) assert.doesNotMatch(read(f), /text-shadow/, f);
+  assert.doesNotMatch(read("app/city.css").match(/\.points > li::before \{[^}]*\}/)[0], /box-shadow/);
 });
 
 test("no Chinese or Japanese characters in app/ source", () => {
@@ -130,13 +132,9 @@ test("black is the ground and the warm secondary is the lantern: no magenta, no 
   for (const utility of ["lantern"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
   // The fade under each painting passes through the dark navy seam
   const fade = css.match(/\.band::before \{([^}]*)\}/)?.[1] ?? "";
-  // At night the stops as specified; by day (--day, from --city-night) it
-  // starts higher and its middle runs longer
-  assert.match(fade, /--day: calc\(1 - var\(--city-night, 1\)\);/);
-  assert.match(fade, /inset: calc\(58% - \d+% \* var\(--day\)\) 0 0;/);
-  assert.match(fade, /color-mix\(in srgb, var\(--seam\) 14%, transparent\) 20%/);
-  assert.match(fade, /var\(--seam\) calc\(62% \+ \d+% \* var\(--day\)\)/);
-  assert.match(fade, /var\(--ground, var\(--ink\)\) calc\(76% \+ \d+% \* var\(--day\)\)/);
+  // over its last 42% (the panels sit on it on the journey)
+  assert.match(fade, /inset: 58% 0 0;/);
+  assert.match(fade, /linear-gradient\(transparent, var\(--seam\) 62%, var\(--ground, var\(--ink\)\) 80%\)/);
   // The haze is mixed against the plates' navy, not the black ground
   const haze = css.match(/\.band-haze \{([^}]*)\}/)?.[1] ?? "";
   assert.match(haze, /#0e1d31/);

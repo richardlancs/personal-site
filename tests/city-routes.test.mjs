@@ -78,26 +78,31 @@ test("the sitemap is the one page", () => {
 test("a section is a labelled section with its band, its number and its heading, and no caption", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.ok(!src.includes('"use client"'), "Station is a server component");
-  assert.match(src, /<section[^>]*id=\{id\}[^>]*aria-labelledby=\{titleId\}[^>]*tabIndex=\{-1\}/);
+  assert.match(src, /<section[^>]*id=\{id\}[^>]*aria-labelledby=\{`\$\{id\}-title`\}[^>]*tabIndex=\{-1\}/);
   assert.match(src, /<DistrictBand district=\{section\.district\}/);
-  assert.match(src, /<h2 id=\{titleId\}/);
+  assert.match(src, /<h2 id=\{`\$\{section\.hash \|\| "home"\}-title`\}/, "the heading names the section");
   assert.match(src, /sectionNumber\(section\)/);
   assert.doesNotMatch(src, /section\.station|districtLine|station-caption|station-line/);
   assert.deepEqual(pageSections.map(sectionNumber), ["01", "02", "03", "04", "05", "06"], "section numbers are two digits, in page order");
-  // The number sits beside the heading, before it
-  const body = src.match(/<div className="station-body">([\s\S]*?)\{children\}/)?.[1] ?? "";
-  assert.ok(body.indexOf("station-number") >= 0 && body.indexOf("station-number") < body.indexOf("{section.title}"), "number, then title");
-  // (the number and the heading may carry other classes, such as the arrival's `reveal`)
-  assert.match(body, /<span className="station-number[^"]*" aria-hidden="true"/, "the number is hidden from assistive technology");
-  assert.match(body, /<\/span>\s*\)\}\s*<h2 id=\{titleId\} className="station-title[^"]*"[^>]*>\s*\{section\.title\}\s*<\/h2>/, "outside the h2: the heading is the title alone");
+  // The number sits beside the heading, before it (StationHead)
+  const head = src.slice(src.indexOf("export function StationHead"), src.indexOf("export default"));
+  assert.ok(head.indexOf("station-number") >= 0 && head.indexOf("station-number") < head.indexOf("{section.title}"), "number, then title");
+  assert.match(head, /<span className="station-number" aria-hidden="true"/, "the number is hidden from assistive technology");
+  assert.match(head, /<\/span>\s*\)\}\s*<h2 id=[^>]*className="station-title"[^>]*>\s*\{section\.title\}\s*<\/h2>/, "outside the h2: the heading is the title alone");
+  // A stop of one panel gets its heading from Station; a row's section
+  // puts StationHead in its own first panel
+  assert.match(src, /<div className="station-body panel">\s*\{heading \?\? <StationHead section=\{section\} \/>\}/);
+  assert.match(src, /<div className="station-row">\{children\}<\/div>/);
+  for (const n of ["Projects", "Experience"]) {
+    assert.match(read(`app/components/city2d/sections/${n}.tsx`), /<StationHead section=\{section\("\w+"\)\} \/>/, `${n} heads its row`);
+  }
 });
 
 test("home is its band, then the hero: nothing between, and no h2", () => {
   const src = read("app/components/city2d/Station.tsx");
-  const home = src.match(/\{heading \? \(([\s\S]*?)\) : \(/)?.[1];
-  assert.ok(home, "the home branch");
-  assert.match(home, /^\s*<div className="station-body station-body-home">\s*\{heading\}/);
-  assert.doesNotMatch(home, /<h2|<p/);
+  assert.match(src, /\{heading \?\? <StationHead/, "the hero in place of the heading");
+  assert.match(read("app/page.tsx"), /<Station section=\{section\("home"\)\} heading=\{<Hero \/>\} \/>/);
+  assert.doesNotMatch(read("app/components/city2d/sections/Hero.tsx"), /<h2/);
   // The hero has no list of stops
   assert.doesNotMatch(read("app/components/city2d/sections/Hero.tsx"), /StationIndex|station-index/);
   for (const gone of ["StationIndex.tsx", "StationHere.tsx", "MetroLine.tsx"]) assert.ok(!existsSync(`${root}app/components/city2d/${gone}`), `${gone} is still there`);
@@ -108,14 +113,14 @@ test("home is its band, then the hero: nothing between, and no h2", () => {
 test("the home page is the six stations, with the Skills anchor inside Projects", () => {
   const page = read("app/page.tsx");
   assert.match(page, /<Station /);
-  const projects = page.match(/<Station section=\{section\("projects"\)\}>([\s\S]*?)<\/Station>/)?.[1];
+  const projects = page.match(/<Station section=\{section\("projects"\)\} row>([\s\S]*?)<\/Station>/)?.[1];
   assert.ok(projects, "the projects station");
   // Skills is Projects' own <section id="skills">, the page's only one
   assert.match(projects, /<Projects \/>/);
   assert.doesNotMatch(page, /id="skills"/, "no second Skills anchor on the page");
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /<section id="skills"/);
-  for (const [id, name] of [["about", "About"], ["experience", "Experience"], ["interests", "Interests"]]) {
-    assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
+  for (const [id, name, row] of [["about", "About", ""], ["experience", "Experience", " row"], ["interests", "Interests", ""]]) {
+    assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}${row}>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
   }
   // Contact, then the foot of the page (the colophon), which ends the last stop
   assert.match(page, /<Station section=\{section\("contact"\)\}>\s*<Contact \/>\s*<footer className="page-foot">\s*<Colophon \/>\s*<\/footer>\s*<\/Station>/, "contact is filled");
@@ -125,10 +130,9 @@ test("the home page is the six stations, with the Skills anchor inside Projects"
   assert.match(page, /<Colophon \/>/);
 });
 
-test("the band reserves its height: 21:9 wide, 4:3 on phones", () => {
+test("the band reserves its height: 21:9, never under 12rem (stacked; on the journey the stop sets it)", () => {
   const css = read("app/city.css");
-  assert.match(css, /\.band\s*\{[^}]*aspect-ratio:\s*21\s*\/\s*9/);
-  assert.match(css, /@media \(max-width: 767px\) \{\s*\.band\s*\{[^}]*aspect-ratio:\s*4\s*\/\s*3/);
+  assert.match(css, /\.band\s*\{[^}]*aspect-ratio:\s*21\s*\/\s*9;\s*min-height: 12rem;/);
 });
 
 test("the Sections menu jumps within the page and moves focus there", () => {

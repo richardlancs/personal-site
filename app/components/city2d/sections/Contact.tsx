@@ -22,24 +22,23 @@ const mailIcon = (
   </svg>
 );
 
-// The last section: one centred panel, about 44rem wide, that starts with
-// the one thing someone who wants to reach me needs, "Email me" (the
-// page's primary action, a mailto link to the first address). The address
+// The last section, the journey's end and its best-lit stop (its panel the
+// brightest on the street, city-track.css): under its heading, the one
+// thing someone who wants to reach me needs, "Email me" (the stop's
+// primary action, a mailto link to the first address). The address
 // itself is written under it, selectable, with a Copy key (CopyButton.tsx,
 // the one client piece), for anyone without a mail app. Under a hairline,
 // the other ways: any other address as a compact row, then GitHub,
-// LinkedIn and the résumé as three keys. A cyan edge along the top is the
-// only mark. The page's colophon is at its foot, not here.
+// LinkedIn and the résumé as three keys. A copied address lights the
+// panel's edge (the success moment, with the key's tick and "Copied"). The page's colophon is at its foot, not here.
 // "Email me" writes to the first address in the data (reorder
 // profile.emails to change it).
 const primary = profile.emails[0];
 
-// Its paddings and rows follow the section's own column (@container), not
-// the window.
+// Its rows follow the panel's own width (@container), not the window.
 export default function Contact() {
   return (
-    <div className="@container mt-10">
-    <div className="contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10">
+    <div className="contact @container reveal mt-6">
       <a
         href={`mailto:${primary.address}`}
         className="glass glass-primary glass-lg w-full @min-[27.5rem]:w-auto"
@@ -81,7 +80,6 @@ export default function Contact() {
           <ProfileLinks variant="keys" />
         </ul>
       </div>
-    </div>
     </div>
   );
 }

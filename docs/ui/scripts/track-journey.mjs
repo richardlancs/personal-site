@@ -5,8 +5,9 @@
 //    swipe (up and sideways) all travel the city to Contact and back home;
 // 2. every anchor loaded cold lands on its stop; Back/Forward restore it;
 // 3. a resize or a turn keeps the stop;
-// 4. a panel taller than the stage scrolls inside, and its scroll never
-//    moves the city (wheel and touch);
+// 4. a panel taller than the stage scrolls inside (wheel, keys and touch),
+//    and at its end the scroll goes on along the city: wheel and PageDown
+//    over an opened long panel reach the next stop;
 // 5. without JavaScript, and with the page's scripts failing, the page
 //    reads top to bottom.
 // Exits 1 on any failure. Headless Chrome (pw.mjs). NO_TIMELINE=1 runs it
@@ -28,6 +29,19 @@ const atStop = (page) =>
     return s?.id ?? null;
   });
 const settle = (page, ms = 900) => page.waitForTimeout(ms);
+// Until a glide has come to rest (a long one, across a row of panels, takes
+// the browser's smooth scroll over a second): the scroll still for ten
+// frames, at most 4 s
+const rest = (page) =>
+  page.evaluate(async () => {
+    const t0 = performance.now();
+    let last = scrollY;
+    for (let still = 0; still < 10 && performance.now() - t0 < 4000; ) {
+      await new Promise((r) => requestAnimationFrame(r));
+      still = scrollY === last ? still + 1 : 0;
+      last = scrollY;
+    }
+  });
 const open = async (ctx, route, size = { width: 1440, height: 900 }) => {
   const page = await ctx.newPage();
   await page.setViewportSize(size);
@@ -85,13 +99,15 @@ try {
     const seen = [];
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press("ArrowRight");
-      await settle(page);
+      await settle(page, 300);
+      await rest(page);
       seen.push(await atStop(page));
     }
     check(seen.join() === "about,projects,experience,interests,contact", `ArrowRight goes stop by stop (${seen.join()})`);
     for (let i = 0; i < 5; i++) {
       await page.keyboard.press("ArrowLeft");
-      await settle(page);
+      await settle(page, 300);
+      await rest(page);
     }
     check((await atStop(page)) === "home", "ArrowLeft goes back home");
     for (let i = 0; i < 40 && (await atStop(page)) !== "contact"; i++) {
@@ -167,7 +183,9 @@ try {
       await page.evaluate((i) => {
         location.hash = i;
       }, id);
-      await settle(page, 900);
+      await settle(page, 300);
+      await rest(page);
+      await settle(page, 300);
       const seen = await page.evaluate(() => {
         const stops = [...document.querySelectorAll(".track > .station")];
         const here = stops.find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
@@ -202,35 +220,44 @@ try {
       check((await atStop(page)) === id, `/#${id} cold at ${size.width}×${size.height} lands on its stop (got ${await atStop(page)})`);
       await page.close();
     }
-    const page = await open(ctx, "/#skills", size);
-    const skills = await page.evaluate(() => {
-      const s = document.getElementById("skills").getBoundingClientRect();
-      return { stop: document.getElementById("projects").getBoundingClientRect().left, top: s.top, h: innerHeight };
-    });
-    check(Math.abs(skills.stop) <= 2 && skills.top >= 0 && skills.top < skills.h, `/#skills cold at ${size.width}×${size.height}: Projects, its panel at Skills`);
-    await page.close();
+    // A panel in a row (Skills, each project): the journey stops with all of
+    // that panel on the screen
+    for (const id of ["skills", "marketlab", "garagepoker"]) {
+      const page = await open(ctx, `/#${id}`, size);
+      const r = await page.evaluate((id) => {
+        const p = document.getElementById(id).getBoundingClientRect();
+        return [Math.round(p.left), Math.round(p.right), innerWidth];
+      }, id);
+      check(r[0] >= 0 && r[1] <= r[2], `/#${id} cold at ${size.width}×${size.height}: its panel wholly on the screen (${r})`);
+      await page.close();
+    }
   }
   {
     const page = await open(ctx, "/");
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#experience"]');
-    await settle(page, 1200);
+    await settle(page, 300);
+    await rest(page);
     check((await atStop(page)) === "experience", "the Sections menu goes to Experience");
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#contact"]');
-    await settle(page, 1200);
+    await settle(page, 300);
+    await rest(page);
     check((await atStop(page)) === "contact", "then to Contact");
     await page.goBack();
-    await settle(page, 1200);
+    await settle(page, 300);
+    await rest(page);
     check((await atStop(page)) === "experience", "Back returns to Experience");
     await page.goForward();
-    await settle(page, 1200);
+    await settle(page, 300);
+    await rest(page);
     check((await atStop(page)) === "contact", "Forward returns to Contact");
     // The same link again, after scrolling away, still goes there
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#contact"]');
-    await settle(page, 1500);
+    await settle(page, 300);
+    await rest(page);
     check((await atStop(page)) === "contact", "the menu's link to where the address already is still goes there");
     // Tab into the next stop brings it on
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
@@ -252,29 +279,53 @@ try {
     await page.close();
   }
 
-  // 4. A panel taller than the stage scrolls inside; the city stays put
-  {
-    const page = await open(ctx, "/#projects", { width: 844, height: 390 });
-    const panel = page.locator("#projects > .station-body");
-    const fit = await panel.evaluate((p) => [p.scrollHeight, p.clientHeight, p.getBoundingClientRect().bottom, innerHeight]);
-    check(fit[0] > fit[1] && fit[2] <= fit[3], `Projects' panel at 844×390 is taller than it shows and fits the stage (${fit})`);
-    const box = await panel.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    const y0 = await page.evaluate(() => scrollY);
-    for (let i = 0; i < 60; i++) await page.mouse.wheel(0, 500);
+  // 4. A panel taller than the stage scrolls inside; at its end the
+  // scroll goes on along the city, to the next stop (nothing holds it)
+  const pastExperience = (page) => page.evaluate(() => document.getElementById("experience").getBoundingClientRect().left <= 1);
+  for (const how of ["wheel", "PageDown"]) {
+    const page = await open(ctx, "/#marketlab", { width: 844, height: 390 });
+    const panel = page.locator("#marketlab");
     await settle(page, 400);
-    const after = await page.evaluate(() => [scrollY, document.querySelector("#projects > .station-body").scrollTop]);
-    check(after[1] > 0, "the wheel scrolls the panel");
-    check(after[0] === y0, `and never the city, even past the panel's end (${y0} → ${after[0]})`);
+    const fit = await panel.evaluate((p) => [p.scrollHeight, p.clientHeight, Math.round(p.getBoundingClientRect().bottom), innerHeight, p.hasAttribute("data-open")]);
+    check(fit[0] > fit[1] && fit[2] <= fit[3] && fit[4], `${how}: MarketLab's panel at 844×390 is taller than it shows, fits the stage and is open (${fit})`);
+    const box = await panel.boundingBox();
+    const y0 = await page.evaluate(() => scrollY);
+    if (how === "wheel") await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    // (focus in the panel, as Tab leaves it: the keys scroll what holds the
+    // focus. A click on its words focuses the stop, whose keys travel)
+    else await panel.evaluate((p) => p.querySelector("a").focus({ preventScroll: true }));
+    const step = () => (how === "wheel" ? page.mouse.wheel(0, 300) : page.keyboard.press("PageDown"));
+    await step();
+    await settle(page, 300);
+    const first = await page.evaluate(() => [scrollY, document.getElementById("marketlab").scrollTop]);
+    check(first[1] > 0 && first[0] === y0, `${how} over it scrolls the panel first, not the city (${y0} → ${first})`);
+    let reached = false;
+    for (let i = 0; i < 120 && !reached; i++) {
+      await step();
+      await settle(page, 60);
+      reached = await pastExperience(page);
+    }
+    const end = await page.evaluate(() => { const p = document.getElementById("marketlab"); return p.scrollTop + p.clientHeight >= p.scrollHeight - 2; });
+    check(end && reached, `${how}: at the panel's end it goes on along the city, to the next stop (panel at its end ${end}, Experience reached ${reached})`);
     await page.close();
+  }
+  {
     const tctx = await newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
-    const phone = await open(tctx, "/#projects", { width: 390, height: 844 });
+    const phone = await open(tctx, "/#marketlab", { width: 390, height: 844 });
+    await settle(phone, 400);
     const cdp = await tctx.newCDPSession(phone);
     const py0 = await phone.evaluate(() => scrollY);
-    for (let i = 0; i < 12; i++) await cdp.send("Input.synthesizeScrollGesture", { x: 200, y: 700, xDistance: 0, yDistance: -400, gestureSourceType: "touch", speed: 2000 });
+    await cdp.send("Input.synthesizeScrollGesture", { x: 200, y: 700, xDistance: 0, yDistance: -200, gestureSourceType: "touch", speed: 1200 });
     await settle(phone, 600);
-    const pafter = await phone.evaluate(() => [scrollY, document.querySelector("#projects > .station-body").scrollTop]);
-    check(pafter[1] > 0 && pafter[0] === py0, `a touch scroll in a phone's sheet scrolls the sheet, not the city (${py0} → ${pafter})`);
+    const pafter = await phone.evaluate(() => [scrollY, document.getElementById("marketlab").scrollTop]);
+    check(pafter[1] > 0 && pafter[0] === py0, `a touch scroll in a phone's sheet scrolls the sheet first, not the city (${py0} → ${pafter})`);
+    let reached = false;
+    for (let i = 0; i < 40 && !reached; i++) {
+      await cdp.send("Input.synthesizeScrollGesture", { x: 200, y: 700, xDistance: 0, yDistance: -500, gestureSourceType: "touch", speed: 2000 });
+      await settle(phone, 300);
+      reached = (await phone.evaluate(() => scrollY)) > py0;
+    }
+    check(reached, "and at the sheet's end a swipe goes on along the city");
     await phone.close();
     await tctx.close();
   }
