@@ -83,12 +83,17 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
 });
 
-test("the cover leads: beside the text from 48rem, on alternate sides; above it on a narrow panel", () => {
-  assert.match(row, /@min-\[48rem\]:grid-cols-2/);
-  assert.match(source, /const flip = index % 2 === 1;/);
-  // The cover's column is the text's other one
-  assert.match(row, /-order-1 [^`]*\$\{flip \? "@min-\[48rem\]:col-start-2" : "@min-\[48rem\]:col-start-1"\}/);
-  assert.match(row, /<header className=\{`[^`]*\$\{flip \? "@min-\[48rem\]:col-start-1" : "@min-\[48rem\]:col-start-2"\}/);
+test("the cover leads, matched to its words: a wide one heads them at their width, a tall one stands beside them; every other panel a size smaller", () => {
+  // The frame is the picture's own shape: no empty bands, nothing cropped
+  assert.match(source, /style=\{\{ aspectRatio: `\$\{shots\.reduce\(\(w, s\) => w \+ s\.width \/ s\.height, 0\)\}` \}\}/);
+  assert.doesNotMatch(source, /aspect-\[16\/10\]/);
+  // Wide: stacked, first (order), at the words' width
+  assert.match(row, /-order-1 min-w-0/);
+  // Tall (a phone's screen or a pair): beside the words from 27.5rem
+  assert.match(source, /const side = Boolean\(cover && tall\(cover\)\)/);
+  assert.match(row, /@min-\[27\.5rem\]:grid-cols-\[auto_minmax\(0,1fr\)\]/);
+  assert.match(row, /pair \? "@min-\[27\.5rem\]:w-80" : "@min-\[27\.5rem\]:w-48"/);
+  assert.match(source, /"--panel-w": small \? "34rem" : "40rem"/);
   // Its corners are the panel's less its padding
   assert.match(source, /rounded-\[var\(--radius-in\)\]/);
 });
@@ -111,7 +116,6 @@ test("the rest folds into a native details with a summary, only when there is so
 
 test("the cover is screenshots[cover ?? 0]; a portrait pair shares the frame; nothing is cropped", () => {
   assert.match(source, /project\.cover \?\? 0/);
-  assert.match(source, /aspect-\[16\/10\]/);
   assert.match(source, /object-contain/);
   assert.doesNotMatch(source, /object-cover/);
   assert.match(source, /tall\(cover\) && next && tall\(next\)/);

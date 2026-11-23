@@ -104,8 +104,16 @@
     touch-action: pan-y pinch-zoom;
     border: 1px solid rgb(45 50 61 / 0.8);
     border-radius: var(--radius-lg);
-    background: rgb(8 9 12 / 0.75);
-    backdrop-filter: blur(16px);
+    background: rgb(8 9 12 / 0.45);
+    backdrop-filter: blur(7px);
+  }
+
+  /* See-through glass, the city reading through it, and a darker scrim
+     behind the words alone (feathered at its edges): that, not the blur,
+     carries their contrast */
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, li, summary) {
+    background: rgb(8 9 12 / 0.62);
+    box-shadow: 0 0 1rem 0.5rem rgb(8 9 12 / 0.62);
   }
 
   :root[data-track="on"] .track [data-open] {
@@ -149,7 +157,10 @@
     z-index: 2;
     flex-direction: row;
     align-items: flex-end;
-    gap: calc(2 * var(--peek));
+    /* City between panels: from a panel at the row's inset, the next one
+       starts past the screen's edge (the first is 28rem at most), so the
+       edges are city */
+    gap: max(2 * var(--peek), 100cqw - var(--peek) - 1rem - min(28rem, 100cqw - 2 * var(--peek) - 2rem));
     width: max-content;
     height: 100%;
     margin: 0;
@@ -161,15 +172,6 @@
     flex: none;
     width: min(var(--panel-w, 28rem), 100cqw - 2 * var(--peek) - 2rem);
     max-height: 100%;
-  }
-
-  /* Beside its words, the cover's frame is as tall as they are, the
-     picture whole inside it (never cropped) */
-  @container (min-width: 48rem) {
-    :root[data-track="on"] .project :is(.depth, figure) {
-      height: 100%;
-      aspect-ratio: auto;
-    }
   }
 
   /* On a short screen the cover leaves room for the words */
@@ -242,7 +244,6 @@
 
   :root[data-track="on"] #contact .panel {
     border-top: 2px solid var(--cyan);
-    background: rgb(24 27 35 / 0.92);
   }
 
   :root[data-track="on"] #contact .panel:has([data-copied]) {
@@ -297,13 +298,14 @@
 
     /* Arrivals: as the journey brings a panel on, it glides in from its
        stop's own direction (--arrive, reveal.css), then its pieces
-       (heading, pictures, points, keys, links) one after another; all of
+       (heading, pictures, paragraphs, points; a key or link with the
+       line that holds it, so its press is its own) one after another; all of
        it drawn on the runway's own timeline from the panel's place along
        the track (--at, CityTrack), so scrolling back plays it in reverse.
        Transform and opacity only (translate, scale); none in still view or with
        reduced motion. Where there's no timeline, arrive.ts's arrivals. */
     @media (prefers-reduced-motion: no-preference) {
-      :root[data-track="on"]:not([data-still="on"]) :is(.track .panel, .panel :is(.reveal, .station-head, h3, figure, .points > li, .glass, .text-link-solo)) {
+      :root[data-track="on"]:not([data-still="on"]) :is(.track .panel, .panel :is(.reveal, .station-head, h3, figure, p, .points > li)) {
         animation: arrive var(--ease-out) both;
         animation-timeline: --runway;
         animation-range: contain calc(var(--at) - 100vw + var(--k, 0) * 4vw) contain calc(var(--at) - 50vw + var(--k, 0) * 4vw);
@@ -352,7 +354,8 @@
 
     :root[data-track="on"] .track .panel {
       --pad: 1.25rem;
-      padding: 1.25rem max(1.25rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+      /* (a phone's gutters; from 768px wide, 10% of the width clear) */
+      padding: 1.25rem max(1.25rem, env(safe-area-inset-right), 20vw - 4.6rem) max(1.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left), 20vw - 4.6rem);
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       background: var(--ground);
@@ -454,14 +457,7 @@
   }
 }
 
-/* Under prefers-contrast, and where nothing blurs behind them, the panels
-   are solid */
-@supports not (backdrop-filter: blur(1px)) {
-  :root[data-track="on"] .track .panel {
-    background: var(--ink);
-  }
-}
-
+/* Under prefers-contrast the panels are solid */
 @media (prefers-contrast: more) {
   :root[data-track="on"] .track .panel {
     background: var(--ink);

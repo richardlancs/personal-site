@@ -39,7 +39,7 @@ test("the primary address is printed under the button, wrapping, with its label 
   assert.match(interactive[1] ?? "", /^<CopyButton value=\{primary\.address\}/, "Copy is the next control");
   const between = markup.slice(markup.indexOf("Email me"), markup.indexOf("<CopyButton value={primary.address}"));
   assert.match(between, /\{primary\.label\}/, "its label, as plain text");
-  assert.match(between, /<span\b[^>]*(break-all|overflow-wrap:anywhere)[^>]*>\s*\{primary\.address\}/, "the address as wrapping text");
+  assert.match(between, /<(?:span|p)\b[^>]*(break-all|overflow-wrap:anywhere)[^>]*>\s*\{primary\.address\}/, "the address as wrapping text");
 });
 
 test("the other addresses are compact rows: label, a mailto link and Copy; no heading per email", () => {

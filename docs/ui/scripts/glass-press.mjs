@@ -57,7 +57,9 @@ async function frames(page, locator, name) {
   await sheet(shots, `${out}/press-${name}.jpg`);
 }
 
-// 1. Pointer, off-centre, on "View projects"; keyboard on "Contact"
+// 1. Pointer, off-centre, on "View projects"; keyboard on a project's
+// "Code" (a key inside a panel on the journey, where the stops' arrivals
+// run: they must never take the key's give)
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
@@ -76,9 +78,21 @@ async function frames(page, locator, name) {
   await page.mouse.up();
   check(!(await primary.evaluate((el) => el.hasAttribute("data-held"))), "pointerup lets the key go");
 
-  const contact = page.locator(".hero .glass:not(.glass-primary)").first();
+  await open(page, "/#marketlab");
+  await page.waitForTimeout(1200);
+  const code = page.locator("#marketlab a.glass:not(.glass-primary)").first();
+  const live = page.locator("#marketlab .glass-primary").first();
+  const lb = await live.boundingBox();
+  await page.mouse.move(lb.x + 12, lb.y + lb.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(SLOW);
+  report.panelGive = await live.evaluate((el) => getComputedStyle(el).scale);
+  check(report.panelGive === "0.97", `a key in a panel gives when held (scale ${report.panelGive})`);
+  await page.mouse.move(5, 890);
+  await page.mouse.up();
+  const contact = code;
   await contact.focus();
-  await page.evaluate(() => document.querySelector(".hero .glass:not(.glass-primary)").addEventListener("click", (e) => e.preventDefault(), { once: true }));
+  await page.evaluate(() => document.querySelector("#marketlab a.glass:not(.glass-primary)").addEventListener("click", (e) => e.preventDefault(), { once: true }));
   await page.keyboard.press("Enter");
   report.keyboard = await contact.evaluate((el) => ({ x: el.style.getPropertyValue("--press-x"), w: el.getBoundingClientRect().width }));
   check(Math.abs(parseFloat(report.keyboard.x) - report.keyboard.w / 2) < 1, "a keyboard press starts from the middle");

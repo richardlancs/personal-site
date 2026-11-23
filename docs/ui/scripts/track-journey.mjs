@@ -213,6 +213,39 @@ try {
     await page.close();
   }
 
+  // 1d. The edges are city: at every settled stop at 1440 and 768, no
+  // panel's words lie in the outer 10% of the screen on either side
+  for (const size of [{ width: 1440, height: 900 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }]) {
+    const page = await open(ctx, "/", size);
+    for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) {
+      await page.evaluate((i) => (location.hash = i), id);
+      await settle(page, 300);
+      await rest(page);
+      await settle(page, 300);
+      const out = await page.evaluate(() => {
+        const edge = innerWidth * 0.1;
+        const found = [];
+        const walker = document.createTreeWalker(document.querySelector(".track"), NodeFilter.SHOW_TEXT);
+        for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+          const el = n.parentElement;
+          if (!n.textContent.trim() || !el?.closest(".panel, .exp-label") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+          const range = document.createRange();
+          range.selectNodeContents(n);
+          // (as drawn: a line cut short by its box, an ellipsis, ends there)
+          const box = el.getBoundingClientRect();
+          for (const q of range.getClientRects()) {
+            const r = { left: Math.max(q.left, box.left), right: Math.min(q.right, box.right), top: q.top, bottom: q.bottom };
+            if (r.right <= r.left || r.right <= 0 || r.left >= innerWidth || r.bottom <= 0 || r.top >= innerHeight) continue;
+            if (r.left < edge - 0.5 || r.right > innerWidth - edge + 0.5) found.push(`"${n.textContent.trim().slice(0, 16)}" at ${Math.round(r.left)}–${Math.round(r.right)}`);
+          }
+        }
+        return [...new Set(found)].slice(0, 3);
+      });
+      check(out.length === 0, `${size.width}×${size.height} at ${id}: the outer 10% each side is city, no panel's words${out.length ? ` (${out.join("; ")})` : ""}`);
+    }
+    await page.close();
+  }
+
   // 2. Anchors, cold, at three sizes; Back and Forward
   for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
     for (const id of ["about", "projects", "experience", "interests", "contact"]) {
@@ -220,15 +253,19 @@ try {
       check((await atStop(page)) === id, `/#${id} cold at ${size.width}×${size.height} lands on its stop (got ${await atStop(page)})`);
       await page.close();
     }
-    // A panel in a row (Skills, each project): the journey stops with all of
-    // that panel on the screen
-    for (const id of ["skills", "marketlab", "garagepoker"]) {
+    // A panel in a row (Skills, each project): the journey stops with that
+    // panel where the row's first one stands (the row's inset), measured by
+    // its layout (an arrival's offset aside), and wholly on the screen
+    for (const id of ["skills", "marketlab", "empyrean", "garagepoker"]) {
       const page = await open(ctx, `/#${id}`, size);
+      await rest(page);
       const r = await page.evaluate((id) => {
-        const p = document.getElementById(id).getBoundingClientRect();
-        return [Math.round(p.left), Math.round(p.right), innerWidth];
+        const p = document.getElementById(id);
+        const row = p.closest(".station-row");
+        const left = p.getBoundingClientRect().left - (parseFloat(getComputedStyle(p).translate.split(" ")[0]) || 0);
+        return [Math.round(left * 10) / 10, parseFloat(getComputedStyle(row).paddingLeft), Math.round(left + p.offsetWidth), innerWidth];
       }, id);
-      check(r[0] >= 0 && r[1] <= r[2], `/#${id} cold at ${size.width}×${size.height}: its panel wholly on the screen (${r})`);
+      check(Math.abs(r[0] - r[1]) <= 1 && r[2] <= r[3], `/#${id} cold at ${size.width}×${size.height}: its panel at the row's inset, within 1px, and wholly on the screen (left ${r[0]}, inset ${r[1]}, right ${r[2]} of ${r[3]})`);
       await page.close();
     }
   }

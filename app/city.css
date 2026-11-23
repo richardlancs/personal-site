@@ -1200,37 +1200,6 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   }
 }
 
-/* An interest, or a project's "More of my part", unfolds down out of its
-   summary where the browser can animate a <details>' content to its own
-   height (::details-content and interpolate-size: Chrome and Edge); where
-   it can't (Safari and Firefox lack interpolate-size), in still view and
-   with reduced motion, it opens at once. The clip leaves room for a focus
-   ring on a photo. Each opening or closing is one transition, so a second
-   press mid-way turns it back. */
-@supports selector(::details-content) and (interpolate-size: allow-keywords) {
-  @media (prefers-reduced-motion: no-preference) {
-    :root:not([data-still="on"]) :is(.interests, .project-more) {
-      interpolate-size: allow-keywords;
-    }
-
-    :root:not([data-still="on"]) :is(.interests details, details.project-more)::details-content {
-      block-size: 0;
-      opacity: 0;
-      overflow: clip;
-      overflow-clip-margin: 0.5rem;
-      transition:
-        block-size var(--t-slow) var(--ease-out),
-        opacity var(--t-base) var(--ease-out),
-        content-visibility var(--t-slow) allow-discrete;
-    }
-
-    :root:not([data-still="on"]) :is(.interests details, details.project-more)[open]::details-content {
-      block-size: auto;
-      opacity: 1;
-    }
-  }
-}
-
 /* The foot of the page: the colophon, at the end of the last station
    (inside Contact's column, on its ground) */
 .page-foot {

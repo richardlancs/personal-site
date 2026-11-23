@@ -69,11 +69,12 @@ export default function CityTrack({ children }: { children: ReactNode }) {
     // start, unless that leaves it past the right edge (a stop of a row of
     // panels), then with that panel where the row's first one stands (the
     // row's own inset: clear of a notch; none for a phone's sheets)
+    // (where it is laid out, --at, not where it is drawn: one still on its
+    // way in is shifted by its arrival)
     const xFor = (el: Element, i: number) => {
-      const p = el.closest(".panel") ?? el;
-      const r = p.getBoundingClientRect();
-      const x = r.left - track.getBoundingClientRect().left;
-      return x + Math.min(r.width, vw) > offsets[i] + vw ? x - parseFloat(getComputedStyle(p.closest(".station-row") ?? p).paddingLeft) : offsets[i];
+      const p = (el.closest(".panel") ?? el) as HTMLElement;
+      const x = parseFloat(p.style.getPropertyValue("--at")) || offsets[i];
+      return x + Math.min(p.offsetWidth, vw) > offsets[i] + vw ? x - parseFloat(getComputedStyle(p.closest(".station-row") ?? p).paddingLeft) : offsets[i];
     };
     const stopOf = (el: Element) => stops.findIndex((s) => s.contains(el));
 

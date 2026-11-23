@@ -18,11 +18,10 @@ const tall = (shot: Screenshot) => shot.height > shot.width;
 
 const plural = (n: number) => `${n} more screenshot${n === 1 ? "" : "s"}`;
 
-// How wide a picture is drawn: half of its panel (60rem at most) where the
-// panel is wide, else the panel's width (the screen's, on a phone). A
-// portrait pair takes half of that each.
-const coverSizes = "(min-width: 1024px) 32rem, (min-width: 768px) 60vw, 100vw";
-const pairSizes = "(min-width: 1024px) 16rem, (min-width: 768px) 30vw, 50vw";
+// How wide a picture is drawn: its panel's width (40rem at most; the
+// screen's, on a phone). A portrait pair takes half of that each.
+const coverSizes = "(min-width: 1024px) 38rem, (min-width: 768px) 70vw, 100vw";
+const pairSizes = "(min-width: 1024px) 19rem, (min-width: 768px) 35vw, 50vw";
 
 // "My part" shows its first four points; the rest wait in the row's
 // <details>, under "More of my part", so nothing is dropped
@@ -48,19 +47,17 @@ function Keys({ project }: { project: Project }) {
   );
 }
 
-// One frame, the same shape for every project (16:10, on the alternate
-// ground), the cover inside it whole. When the cover and the screenshot
-// after it are both portrait, the two share the frame side by side; a
-// lone portrait cover sits in the middle. Each picture opens the full
-// image in a new tab. Nothing is cropped. Around the frame, its depth on
-// a fine pointer (reveal.css, "Depth"; Tilt.tsx).
+// One frame, the picture's own shape (no empty bands), the cover inside it
+// whole. When the cover and the screenshot after it are both portrait, the
+// two share the frame side by side. Each picture opens the full image in a
+// new tab. Nothing is cropped. Around the frame, its depth on a fine
+// pointer (reveal.css, "Depth"; Tilt.tsx).
 function Picture({ shots }: { shots: Screenshot[] }) {
   return (
     <div className="depth rounded-[var(--radius-in)]" data-tilt="">
       <figure
-        className={`flex aspect-[16/10] items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${
-          tall(shots[0]) ? "p-3" : ""
-        }`}
+        className="flex items-stretch justify-center gap-3 overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
+        style={{ aspectRatio: `${shots.reduce((w, s) => w + s.width / s.height, 0)}` }}
       >
         {shots.map((shot) => (
           <a
@@ -94,10 +91,9 @@ const h5 = "font-display text-lg font-semibold text-text";
 // The projects section (the site's most important content), then Skills:
 // a row of panels along the towers (Station's `row`), each its own stop on
 // the street. First the index, under the section's heading, each project a
-// link to its panel. Then one panel per project, never all alike: the
-// cover leads (on a wide panel it takes one half, on the left for the
-// first, third and fifth and on the right for the others; on a narrow one
-// it heads the panel), the text beside or under it: title, summary, role,
+// link to its panel. Then one panel per project, never all alike (every
+// other one a size smaller): the cover leads, whole and as wide as the
+// words under it (never cropped, no empty bands), then title, summary, role,
 // the keys, then what I did ("My part", under a cyan rule, its first four
 // points) or, when the data has no contributions, what it does; then the
 // stack on one line. The rest of my part, the team's features (when my
@@ -106,8 +102,7 @@ const h5 = "font-display text-lg font-semibold text-text";
 // row's last panel. Everything is in the HTML; each panel arrives sideways
 // as it comes on (reveal.css), and the pictures' tilt is Tilt.tsx, mounted
 // here once for the whole page.
-// Each panel lays itself out by its own width (@container): the cover
-// beside the text from 48rem.
+// Each panel lays itself out by its own width (@container).
 export default function Projects() {
   return (
     <>
@@ -164,18 +159,21 @@ export default function Projects() {
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
-          // The cover on the right for every other project
-          const flip = index % 2 === 1;
+          // Every other panel a size smaller, its cover with it
+          const small = index % 2 === 1;
+          // A tall cover (a phone's screen, or a pair) stands beside the
+          // words, as tall as they are; a wide one heads them, as wide
+          const side = Boolean(cover && tall(cover));
           return (
             <article
               key={project.title}
               id={slug(project.title)}
               aria-labelledby={titleId}
               className="panel project @container reveal"
-              style={{ ...order(index + 1), "--panel-w": "60rem" } as CSSProperties}
+              style={{ ...order(index + 1), "--panel-w": small ? "34rem" : "40rem" } as CSSProperties}
             >
-              <div className="grid gap-y-5 @min-[48rem]:grid-cols-2 @min-[48rem]:grid-rows-[auto_1fr] @min-[48rem]:gap-x-8">
-              <header className={`min-w-0 break-words @min-[48rem]:row-start-1 ${flip ? "@min-[48rem]:col-start-1" : "@min-[48rem]:col-start-2"}`}>
+              <div className={`grid gap-y-5 ${side ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6" : ""}`}>
+              <header className={`min-w-0 break-words ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
                 <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
@@ -187,12 +185,12 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className={`-order-1 min-w-0 @min-[48rem]:order-none @min-[48rem]:row-span-2 @min-[48rem]:row-start-1 ${flip ? "@min-[48rem]:col-start-2" : "@min-[48rem]:col-start-1"}`}>
+                <div className={`-order-1 min-w-0 ${side ? `@min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : ""}`}>
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className={`min-w-0 break-words @min-[48rem]:row-start-2 ${flip ? "@min-[48rem]:col-start-1" : "@min-[48rem]:col-start-2"}`}>
+              <div className={`min-w-0 break-words ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
                 <Keys project={project} />
 
                 {part.length > 0 ? (

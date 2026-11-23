@@ -49,9 +49,9 @@ export default function Contact() {
 
       {/* The address in words, to copy or to read */}
       <div className="mt-5 flex flex-col gap-1">
-        <span className="text-base text-muted">{primary.label}</span>
+        <p className="text-base text-muted">{primary.label}</p>
         <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <span className="text-lg text-text [overflow-wrap:anywhere] select-all sm:text-xl">{primary.address}</span>
+          <p className="text-lg text-text [overflow-wrap:anywhere] select-all sm:text-xl">{primary.address}</p>
           <CopyButton value={primary.address} />
         </div>
       </div>
