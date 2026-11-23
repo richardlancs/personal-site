@@ -19,8 +19,7 @@ type State = "off" | "loading" | "on" | "failed";
 // back to off and a short note under it says so (read out too).
 // The song comes in as a prop from the server (TopBar), not by importing
 // app/data/portfolio.ts here: a client import of it puts the whole data
-// file in every page's first-load JavaScript, since the 3D scenes' chunks
-// import it too.
+// file in every page's first-load JavaScript.
 export default function MusicToggle({ backgroundMusic }: { backgroundMusic: typeof Song }) {
   const audio = useRef<HTMLAudioElement>(null);
   const [state, setState] = useState<State>("off");

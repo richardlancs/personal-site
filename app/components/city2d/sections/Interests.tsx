@@ -2,11 +2,9 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
-import { CITY3D_LIVE } from "../../../lib/city3dLive";
-import CityLink from "../CityLink";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
-import Heading, { type Where } from "../Heading";
+import Heading from "../Heading";
 import { order } from "../Station";
 
 // The interests: one row per interest, a single column on the ground with
@@ -55,15 +53,11 @@ const marks: Record<Interest["scene"], ReactNode> = {
 // column stops at 72rem, so a tile is never wider than about 18rem)
 const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 
-// On the 2D page (where="2d") the list is followed by a link to the arcade
-// in the 3D city (CityLink: shown only where WebGL2 exists); in the city
-// itself, not. The rows lay themselves out by the list's own width
-// (@container: the indent from 27.5rem, the gallery 3 across from 45.5rem
-// and 4 from 69.5rem), so the 3D city's half-width panel gets the narrow
-// rows; the names take their heading level from where it is drawn.
-export default function Interests({ where = "2d" }: { where?: Where }) {
+// The rows lay themselves out by the list's own width (@container: the
+// indent from 27.5rem, the gallery 3 across from 45.5rem and 4 from
+// 69.5rem).
+export default function Interests() {
   return (
-    <>
     <div className="@container interests mt-10 border-b border-line">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
@@ -89,7 +83,7 @@ export default function Interests({ where = "2d" }: { where?: Where }) {
               >
                 {marks[interest.scene]}
               </svg>
-              <Heading level={3} where={where} className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
+              <Heading level={3} className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
               <svg
                 aria-hidden="true"
                 focusable="false"
@@ -143,11 +137,5 @@ export default function Interests({ where = "2d" }: { where?: Where }) {
         );
       })}
     </div>
-    {where === "2d" && CITY3D_LIVE && (
-      <p className="mt-6">
-        <CityLink id="interests">Play it in the 3D city</CityLink>
-      </p>
-    )}
-    </>
   );
 }

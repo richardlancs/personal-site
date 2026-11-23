@@ -1,6 +1,6 @@
 import { profile } from "../../../data/portfolio";
 import ProfileLinks from "../ProfileLinks";
-import Heading, { type Where } from "../Heading";
+import Heading from "../Heading";
 import CopyButton from "./CopyButton";
 
 // The mail icon on "Email me", drawn in the label's colour
@@ -35,14 +35,11 @@ const mailIcon = (
 const primary = profile.emails[0];
 
 // Its paddings and rows follow the section's own column (@container), not
-// the window, so it fits the 3D city's half-width panel; its heading takes
-// its level from where it is drawn (Heading.tsx).
-export default function Contact({ where = "2d" }: { where?: Where }) {
+// the window.
+export default function Contact() {
   return (
     <div className="@container mt-10">
-    {/* (in the 3D city the card is no fill of its own, only its edges:
-        glass within the panel's glass) */}
-    <div className={`contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan ${where === "3d" ? "bg-transparent" : "bg-panel"} px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10`}>
+    <div className="contact mx-auto w-full max-w-[44rem] rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel px-[min(1.25rem,5vw)] py-8 @min-[37.5rem]:px-10 @min-[37.5rem]:py-10">
       <a
         href={`mailto:${primary.address}`}
         className="glass glass-primary glass-lg w-full @min-[27.5rem]:w-auto"
@@ -61,7 +58,7 @@ export default function Contact({ where = "2d" }: { where?: Where }) {
       </div>
 
       <div className="mt-8 border-t border-line pt-8">
-        <Heading level={3} where={where} className="font-display text-xl text-text">Other ways to reach me</Heading>
+        <Heading level={3} className="font-display text-xl text-text">Other ways to reach me</Heading>
 
         {profile.emails.length > 1 && (
           <ul aria-label="Other email" className="mt-5 flex flex-col gap-4">

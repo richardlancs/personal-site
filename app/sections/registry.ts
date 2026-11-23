@@ -24,8 +24,6 @@ export type Section = {
   // the page; it's just not pointed at.
   listed: boolean;
   district: DistrictId; // the painting above it (never named on the page)
-  // Its address in the 3D city (app/city/): its own page there
-  city: "/city" | `/city/${string}`;
   // Deeper anchors inside the section, for the menu
   subsections?: { title: string; href: `/#${string}` }[];
 };
@@ -34,7 +32,6 @@ export type Section = {
 export const pageSections: Section[] = [
   {
     id: "home",
-    city: "/city",
     hash: "",
     href: "/",
     title: "Home",
@@ -43,7 +40,6 @@ export const pageSections: Section[] = [
   },
   {
     id: "about",
-    city: "/city/about",
     hash: "about",
     href: "/#about",
     title: "About",
@@ -52,7 +48,6 @@ export const pageSections: Section[] = [
   },
   {
     id: "projects",
-    city: "/city/projects",
     hash: "projects",
     href: "/#projects",
     title: "Projects",
@@ -62,7 +57,6 @@ export const pageSections: Section[] = [
   },
   {
     id: "experience",
-    city: "/city/experience",
     hash: "experience",
     href: "/#experience",
     title: "Experience",
@@ -71,7 +65,6 @@ export const pageSections: Section[] = [
   },
   {
     id: "interests",
-    city: "/city/interests",
     hash: "interests",
     href: "/#interests",
     title: "Interests",
@@ -80,7 +73,6 @@ export const pageSections: Section[] = [
   },
   {
     id: "contact",
-    city: "/city/contact",
     hash: "contact",
     href: "/#contact",
     title: "Contact",

@@ -53,10 +53,7 @@ test("the page names no districts: no stop names and no captions, anywhere it re
       else if (/\.tsx?$/.test(entry.name)) files.push(path);
     }
   };
-  walk("app/components/city2d");
-  // The 3D city's pages and code: the same rule (district ids as keys are fine)
-  walk("app/city");
-  walk("app/components/city3d");
+  walk("app/components");
   for (const file of files) {
     const src = code(read(file));
     for (const name of ["Lujiazui", "Longtang", "Century Avenue", "Line 2", "Nanjing Road", "The Bund"]) assert.ok(!src.includes(name), `${file} renders "${name}"`);
@@ -132,10 +129,9 @@ test("the band reserves its height: 21:9 wide, 4:3 on phones", () => {
 
 test("the Sections menu jumps within the page and moves focus there", () => {
   const menu = read("app/components/city2d/SectionsMenu.tsx");
-  // On the one page, where you are comes from the scroll ("location"); only
-  // on a /city page, where each section is a page, from the address ("page")
-  assert.match(menu, /const here = city \? sectionForCityPath\(pathname\) : scrolled;/);
-  assert.match(menu, /aria-current=\{s\.id === here \? \(city \? "page" : "location"\) : undefined\}/, "where you are");
+  // On the one page, where you are comes from the scroll ("location")
+  assert.match(menu, /const here = useSection\(\);/);
+  assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/, "where you are");
   assert.match(menu, /focusAnchor\(href\)/);
   assert.match(read("app/components/city2d/jump.ts"), /\.focus\(/);
   assert.match(menu, /hidePopover\(\)/);

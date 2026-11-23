@@ -9,10 +9,8 @@
 @source not "../tests";
 @source not "../scripts";
 /* The notes at the root (their words read as utilities: container, table,
-   shadow, blur) and the 3D city, which ships its own few classes with its
-   own route: none of it may grow the home page's stylesheet */
+   shadow, blur): none of it may grow the page's stylesheet */
 @source not "../*.md";
-@source not "./components/city3d";
 /* The stylesheets' own comments, and plain words in code (a "resize"
    listener, a "visible" tab, "static" content) that no element uses as a
    class: each would be a dead utility */
@@ -67,20 +65,6 @@
   --glass-blur: blur(12px) saturate(1.2);
   --glass-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.6);
   --glass-fallback: rgb(24 27 35 / 0.94); /* no backdrop-filter */
-  /* Glass panels over the 3D city (city-pages.css: .city-panel, the
-     place dock): a tint of --panel over a strong blur, a thin bright
-     cyan-ish edge, a light line along the top, and the words' own dark
-     halo. As clear as the words allow over the brightest thing a scene
-     puts behind them (a white screen, a noon sky): every word 4.5:1
-     without counting the halo, the secondary words a little lighter on
-     the glass (--glass-muted) (docs/city/scripts/city3d-contrast.mjs).
-     Opaque under prefers-contrast: more and in forced colours. */
-  --glass-panel: rgb(24 27 35 / 0.66);
-  --glass-panel-blur: blur(28px) saturate(1.4);
-  --glass-edge: rgb(143 233 255 / 0.3);
-  --glass-edge-hi: rgb(230 233 238 / 0.22); /* the panel's line along the top */
-  --glass-halo: 0 0 1px rgb(8 9 12 / 0.95), 0 0 4px rgb(8 9 12 / 0.8), 0 0 14px rgb(8 9 12 / 0.55);
-  --glass-muted: #c0c6d0; /* 4.5:1 over a white screen through the glass */
   /* Behind a focus ring, so it shows on any painting */
   --focus-halo: 0 0 0 6px rgb(8 9 12 / 0.9);
   /* Glow: decoration only, never counted toward contrast */
@@ -560,54 +544,6 @@ button.text-link,
   width: calc(100% - 1.25rem);
   margin-left: 1.25rem;
   font-size: 1rem;
-}
-
-/* ---------- The view switch (city2d/ViewSwitch.tsx) ----------
-   "3D city" on the 2D page, "2D view" in the city: one key, one obvious
-   target, answering at once (it is used often: no flourish of its own).
-   Two copies, one shown: the first key in the bar from 80rem, where the
-   bar has room for it on its one row (docs/city/scripts/bar-fit.mjs); below
-   that, the first entry of the Sections menu, set apart from the sections
-   by a rule under it and its cube. "3D city" (and the Interests link into
-   the city) only where WebGL2 exists (html[data-webgl2]); until then, or
-   without it, it keeps its space, hidden. "2D view" always shows. */
-:root:not([data-webgl2]) :is(.view-switch, .city-link):not([data-to="2d"]) {
-  visibility: hidden;
-}
-
-/* The city closed to visitors (lib/city3dLive.ts): no key, no room kept */
-:root[data-city3d="off"] :is(.view-switch:not([data-to="2d"]), .city-link, .sections-menu-view:not(:has([data-to="2d"]))) {
-  display: none !important;
-}
-
-.top-bar-end .view-switch {
-  display: none;
-}
-
-.sections-menu .sections-menu-view {
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.25rem;
-  border-bottom: 1px solid var(--line);
-}
-
-:root:not([data-webgl2]) .sections-menu-view:not(:has([data-to="2d"])) {
-  display: none;
-}
-
-.sections-menu .view-switch {
-  font-family: var(--font-text);
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-@media (min-width: 80rem) {
-  .top-bar-end .view-switch {
-    display: inline-flex;
-  }
-
-  .sections-menu .sections-menu-view {
-    display: none;
-  }
 }
 
 /* The music's note, if the song can't be loaded (MusicToggle.tsx): a

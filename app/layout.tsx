@@ -10,7 +10,6 @@ import { STILL_SCRIPT } from "./lib/still";
 import { richmondHill } from "./data/weather";
 import { platePreloadScript } from "./lib/platePreload";
 import { siteUrl } from "./sections/registry";
-import { CITY3D_LIVE } from "./lib/city3dLive";
 import "./city.css";
 import "./motion.css";
 import "./reveal.css";
@@ -73,8 +72,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      // The 3D city closed to visitors: its key and links aren't laid out (city.css)
-      data-city3d={CITY3D_LIVE ? undefined : "off"}
       className={`${display.variable} ${text.variable}`}
       // The script below sets data-still on <html> before React hydrates
       suppressHydrationWarning

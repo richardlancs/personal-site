@@ -16,7 +16,7 @@
 // (homePlate.ts), so it fades in over an identical picture from the cache.
 //
 // A deep link (/#projects, …) lands below the home band, and any other
-// page (/city/…) has no home band, so then it does nothing. Its only inputs are the clock, the window's width, the device
+// page has no home band, so then it does nothing. Its only inputs are the clock, the window's width, the device
 // pixel ratio and the address's hash, tested for presence: the URLs and
 // numbers in it are fixed at build time.
 
@@ -55,37 +55,5 @@ export function platePreloadScript(place: Place, day: string, night: string, ban
     `url=url||last;if(!url)return;` +
     `var l=document.createElement("link");l.rel="preload";l.as="image";l.href=url;l.setAttribute("fetchpriority","high");document.head.appendChild(l);` +
     `var r=document.documentElement;r.style.setProperty("--home-plate",'url("'+url+'")');r.setAttribute("data-home-plate",plate)}catch(e){}})()`
-  );
-}
-
-// The same for a 3D city page (/city, /city/<section>, CityPage.tsx): its
-// band's painting, there before the scripts, which were what held the
-// page's largest paint back (about 5 s on Lighthouse's slow phone, the
-// band's <img> mounting only after hydration). Inline right after the
-// band, it picks the plate (day or night in Richmond Hill, as above) and
-// the file the band's <img> will itself ask for (its srcset, at the
-// band's "100vw", plates.ts: BELOW_SIZES; the smallest candidate at least
-// as wide as the window in device pixels, as the browser picks it),
-// preloads it and sets it as --city-plate in a rule of its own that
-// holds only on this page's band (a <style> it adds to <head>, keyed by
-// the page's data-section; city-pages.css paints it as the band's
-// background), so a later page of the city, reached in the browser, never
-// shows another's painting. It writes into nothing React renders (the
-// band's style is React's: writing there made every city page hydrate
-// with a mismatch). Its only inputs are the clock, the window's width and
-// the pixel ratio.
-export function cityPlateScript(place: Place, day: string, night: string, section: string): string {
-  const q = JSON.stringify;
-  const rule = `.city-page[data-section=${q(section)}] .city-band .band{--city-plate:url(`;
-  return (
-    `(function(){try{var sun=${SUN_JS};` +
-    `var p=new Intl.DateTimeFormat("en-CA",{timeZone:${q(place.timeZone)},year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date()),v={};` +
-    `p.forEach(function(x){v[x.type]=+x.value});` +
-    `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,` +
-    `set=now>=s[0]&&now<s[1]?${q(day)}:${q(night)},need=window.innerWidth*(window.devicePixelRatio||1),url=null,last=null;` +
-    `set.split(", ").forEach(function(c){var x=c.split(" "),w=parseInt(x[1],10);if(!url&&w>=need)url=x[0];if(w)last=x[0]});` +
-    `url=url||last;if(!url)return;` +
-    `var l=document.createElement("link");l.rel="preload";l.as="image";l.href=url;l.setAttribute("fetchpriority","high");document.head.appendChild(l);` +
-    `var t=document.createElement("style");t.textContent=${q(rule)}+'"'+url+'")}';document.head.appendChild(t)}catch(e){}})()`
   );
 }

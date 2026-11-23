@@ -41,7 +41,7 @@ test("where to find me is built from profile", () => {
 
 test("the about station is a server component with no fixed widths", () => {
   assert.doesNotMatch(source, /^["']use client["']/m);
-  assert.match(source, /export default function About\(\{ where = "2d" \}/);
+  assert.match(source, /export default function About\(\)/);
   assert.doesNotMatch(source, /w-\[\d+px\]|width:\s*\d+px/);
   assert.match(source, /@min-\[45\.5rem\]:grid-cols-2/);
   assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/);

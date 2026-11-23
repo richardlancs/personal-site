@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, type MouseEvent } from "react";
-import { sectionForCityPath } from "../../lib/cityRoutes";
 import { listed } from "../../sections/registry";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { useSection } from "./useSection";
-import ViewSwitch from "./ViewSwitch";
 
 // The Sections menu under its button in the top bar (TopBar.tsx): every
 // listed section from the registry, by its title, with a section's parts
@@ -30,24 +27,9 @@ import ViewSwitch from "./ViewSwitch";
 // back to sticky once the bar is clearly shorter (under 22%), so a phone's
 // toolbar coming and going (the screen's height changing by a little) can't
 // flip it back and forth mid-scroll.
-//
-// In the 3D city (/city/*) it is the city's places, named so: the menu is
-// "Places in 3D", with that heading over the entries (city-pages.css; read
-// out as the menu's name, so the heading itself is hidden from screen
-// readers); every entry is that section's page there (registry: city), a
-// plain navigation (the city moves focus itself), and the place whose page
-// it is is the one marked. On both, its first entry, set apart from the
-// sections, is the switch between the views (ViewSwitch.tsx), shown here
-// only on screens too narrow for it in the bar. On `/` it renders exactly
-// as before the city had a heading (tests/city3d-glass.test.mjs).
 export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
-  const pathname = usePathname();
-  const city = pathname === "/city" || pathname.startsWith("/city/");
-  const scrolled = useSection();
-  const here = city ? sectionForCityPath(pathname) : scrolled;
-  // In the city: close; the page's own navigation does the rest
-  const close = () => nav.current?.hidePopover();
+  const here = useSection();
   // Close, then hand focus to the section
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;
@@ -82,23 +64,15 @@ export default function SectionsMenu() {
   }, []);
 
   return (
-    <nav ref={nav} id="places-menu" popover="auto" aria-label={city ? "Places in 3D" : "Sections"} className="sections-menu">
+    <nav ref={nav} id="places-menu" popover="auto" aria-label="Sections" className="sections-menu">
       <ul>
-        <li className="sections-menu-view">
-          <ViewSwitch place="menu" />
-        </li>
-        {city && (
-          <li className="sections-menu-heading font-display text-sm font-semibold uppercase text-muted" aria-hidden="true">
-            Places in 3D
-          </li>
-        )}
         {listed.map((s) => (
           <li key={s.id}>
-            <Link href={city ? s.city : jumpHref(s.href)} onClick={city ? close : go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? (city ? "page" : "location") : undefined}>
+            <Link href={jumpHref(s.href)} onClick={go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? "location" : undefined}>
               {s.title}
               {s.id === here && <span className="sections-menu-here" aria-hidden="true" />}
             </Link>
-            {!city && s.subsections?.map((sub) => (
+            {s.subsections?.map((sub) => (
               <Link key={sub.href} href={sub.href} onClick={go(sub.href)} className="glass sections-menu-sub">
                 {sub.title}
               </Link>

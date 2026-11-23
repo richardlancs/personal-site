@@ -8,24 +8,19 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/",
-    "perf:budget": "node docs/audit/scripts/budget.mjs",
-    "city:masks": "node scripts/city/make-masks.mjs"
+    "perf:budget": "node docs/audit/scripts/budget.mjs"
   },
   "dependencies": {
-    "@react-three/fiber": "^9.8.2",
     "next": "16.4.6",
     "pdfjs-dist": "5.4.624",
-    "postprocessing": "6.39.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0",
-    "three": "^0.186.1"
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/three": "^0.186.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.6",
     "tailwindcss": "^4",

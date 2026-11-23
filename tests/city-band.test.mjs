@@ -109,7 +109,7 @@ test("the driver waits for the clock and writes the sky on <html>", () => {
   assert.match(src, /cityVars\(/);
   // The preview only in development
   assert.match(src, /process\.env\.NODE_ENV === "development"/);
-  // Nothing of the 3D world comes with it but the preview's parser
+  // No three.js (the 3D city is gone; nothing may bring it back onto the page)
   assert.doesNotMatch(src, /from "three"|@react-three/);
   const layout = read("app/layout.tsx");
   assert.match(layout, /<CityDriver \/>/);
@@ -150,10 +150,8 @@ test("every district has both plates, the same size, none over 600 KB", () => {
 });
 
 test("the hero has the name, the headline, two actions and three links, and no paragraph", () => {
-  const file = read("app/components/city2d/sections/Hero.tsx");
-  assert.ok(!file.includes('"use client"'), "the hero is a server component");
-  // The 2D hero; the 3D city's title card (TitleCard) is tests/city3d-glass.test.mjs's
-  const src = file.slice(0, file.indexOf("function TitleCard()"));
+  const src = read("app/components/city2d/sections/Hero.tsx");
+  assert.ok(!src.includes('"use client"'), "the hero is a server component");
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
   assert.ok(!/<p[ >]/.test(src.replace(/<p className="[^"]*headline[^"]*"/, "")));
   assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
@@ -215,8 +213,8 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   // A deep link lands below the home band: nothing fetched or painted
   assert.deepEqual(run("2026-06-21T16:00:00Z", { hash: "#projects" }), { links: [], plate: null, which: null });
   assert.equal(run("2026-06-21T16:00:00Z", { hash: "#home" }).which, "day");
-  // Another page (the 3D city's) has no home band: nothing fetched
-  assert.deepEqual(run("2026-06-21T16:00:00Z", { pathname: "/city/projects" }), { links: [], plate: null, which: null });
+  // Another page (the 404) has no home band: nothing fetched
+  assert.deepEqual(run("2026-06-21T16:00:00Z", { pathname: "/no-such-page" }), { links: [], plate: null, which: null });
   const layout = read("app/layout.tsx");
   assert.match(layout, /__html: PLATE_PRELOAD/);
 });

@@ -1,8 +1,7 @@
 // The shared vocabulary of Richmond Hill's weather and daylight: what the
 // server sends (/api/weather), what the corner display shows, and what the
-// 3D world is told to look like. Plain types and constants, no React and no
-// three.js, so the server, the pages, the world and the tests can all read
-// it.
+// bands are painted with (lib/cityLook.ts). Plain types and constants, no
+// React, so the server, the pages and the tests can all read it.
 
 // What the scene looks like for the weather (not what the label says: a
 // thunderstorm is labelled "Thunderstorm" and drawn as rain)
@@ -33,8 +32,8 @@ export type WeatherResponse =
   | { ok: true; reading: WeatherReading }
   | { ok: false; error: "timeout" | "upstream" | "malformed" };
 
-// What the world is told (world3d/store.ts: `sky`). `source` says where
-// it came from: the live reading, the development preview controls, or a
+// The sky the bands show (CityDriver.tsx, lib/cityLook.ts). `source` says
+// where it came from: the live reading, the development preview, or a
 // fallback before any reading (or when there is none).
 export type SkyState = {
   preset: WeatherPreset;
@@ -66,7 +65,7 @@ export type WeatherIconId =
 export type WeatherStatus = "loading" | "fresh" | "stale" | "unavailable";
 
 // What the client hook (components/weather/useRichmondHill.ts) gives the
-// display and the world driver. The clock part changes once a minute; the
+// display and the sky driver (city2d/CityDriver.tsx). The clock part changes once a minute; the
 // weather part only when a reading arrives, so a tick never refetches.
 export type RichmondHillNow = {
   now: number; // ms since the epoch, at the last minute boundary

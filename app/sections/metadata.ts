@@ -63,18 +63,3 @@ export const sectionMetadata = (id: "home"): Metadata => {
     ...(s.listed ? {} : { robots: { index: false, follow: false } }),
   };
 };
-
-// A page of the 3D city (app/city/): titled "3D city" (home) or
-// "Projects · 3D city", described as its section is, never indexed, and
-// canonical to the 2D page, the one page that is (an anchor such as
-// "/#projects" is never a canonical address, so every one points at "/").
-export const cityMetadata = (id: SectionId): Metadata => {
-  const s = section(id);
-  const title = s.id === "home" ? "3D city" : `${s.title} · 3D city`;
-  return {
-    title,
-    description: sectionWords[id].metadata.description,
-    robots: { index: false, follow: true },
-    alternates: { canonical: "/" },
-  };
-};

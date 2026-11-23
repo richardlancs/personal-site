@@ -111,7 +111,7 @@ test("the cover is screenshots[cover ?? 0]; a portrait pair shares the frame; no
 
 test("Skills is a section with id skills, a level-3 heading and a level-4 one per group", () => {
   assert.match(source, /<section id="skills" aria-labelledby="skills-title"/);
-  assert.match(source, /<Heading level=\{3\} where=\{where\} id="skills-title"[^>]*>\s*Skills\s*<\/Heading>/);
+  assert.match(source, /<Heading level=\{3\} id="skills-title"[^>]*>\s*Skills\s*<\/Heading>/);
   assert.match(source, /<Heading level=\{4\}[^>]*>\{group\.category\}<\/Heading>/);
   assert.match(source, /group\.skills\.map\(/);
 });

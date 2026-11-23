@@ -5,13 +5,11 @@ import WeatherClock from "../weather/WeatherClock";
 import StillViewToggle from "./StillViewToggle";
 import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
-import ViewSwitch from "./ViewSwitch";
 
 // The bar along the top of every page (city.css, "The top bar"): the
 // name, the way home; the progress line and the section you're at
 // (ProgressLine.tsx); Richmond Hill's time and weather, only to read;
-// the switch to the 3D city (or back: ViewSwitch.tsx; on narrower
-// screens it is the menu's first entry instead); the Sections menu, built
+// the Sections menu, built
 // from the registry; Still view; and the music
 // (its note, if the song can't load, hangs under its key). It stays
 // at the top while the page scrolls under it, clear of a notch.
@@ -27,7 +25,6 @@ export default function TopBar() {
       <ProgressLine />
       <WeatherClock />
       <div className="top-bar-end">
-        <ViewSwitch place="bar" />
         {/* A popover button: the browser exposes it as expanded or
             collapsed and returns focus to it when Escape closes the menu.
             No aria-haspopup: the menu is a list of links, not a menu widget */}

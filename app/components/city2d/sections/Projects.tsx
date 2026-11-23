@@ -2,7 +2,7 @@ import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
-import Heading, { type Where } from "../Heading";
+import Heading from "../Heading";
 import { order } from "../Station";
 import Tilt from "../Tilt";
 
@@ -108,10 +108,8 @@ const h5 = "font-display text-lg font-semibold text-text";
 // (@container; the column is the window less 2.5rem, up to 72rem): the
 // index two across from 45.5rem, the row's columns and the sticky picture
 // from 61.5rem (a 1024px window), half and half from 69.5rem (the full
-// 72rem column, from a 1152px window). In the 3D city's half-width panel
-// the rows stay stacked, the picture above the text. Its headings take
-// their level from where it is drawn (Heading.tsx).
-export default function Projects({ where = "2d" }: { where?: Where }) {
+// 72rem column, from a 1152px window).
+export default function Projects() {
   return (
     <div className="@container mt-10">
       <Tilt />
@@ -173,7 +171,7 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
               className="py-10 @min-[37.5rem]:py-14 @min-[61.5rem]:grid @min-[61.5rem]:grid-cols-12 @min-[61.5rem]:grid-rows-[auto_1fr] @min-[61.5rem]:gap-x-12 @min-[69.5rem]:gap-x-10"
             >
               <header className="reveal min-w-0 break-words @min-[61.5rem]:col-span-5 @min-[61.5rem]:col-start-1 @min-[61.5rem]:row-start-1 @min-[69.5rem]:col-span-6">
-                <Heading level={3} where={where} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
+                <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
                   </span>
@@ -194,7 +192,7 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
 
                 {part.length > 0 ? (
                   <section className="mt-6 border-l-2 border-cyan pl-5">
-                    <Heading level={4} where={where} className={h4}>My part</Heading>
+                    <Heading level={4} className={h4}>My part</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {part.slice(0, SHOWN_PART).map((contribution) => (
                         <li key={contribution}><Figures>{contribution}</Figures></li>
@@ -203,7 +201,7 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
                   </section>
                 ) : (
                   <section className="mt-6">
-                    <Heading level={4} where={where} className={h4}>What it does</Heading>
+                    <Heading level={4} className={h4}>What it does</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {project.features.map((feature) => (
                         <li key={feature}><Figures>{feature}</Figures></li>
@@ -233,7 +231,7 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
                     </summary>
                     {morePart.length > 0 && (
                       <section className="mt-3 border-l-2 border-cyan pl-5">
-                        <Heading level={4} where={where} className={h5}>More of my part</Heading>
+                        <Heading level={4} className={h5}>More of my part</Heading>
                         <ul role="list" className="points points-quiet mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
                             <li key={contribution}><Figures>{contribution}</Figures></li>
@@ -243,7 +241,7 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
                     )}
                     {foldedFeatures && (
                       <section className={subheads ? "mt-6" : undefined}>
-                        {subheads && <Heading level={4} where={where} className={h5}>What it does</Heading>}
+                        {subheads && <Heading level={4} className={h5}>What it does</Heading>}
                         <ul role="list" className={`points points-quiet space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
                           {project.features.map((feature) => (
                             <li key={feature}><Figures>{feature}</Figures></li>
@@ -285,13 +283,13 @@ export default function Projects({ where = "2d" }: { where?: Where }) {
       </div>
 
       <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="reveal mt-6 break-words rounded-[var(--radius-lg)] border border-line border-t-2 border-t-cyan bg-panel p-4 @min-[22.5rem]:p-5 @min-[37.5rem]:p-8">
-        <Heading level={3} where={where} id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
+        <Heading level={3} id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
         </Heading>
         <div className="mt-6 grid gap-8 @min-[37.5rem]:grid-cols-2 @min-[61.5rem]:grid-cols-3">
           {skillGroups.map((group) => (
             <div key={group.category} className="border-t border-line pt-4">
-              <Heading level={4} where={where} className="text-base font-semibold text-muted">{group.category}</Heading>
+              <Heading level={4} className="text-base font-semibold text-muted">{group.category}</Heading>
               <ul className="mt-3 space-y-1.5 text-lg text-text">
                 {group.skills.map((skill) => (
                   <li key={skill}>{skill}</li>

@@ -1,8 +1,5 @@
 import type { NextConfig } from "next";
 
-// The 3D city open unless closed: the same test as app/lib/city3dLive.ts
-const city3dLive = process.env.NEXT_PUBLIC_CITY3D !== "off";
-
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
@@ -15,10 +12,6 @@ const nextConfig: NextConfig = {
     turbopackFileSystemCacheForDev: false,
     turbopackFileSystemCacheForBuild: false,
   },
-  // Development-only pages are named page.dev.tsx (app/city/dev/kit/): the
-  // "dev.tsx" extension is a page only in `next dev`, so a production
-  // build has no such route and no chunk for it
-  pageExtensions: process.env.NODE_ENV === "development" ? ["dev.tsx", "tsx", "ts", "jsx", "js"] : ["tsx", "ts", "jsx", "js"],
   cacheComponents: true,
   partialPrefetching: true,
   images: {
@@ -34,8 +27,8 @@ const nextConfig: NextConfig = {
   },
   // One page now (app/page.tsx): the old one-page-per-section addresses
   // go to their station's anchor, so links already shared keep working.
-  // Temporary, so the addresses stay free for the 3D city (a later plan).
-  // The map is gone; it goes to the top. (A fragment such as
+  // Temporary, so the addresses stay free. The map is gone; it goes to
+  // the top. (A fragment such as
   // /projects#skills never reaches the server: it lands on #projects.)
   async redirects() {
     return [
@@ -45,13 +38,16 @@ const nextConfig: NextConfig = {
       { source: "/interests", destination: "/#interests", permanent: false },
       { source: "/contact", destination: "/#contact", permanent: false },
       { source: "/map", destination: "/", permanent: false },
-      // Temporary too: the city's addresses go to the 2D page until it opens
-      ...(city3dLive
-        ? []
-        : [
-            { source: "/city", destination: "/", permanent: false },
-            { source: "/city/:path*", destination: "/", permanent: false },
-          ]),
+      // The 3D city was removed (2026-11-22): its addresses go to the page,
+      // a section's page to its anchor, anything else under it to the top.
+      // Temporary too. Listed before the catch-all, which would match first.
+      { source: "/city", destination: "/", permanent: false },
+      { source: "/city/about", destination: "/#about", permanent: false },
+      { source: "/city/projects", destination: "/#projects", permanent: false },
+      { source: "/city/experience", destination: "/#experience", permanent: false },
+      { source: "/city/interests", destination: "/#interests", permanent: false },
+      { source: "/city/contact", destination: "/#contact", permanent: false },
+      { source: "/city/:path*", destination: "/", permanent: false },
     ];
   },
   // public/ files are served with max-age=0, so every visit asked again

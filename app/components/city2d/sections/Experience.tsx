@@ -3,7 +3,7 @@ import { groupByKind, isCurrent, sortNewestFirst } from "../../../lib/experience
 import { machineDate } from "../../../lib/machineDate";
 import ResumeLink from "../../resume/ResumeLink";
 import Figures from "../Figures";
-import Heading, { type Where } from "../Heading";
+import Heading from "../Heading";
 import { order } from "../Station";
 
 // A date as written in the data, in a <time> only when it is a real date
@@ -18,10 +18,10 @@ function When({ value }: { value: string }) {
 // column of their own, so they read straight down the section; on phones
 // they follow the organisation. The role comes first in the document so
 // heading navigation lands on it.
-function Row({ entry, where }: { entry: Entry; where: Where }) {
+function Row({ entry }: { entry: Entry }) {
   return (
     <article className="grid gap-y-1 @min-[37.5rem]:grid-cols-[10rem_minmax(0,1fr)] @min-[37.5rem]:gap-x-10">
-      <Heading level={3} where={where} className="font-display text-2xl font-bold leading-tight text-text break-words @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-1">
+      <Heading level={3} className="font-display text-2xl font-bold leading-tight text-text break-words @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-1">
         {entry.role}
       </Heading>
       <p className="text-[1.0625rem] font-semibold text-text break-words @min-[37.5rem]:col-start-2 @min-[37.5rem]:row-start-2">
@@ -64,10 +64,8 @@ function Row({ entry, where }: { entry: Entry; where: Where }) {
 // line (the page's progress line is the one line). Ends with the résumé.
 // Each label and row arrives as it scrolls in (reveal.css). The rows lay
 // themselves out by the section's own width (@container: the dates' column
-// from 37.5rem, a 640px window on the 2D page), so the 3D city's
-// half-width panel gets the stacked rows; the roles take their heading
-// level from where it is drawn (Heading.tsx).
-export default function Experience({ where = "2d" }: { where?: Where }) {
+// from 37.5rem, a 640px window).
+export default function Experience() {
   const { work, education } = groupByKind(sortNewestFirst(experience));
   const groups = [
     { id: "experience-work", label: "Work", entries: work },
@@ -84,7 +82,7 @@ export default function Experience({ where = "2d" }: { where?: Where }) {
           <ol role="list" aria-labelledby={group.id} className="mt-8 space-y-12">
             {group.entries.map((entry, i) => (
               <li key={`${entry.role}-${entry.organization}`} className="reveal" style={order(i + 1)}>
-                <Row entry={entry} where={where} />
+                <Row entry={entry} />
               </li>
             ))}
           </ol>

@@ -114,15 +114,6 @@ test("the section starter is a template in docs, not a public page", () => {
   assert.ok(!sections.some((s) => s.id === "greenhouse"), "no greenhouse entry in the registry");
 });
 
-// The arcade machine (city3d/arcade/, restyled for the city in a later
-// task): every mode has an action, and it never asks for money
-test("the arcade's machine has an action for every mode, and asks for nothing", () => {
-  const logic = readFileSync(`${root}app/components/city3d/arcade/arcadeLogic.ts`, "utf8");
-  for (const scene of ["basketball", "badminton", "chess", "poker"]) assert.match(logic, new RegExp(`${scene}: \\{ label: "[^"]+", hint: "[^"]+" \\}`), `${scene} has an action`);
-  const machine = readFileSync(`${root}app/components/city3d/arcade/arcadeMachine.ts`, "utf8");
-  assert.doesNotMatch(machine, /INSERT COIN/i);
-});
-
 test("the site has its own icons and share card, not the framework's (audit F1)", () => {
   const favicon = readFileSync(`${root}app/favicon.ico`);
   // The icon create-next-app ships: a black square with a white N

@@ -86,7 +86,7 @@ test("nothing loops; an item arrives once, and only once the script has marked t
   // last in the page), never from the layout
   assert.match(read("app/components/ui/Arrivals.tsx"), /useEffect\(\(\) => watchArrivals\(\), \[\]\)/);
   assert.doesNotMatch(read("app/components/ui/GlassPress.tsx"), /watchArrivals/);
-  for (const page of ["app/page.tsx", "app/components/city3d/CityPage.tsx"]) assert.match(read(page), /<Arrivals \/>\s*<\/main>/, page);
+  assert.match(read("app/page.tsx"), /<Arrivals \/>\s*<\/main>/);
 });
 
 test("the resting state is visible: no opacity 0 outside a keyframe's start", () => {

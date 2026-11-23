@@ -1,19 +1,18 @@
 "use client";
 
 import { useLayoutEffect, useSyncExternalStore } from "react";
-import { chooseStill, syncStill, world } from "../city3d/store";
+import { chooseStill, getStill, subscribeStill, syncStill } from "../../lib/stillStore";
 
-const isStill = () => world.get().still;
 // The server can't know the visitor's setting; the button hydrates as
 // off and shows the real state straight after (the page itself is
 // already still: the attribute on <html> was set before it was painted)
 const unknown = () => false;
 
 // A small glass button in the corner, beside the music: Still view holds
-// the world still (world3d/still.ts). Pressed, nothing moves on its own
-// and the camera cuts between places instead of travelling.
+// the page still (lib/still.ts, lib/stillStore.ts). Pressed, nothing
+// moves on its own.
 export default function StillViewToggle() {
-  const still = useSyncExternalStore(world.subscribe, isStill, unknown);
+  const still = useSyncExternalStore(subscribeStill, getStill, unknown);
   useLayoutEffect(syncStill, []);
   const label = still ? "Still view is on: the world holds still" : "Still view: hold the world still";
 
