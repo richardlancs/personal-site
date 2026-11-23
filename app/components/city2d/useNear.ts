@@ -47,12 +47,26 @@ function arrive(el: Element) {
 }
 
 // After the first scroll, look half a screen ahead, and again at every
-// scroll while anything waits: the observer won't report again for bands
-// already inside its margin, nor ever for the journey's tiles off the
-// stage's edge (its clip hides them from it), which move with the scroll
+// scroll while anything that shows waits: the observer won't report again
+// for bands already inside its margin, nor ever for the journey's tiles off
+// the stage's edge (its clip hides them from it), which move with the
+// scroll. Once all that waits is hidden (a station's band on the journey)
+// the scroll is let go; the observer reports one that shows again
+// (a resize to the page read top to bottom), and that listens again.
+let listening = false;
+const shows = (el: Element) => el.getBoundingClientRect().width > 0;
+
+function listen(on: boolean) {
+  if (on === listening) return;
+  listening = on;
+  if (on) window.addEventListener("scroll", onFirstScroll, { passive: true });
+  else window.removeEventListener("scroll", onFirstScroll);
+}
+
 function onFirstScroll() {
   scrolled = true;
   for (const el of [...waiting.keys()]) if (within(el, AHEAD)) arrive(el);
+  if (![...waiting.keys()].some(shows)) listen(false);
 }
 
 // Opened on a deep link (/#projects, …): the browser's jump to it can come
@@ -78,19 +92,20 @@ function watch(el: Element, onNear: () => void) {
       const done = () => {
         window.removeEventListener("scrollend", done);
         clearTimeout(timer);
+        listen(true);
         if (!scrolled) onFirstScroll();
-        window.addEventListener("scroll", onFirstScroll, { passive: true });
       };
       const timer = setTimeout(done, JUMP_WAIT);
       window.addEventListener("scrollend", done, { passive: true });
     } else {
       scrolled = window.scrollY > 0;
-      window.addEventListener("scroll", onFirstScroll, { passive: true });
+      listen(true);
     }
     observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
           if (entry.isIntersecting && (scrolled || (!deepLink() && within(entry.target, 0)))) arrive(entry.target);
+          else if (waiting.has(entry.target) && shows(entry.target)) listen(true);
         }
       },
       { rootMargin: ROOT_MARGIN },

@@ -112,7 +112,16 @@
     width: auto;
     max-height: none;
     aspect-ratio: auto;
-    mask-image: linear-gradient(transparent, #000 16%);
+    mask-image: linear-gradient(transparent 8%, rgb(0 0 0 / 0.6) 18%, #000 34%);
+  }
+
+  /* Lights: at twilight the night plate's windows come on ahead of the
+     dark (DistrictBand: a copy of the night plate lightening only what it
+     lights, as strong as twice the night), each tile's with a flicker as
+     it comes (below, with the motion) */
+  :root[data-track="on"] .band-lights {
+    mix-blend-mode: lighten;
+    opacity: calc(2 * var(--city-night, 0));
   }
 
   :root[data-track="on"] .band-tile {
@@ -274,6 +283,20 @@
     border-color: var(--cyan);
   }
 
+  /* ...and its stretch of the city: a warm light low on the street, a
+     cyan one high on the towers (under the panel), up as the journey
+     comes to its end (below, with the motion) */
+  :root[data-track="on"] #contact::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 var(--foot);
+    z-index: 1;
+    background:
+      radial-gradient(60% 45% at 35% 85%, rgb(244 184 96 / 0.22), transparent),
+      radial-gradient(45% 55% at 85% 30%, rgb(79 216 238 / 0.16), transparent);
+    pointer-events: none;
+  }
+
   /* The sky behind the city: slower than the street (it moves 30% as far),
      in the hour's colours, with a faint plan's grid so the depth reads */
   :root[data-track="on"] .track-sky {
@@ -282,7 +305,58 @@
     width: calc(100% + 0.3 * var(--travel, 0px));
     background:
       repeating-linear-gradient(90deg, rgb(230 233 238 / 0.04) 0 1px, transparent 1px 7rem),
-      linear-gradient(color-mix(in srgb, #0b1a2e calc(var(--city-night, 1) * 100%), #7d9cbf), var(--seam) 85%);
+      linear-gradient(color-mix(in srgb, var(--city-grade) calc(var(--city-grade-mix, 0) * 100%), transparent), transparent 60%),
+      linear-gradient(color-mix(in srgb, #0a1d3c calc(var(--city-night, 1) * 100%), #7aa6e0), var(--seam) 85%);
+  }
+
+  /* Its clouds, over the panorama's own sky (which melts into this one
+     at its top): pale by day, dark at night, thicker with the weather */
+  :root[data-track="on"] .track-sky::before {
+    --cloud: color-mix(in srgb, #2e3b4d calc(var(--city-night, 1) * 100%), #f4f7fb);
+    content: "";
+    position: absolute;
+    inset: 0 0 65%;
+    background:
+      radial-gradient(10rem 2.5rem at 20% 45%, var(--cloud), transparent),
+      radial-gradient(14rem 3.5rem at 60% 70%, var(--cloud), transparent),
+      radial-gradient(6rem 2rem at 88% 35%, var(--cloud), transparent);
+    background-size: 56rem 100%;
+    opacity: calc(0.35 + var(--city-haze, 0));
+  }
+
+  /* The ground: a faint plan of square dots on the street, one city plan
+     under every stop */
+  :root[data-track="on"] .track::before {
+    content: "";
+    position: absolute;
+    inset: 70% 0 0;
+    background: radial-gradient(rgb(230 233 238 / 0.08) 1px, transparent 1.5px) 0 0 / 12px 12px;
+    mask-image: linear-gradient(transparent, #000);
+    pointer-events: none;
+  }
+
+  /* Haze and light drifting over the city, as the journey goes (below):
+     a veil across the towers' middles, and a soft beam passing */
+  :root[data-track="on"] .track-weather::before,
+  :root[data-track="on"] .track-weather::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 200%;
+  }
+
+  :root[data-track="on"] .track-weather::before {
+    --mist: color-mix(in srgb, #2e3b4d calc(var(--city-night, 1) * 100%), #e6ecf4);
+    background:
+      radial-gradient(30% 14% at 25% 38%, var(--mist), transparent),
+      radial-gradient(40% 18% at 75% 52%, var(--mist), transparent);
+    opacity: calc(0.12 + var(--city-haze, 0) * 0.3);
+  }
+
+  :root[data-track="on"] .track-weather::after {
+    width: 100%;
+    background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, rgb(79 216 238 / 0.07) calc(var(--city-night, 1) * 100%), rgb(244 184 96 / 0.08)), transparent 65%);
+    translate: -100% 0;
   }
 
   /* Rain and snow, once over the stage: inside the track (under the
@@ -344,6 +418,37 @@
       /* A picture grows into its frame as it comes */
       .panel figure {
         --zoom: 0.92;
+      }
+
+      /* The haze drifts a screen over each third of the journey (slower
+         than the street, faster than the sky), the beam crosses the
+         screen at each sixth, and Contact's light comes up over the last
+         part of the journey */
+      :root[data-track="on"]:not([data-still="on"]) .track-weather::before,
+      :root[data-track="on"]:not([data-still="on"]) .track-weather::after,
+      :root[data-track="on"]:not([data-still="on"]) #contact::before {
+        animation: haze both;
+        animation-timeline: --runway;
+        animation-range: contain 0% contain 100%;
+      }
+
+      :root[data-track="on"]:not([data-still="on"]) .track-weather::before {
+        animation-iteration-count: 3;
+      }
+
+      :root[data-track="on"]:not([data-still="on"]) .track-weather::after {
+        animation-name: beam;
+        animation-iteration-count: 6;
+      }
+
+      :root[data-track="on"]:not([data-still="on"]) #contact::before {
+        animation-name: lit;
+        animation-range: contain 80% contain 100%;
+      }
+
+      /* Twilight's windows flicker on as a tile's lights arrive */
+      :root[data-track="on"]:not([data-still="on"]) .band-lights {
+        animation: lights-on var(--t-sky) var(--ease-out) both;
       }
     }
   }
@@ -433,6 +538,11 @@
       bottom: auto;
       height: var(--stop-band);
     }
+
+    :root[data-track="on"] .track::before {
+      inset: calc(var(--band-h) * 0.7) 0 auto;
+      height: calc(var(--band-h) * 0.3);
+    }
   }
 }
 
@@ -481,5 +591,34 @@
   :root[data-track="on"] .track .panel {
     background: var(--ink);
     backdrop-filter: none;
+  }
+}
+
+@keyframes haze {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes beam {
+  to {
+    translate: 100% 0;
+  }
+}
+
+@keyframes lit {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lights-on {
+  from,
+  30% {
+    opacity: 0;
+  }
+  15%,
+  45% {
+    opacity: calc(var(--city-night, 0) * 1.2);
   }
 }

@@ -57,13 +57,19 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
   // The plate the head script already fetched and painted as this tile's
   // background (city.css: [data-home]): the same file, from the cache
   const painted = home && shown.length ? paintedHomePlate() : null;
+  const props = (plate: Plate) =>
+    painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: tile[plate], sizes: whole ? tileSizes(tile.w) : "100vw", quality: home ? HOME_QUALITY[plate] : undefined };
+  // Twilight on the journey: the night plate's windows come on ahead of
+  // the dark (a copy of it, the same file, lightening only what it lights:
+  // city-track.css, "Lights"), once the night plate itself has loaded
+  const lights = whole && shown.length > 1 && loaded.includes("night");
 
   return (
     <div ref={ref} className="band-tile" data-home={home ? "" : undefined} style={whole ? ({ aspectRatio: `${tile.w} / ${HEIGHT}` } as CSSProperties) : undefined}>
       {shown.map((plate) => (
         <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
-            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: tile[plate], sizes: whole ? tileSizes(tile.w) : "100vw", quality: home ? HOME_QUALITY[plate] : undefined })}
+            {...props(plate)}
             alt=""
             fill
             // (mounted only once near: useNear is the lazy loading; the browser's own would wait for the stage's clip)
@@ -74,6 +80,11 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
           />
         </div>
       ))}
+      {lights && (
+        <div className="band-plate band-lights" data-loaded="">
+          <Image {...props("night")} alt="" fill loading="eager" fetchPriority="low" />
+        </div>
+      )}
       {!whole && (
         <noscript>
           {/* eslint-disable-next-line @next/next/no-img-element -- no script, so no next/image */}
