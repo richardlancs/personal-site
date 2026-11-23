@@ -106,9 +106,12 @@ test("along the journey: each stop's start shows its stretch, the end shows the 
   const travel = offsets.at(-1) - vw;
   const end = WIDTH * scale - vw;
   assert.deepEqual(keys.x, [...offsets.slice(0, 5), travel], "a key at each stop's start, the last stop's being the end");
-  // A segment drawn wider than the screen is centred in it
+  // Home stands at the panorama's start, as the first paint draws it (nothing
+  // moves when the scripts arrive); every other stop's segment, drawn wider
+  // than the screen, is centred in it
+  assert.equal(keys.p[0], 0, "Home: no jump at hydration");
   const centre = (scale * SEGMENT - vw) / 2;
-  for (let k = 0; k < 5; k++) assert.ok(Math.abs(keys.p[k] - (scale * stops[k] + centre)) < 1e-6, `stop ${k}`);
+  for (let k = 1; k < 5; k++) assert.ok(Math.abs(keys.p[k] - (scale * stops[k] + centre)) < 1e-6, `stop ${k}`);
   assert.equal(keys.p.at(-1), end);
   for (let k = 1; k < keys.p.length; k++) assert.ok(keys.p[k] >= keys.p[k - 1]);
   // Straight between keys, held at the ends
@@ -123,11 +126,39 @@ test("along the journey: each stop's start shows its stretch, the end shows the 
   assert.deepEqual(panoKeys([0, 1000], 1440, scale, stops, WIDTH, SEGMENT).x, [0]);
 });
 
+test("in still view the panorama moves with the street: its stretch from each stop's start, held behind the rest of a row, a cut between stops", () => {
+  const vw = 1440, scale = 900 / HEIGHT;
+  const widths = [1296, 1296, 6000, 4000, 1296, 1440];
+  const offsets = [0];
+  for (const w of widths) offsets.push(offsets.at(-1) + w);
+  const travel = offsets.at(-1) - vw;
+  const end = WIDTH * scale - vw;
+  const keys = panoKeys(offsets, vw, scale, stops, WIDTH, SEGMENT, true);
+  const at = (x) => panoAt(x, keys);
+  for (let k = 0; k < 5; k++) {
+    const o = offsets[k];
+    const run = Math.min(widths[k], vw);
+    // Each stop's start: its stretch (Home at the very start; never past the end)
+    assert.ok(Math.abs(at(o + 0.001) - Math.min(scale * stops[k], end - run)) < 0.01, `stop ${k} starts at its stretch`);
+    // Pixel for pixel with the street through its first screen
+    for (const d of [100, 500, run - 1]) assert.ok(Math.abs(at(o + d) - at(o + 0.001) - d) < 0.01, `stop ${k}: 1:1 at +${d}`);
+    // Held behind the rest of a row
+    if (widths[k] > vw) assert.equal(at(o + vw + 300), at(o + vw), `stop ${k}: held`);
+  }
+  assert.equal(at(0), 0, "Home: no jump at hydration, in still view too");
+  // The last stop (the journey's end): its own stretch, as far as the panorama goes
+  assert.equal(keys.p.at(-1), Math.min(scale * stops[5], end));
+  assert.equal(keys.x.at(-1), travel);
+  // Chosen from data-still (reduced motion sets it too), and again when it changes
+  const track = read("app/components/city2d/CityTrack.tsx");
+  assert.match(track, /panoKeys\(offsets, vw, pano\.offsetHeight \/ HEIGHT, starts, WIDTH, SEGMENT, still\(\)\)/);
+  assert.match(track, /stillness\.observe\(html, \{ attributeFilter: \["data-still"\] \}\)/);
+});
+
 test("the panorama is drawn once, behind the stops, and moved on the runway's timeline", () => {
   const track = read("app/components/city2d/CityTrack.tsx");
   assert.match(read("app/page.tsx"), /<CityTrack city=\{<DistrictBand tiles=\{bandTiles\} \/>\}>/);
   assert.equal((track.match(/\{city\}/g) ?? []).length, 1);
-  assert.match(track, /keys = panoKeys\(offsets, vw, pano\.offsetHeight \/ HEIGHT, starts, WIDTH, SEGMENT\);/);
   // CSS moves it where it can (its keyframes replaced by the keys), the scroll listener elsewhere
   assert.match(track, /\?\.setKeyframes\(keys\.x\.map\(/);
   assert.match(track, /pano\.style\.transform = `translateX\(\$\{-panoAt\(x, keys\)\}px\)`/);

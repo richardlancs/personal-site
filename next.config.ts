@@ -15,10 +15,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   images: {
-    // Every image asks for the default, 75, except the home band's plate,
-    // 60 (components/city2d/plates.ts: HOME_QUALITY), the page's largest
-    // paint, a painting that holds up at it
-    qualities: [60, 75],
+    // Every image asks for the default, 75, except the panorama's home
+    // tile, the page's largest paint (components/city2d/homePlate.ts:
+    // HOME_QUALITY): 60 by day, 40 by night
+    qualities: [40, 60, 75],
     formats: ["image/avif", "image/webp"],
     // Optimized copies are kept a month rather than 4 hours: the sources
     // (screenshots, the painting) change only with a deploy, which starts

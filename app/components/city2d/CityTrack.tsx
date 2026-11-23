@@ -36,7 +36,9 @@ import WeatherOverlay from "./WeatherOverlay";
 // own measure: each stop's start shows that stop's stretch of the city,
 // and in between it moves straight from one to the next (panoKeys), so a
 // row of panels several screens long passes slowly over its stretch and
-// the whole track is city, end to end. Where the move is CSS, these keys
+// the whole track is city, end to end. In still view it moves with the
+// street instead, cutting between stops (the keys are chosen again when
+// still view is turned on or off). Where the move is CSS, these keys
 // replace its keyframes (the runway's timeline, as the track's own).
 
 let marks: number[] | null = null;
@@ -158,7 +160,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       top = run.getBoundingClientRect().top + scrollY;
       marks = stops.map((_, k) => top + scrollYForStop(k, offsets, vw));
       if (pano) {
-        keys = panoKeys(offsets, vw, pano.offsetHeight / HEIGHT, starts, WIDTH, SEGMENT);
+        keys = panoKeys(offsets, vw, pano.offsetHeight / HEIGHT, starts, WIDTH, SEGMENT, still());
         const move = pano.getAnimations().find((a) => a instanceof CSSAnimation)?.effect as KeyframeEffect | undefined;
         move?.setKeyframes(keys.x.map((x, k) => ({ transform: `translateX(${-keys.p[k]}px)`, offset: travel ? x / travel : 0 })));
       }
@@ -243,6 +245,9 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
 
     measure();
     const sizes = new ResizeObserver(() => measure());
+    // Still view turned on or off: the panorama's other keys
+    const stillness = new MutationObserver(() => measure());
+    stillness.observe(html, { attributeFilter: ["data-still"] });
     sizes.observe(stage);
     // A stop that grows (its content), and a panel's words growing (fonts,
     // pictures, a fold opened): whether it scrolls inside is asked again
@@ -265,6 +270,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     return () => {
       off.abort();
       sizes.disconnect();
+      stillness.disconnect();
       cancelAnimationFrame(raf);
       clearTimeout(aimTimer);
       clearTimeout(settleTimer);

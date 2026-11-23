@@ -238,8 +238,12 @@ test("the head script and the home tile take the plate's URL from one source", (
   // the tile's sizes) and its shape; the tile's <img> for the painted plate
   // reuses the exact URL the script set, read back off <html>
   const layout = read("app/layout.tsx");
-  assert.match(layout, /getImageProps\(\{ src: plate, alt: "", fill: true, sizes: tileSizes\(home\.w\), quality: HOME_QUALITY \}\)/, "the tile's own srcset and sizes");
-  assert.match(layout, /platePreloadScript\(richmondHill, tileSrcSet\(home\.day\), tileSrcSet\(home\.night\), home\.w \/ HEIGHT\)/);
+  assert.match(layout, /getImageProps\(\{ src: home\[plate\], alt: "", fill: true, sizes: tileSizes\(home\.w\), quality: HOME_QUALITY\[plate\] \}\)/, "the tile's own srcset, sizes and quality");
+  assert.match(layout, /platePreloadScript\(richmondHill, tileSrcSet\("day"\), tileSrcSet\("night"\), home\.w \/ HEIGHT\)/);
+  // The same quality on the tile's own <img>, and allowed by the config: 60 by day, 40 by night
+  assert.match(read("app/components/city2d/DistrictBand.tsx"), /quality: home \? HOME_QUALITY\[plate\] : undefined/);
+  assert.match(read("app/components/city2d/homePlate.ts"), /export const HOME_QUALITY: Record<Plate, number> = \{ day: 60, night: 40 \};/);
+  assert.match(read("next.config.ts"), /qualities: \[40, 60, 75\]/);
   const helper = read("app/components/city2d/homePlate.ts");
   assert.match(helper, /\(max-aspect-ratio: 1\/1\) calc\(\$\{\+\(r \* 30\)\.toFixed\(2\)\}vh \+ \$\{Math\.round\(r \* 64\)\}px\), \$\{\+\(r \* 100\)\.toFixed\(2\)\}vh/, "sizes and the script's widths agree");
   const script = read("app/lib/platePreload.ts");

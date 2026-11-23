@@ -63,7 +63,7 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
       {shown.map((plate) => (
         <div key={plate} className={`band-plate band-${plate}`} data-loaded={loaded.includes(plate) ? "" : undefined}>
           <Image
-            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: tile[plate], sizes: whole ? tileSizes(tile.w) : "100vw", quality: home ? HOME_QUALITY : undefined })}
+            {...(painted?.plate === plate ? { src: painted.src, unoptimized: true } : { src: tile[plate], sizes: whole ? tileSizes(tile.w) : "100vw", quality: home ? HOME_QUALITY[plate] : undefined })}
             alt=""
             fill
             // (mounted only once near: useNear is the lazy loading; the browser's own would wait for the stage's clip)

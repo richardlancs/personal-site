@@ -69,8 +69,8 @@ export const viewport: Viewport = {
 // which the head script picks one file to fetch and paint before hydration
 // (the tile's <img> then uses that same file: homePlate.ts)
 const home = bandTiles[0];
-const tileSrcSet = (plate: typeof home.day) => getImageProps({ src: plate, alt: "", fill: true, sizes: tileSizes(home.w), quality: HOME_QUALITY }).props.srcSet ?? "";
-const PLATE_PRELOAD = platePreloadScript(richmondHill, tileSrcSet(home.day), tileSrcSet(home.night), home.w / HEIGHT);
+const tileSrcSet = (plate: "day" | "night") => getImageProps({ src: home[plate], alt: "", fill: true, sizes: tileSizes(home.w), quality: HOME_QUALITY[plate] }).props.srcSet ?? "";
+const PLATE_PRELOAD = platePreloadScript(richmondHill, tileSrcSet("day"), tileSrcSet("night"), home.w / HEIGHT);
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

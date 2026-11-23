@@ -9,7 +9,9 @@
 //    and at its end the scroll goes on along the city: wheel and PageDown
 //    over an opened long panel reach the next stop;
 // 5. without JavaScript, and with the page's scripts failing, the page
-//    reads top to bottom.
+//    reads top to bottom;
+// 6. (run before 5) the panorama doesn't move at hydration, and moves with
+//    the street, pixel for pixel, in still view.
 // Exits 1 on any failure. Headless Chrome (pw.mjs). NO_TIMELINE=1 runs it
 // as a browser without scroll-driven animations would (Firefox, older
 // Safari): the timeline switched off, so CityTrack's frame does the move.
@@ -376,6 +378,53 @@ try {
     check(reached, "and at the sheet's end a swipe goes on along the city");
     await phone.close();
     await tctx.close();
+  }
+
+  // 6. The panorama (DistrictBand.tsx, trackMath.ts: panoKeys): Home's
+  // painting doesn't move when the scripts arrive; in still view the
+  // panorama moves with the street, pixel for pixel
+  {
+    const c = await newContext({ viewport: { width: 1440, height: 900 } });
+    // Its place on every frame from the first paint the journey is on
+    await c.addInitScript(() => {
+      window.__pano = [];
+      const look = () => {
+        const p = document.querySelector(".pano");
+        if (p && document.documentElement.dataset.track === "on") window.__pano.push([document.documentElement.hasAttribute("data-track-ready"), Math.round(p.getBoundingClientRect().left * 10) / 10]);
+        if (window.__pano.length < 400) requestAnimationFrame(look);
+      };
+      requestAnimationFrame(look);
+    });
+    const page = await c.newPage();
+    await page.goto(base + "/", { waitUntil: "load" });
+    await page.waitForFunction(() => document.documentElement.hasAttribute("data-track-ready"));
+    await settle(page, 600);
+    const seen = await page.evaluate(() => window.__pano);
+    const before = seen.filter(([ready]) => !ready).map(([, x]) => x), after = seen.filter(([ready]) => ready).map(([, x]) => x);
+    const all = [...before, ...after];
+    check(before.length > 0 && after.length > 0 && Math.max(...all) - Math.min(...all) <= 0.5, `Home's painting stands still through hydration (before ${[...new Set(before)]}, after ${[...new Set(after)]})`);
+    await c.close();
+  }
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    const c = await newContext({ viewport: size, reducedMotion: "reduce" });
+    const page = await open(c, "/", size);
+    const where = () => page.evaluate(() => [document.querySelector(".pano").getBoundingClientRect().left, document.querySelector(".track").getBoundingClientRect().left, document.documentElement.dataset.still]);
+    const moves = [];
+    for (const id of ["home", "about", "projects", "experience"]) {
+      const y = await page.evaluate((id) => {
+        const s = document.getElementById(id);
+        return document.querySelector(".track-runway").getBoundingClientRect().top + scrollY + s.offsetLeft;
+      }, id);
+      await page.evaluate((y) => scrollTo({ top: y + 1, behavior: "instant" }), y);
+      await settle(page, 200);
+      const [p0, t0, still] = await where();
+      await page.evaluate((y) => scrollTo({ top: y + 1 + Math.round(innerWidth / 3), behavior: "instant" }), y);
+      await settle(page, 200);
+      const [p1, t1] = await where();
+      moves.push([id, still, Math.round((p1 - p0) * 10) / 10, Math.round((t1 - t0) * 10) / 10]);
+    }
+    check(moves.every(([, still, p, t]) => still === "on" && t < -50 && Math.abs(p - t) <= 1), `${size.width}×${size.height}, still view: the panorama moves with the street (${moves.map((m) => m.join(" ")).join("; ")})`);
+    await c.close();
   }
 
   // 5. No JavaScript; and the page's scripts failing

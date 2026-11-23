@@ -13,8 +13,11 @@ export const tileSizes = (w: number) => {
 
 // The home tile is the page's largest paint, so it is asked for a little
 // lighter: the head script's srcset (layout.tsx) and its own <img> both use
-// it (next.config.ts allows it)
-export const HOME_QUALITY = 60;
+// it (next.config.ts allows both). The night photograph, all lit windows,
+// costs more bytes at a quality than the day, so it is asked for lighter
+// still: at 40 it is no heavier than the painted home plate it replaced was
+// at 60 (task-3-report.md, "Fix round 1")
+export const HOME_QUALITY: Record<Plate, number> = { day: 60, night: 40 };
 
 // The home tile's plate as the head script (lib/platePreload.ts) fetched
 // and painted it before hydration: which plate, and the exact file. The

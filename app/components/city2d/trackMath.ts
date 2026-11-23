@@ -45,21 +45,38 @@ export const TRACK_MIN = { width: 320, height: 320 } as const;
  * At each stop's start it stands at that stop's stretch (`starts`, in the
  * panorama's own pixels, drawn `scale` times as big): its segment
  * (`segment` wide) from its left edge, or centred where the screen is
- * narrower than a segment; at the journey's end, its own end. Never past
- * either end, never back.
+ * narrower than a segment, except Home's, which stands at the panorama's
+ * start as the first paint draws it (nothing moves when the scripts
+ * arrive); at the journey's end, its own end. Never past either end, never
+ * back.
+ *
+ * In still view (`still`) nothing may move against the street: the
+ * panorama moves with it, pixel for pixel, through each stop's first screen
+ * from that stop's stretch, then holds behind the rest of a row of panels,
+ * and cuts to the next stop's stretch where that stop starts.
  */
-export function panoKeys(offsets: number[], vw: number, scale: number, starts: number[], width: number, segment: number): { x: number[]; p: number[] } {
+export function panoKeys(offsets: number[], vw: number, scale: number, starts: number[], width: number, segment: number, still = false): { x: number[]; p: number[] } {
   const n = offsets.length - 1;
   const travel = Math.max(0, offsets[n] - vw);
   const end = Math.max(0, width * scale - vw);
   const x: number[] = [];
   const p: number[] = [];
+  const at = (k: number) => scale * (starts[k] ?? 0);
   for (let k = 0; k < n && offsets[k] < travel; k++) {
-    x.push(offsets[k]);
-    p.push(Math.min(end, Math.max(p[k - 1] ?? 0, scale * (starts[k] ?? 0) + Math.max(0, (scale * segment - vw) / 2))));
+    if (still) {
+      const to = Math.min(offsets[k + 1], travel);
+      const run = Math.min(to - offsets[k], vw);
+      const from = Math.max(0, Math.min(at(k), end - run));
+      x.push(offsets[k], offsets[k] + run, to);
+      p.push(from, from + run, from + run);
+    } else {
+      x.push(offsets[k]);
+      p.push(k ? Math.min(end, Math.max(p[k - 1], at(k) + Math.max(0, (scale * segment - vw) / 2))) : 0);
+    }
   }
+  // The journey's end: the last stop's stretch in still view (a cut), the panorama's end otherwise
   x.push(travel);
-  p.push(end);
+  p.push(still ? Math.max(0, Math.min(at(n - 1), end)) : end);
   return { x, p };
 }
 
