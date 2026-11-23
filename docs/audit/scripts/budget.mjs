@@ -36,8 +36,11 @@ const HOME_JS_LIMIT = 200_848;
 // the unused interest-card rules, and the utilities Tailwind made for the
 // unloaded park code, docs and tests (city.css, @source not). Round 2 had
 // grown it from 9,646 to 10,653 (the four rebuilt sections, the progress
-// line, figures, the list marker).
-const TOTAL_CSS_LIMIT = 10_760;
+// line, figures, the list marker). Raised to 12,000 at Richard's ruling,
+// 23 November 2026, for the horizontal city he asked to be "highly
+// animated" (the journey, the arrivals, the metro map, the living city:
+// 11,590 when ruled). Only goes down from here.
+const TOTAL_CSS_LIMIT = 12_000;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;
