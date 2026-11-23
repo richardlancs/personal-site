@@ -1,5 +1,7 @@
 // The mobile audit: the one-page city (`/`) and each of its anchors (/#about,
-// /#projects, /#skills, /#experience, /#interests, /#contact), the Sections
+// /#projects, /#skills, /#experience, /#interests, /#contact), each the
+// journey's stop it lands on (CityTrack.tsx: the stops side by side, the
+// page's scroll moving along them), the Sections
 // menu, the weather display, the progress line and the résumé dialog, at
 // phone, tablet, desktop and phone-landscape sizes, against a production
 // build. Headless Chrome with touch emulation and
@@ -29,9 +31,13 @@
 //   under an emulated safe-area inset, or out of the viewport (the top
 //   bar and the progress line are checked again at the foot of the page)
 // - fit: an open menu, slip or dialog taller or wider than the safe
-//   viewport, or one with more content than room that can't scroll
-// - chain: an open menu or slip that scrolls but lets the scroll run on to
-//   the page behind it (touch scroll gesture, CDP)
+//   viewport, or one with more content than room that can't scroll; the
+//   stop's panel past the stage (under the bar, or the home bar), or one
+//   with more than fits that can't scroll once the journey has stopped
+// - stop: an anchor that didn't land on its stop (the journey on)
+// - chain: an open menu or slip, or a stop's panel, that scrolls but lets
+//   the scroll run on to the page behind it (touch scroll gesture, CDP):
+//   for a panel, the city moving
 // - clipped: a button's label cut off by its own box (200% text)
 // - covers: the progress line (fixed in the margin, from 97rem) lying
 //   over the page's words or controls, at the top, middle and foot; and,
@@ -59,7 +65,7 @@ const routes = [...new Set(pageSections.flatMap((s) => [s.href, ...(s.subsection
 );
 if (!routes.includes("/") || routes.length < 2) console.log(`note: auditing ${routes.join(", ") || "nothing"}`);
 const slug = (route) => (route === "/" ? "home" : route.replace(/^\/#?/, "").replaceAll("/", "-"));
-const FAIL_KINDS = ["overflow", "small", "overlap", "close", "tiny-text", "unsafe", "fit", "chain", "clipped", "covers", "tap", "error"];
+const FAIL_KINDS = ["overflow", "small", "overlap", "close", "tiny-text", "unsafe", "fit", "chain", "clipped", "covers", "tap", "stop", "error"];
 
 // Insets of a notched phone held upright (top: the status bar and notch,
 // bottom: the home bar), on its side (the notch left or right), and an
@@ -159,8 +165,21 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     const own = el.textContent.trim().length;
     return block && block.textContent.replace(/\s+/g, " ").trim().length > own + 3;
   };
+  // Scrolled wholly out of an ancestor that clips it (a stop's panel that
+  // scrolls inside, the journey's stage): not there to tap, nor anyone's
+  // neighbour, until it's scrolled back
+  const clippedOut = (el) => {
+    const r = el.getBoundingClientRect();
+    for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) {
+      const cs = getComputedStyle(e);
+      if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+      const er = e.getBoundingClientRect();
+      if (r.bottom <= er.top || r.top >= er.bottom || r.right <= er.left || r.left >= er.right) return true;
+    }
+    return false;
+  };
   const targets = [...root.querySelectorAll("a[href], button, [role=tab], input, select, summary, [tabindex='0']")].filter(
-    (el) => visible(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link, .resume-doc"),
+    (el) => visible(el) && !clippedOut(el) && getComputedStyle(el).pointerEvents !== "none" && !el.classList.contains("skip-link") && !srOnly(el) && !el.closest(".textLayer, .resume-link") && !el.matches(".resume-link, .resume-doc"),
   );
   const out = { small: [], overlap: [], close: [], tinyText: [], bodySmall: [], unsafe: [], overflow: [], clipped: [], layers: [] };
   const scrollX0 = scrollX;
@@ -314,13 +333,15 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
       const r = el.getBoundingClientRect();
       if (r.width === 0 || (r.right <= vw + 1 && r.left >= -1)) continue;
       if (!el.checkVisibility({ visibilityProperty: true }) || srOnly(el) || el.closest(".resume, [popover]:not(:popover-open)")) continue;
+      // Clipped by an ancestor that is itself within the screen (the
+      // journey's stage clips the stops off it; a panel off the screen
+      // with it doesn't count, the stage does)
       let clipped = false;
-      for (let e = el.parentElement; e && e !== document.documentElement; e = e.parentElement) {
+      for (let e = el.parentElement; e && e !== document.documentElement && !clipped; e = e.parentElement) {
         const cs = getComputedStyle(e);
         if (cs.overflowX !== "visible" || cs.clipPath !== "none" || cs.contain.includes("paint")) {
           const er = e.getBoundingClientRect();
           if (er.right <= vw + 1 && er.left >= -1) clipped = true;
-          break;
         }
       }
       const parentOffends = (() => {
@@ -482,6 +503,44 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
     try {
     await visit(page, route);
     file(profile, route, "", await page.evaluate(measure, { insets, phone: profile.phone, touch: profile.touch, width: profile.width, height: profile.height }));
+    // The journey: the anchor's stop at the left edge, its panel inside
+    // the stage, scrolling inside (never moving the city) if it must
+    step = "stop";
+    const stop = await page.evaluate(
+      ({ route, insets, height }) => {
+        if (document.documentElement.dataset.track !== "on") return null;
+        const id = route.split("#")[1] || "home";
+        const target = document.getElementById(id)?.closest(".track > .station");
+        const at = [...document.querySelectorAll(".track > .station")].find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
+        const panel = at?.querySelector(":scope > .station-body");
+        const r = panel?.getBoundingClientRect();
+        const bar = document.querySelector(".top-bar").getBoundingClientRect();
+        return {
+          landed: !!at && at === target,
+          id: at?.id,
+          panel: panel && `#${at.id} > .station-body`,
+          under: r && r.top < bar.bottom - 0.5 ? Math.round(bar.bottom - r.top) : 0,
+          // A sheet (a tall screen: city-track.css) runs to the screen's
+          // foot on purpose and pads its words clear of the home bar
+          past: !r ? 0 : innerHeight >= innerWidth ? Math.round(insets.bottom - parseFloat(getComputedStyle(panel).paddingBottom)) : Math.round(r.bottom - (height - insets.bottom)),
+          more: panel ? panel.scrollHeight > panel.clientHeight + 1 : false,
+          scrolls: panel ? getComputedStyle(panel).overflowY : "",
+        };
+      },
+      { route, insets, height: profile.height },
+    );
+    if (stop) {
+      if (!stop.landed) report("stop", where, `landed on ${stop.id ?? "no stop"}`);
+      if (stop.under > 0) report("fit", where, `the stop's panel runs ${stop.under}px under the bar`);
+      if (stop.past > 0.5) report("fit", where, `the stop's panel (or a sheet's words) runs ${stop.past}px past the foot of the safe screen`);
+      if (stop.more && !/auto|scroll/.test(stop.scrolls)) report("fit", where, `the stop's panel has more than fits but can't scroll (overflow-y ${stop.scrolls})`);
+      if (stop.more && profile.touch && stop.panel) {
+        const moved = await chains(page, cdp, stop.panel);
+        if (moved) report("chain", where, `a touch scroll in the stop's panel moved the city ${moved}px`);
+        await page.evaluate((s) => (document.querySelector(s).scrollTop = 0), stop.panel);
+      }
+    }
+    step = "page";
     // The progress line over the page, where this anchor lands
     for (const d of await page.evaluate(covers)) report("covers", where, d.startsWith("the bar") ? d : `the progress line lies over ${d}`);
     // Fixed things again at the foot of the page
@@ -540,7 +599,17 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
 
     // The résumé
     step = "résumé: open";
-    const link = page.locator("a[data-resume]:visible").first();
+    // The first résumé link on the screen (on the journey, the stop's own;
+    // the others are off the screen, sideways)
+    await page.evaluate(() => {
+      for (const a of document.querySelectorAll("a[data-resume]")) a.removeAttribute("data-audit");
+      const on = [...document.querySelectorAll("a[data-resume]")].find((a) => {
+        const r = a.getBoundingClientRect();
+        return a.checkVisibility() && r.width > 0 && r.left >= 0 && r.right <= innerWidth;
+      });
+      on?.setAttribute("data-audit", "");
+    });
+    const link = page.locator("a[data-resume][data-audit]").first();
     if ((await link.count()) && (await link.isVisible())) {
       await link.scrollIntoViewIfNeeded();
       // The first opening fetches the viewer and pdf.js: the tap can take a
@@ -635,9 +704,10 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
         const el = document.getElementById(h.slice(1));
         if (!el) return null;
         const r = el.getBoundingClientRect();
-        return { hash: location.hash, top: r.top, bottom: r.bottom };
+        return { hash: location.hash, top: r.top, bottom: r.bottom, left: r.left, track: document.documentElement.dataset.track === "on" };
       }, hash);
       if (!at || at.hash !== hash) report("tap", where, `${what} went to ${page.url()}`);
+      else if (at.track && Math.abs(at.left) > 2) report("tap", where, `${what} left ${hash}'s stop ${Math.round(at.left)}px from the left edge`);
       else if (at.bottom < 0 || at.top > profile.height * 0.5) report("tap", where, `${what} left ${hash} at ${Math.round(at.top)}px, not near the top of the screen`);
     };
     try {

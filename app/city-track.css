@@ -29,7 +29,8 @@
 
   /* The bar floats over the stage (in the page's flow it would push the
      stage down and the first scroll would move the page, not the city);
-     a very tall one (data-bar-tall) scrolls away with the top of the page */
+     a very tall one (data-bar-tall) scrolls away with the top of the page.
+     The panels clear it either way: at the first stop it is still there */
   :root[data-track="on"] .top-bar {
     position: fixed;
     inset: 0 0 auto;
@@ -37,10 +38,6 @@
 
   :root[data-track="on"][data-bar-tall] .top-bar {
     position: absolute;
-  }
-
-  :root[data-track="on"][data-bar-tall] {
-    --stop-top: 0.75rem;
   }
 
   :root[data-track="on"] .track-runway {
