@@ -186,7 +186,7 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
   // of what comes next along the street (the closure): its words are a
   // peek, not something to read or tap there (a tap or focus brings it on)
   const peek = (el) => {
-    const p = el.closest(".track .panel, .track .exp-label");
+    const p = el.closest(".track .panel");
     if (!p || document.documentElement.dataset.track !== "on") return false;
     const r = p.getBoundingClientRect();
     return r.left < -1 || r.right > innerWidth + 1;

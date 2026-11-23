@@ -44,8 +44,13 @@ test("glow is dropped for prefers-contrast: more", () => {
   // Within that block (it runs to the next line that closes a top-level rule)
   const block = read("app/city.css").match(/@media \(prefers-contrast: more\) \{[\s\S]*?\n\}/)?.[0] ?? "";
   assert.match(block, /--glow-cyan: 0 0 #0000/);
-  // No text glows at all (the hero's name and the point marks lost theirs)
-  for (const f of ["app/city.css", "app/city-track.css", "app/motion.css", "app/reveal.css"]) assert.doesNotMatch(read(f), /text-shadow/, f);
+  // No text glows at all (the hero's name and the point marks lost theirs);
+  // the one text-shadow is the panels' dark halo (city-track.css, Task 8),
+  // ink, never a colour, and gone under prefers-contrast: more
+  for (const f of ["app/city.css", "app/motion.css", "app/reveal.css"]) assert.doesNotMatch(read(f), /text-shadow/, f);
+  const track = read("app/city-track.css");
+  for (const m of track.matchAll(/text-shadow: ([^;]*);/g)) assert.ok(m[1] === "none" || m[1].match(/rgb\(([^)]*)\)/g).every((c) => c.startsWith("rgb(8 9 12 ")), m[0]);
+  assert.match(track.slice(track.indexOf("@media (prefers-contrast: more)")), /text-shadow: none;/);
   assert.doesNotMatch(read("app/city.css").match(/\.points > li::before \{[^}]*\}/)[0], /box-shadow/);
 });
 

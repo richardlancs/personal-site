@@ -890,14 +890,10 @@ a[data-resume][data-opening] {
   padding: 0.25rem max(1.25rem, env(safe-area-inset-right)) clamp(2.5rem, 6vw, 4.5rem) max(1.25rem, env(safe-area-inset-left));
 }
 
-/* A row of panels (Projects, Experience; on the journey side by side,
-   city-track.css), stacked: one under the other. Experience's groups and
-   stations likewise; each group's name is on a plate. A panel's inner
-   corners (--radius-in) are its own less its padding (--pad, on the
-   journey) */
-.station-row,
-.exp-group,
-.exp-stations {
+/* A row of panels (Projects; on the journey side by side,
+   city-track.css), stacked: one under the other. A panel's inner corners
+   (--radius-in) are its own less its padding (--pad, on the journey) */
+.station-row {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -907,18 +903,37 @@ a[data-resume][data-opening] {
   --radius-in: max(0.25rem, var(--radius-lg) - var(--pad, 0px));
 }
 
-.exp-label {
-  align-self: flex-start;
-  padding: 0.25rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
+/* Experience's timeline (sections/Experience.tsx): a dot on the line for
+   each entry, filled while it runs; the line down the entries' side, or
+   across their tops once they stand in three columns */
+.exp-entry::before {
+  content: "";
+  position: absolute;
+  top: 0.45rem;
+  left: calc(-1.5rem - 6px);
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--cyan);
+  border-radius: 50%;
   background: var(--ink);
 }
 
-/* The first group's name, in the newest role's panel after the heading */
-.exp-label-in {
-  width: fit-content;
-  margin: 1rem 0 0.75rem;
+.exp-entry[data-current]::before {
+  background: var(--cyan);
+}
+
+@container (min-width: 45.5rem) {
+  .exp-entry::before {
+    top: calc(-1.5rem - 6px);
+    left: 0;
+  }
+}
+
+/* Work or Education, in words on a hairline label */
+.exp-kind {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid rgb(230 233 238 / 0.35);
+  border-radius: 0.375rem;
 }
 
 /* The section's number and its heading, on one baseline */

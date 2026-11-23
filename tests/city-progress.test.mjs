@@ -185,7 +185,7 @@ test("the map's CSS: transforms only, the fill eased only when it locks, and not
   // The panels clear it (city-track.css: --foot from --map-h)
   const track = read("app/city-track.css");
   assert.match(track, /--foot: calc\(var\(--map-h\) \+ max\(8px, env\(safe-area-inset-bottom\)\) \+ 0\.5rem\);/);
-  assert.match(track, /\.track \.station-body \{[^}]*bottom: var\(--foot\);/);
+  assert.match(track, /\.track \.station-body \{[^}]*inset: var\(--stop-top\) auto var\(--foot\) /);
   // The section in the top bar from 53rem on
   assert.match(css, /@media \(min-width: 53rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
 });

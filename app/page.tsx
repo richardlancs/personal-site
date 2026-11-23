@@ -4,7 +4,7 @@ import { bandTiles } from "./components/city2d/panoramaImages";
 import Station from "./components/city2d/Station";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
-import Experience from "./components/city2d/sections/Experience";
+import Experience, { ExperienceHead } from "./components/city2d/sections/Experience";
 import Hero from "./components/city2d/sections/Hero";
 import Interests from "./components/city2d/sections/Interests";
 import Projects from "./components/city2d/sections/Projects";
@@ -33,7 +33,7 @@ export default function Home() {
         <Station section={section("projects")} row>
           <Projects />
         </Station>
-        <Station section={section("experience")} row>
+        <Station section={section("experience")} heading={<ExperienceHead />}>
           <Experience />
         </Station>
         <Station section={section("interests")}>

@@ -83,7 +83,7 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
 });
 
-test("the cover leads, matched to its words: a wide one heads them at their width, a tall one stands beside them; every other panel a size smaller", () => {
+test("the cover leads, matched to its words: a wide one heads them at their width, a tall one stands beside them; on a wide panel, two columns", () => {
   // The frame is the picture's own shape: no empty bands, nothing cropped
   assert.match(source, /style=\{\{ aspectRatio: `\$\{shots\.reduce\(\(w, s\) => w \+ s\.width \/ s\.height, 0\)\}` \}\}/);
   assert.doesNotMatch(source, /aspect-\[16\/10\]/);
@@ -98,7 +98,12 @@ test("the cover leads, matched to its words: a wide one heads them at their widt
   assert.match(row, /pair \? "w-80" : "w-48"/);
   // A pair's frame is exactly its two pictures: no gap, no band
   assert.doesNotMatch(source, /justify-center gap-3/);
-  assert.match(source, /"--panel-w": small \? "34rem" : "40rem"/);
+  // Every panel the same substantial size (Task 8): on a wide one the title
+  // and summary over a wide cover, what I did beside them (or a tall cover,
+  // the title, then what I did: three columns)
+  assert.doesNotMatch(source, /--panel-w/);
+  assert.match(source, /"@min-\[45\.5rem\]:grid-cols-\[minmax\(0,1\.1fr\)_minmax\(0,1fr\)\]"/);
+  assert.match(source, /@min-\[45\.5rem\]:grid-cols-\[auto_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
   // Its corners are the panel's less its padding
   assert.match(source, /rounded-\[var\(--radius-in\)\]/);
 });

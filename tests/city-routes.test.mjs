@@ -119,7 +119,7 @@ test("the home page is the six stations, with the Skills anchor inside Projects"
   assert.match(projects, /<Projects \/>/);
   assert.doesNotMatch(page, /id="skills"/, "no second Skills anchor on the page");
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /<section id="skills"/);
-  for (const [id, name, row] of [["about", "About", ""], ["experience", "Experience", " row"], ["interests", "Interests", ""]]) {
+  for (const [id, name, row] of [["about", "About", ""], ["experience", "Experience", " heading={<ExperienceHead />}"], ["interests", "Interests", ""]]) {
     assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}${row}>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
   }
   // Contact, then the foot of the page (the colophon), which ends the last stop

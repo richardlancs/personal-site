@@ -211,7 +211,8 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(body, /\.track > \.station:last-of-type \{\s*width: 100cqw;/);
   // Panels: never taller than the stage, scroll inside only when open,
   // and at their end chain on to the page (the journey goes on)
-  assert.match(body, /\.track \.station-body \{[^}]*max-height: calc\(100% - var\(--stop-top\)/);
+  assert.match(body, /--room: calc\(100% - var\(--stop-top\) - var\(--foot\)\);/);
+  assert.match(body, /\.track \.station-body \{[^}]*max-height: var\(--room\);/);
   assert.match(body, /\.station-row \.panel \{[^}]*max-height: 100%;/);
   assert.match(body, /\.track \.panel \{[^}]*overflow-y: hidden;/);
   assert.match(body, /\.track \[data-open\] \{\s*overflow-y: auto;\s*\}/);
@@ -262,19 +263,34 @@ test("arrivals: each panel and its pieces enter on the runway's timeline from th
   assert.match(src, /p\.style\.setProperty\("--at", `\$\{x\}px`\)/);
 });
 
-test("fix round 1: glass the city reads through, a scrim behind the words, city at the edges, keys left to their press, anchors by layout", () => {
+test("Task 8: clear glass, a feathered shade behind the words, each stop's panel centred and substantial, anchors centre their panel", () => {
   const body = code(read("app/city-track.css"));
-  assert.match(body, /\.track \.panel \{[^}]*background: rgb\(8 9 12 \/ 0\.45\);[^}]*backdrop-filter: blur\(7px\);/);
-  assert.match(body, /\.track \.panel :is\(\.station-head, h3, h4, p, li, summary\) \{\s*background: rgb\(8 9 12 \/ 0\.62\);/);
+  // Clear glass: a barest tint, a blur, a fine light edge, the words' dark halo
+  assert.match(body, /\.track \.panel \{[^}]*border: 1px solid rgb\(230 233 238 \/ 0\.2\);[^}]*background: linear-gradient\(160deg, rgb\(79 216 238 \/ 0\.06\), rgb\(8 9 12 \/ 0\.1\)\);[^}]*backdrop-filter: blur\(10px\) brightness\(0\.8\);[^}]*text-shadow: 0 0 0\.75rem rgb\(8 9 12 \/ 0\.9\);/);
+  assert.match(body, /--shade: rgb\(8 9 12 \/ 0\.72\);/, "as light as passes city-contrast over 20 skies");
+  // No hard scrim: a shade under each outermost block, feathered by a mask, never a solid band
+  assert.doesNotMatch(body, /:is\(\.station-head, h3, h4, p, li, summary\) \{\s*background/);
+  assert.match(body, /::before \{[^}]*background: var\(--shade\);[^}]*mask-image:[^;]*transparent[^;]*;[^}]*mask-composite: intersect;/);
   assert.doesNotMatch(body, /#contact \.panel \{[^}]*background/, "Contact the same glass");
-  // From a panel at the inset, the next starts past the screen's edge
-  assert.match(body, /--past: max\(2 \* var\(--peek\), 100cqw - var\(--peek\) - 1rem - min\(28rem, 100cqw - 2 \* var\(--peek\) - 2rem\)\);\s*gap: var\(--past\);/);
-  // ... and after a row's last panel, before the next stop
-  assert.match(body, /padding: var\(--stop-top\) var\(--past\) /);
+  // Centred and substantial: one width for every panel (within the central 80%), in the middle of its stop, most of the room
+  assert.match(body, /--w: min\(100cqw - 2 \* var\(--peek\), max\(64cqw, 68rem\)\);/);
+  assert.match(body, /\.track \.station-body \{[^}]*inset: var\(--stop-top\) auto var\(--foot\) max\(\(100cqw - var\(--w\)\) \/ 2, env\(safe-area-inset-left\)\);[^}]*min-height: calc\(var\(--room\) \* 0\.72\);[^}]*margin: auto 0;/);
+  // A row: a screen per panel, each in the middle of its own, the peek after the last
+  assert.match(body, /\.track \.station-row \{[^}]*gap: calc\(100cqw - var\(--w\)\);[^}]*padding: var\(--stop-top\) calc\(var\(--gut\) - var\(--peek\)\) var\(--foot\) var\(--gut\);/);
   // The arrivals never animate a key or a link itself (GlassPress's give is its scale)
   const set = body.match(/:is\(\.track \.panel, \.panel :is\(([^)]*)\)\)/)[1];
   assert.doesNotMatch(set, /glass|text-link/);
-  // Anchors measure the panel's layout (--at), not its drawn rect
+  // Anchors measure the panel's layout (--at), not its drawn rect, and put it in the middle
   const src = code(read("app/components/city2d/CityTrack.tsx"));
-  assert.match(src, /const x = parseFloat\(p\.style\.getPropertyValue\("--at"\)\) \|\| offsets\[i\];/);
+  assert.match(src, /const x = parseFloat\(p\.style\.getPropertyValue\("--at"\)\);/);
+  assert.match(src, /Math\.max\(offsets\[i\], x - \(vw - Math\.min\(p\.offsetWidth, vw\)\) \/ 2\)/);
+});
+
+test("Task 8: the motion blur scales with the speed, is gone at rest, and never in still view or with reduced motion", () => {
+  const src = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(src, /<feGaussianBlur stdDeviation="0 0"/, "sideways only");
+  assert.match(src, /Math\.min\(BLUR_MAX, speed \* BLUR_PER_SPEED\)/);
+  assert.match(src, /still\(\) \|\| calm\.matches \? 0/);
+  assert.match(src, /if \(d < BLUR_MIN\) \{[^}]*pano\.style\.filter = ""/, "no filter at all at rest");
+  assert.match(src, /if \(!blurRaf\) blurRaf = requestAnimationFrame\(blurFrame\)/, "started by the scroll, no frames at rest");
 });

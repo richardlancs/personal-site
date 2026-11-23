@@ -1,5 +1,4 @@
 import Image from "next/image";
-import type { CSSProperties } from "react";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
@@ -159,11 +158,12 @@ export default function Projects() {
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
-          // Every other panel a size smaller, its cover with it
-          const small = index % 2 === 1;
           // A tall cover (a phone's screen, or a pair) stands beside the
           // words, as tall as they are (on a narrow panel it heads them,
-          // centred, at the same size); a wide one heads them, as wide
+          // centred, at the same size); a wide one heads them, as wide. On
+          // a wide panel the words go in two columns: the title and summary
+          // over a wide cover (or beside a tall one), and what I did beside
+          // them, so no line runs long and the cover is as tall as its text
           const side = Boolean(cover && tall(cover));
           return (
             <article
@@ -171,10 +171,16 @@ export default function Projects() {
               id={slug(project.title)}
               aria-labelledby={titleId}
               className="panel project @container reveal"
-              style={{ ...order(index + 1), "--panel-w": small ? "34rem" : "40rem" } as CSSProperties}
+              style={order(index + 1)}
             >
-              <div className={`grid grid-cols-1 gap-y-5 ${side ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6" : ""}`}>
-              <header className={`min-w-0 break-words ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
+              <div
+                className={`grid grid-cols-1 gap-y-5 @min-[45.5rem]:grid-rows-[auto_1fr] @min-[45.5rem]:gap-x-10 ${
+                  side
+                    ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6 @min-[45.5rem]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]"
+                    : "@min-[45.5rem]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
+                }`}
+              >
+              <header className={`min-w-0 break-words @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2" : "@min-[45.5rem]:col-start-1"}`}>
                 <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
                   <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
                     {String(index + 1).padStart(2, "0")}
@@ -186,12 +192,12 @@ export default function Projects() {
               </header>
 
               {cover && (
-                <div className={`-order-1 min-w-0 ${side ? `mx-auto max-w-full @min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "w-80" : "w-48"}` : ""}`}>
+                <div className={`-order-1 min-w-0 ${side ? `mx-auto max-w-full @min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "w-80" : "w-48"}` : "@min-[45.5rem]:order-none @min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-2"}`}>
                   <Picture shots={shown} />
                 </div>
               )}
 
-              <div className={`min-w-0 break-words ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
+              <div className={`min-w-0 break-words @min-[45.5rem]:row-span-2 @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2 @min-[45.5rem]:col-start-3" : "@min-[45.5rem]:col-start-2"}`}>
                 <Keys project={project} />
 
                 {part.length > 0 ? (
@@ -286,7 +292,7 @@ export default function Projects() {
           );
         })}
 
-      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="panel project-skills @container reveal break-words" style={{ ...order(projects.length + 1), "--panel-w": "34rem" } as CSSProperties}>
+      <section id="skills" aria-labelledby="skills-title" tabIndex={-1} className="panel project-skills @container reveal break-words" style={order(projects.length + 1)}>
         <Heading level={3} id="skills-title" className="font-display text-3xl font-semibold tracking-tight text-text">
           Skills
         </Heading>

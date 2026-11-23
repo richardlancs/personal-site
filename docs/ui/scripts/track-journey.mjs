@@ -4,7 +4,8 @@
 // 1. a mouse wheel, Space/PageDown/arrow keys, the scrollbar and a touch
 //    swipe (up and sideways) all travel the city to Contact and back home;
 // 2. every anchor loaded cold lands on its stop (Experience's showing its
-//    newest role's title); Back/Forward restore it;
+//    newest role's title, and on a wide screen every entry's), each panel
+//    in a row centred on the screen; Back/Forward restore it;
 // 3. a resize or a turn keeps the stop;
 // 4. a panel taller than the stage scrolls inside (wheel, keys and touch),
 //    and at its end the scroll goes on along the city: wheel and PageDown
@@ -217,19 +218,12 @@ try {
   }
 
   // 1d. The edges are city: at every settled stop at 1440 and 768, and at
-  // the panels in a row and each row's end (Skills, the last project, the
-  // last role), no panel's words lie in the outer 10% of the screen on
-  // either side. It counts the words it saw, so it can't pass on none.
+  // the panels in a row and the row's end (Skills, the last project), no
+  // panel's words lie in the outer 10% of the screen on either side. It
+  // counts the words it saw, so it can't pass on none.
   for (const size of [{ width: 1440, height: 900 }, { width: 768, height: 1024 }, { width: 1024, height: 768 }]) {
     const page = await open(ctx, "/", size);
-    const lastRole = await page.evaluate(() => {
-      const p = [...document.querySelectorAll("#experience .exp-stop > .panel")].pop();
-      p.id ||= "journey-last-role";
-      return p.id;
-    });
-    for (const id of ["home", "about", "projects", "marketlab", "garagepoker", "skills", "experience", lastRole, "interests", "contact"]) {
-      // (the last role has no address of its own: its panel is brought on as
-      // a link to it would)
+    for (const id of ["home", "about", "projects", "marketlab", "garagepoker", "skills", "experience", "interests", "contact"]) {
       await page.evaluate((i) => (location.hash = i), id);
       await settle(page, 300);
       await rest(page);
@@ -241,7 +235,7 @@ try {
         const walker = document.createTreeWalker(document.querySelector(".track"), NodeFilter.SHOW_TEXT);
         for (let n = walker.nextNode(); n; n = walker.nextNode()) {
           const el = n.parentElement;
-          if (!n.textContent.trim() || !el?.closest(".panel, .exp-label") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
+          if (!n.textContent.trim() || !el?.closest(".panel") || !el.checkVisibility({ opacityProperty: true, visibilityProperty: true })) continue;
           const range = document.createRange();
           range.selectNodeContents(n);
           // (as drawn: a line cut short by its box, an ellipsis, ends there)
@@ -266,37 +260,41 @@ try {
       const page = await open(ctx, `/#${id}`, size);
       check((await atStop(page)) === id, `/#${id} cold at ${size.width}×${size.height} lands on its stop (got ${await atStop(page)})`);
       if (id === "experience") {
-        // The stop opens on a real role: the newest role's title is on the
-        // screen, inside its panel's box and clear of the bar and the map
+        // The stop opens on the newest role: its title is on the screen,
+        // inside its panel's box and clear of the bar and the map; on a wide
+        // screen every entry's title is (one stop, all at once)
         await rest(page);
         const r = await page.evaluate(() => {
-          const h = document.querySelector("#experience .exp-stop h3");
-          const t = h.getBoundingClientRect();
-          const p = h.closest(".panel").getBoundingClientRect();
-          const bar = document.querySelector(".top-bar").getBoundingClientRect();
-          const map = document.querySelector(".progress-line");
-          const foot = map?.checkVisibility() ? map.getBoundingClientRect().top : innerHeight;
-          const top = Math.max(p.top, bar.bottom > 0 ? bar.bottom : 0);
-          const ok = t.width > 0 && t.left >= 0 && t.right <= innerWidth + 1 && t.top >= top - 1 && t.bottom <= Math.min(p.bottom, foot) + 1;
-          return { ok, title: h.textContent.trim().slice(0, 24), at: [t.left, t.top, t.right, t.bottom].map(Math.round) };
+          const shown = (h) => {
+            const t = h.getBoundingClientRect();
+            const p = h.closest(".panel").getBoundingClientRect();
+            const bar = document.querySelector(".top-bar").getBoundingClientRect();
+            const map = document.querySelector(".progress-line");
+            const foot = map?.checkVisibility() ? map.getBoundingClientRect().top : innerHeight;
+            const top = Math.max(p.top, bar.bottom > 0 ? bar.bottom : 0);
+            return t.width > 0 && t.left >= 0 && t.right <= innerWidth + 1 && t.top >= top - 1 && t.bottom <= Math.min(p.bottom, foot) + 1;
+          };
+          const hs = [...document.querySelectorAll("#experience .exp-entry h3")];
+          const t = hs[0].getBoundingClientRect();
+          return { ok: shown(hs[0]), all: hs.length === 3 && hs.every(shown), title: hs[0].textContent.trim().slice(0, 24), at: [t.left, t.top, t.right, t.bottom].map(Math.round) };
         });
         check(r.ok, `/#experience cold at ${size.width}×${size.height}: the newest role's title ("${r.title}") shows on the screen (${r.at})`);
+        if (size.width >= 1024) check(r.all, `/#experience cold at ${size.width}×${size.height}: all three entries' titles show at once`);
       }
       await page.close();
     }
     // A panel in a row (Skills, each project): the journey stops with that
-    // panel where the row's first one stands (the row's inset), measured by
-    // its layout (an arrival's offset aside), and wholly on the screen
+    // panel in the middle of the screen (a phone's sheet: the screen),
+    // measured by its layout (an arrival's offset aside), and wholly on it
     for (const id of ["skills", "marketlab", "empyrean", "garagepoker"]) {
       const page = await open(ctx, `/#${id}`, size);
       await rest(page);
       const r = await page.evaluate((id) => {
         const p = document.getElementById(id);
-        const row = p.closest(".station-row");
         const left = p.getBoundingClientRect().left - (parseFloat(getComputedStyle(p).translate.split(" ")[0]) || 0);
-        return [Math.round(left * 10) / 10, parseFloat(getComputedStyle(row).paddingLeft), Math.round(left + p.offsetWidth), innerWidth];
+        return [Math.round(left * 10) / 10, Math.max(0, (innerWidth - p.offsetWidth) / 2), Math.round(left + p.offsetWidth), innerWidth];
       }, id);
-      check(Math.abs(r[0] - r[1]) <= 1 && r[2] <= r[3], `/#${id} cold at ${size.width}×${size.height}: its panel at the row's inset, within 1px, and wholly on the screen (left ${r[0]}, inset ${r[1]}, right ${r[2]} of ${r[3]})`);
+      check(Math.abs(r[0] - r[1]) <= 1 && r[2] <= r[3], `/#${id} cold at ${size.width}×${size.height}: its panel centred, within 1px, and wholly on the screen (left ${r[0]}, centred at ${r[1]}, right ${r[2]} of ${r[3]})`);
       await page.close();
     }
   }

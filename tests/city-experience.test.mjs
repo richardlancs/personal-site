@@ -10,6 +10,7 @@ import { machineDate } from "../app/lib/machineDate.ts";
 import { sortNewestFirst, groupByKind, isCurrent } from "../app/lib/experience.ts";
 
 const root = new URL("../", import.meta.url).pathname;
+const read = (f) => readFileSync(`${root}${f}`, "utf8");
 const source = readFileSync(`${root}app/components/city2d/sections/Experience.tsx`, "utf8");
 
 const entry = (role, startDate, endDate, kind) => ({ role, organization: "Org", startDate, endDate, kind, highlights: [] });
@@ -66,21 +67,25 @@ test("isCurrent is only an end of \"Present\"", () => {
   assert.equal(isCurrent(entry("c", "2024", "2025")), false);
 });
 
-test("the section: two labelled groups of ordered rows, sorted and grouped by the helpers", () => {
-  assert.match(source, /label: "Work"/);
-  assert.match(source, /label: "Education"/);
-  assert.ok(source.indexOf('"Work"') < source.indexOf('"Education"'), "Work comes before Education");
-  assert.match(source, /aria-labelledby=\{group\.id\}/);
-  assert.match(source, /groupByKind\(sortNewestFirst\(experience\)\)/);
-  assert.match(source, /\.filter\(\(group\) => group\.entries\.length > 0\)/, "an empty group is not rendered");
+test("the section: one stop, every entry at once, newest first, on one timeline; work or education in words", () => {
+  assert.match(source, /sortNewestFirst\(experience\)\.map\(/);
   assert.match(source, /<ol[\s>]/);
+  assert.match(source, /aria-label="Work and education, newest first"/);
   assert.match(source, /<article[\s>]/);
   assert.match(source, /<Heading level=\{3\}[\s\S]*?entry\.role/);
   assert.match(source, /entry\.highlights\.map\(/);
   assert.match(source, /entry\.location &&/);
-  assert.doesNotMatch(source, /<h2[\s>]/, "the station supplies the h2");
+  // The kind in words, not colour alone
+  assert.match(source, /entry\.kind === "education" \? "Education" : "Work"/);
+  // Three columns once the panel is wide enough, a line down the side before that
+  assert.match(source, /@min-\[45\.5rem\]:grid-cols-3/);
+  assert.match(source, /border-l border-cyan\/60 pl-6/);
+  assert.match(source, /data-current=\{isCurrent\(entry\) \|\| undefined\}/);
+  assert.doesNotMatch(source, /<h2[\s>]/, "StationHead supplies the h2");
   assert.doesNotMatch(source, /"use client"/);
-  assert.match(source, /@min-\[37\.5rem\]:grid-cols-\[10rem_minmax\(0,1fr\)\]/);
+  // Not a row of panels any more (the metro line stays at the foot map)
+  assert.doesNotMatch(source, /exp-stop|exp-label|exp-group|className="panel/);
+  assert.doesNotMatch(read("app/page.tsx"), /section\("experience"\)\} row/);
 });
 
 test("dates: <time>, tabular figures, \"Present\" never in a <time>, \"Current\" only when running", () => {
@@ -105,9 +110,9 @@ test("no panel, no warm or retired colours, no place names, no fixed pixel width
   assert.doesNotMatch(source, /animate-|transition/);
 });
 
-test("the résumé through ResumeLink, as a 44px text link", () => {
+test("the résumé through ResumeLink, a glass key beside the heading", () => {
   assert.match(source, /import ResumeLink from "..\/..\/resume\/ResumeLink"/);
-  assert.match(source, /<ResumeLink className="text-link text-link-solo">/);
+  assert.match(source, /export function ExperienceHead\(\)[\s\S]*<StationHead section=\{section\("experience"\)\} \/>[\s\S]*<ResumeLink className="glass">Résumé<\/ResumeLink>/);
   assert.doesNotMatch(source, /resumeUrl/);
 });
 

@@ -47,6 +47,13 @@ let marks: number[] | null = null;
 export const trackMarks = () => marks;
 
 const SETTLE_MS = 150; // still this long, the journey has stopped
+// The motion blur while travelling: the city's sideways blur (an SVG
+// Gaussian, horizontal only, its deviation in px) at a speed of v px/ms
+// along the street is v * BLUR_PER_SPEED, at most BLUR_MAX; under
+// BLUR_MIN it is off (no filter at all), as it is at rest
+export const BLUR_PER_SPEED = 1.2;
+export const BLUR_MAX = 3;
+const BLUR_MIN = 0.2;
 const FLING_MS = 280; // how far a released swipe glides, as time at its speed
 // Where the arrows are someone else's: a field, a dialog, a menu
 const SKIP = "input, textarea, select, [contenteditable], dialog, [popover]";
@@ -79,16 +86,16 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     const glide = (x: number, instant = still()) => {
       scrollTo({ top: top + Math.min(Math.max(x, 0), travel), behavior: instant ? "instant" : "smooth" });
     };
-    // Where to stop to show `el` (its panel, if it is in one): its stop's
-    // start, unless that leaves it past the right edge (a stop of a row of
-    // panels), then with that panel where the row's first one stands (the
-    // row's own inset: clear of a notch; none for a phone's sheets)
+    // Where to stop to show `el` (its panel, if it is in one): with that
+    // panel in the middle of the screen, as it stands at its stop's start
+    // (a stop's one panel) or in its own screen of a row (Projects), never
+    // before the stop's start (a phone's sheets are the screen's width)
     // (where it is laid out, --at, not where it is drawn: one still on its
     // way in is shifted by its arrival)
     const xFor = (el: Element, i: number) => {
       const p = (el.closest(".panel") ?? el) as HTMLElement;
-      const x = parseFloat(p.style.getPropertyValue("--at")) || offsets[i];
-      return x + Math.min(p.offsetWidth, vw) > offsets[i] + vw ? x - parseFloat(getComputedStyle(p.closest(".station-row") ?? p).paddingLeft) : offsets[i];
+      const x = parseFloat(p.style.getPropertyValue("--at"));
+      return Number.isNaN(x) ? offsets[i] : Math.max(offsets[i], x - (vw - Math.min(p.offsetWidth, vw)) / 2);
     };
     const stopOf = (el: Element) => stops.findIndex((s) => s.contains(el));
 
@@ -113,8 +120,36 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
         p.toggleAttribute("data-open", r.left >= -1 && r.right <= vw + 1 && p.scrollHeight > p.clientHeight + 1);
       }
     };
-    const sky = stage.firstElementChild as HTMLElement;
+    const sky = stage.querySelector<HTMLElement>(".track-sky")!;
     const weather = track.lastElementChild as HTMLElement;
+    // The slight motion blur: each frame while the city moves, its speed
+    // (the scroll's, smoothed) sets how far the panorama blurs sideways;
+    // once it slows under BLUR_MIN the filter is gone. None in still view
+    // or with reduced motion; a hidden tab draws no frames at all
+    const blur = stage.querySelector("feGaussianBlur");
+    const calm = matchMedia("(prefers-reduced-motion: reduce)");
+    let blurRaf = 0;
+    let lastY = scrollY;
+    let lastT = 0;
+    let speed = 0;
+    const blurFrame = (t: number) => {
+      blurRaf = 0;
+      const dt = lastT ? Math.min(Math.max(t - lastT, 1), 100) : 16.7;
+      const v = Math.abs(scrollY - lastY) / dt;
+      lastY = scrollY;
+      lastT = t;
+      speed = speed * 0.6 + v * 0.4;
+      const d = !pano || !blur || !on() || still() || calm.matches ? 0 : Math.min(BLUR_MAX, speed * BLUR_PER_SPEED);
+      if (d < BLUR_MIN) {
+        speed = 0;
+        lastT = 0;
+        if (pano) pano.style.filter = "";
+        return;
+      }
+      blur?.setAttribute("stdDeviation", `${d.toFixed(2)} 0`);
+      if (pano) pano.style.filter = "url(#track-blur)";
+      blurRaf = requestAnimationFrame(blurFrame);
+    };
     const frame = () => {
       raf = 0;
       if (cssDriven) return;
@@ -127,6 +162,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(frame);
+      if (!blurRaf) blurRaf = requestAnimationFrame(blurFrame);
       if (!settleTimer) for (const p of panels) p.removeAttribute("data-open");
       clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
@@ -279,6 +315,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       sizes.disconnect();
       stillness.disconnect();
       cancelAnimationFrame(raf);
+      cancelAnimationFrame(blurRaf);
+      if (pano) pano.style.filter = "";
       clearTimeout(aimTimer);
       clearTimeout(settleTimer);
       marks = null;
@@ -292,6 +330,12 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
   return (
     <div ref={runway} className="track-runway">
       <div className="track-stage">
+        {/* The motion blur's filter (above: the panorama, while it moves) */}
+        <svg aria-hidden="true" width="0" height="0" className="absolute">
+          <filter id="track-blur" x="-2%" width="104%" y="0" height="100%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur stdDeviation="0 0" edgeMode="duplicate" />
+          </filter>
+        </svg>
         {/* The sky behind the city, slower than the street */}
         <div className="track-sky" aria-hidden="true" />
         {/* The city: the panorama behind every stop (DistrictBand) */}

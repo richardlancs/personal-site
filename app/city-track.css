@@ -4,9 +4,9 @@
    tall as the track is wide (--travel, from CityTrack) holds a full-screen
    stage that stays put while the track in it moves left exactly as far as
    the page has scrolled. Each station is a stop: its band of painting
-   fills it, its words sit on the street in a dark glass panel, and the
-   next stop's city shows at the right (--peek), so the way on needs no
-   arrow. Without the attribute (no scripts, a tiny screen, print) none of
+   fills it, its words sit in the middle of it in a clear glass panel,
+   and the next stop's city shows at the right (--peek), so the way on
+   needs no arrow. Without the attribute (no scripts, a tiny screen, print) none of
    this applies and the page reads top to bottom.
 
    The move is a scroll-driven animation where there is one (the runway's
@@ -139,155 +139,125 @@
     inset: 0 -1px;
   }
 
-  /* The words: dark glass panels on the street (.panel), each scrolling
+  /* The words: clear glass panels over the city (.panel), each scrolling
      inside once the journey has stopped with all of it on the screen, and
      only if it has more than it shows (CityTrack: data-open), so a panel
      sliding past, or one that fits, never catches the scroll. At its end
      an open panel's scroll chains on to the page (overscroll-behavior
      left at auto), so the wheel, Space and PageDown go on along the city.
      Its corners are --radius-lg; what sits inside takes --radius-in, the
-     outer radius less the padding. */
+     outer radius less the padding.
+
+     The glass is very clear: the barest hint of ink and cyan, a blur and
+     a fine light edge, the city reading through it. Its words carry their
+     own soft halo (text-shadow), and a soft darkening, feathered far past
+     their edges so it reads as shade, not a box (below): that, with the
+     blur, carries their 4.5:1 over any sky. Its content stands in the
+     middle of it. */
   :root[data-track="on"] .track .panel {
-    --pad: clamp(1rem, 2.5cqw, 1.75rem);
+    --pad: clamp(1.25rem, 3cqw, 2.5rem);
+    --shade: rgb(8 9 12 / 0.72);
+    display: flex;
+    flex-direction: column;
+    justify-content: safe center;
     padding: var(--pad);
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
-    border: 1px solid rgb(45 50 61 / 0.8);
+    border: 1px solid rgb(230 233 238 / 0.2);
     border-radius: var(--radius-lg);
-    background: rgb(8 9 12 / 0.45);
-    backdrop-filter: blur(7px);
+    background: linear-gradient(160deg, rgb(79 216 238 / 0.06), rgb(8 9 12 / 0.1));
+    backdrop-filter: blur(10px) brightness(0.8);
+    text-shadow: 0 0 0.75rem rgb(8 9 12 / 0.9);
   }
 
-  /* See-through glass, the city reading through it, and a darker scrim
-     behind the words alone (feathered at its edges): that, not the blur,
-     carries their contrast */
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, li, summary) {
-    background: rgb(8 9 12 / 0.62);
-    box-shadow: 0 0 1rem 0.5rem rgb(8 9 12 / 0.62);
+  /* (keys carry their own ground: no halo on their labels) */
+  :root[data-track="on"] .track .panel .glass {
+    text-shadow: none;
+  }
+
+  /* The shade behind each block of words (the outermost only): as wide as
+     its words, solid over them, fading out over a rem or so past them, so
+     two blocks' shades meet in their fades, not in a hard line */
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, ol, summary):not(:is(p, ul, ol, summary, .station-head) *) {
+    position: relative;
+  }
+
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul):not(:is(p, ul, ol, summary, .station-head) *) {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, ol, summary):not(:empty, :is(p, ul, ol, summary, .station-head) *)::before {
+    content: "";
+    position: absolute;
+    inset: -0.75rem -1.25rem;
+    z-index: -1;
+    background: var(--shade);
+    mask-image:
+      linear-gradient(90deg, transparent, #000 1.25rem calc(100% - 1.25rem), transparent),
+      linear-gradient(transparent, #000 0.75rem calc(100% - 0.75rem), transparent);
+    mask-composite: intersect;
+    pointer-events: none;
   }
 
   :root[data-track="on"] .track [data-open] {
     overflow-y: auto;
   }
 
-  /* A stop of one panel: at the foot of the stop and to its left, never
-     taller than the stage. It starts a peek's width in, so the slice of
-     the next stop that shows at the right is its city, not its panel */
+  /* A stop of one panel: in the middle of the stop as it stands on the
+     screen, between the bar and the map, most of the screen (within the
+     central 80%: --peek either side; 64% of a very wide screen), its
+     content in the middle of it; never taller than the room there. So the
+     slice of the next stop that shows at the right is its city, not its
+     panel */
+  :root[data-track="on"] .track {
+    --w: min(100cqw - 2 * var(--peek), max(64cqw, 68rem));
+    --room: calc(100% - var(--stop-top) - var(--foot));
+  }
+
   :root[data-track="on"] .track .station-body {
     position: absolute;
-    bottom: var(--foot);
-    left: max(var(--peek) + 1rem, env(safe-area-inset-left));
+    inset: var(--stop-top) auto var(--foot) max((100cqw - var(--w)) / 2, env(safe-area-inset-left));
     z-index: 2;
-    width: min(var(--panel-w, 42rem), 100% - var(--peek) - 2rem);
-    max-height: calc(100% - var(--stop-top) - var(--foot));
-    margin: 0;
+    width: var(--w);
+    height: fit-content;
+    min-height: calc(var(--room) * 0.72);
+    max-height: var(--room);
+    margin: auto 0;
   }
 
-  /* About's groups two across */
-  #about {
-    --panel-w: 60rem;
-  }
-
-  /* A stop of a row of panels along the street (Projects, Experience): as
-     wide as its row, which leaves a peek of city after its last panel */
+  /* A stop of a row of panels along the street (Projects): as wide as its
+     row, which is a screen per panel, each in the middle of its own (city
+     between them, so from one in the middle the next starts past the
+     screen's edge), less the peek after the last, as any stop */
   :root[data-track="on"] .track > .station:has(> .station-row) {
     width: auto;
   }
 
   :root[data-track="on"] .track .station-row {
+    --gut: max((100cqw - var(--w)) / 2, env(safe-area-inset-left));
     position: relative;
     z-index: 2;
     flex-direction: row;
-    align-items: flex-end;
-    /* City between panels, and after the last: from a panel at the row's
-       inset, the next one (or the next stop's) starts past the screen's
-       edge (a panel is 28rem at most first, 34rem last), so the edges are
-       city */
-    --past: max(2 * var(--peek), 100cqw - var(--peek) - 1rem - min(28rem, 100cqw - 2 * var(--peek) - 2rem));
-    gap: var(--past);
+    align-items: center;
+    gap: calc(100cqw - var(--w));
     width: max-content;
     height: 100%;
     margin: 0;
-    padding: var(--stop-top) var(--past) var(--foot) max(var(--peek) + 1rem, env(safe-area-inset-left));
+    padding: var(--stop-top) calc(var(--gut) - var(--peek)) var(--foot) var(--gut);
   }
 
-  /* (each panel's own width, --panel-w, is set where it is made) */
   :root[data-track="on"] .station-row .panel {
     flex: none;
-    width: min(var(--panel-w, 28rem), 100cqw - 2 * var(--peek) - 2rem);
+    width: var(--w);
+    min-height: 72%;
     max-height: 100%;
   }
 
   /* On a short screen the cover leaves room for the words */
   :root[data-track="on"] .project .depth {
     max-width: calc((100dvh - var(--stop-top)) * 0.8);
-  }
-
-  /* The line: Experience's stations hang from one line drawn along the
-     stop, a stop on it for each (lit while the role is running), each
-     group's name on a plate over the line where its stations begin (the
-     first group's in its first panel, under the heading), city between
-     the stations as between any row's panels */
-  :root[data-track="on"] #experience .station-row {
-    /* (never under 45% down: a very tall bar, at 200% text, has scrolled away) */
-    --rail-y: min(max(var(--stop-top) + 1.5rem, min(42dvh, 100dvh - 30rem)), 45dvh);
-    align-items: flex-start;
-    /* (everything hangs 1.5rem under the line) */
-    padding-top: calc(var(--rail-y) + 1.5rem);
-  }
-
-  :root[data-track="on"] #experience .station-row::before {
-    content: "";
-    position: absolute;
-    inset: calc(var(--rail-y) - 1px) 0 auto calc(var(--peek) + 1rem);
-    z-index: 1;
-    height: 2px;
-    background: rgb(79 216 238 / 0.7);
-  }
-
-  :root[data-track="on"] :is(.exp-group, .exp-stations) {
-    flex-direction: row;
-    align-items: flex-start;
-    gap: var(--past);
-  }
-
-  /* The group's name on the line, over its first station (beside its stop) */
-  :root[data-track="on"] .exp-label {
-    position: absolute;
-    left: 3rem;
-    z-index: 2;
-    translate: 0 calc(-50% - 1.5rem);
-  }
-
-  :root[data-track="on"] .exp-label-in {
-    position: static;
-    translate: none;
-  }
-
-  :root[data-track="on"] :is(.exp-group, .exp-stop) {
-    position: relative;
-  }
-
-  :root[data-track="on"] .exp-stop::before {
-    content: "";
-    position: absolute;
-    top: calc(-1.5rem - 6px);
-    left: 1.5rem;
-    z-index: 2;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--cyan);
-    border-radius: 50%;
-    background: var(--ink);
-  }
-
-  :root[data-track="on"] .exp-stop[data-current]::before {
-    background: var(--cyan);
-  }
-
-  :root[data-track="on"] #experience :is(.exp-stop, .station-row) > .panel {
-    max-height: calc(100dvh - var(--rail-y) - 1.5rem - var(--foot));
   }
 
   /* Contact, the journey's end, is its best-lit stop: the panel lighter
@@ -491,54 +461,43 @@
       height: var(--band-h);
     }
 
+    /* The sheet: glass over the sky that runs on under the strip, a
+       smooth gradient (nothing to blur, no shade needed behind the words:
+       the tint carries them), its words from the top */
     :root[data-track="on"] .track .panel {
       --pad: 1.25rem;
+      justify-content: flex-start;
       /* (a phone's gutters; from 768px wide, 10% of the width clear) */
       padding: 1.25rem var(--side) 1.5rem;
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      background: var(--ground);
+      background: linear-gradient(rgb(79 216 238 / 0.06), transparent 40%) rgb(8 9 12 / 0.62);
       backdrop-filter: none;
+    }
+
+    :root[data-track="on"] .track .panel *::before {
+      --shade: transparent;
     }
 
     :root[data-track="on"] .track .station-body {
       inset: var(--stop-band) 0 var(--foot);
       width: auto;
+      height: auto;
+      min-height: 0;
       max-height: none;
+      margin: 0;
     }
 
-    /* A row: one sheet a screen wide after another, the line along their
-       tops */
-    :root[data-track="on"] .track .station-row,
-    :root[data-track="on"] #experience .station-row {
-      --rail-y: var(--stop-band);
+    /* A row: one sheet a screen wide after another */
+    :root[data-track="on"] .track .station-row {
       align-items: stretch;
       gap: 0;
       padding: var(--stop-band) 0 var(--foot);
     }
 
-    :root[data-track="on"] :is(.station-row .panel, .exp-stop) {
+    :root[data-track="on"] .station-row .panel {
       width: 100cqw;
-      max-height: none;
-    }
-
-    :root[data-track="on"] :is(.exp-group, .exp-stations) {
-      align-items: stretch;
-      gap: 0;
-    }
-
-    :root[data-track="on"] .exp-label {
-      top: 1.5rem;
-      left: calc(var(--side) + 1.5rem);
-    }
-
-    :root[data-track="on"] .exp-stop::before {
-      top: -6px;
-      left: var(--side);
-    }
-
-    :root[data-track="on"] #experience :is(.exp-stop, .station-row) > .panel {
-      height: 100%;
+      min-height: 0;
       max-height: none;
     }
 
@@ -604,6 +563,7 @@
   :root[data-track="on"] .track .panel {
     background: var(--ink);
     backdrop-filter: none;
+    text-shadow: none;
   }
 }
 
