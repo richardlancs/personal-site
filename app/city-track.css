@@ -88,9 +88,7 @@
     mask-composite: intersect;
   }
 
-  :root[data-track="on"] .track .band-plate img,
   :root[data-track="on"][data-home-plate] .track .band[data-home] {
-    object-position: var(--focal, center);
     background-position: var(--focal, center), center;
   }
 
@@ -111,7 +109,7 @@
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
-    border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+    border: 1px solid rgb(45 50 61 / 0.8);
     border-radius: var(--radius-lg);
     background: rgb(8 9 12 / 0.86);
     backdrop-filter: blur(10px);
@@ -123,10 +121,6 @@
   :root[data-track="on"] .track > [data-open] > .station-body {
     overflow-y: auto;
     overscroll-behavior: contain;
-  }
-
-  :root[data-track="on"] .track .hero {
-    margin-top: 0;
   }
 
   /* The sky behind the city: slower than the street (it moves 30% as far),

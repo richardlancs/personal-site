@@ -14,17 +14,16 @@ import { setSection, useSection } from "./useSection";
 // points when the page is partway between two sections (lib/progress.ts).
 // When the fill comes within a few percent of a point (either way) it
 // locks on: it eases the last bit onto the point over 0.12s, the point's
-// ring pulses once and its label turns bold, and it stays lit. Anywhere
+// tick pulses once, and it stays lit. Anywhere
 // else it is exactly the scroll; in a fast scroll nothing is eased (a
 // point it lands on may still pulse), so it never trails.
 // The page's own scrolling is never touched: nothing here snaps, slows or
 // redirects it.
 //
-// From 97rem it stands in the right margin, labelled, each point a 44px
-// link down the page; narrower, it is a 3px line along the foot of the
-// top bar with six small ticks, not links (too small to tap: the Sections
-// menu serves), and the bar names the section in words ("03 / 06 ·
-// Projects", from 53rem). In still view and with reduced motion the fill
+// It is a 3px line along the foot of the top bar with six small ticks,
+// not links (too small to tap: the Sections menu serves; the metro map at
+// the foot, Task 5, will be the labelled one), and the bar names the
+// section in words ("03 / 06 · Projects", from 53rem). In still view and with reduced motion the fill
 // steps from point to point and nothing pulses.
 //
 // One passive scroll listener, throttled to animation frames, reads only

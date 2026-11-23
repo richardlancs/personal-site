@@ -154,7 +154,6 @@ test("the line's CSS: transforms only, the fill eased only when it locks, and no
   const css = read("app/city.css");
   // The fill's length is a transform of --progress
   assert.match(css, /\.progress-fill \{[^}]*transform: scaleX\(calc\(var\(--progress, 0\) \/ var\(--last, 5\)\)\)/);
-  assert.match(css, /\.progress-fill \{[^}]*transform: scaleY\(calc\(var\(--progress, 0\) \/ var\(--last, 5\)\)\)/);
   // The ease and the pulse sit under motion-welcome only
   const block = css.match(/@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \.progress-line\[data-snap\] \.progress-fill \{[^}]*\}[\s\S]*?\n\}/)?.[0];
   assert.ok(block, "the motion block");
@@ -164,11 +163,12 @@ test("the line's CSS: transforms only, the fill eased only when it locks, and no
   // Outside that block, no transition or animation on the line
   const outside = css.replace(block, "");
   assert.doesNotMatch(outside.match(/\.progress-[a-z]+[^{]*\{[^}]*\}/g)?.join("\n") ?? "", /transition|animation/);
-  // The reached point's label is bold: not by colour alone
-  assert.match(css, /\.progress-point\[aria-current="location"\] \.progress-label \{[^}]*font-weight: 700/);
-  // Wide screens: in the margin, on its own near-solid ground with a hairline
-  assert.match(css, /@media \(min-width: 97rem\) \{[\s\S]*?\.progress-line \{[^}]*position: fixed;/);
-  assert.match(css, /\.progress-rail \{[^}]*background: rgb\(8 9 12 \/ 0\.9[0-9]\)[^}]*border: 1px solid var\(--line\)|\.progress-rail \{[^}]*border: 1px solid var\(--line\)[^}]*background: rgb\(8 9 12 \/ 0\.9[0-9]\)/);
-  // The section in the top bar from 53rem until the margin holds the line
-  assert.match(css, /@media \(min-width: 53rem\) and \(max-width: 96\.99rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
+  // The reached point: a taller tick, its shape as well as its colour (not by colour alone)
+  assert.match(css, /\n\.progress-point\[aria-current="location"\] \.progress-dot \{\s*height: 13px;/);
+  // Along the bar's foot at every width: the margin's labelled line is gone
+  // (the metro map at the foot replaces it, Task 5)
+  assert.doesNotMatch(css, /97rem|96\.99rem/);
+  assert.match(css, /\n\.progress-line \{\s*position: absolute;/);
+  // The section in the top bar from 53rem on
+  assert.match(css, /@media \(min-width: 53rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
 });

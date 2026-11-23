@@ -60,7 +60,7 @@
   --glass-tint-strong: var(--lantern);
   --glass-primary-hover: #f8c97f;
   --glass-chosen: rgb(79 216 238 / 0.16);
-  --glass-border: color-mix(in srgb, var(--line) 65%, var(--cyan));
+  --glass-border: #396c7b; /* --line 65% into --cyan */
   --glass-hi: rgb(230 233 238 / 0.11); /* the light line along the top */
   --glass-blur: blur(12px) saturate(1.2);
   --glass-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.6);
@@ -693,21 +693,16 @@ a[data-resume][data-opening] {
   z-index: 0;
 }
 
+/* Where the band crops the plate (phones, the journey's stops), its
+   subject stays in frame (plates.ts: focal, set on the band as --focal;
+   every focal is centred vertically, so a band cropped top and bottom is
+   as before) */
 .band-plate img,
 .band-noscript {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center;
-}
-
-/* On phones the band crops the plate: keep its subject in frame
-   (plates.ts: focal, set on the band as --focal) */
-@media (max-width: 767px) {
-  .band-plate img,
-  .band-noscript {
-    object-position: var(--focal, center);
-  }
+  object-position: var(--focal, center);
 }
 
 /* The night plate over the day plate; without the driver (no script),
@@ -828,7 +823,7 @@ a[data-resume][data-opening] {
 .band-haze {
   /* Mixed from the plates' navy, not the black ground: a navy veil, never
      grey smog */
-  --haze: color-mix(in srgb, var(--muted) 55%, #0e1d31);
+  --haze: #5d6877; /* --muted 55% into #0e1d31 */
   background: linear-gradient(
     to bottom,
     var(--haze) 0%,
@@ -841,7 +836,7 @@ a[data-resume][data-opening] {
 
 /* At night the cloud is dark, not a pale veil over the lights */
 :root[data-daylight="night"] .band-haze {
-  --haze: color-mix(in srgb, #0e1d31 78%, var(--muted));
+  --haze: #2e3b4d; /* #0e1d31 78% into --muted */
 }
 
 .band-precip {
@@ -859,8 +854,8 @@ a[data-resume][data-opening] {
   background: linear-gradient(
     to bottom,
     transparent,
-    color-mix(in srgb, var(--text) 9%, transparent) 45%,
-    color-mix(in srgb, var(--cyan) 5%, transparent) 70%,
+    rgb(230 233 238 / 0.09) 45%,
+    rgb(79 216 238 / 0.05) 70%,
     transparent
   );
   opacity: 0;
@@ -872,7 +867,7 @@ a[data-resume][data-opening] {
 
 /* Snow: a pale wash over the whole band, faint */
 .band-wash {
-  background: color-mix(in srgb, var(--text) 100%, transparent);
+  background: var(--text);
   opacity: 0;
 }
 
@@ -957,7 +952,7 @@ a[data-resume][data-opening] {
   display: inline-block;
   max-width: 100%;
   padding: var(--backing-pad) clamp(0.875rem, 2vw, 1.5rem);
-  border: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+  border: 1px solid rgb(45 50 61 / 0.7);
   border-radius: var(--radius-lg);
   background: rgb(8 9 12 / 0.94);
 }
@@ -1007,13 +1002,11 @@ a[data-resume][data-opening] {
 /* ---------- The progress line (components/city2d/ProgressLine.tsx) ----------
    One line with a point per section. Its fill is one transform of
    --progress (0 to 5, written on .progress-line from the scroll), so the
-   line never asks for layout as the page moves. Below 97rem it is a 3px
-   line along the foot of the top bar, full width, with six small ticks:
-   the links and their labels are hidden (visibility, so they can't be
-   focused), only the track and the ticks drawn. From 97rem it stands in
-   the right margin where the screen holds it whole, on its own near-solid
-   ground with a hairline, so its labels never sit on a painting; there
-   each point is a 44px link. */
+   line never asks for layout as the page moves. It is a 3px line along
+   the foot of the top bar, full width, with six small ticks: the links
+   and their labels are hidden (visibility, so they can't be focused),
+   only the track and the ticks drawn (the metro map at the foot, Task 5,
+   is the labelled one). */
 
 .progress-line {
   position: absolute;
@@ -1083,10 +1076,8 @@ a[data-resume][data-opening] {
 }
 
 /* Where you are: a taller tick (its shape as well as its colour) */
-@media (max-width: 96.99rem) {
-  .progress-point[aria-current="location"] .progress-dot {
-    height: 13px;
-  }
+.progress-point[aria-current="location"] .progress-dot {
+  height: 13px;
 }
 
 /* Until the line has run (the page has loaded; never without JavaScript)
@@ -1102,8 +1093,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   display: none;
 }
 
-/* The section you're at in words, beside the name, on screens whose
-   margin can't hold the labelled line. The bar is full on one row up to
+/* The section you're at in words, beside the name. The bar is full on one row up to
    about 52rem (the name, the time and weather, three keys), so it starts
    at 53rem, as its number alone until 64rem. Quiet words, not a
    control. */
@@ -1121,7 +1111,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 53rem) and (max-width: 96.99rem) {
+@media (min-width: 53rem) {
   .top-bar-name {
     margin-right: 0;
   }
@@ -1137,111 +1127,6 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   .top-bar-here-name {
     display: none;
   }
-}
-
-/* From 97rem (the 72rem column plus two margins of 12.5rem; the line is
-   at most 10.5rem with its gap to the edge): the labelled line, fixed at
-   the bottom right, clear of a home bar and rounded corners */
-@media (min-width: 97rem) {
-  .progress-line {
-    position: fixed;
-    inset: auto max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) auto;
-    z-index: 30;
-    height: auto;
-    max-width: 10.5rem;
-    visibility: visible;
-    pointer-events: auto;
-  }
-
-  .progress-rail {
-    position: relative;
-    inset: auto;
-    max-height: calc(100svh - var(--bar-h) - 2rem);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 0.5rem 0.75rem 0.5rem 0.5rem;
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    background: rgb(8 9 12 / 0.94);
-  }
-
-  /* The line runs through the middle of the rings, from the first to the
-     last: 22px into the first and last 44px rows */
-  .progress-track {
-    inset: calc(0.5rem + 22px) auto calc(0.5rem + 22px) calc(0.5rem + 0.5rem + 5px);
-    width: 2px;
-  }
-
-  .progress-fill {
-    transform-origin: center top;
-    transform: scaleY(calc(var(--progress, 0) / var(--last, 5)));
-  }
-
-  .progress-points {
-    position: relative;
-    inset: auto;
-    display: grid;
-  }
-
-  .progress-points > li {
-    position: static;
-  }
-
-  .progress-point {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    min-height: 44px;
-    padding: 0 0.5rem;
-    color: var(--muted);
-    text-decoration: none;
-  }
-
-  .progress-label {
-    display: inline;
-    font-family: var(--font-display);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
-  }
-
-  /* A ring on the line; lit once reached, filled and ringed again where
-     you are */
-  .progress-dot {
-    flex: none;
-    width: 12px;
-    height: 12px;
-    border: 2px solid var(--muted);
-    border-radius: 50%;
-    background: var(--ink);
-  }
-
-  .progress-point[data-lit] .progress-dot {
-    border-color: var(--cyan);
-    background: var(--ink);
-  }
-
-  .progress-point[aria-current="location"] .progress-dot {
-    border-color: var(--cyan);
-    background: var(--cyan);
-    box-shadow:
-      0 0 0 3px var(--ink),
-      0 0 0 4px var(--cyan);
-  }
-}
-
-@media (min-width: 97rem) and (hover: hover) {
-  .progress-point:hover .progress-label {
-    color: var(--text);
-  }
-}
-
-/* Where you are: a bolder, brighter label (not by colour alone) */
-.progress-point[aria-current="location"] .progress-label {
-  color: var(--text);
-  font-weight: 700;
 }
 
 /* The lock: the fill eases onto (or off) a point over --t-fast, only at that
@@ -1372,16 +1257,11 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   }
 }
 
-/* The foot of the page: the colophon, on Contact's ground carried across
-   the full width (the background reaches past the 72rem column; the clip
-   keeps it from widening the page), so no seam runs under the last station */
+/* The foot of the page: the colophon, at the end of the last station
+   (inside Contact's column, on its ground) */
 .page-foot {
-  width: min(72rem, 100%);
-  margin-inline: auto;
-  background: var(--ink-2);
-  box-shadow: 0 0 0 100vmax var(--ink-2);
-  clip-path: inset(0 -100vmax);
-  padding: 2rem max(1.25rem, env(safe-area-inset-right)) max(2.5rem, env(safe-area-inset-bottom)) max(1.25rem, env(safe-area-inset-left));
+  margin-top: 2rem;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.875rem;
