@@ -90,3 +90,27 @@ Exact panel widths per stop, the parallax ratios, the map's look, how Projects' 
 (in place, panel scrolls), the tile size and format, and the CSS/JS split of the scroll engine, within the
 standing rules in `CLAUDE.md` (glass, motion tokens, still view, contrast, budgets: `homeInitialJs` must not grow by
 more than 3 KB gzip; the panorama's first tile at most the size of today's home plate).
+
+## Amendment, 2026-11-23 (owner's words)
+
+"tell chatgpt to build directly off a hyperrealistic model of the city and find real city skyline photos to use as
+reference" (and, asked, the final look is hyperrealistic: this replaces "no photorealism" for the panorama).
+
+"make sure each aspect is highly animated … make each section transparent and user friendly with images that match
+the dimensions of the text make sure most of the bulky content is contained within the central 80% of the page and
+continue to refer to my instagram for ui design language".
+
+What that means here (builder's reading; overrides "Motion: subtle" in CLAUDE.md for this page):
+- **Highly animated:** every stop has its own choreographed arrival as the journey reaches it (panels, headings,
+  images, points, links entering in sequence with the reels' easing and stagger), live hover/press feedback on every
+  control, the city itself alive (parallax layers, drifting haze and light, lit windows flickering on at dusk), and the
+  metro map animating between stations. All of it transform/opacity/filter only, driven by the journey's progress so
+  scrolling back reverses it; still view and `prefers-reduced-motion` keep the page fully readable with no motion.
+- **Transparent, user-friendly sections:** panels are see-through glass over the painting (the city readable through
+  them), still ≥ 4.5:1 for every word (the blur and a dark tint carry the contrast), plain labels, obvious next steps.
+- **Images match the text:** a section's images take the same height as its text block beside them (or the same width
+  when stacked), never a tall picture beside a short paragraph; covers are never cropped awkwardly (object-fit with
+  a chosen focal point).
+- **The central 80%:** bulky content (panels, images, cards, timelines) sits within the middle 80% of the screen's
+  width (10% clear on each side at every width ≥ 768px; phones keep their 16px gutters); the edges are the city.
+- **The reels:** keep using `.superpowers/sdd/2026-11-22-horizontal-city/insta-report.md` for the design language.
