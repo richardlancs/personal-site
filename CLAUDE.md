@@ -23,8 +23,6 @@ If information is missing, use a clearly labeled placeholder or ask me.
 - Next.js 16.4 with the App Router (read `AGENTS.md`: this Next.js
   differs from older versions; its docs are in `node_modules/next/dist/docs/`)
 - React 19.3, TypeScript, Tailwind CSS 4, npm
-- three r186, React Three Fiber 9.8 and `postprocessing` 6.39, for the 3D
-  city only
 - `pdfjs-dist` (pinned, loaded on demand) for the résumé viewer
 
 Do not replace the stack unless I explicitly ask. Avoid new dependencies;
@@ -41,21 +39,21 @@ explicit yes.
 - `app/page.tsx`: the 2D site, one page (`/`), six stations in order
 - `app/layout.tsx`: root layout (fonts, the head scripts, top bar,
   résumé host, sky driver, glass press)
-- `app/city.css` (tokens and the 2D page), `app/motion.css`,
-  `app/reveal.css`; the 3D city's own rules in `app/city/city-pages.css`
+- `app/city.css` (tokens and the page), `app/motion.css`,
+  `app/reveal.css`
 - `app/data/portfolio.ts`: all content. `app/data/weather.ts`: the place
   the clock and weather follow
-- `app/sections/registry.ts`: the sections (id, anchor, title, district,
-  `/city` address); `app/sections/metadata.ts`: their words and page
+- `app/sections/registry.ts`: the sections (id, anchor, title,
+  district); `app/sections/metadata.ts`: their words and page
   metadata, server only
 - `app/components/city2d/`: the 2D page (`Station`, `DistrictBand`,
-  `TopBar`, `ProgressLine`, `SectionsMenu`, `ViewSwitch`, `WeatherOverlay`,
-  `CityDriver`, and `sections/` with one component per section)
-- `app/components/city3d/`: the 3D city (below)
+  `TopBar`, `ProgressLine`, `SectionsMenu`, `StillViewToggle`,
+  `WeatherOverlay`, `CityDriver`, and `sections/` with one component per
+  section)
 - `app/components/weather/`, `components/resume/`, `components/ui/`
   (`GlassPress`, `Arrivals`, `Colophon`), `components/MusicToggle.tsx`
-- `app/lib/`: pure logic (time, sun, sky, weather, still view, plate
-  preload, city routes, the `CITY3D_LIVE` switch)
+- `app/lib/`: pure logic (time, sun, sky, weather, still view and its
+  small store `stillStore.ts`, plate preload)
 - `app/assets/city/`: the twelve plates, `<district>-{day,night}.webp`
 - `public/`: résumé, project screenshots, interest photos, music, share card
 - `tests/`: `npm test` (node's test runner, offline; `smoke.test.mjs` runs
@@ -73,13 +71,18 @@ portfolio's job first: a recruiter finds the name, the projects and the
 contact links in seconds. Source documents: the spec
 `docs/superpowers/specs/2026-11-19-shanghai-cyberpunk-design.md`, the
 style sheet `docs/city/style.md` (palette, type, how the plates are
-painted; the prompts in `docs/city/prompts.md`), and for the 3D city the
-plan `docs/superpowers/plans/2026-11-19-shanghai-3d.md` and the log
-`docs/city/3d-log.md`. Where the spec and later rulings differ (no
-magenta, no Chinese signs), the code and `style.md` win. `docs/world/` is
+painted; the prompts in `docs/city/prompts.md`). Where the spec and
+later rulings differ (no magenta, no Chinese signs), the code and
+`style.md` win. `docs/world/` is
 the retired park's history, not current instructions.
 
-### The 2D page (default, live)
+The 3D city (`/city`, three.js) was removed on 2026-11-22 at my request;
+`/city` and `/city/:path*` redirect (temporarily) to `/`, a section's
+page to its anchor (`next.config.ts`). Its plan, log and specs
+(`docs/superpowers/`, `docs/city/3d-log.md`) are history, not current
+instructions.
+
+### The page
 
 `/` is one long page: Home, About, Projects (with Skills at `/#skills`),
 Experience, Interests, Contact, numbered 01 to 06. Each section is a
@@ -103,104 +106,19 @@ still view). No reading means the neutral look. In `next dev` only,
 `?sky=` (e.g. `?sky=clear-dusk-0.5`, `lib/skyParam.ts`) previews a sky.
 
 The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
-`/contact`) redirect to their anchors, `/map` to `/`, all temporary
+`/contact`) redirect to their anchors, `/map` to `/`, and the 3D city's
+(`/city`, `/city/<section>`) to `/` and the anchors, all temporary
 (`next.config.ts`).
 
-### The 3D city (`/city`, open on the live site)
+### Budgets (`docs/audit/scripts/budget.mjs`)
 
-`/city` and `/city/{projects,experience,interests,about,contact}`
-(`app/city/`, `app/components/city3d/`). Every place is painted 2.5D:
-its day and night paintings (ChatGPT, `app/assets/city/`, prompts in
-`docs/city/prompts.md`) on one plane given depth in code, with living
-light in one shader (`kit/plate.ts`, mounted by `PlatePlace.tsx`; each
-place's data in `districts/<id>.def.ts` as a `PlaceDef`, its component a
-thin wrapper in `districts/<id>.tsx`). Home is the rooftop over the city
-(`Riverside.tsx`, `lujiazui.def.ts`) with its five sections as spots in
-the painting, each with a small board and a link laid over it (Tab runs
-left to right by the spots' middles). The camera flies between places
-over the aerial painting (`flight.def.ts`, `Flight.tsx`): 2–3 s, a lift
-that dissolves through the sky's haze, one pass of cloud on the way
-down, interruptible from any point. Each page is real HTML first: the band,
-one `.city-panel` with its `h1`, the section component with `where="3d"`,
-a link to the same section on the 2D page, and the credit (Home's panel is
-the title card alone: name, school, programme, Email me, GitHub, LinkedIn,
-Résumé; its credit a line of glass under it); readable without JavaScript
-or WebGL. The place dock (`panels/PlaceDock.tsx`) stands in one place on
-every page (centred beside the places' panel width, Home's too), its row
-scrolling where it must, keys snapping whole, the far side fading, a
-focused key brought into view, the wheel turned sideways. Home's boards
-are links over them where all five fit 44px and 8px apart; on a small
-phone they still show (words 12px or more) and answer a tap, and on a
-1024 or 1280 × 720 window or a phone on its side they give way to the
-dock (none drawn).
-Pages are `noindex`, canonical to the 2D page.
-
-Open to visitors (since 2026-11-21, at my request) through
-`app/lib/city3dLive.ts: CITY3D_LIVE` and the same test in
-`next.config.ts`. **To close it again without a code change**: set
-`NEXT_PUBLIC_CITY3D=off` for Production in the Vercel project and
-redeploy; then there is no "3D city" key or link and `/city*` redirects
-to `/` (`tests/city-panel-fit.test.mjs` pins the switch's code).
-
-The pieces:
-- `CityShell.tsx` probes WebGL2, handles a lost context ("Restart the 3D
-  city", the fallback after a second loss), waits under Save-Data ("Load
-  the 3D city (about N MB)", `tiers.ts: SAVE_DATA_MB`), and lazy-loads
-  `City3D.tsx` (canvas, Director, warm-up, frame loop) only while a
-  `/city` route shows. Fallback everywhere is the band's plate.
-- `tiers.ts` picks the renderer tier (`TIERS`; `?tier=high|low|mobile`
-  works in production) and steps high down to low once if slow.
-- `kit/`: the plate engine (`plate.ts`: the painting, its depth, regions
-  of water, wet paving, sky and glass, movers; `cover()` grows and slides
-  the painting to fill the view from whatever pose the camera is in, so
-  no edge ever shows; `PlateDef.look` aims the home axis at a painting
-  point; on the narrow layout the painting is framed to the strip between
-  the bar and the sheet, `plateView`), the flight's clouds (`flight.ts`),
-  neon and screens (`neon.ts`), Home's boards (`signs.ts`), precipitation;
-  `kit/uniforms.ts` is the only shared shader state; `kit/materials.ts:
-  shared()` the one material cache. The code-built kit (towers, windows,
-  glass, water, street, trees, landmarks, sky dome) is retired.
-- Flights pass through a haze the iris paints in the hour's colour
-  (`kit/flight.ts: HAZE_DAY`, `HAZE_NIGHT`, about as light as the
-  places), closing and opening over at least 350 ms; the clouds at most
-  `VEIL_MAX` 0.6, tinted to it; the cut between air and place made under
-  the closed haze.
-- Only the last place left keeps its pictures for a while
-  (`PlatePlace.tsx: kept`): a hop through all six stays under `TIERS`.
-- Paintings are decoded off the main thread (`createImageBitmap`) and
-  uploaded between frames before a plate shows them; a press on a link to
-  a place starts its paintings (`kit/plate.ts: hintPlate`, `Wake.tsx`).
-- Power: at rest a place's quiet life (water, lights, the drift, the
-  arcade's attract mode, rain and snow: the store's `ambient`) draws at most 30 frames a
-  second and stops after 60 s with no input or change (`Wake.tsx:
-  RestTicker`); flights, turns and blends draw every frame; nothing in
-  still view or a hidden tab.
-- `atmosphere/`: time and weather into uniforms, bloom and rain/snow.
-- `panels/`: the pickers over the scene (Projects' screens, Experience's
-  lines, Interests' arcade machine: `arcade/arcadeMachine.ts`, rules in
-  `arcade/arcadeLogic.ts`; untouched it moves to the next interest every
-  10 s, never in still view, and only the machine, not the panel).
-- `store.ts`: state shared by the panels and the scene (the only city3d
-  module `/` may import).
-
-### Renderer tiers and budgets (`tiers.ts`, `docs/audit/scripts/budget.mjs`)
-
-| | high | low | mobile |
-|---|---|---|---|
-| Who | desktop, discrete or Apple GPU | integrated GPU, ≤ 4 cores or memory, Save-Data, software | coarse pointer or the narrow layout (`flat.ts: FLAT_QUERY`) |
-| DPR cap | 1.75 | 1.5 | 1.25 |
-| Bloom | 0.5 scale, 5 levels, MSAA 4 | 0.25 scale, 5 levels, MSAA 2 | none (glow sprites) |
-| Draw calls | ≤ 300 | ≤ 220 | ≤ 150 |
-| Triangles | ≤ 1.2 M | ≤ 700 k | ≤ 350 k |
-| Texture memory | ≤ 128 MB | ≤ 96 MB | ≤ 48 MB |
-| Frame p95 at the home pose | ≤ 12 ms | ≤ 9 ms | ≤ 8 ms |
-
-Bundles (gzip bytes, `budget.mjs`; limits only go down): `homeInitialJs`
-and `cityInitialJs` ≤ 200,848; `totalJs` ≤ 214,000; `totalCss` ≤ 10,760;
-`cityCss` ≤ 2,000; `city3dChunk` ≤ 330,000; `districtChunk` ≤ 32,000;
-`city3dJs` ≤ 480,000; `resumeJs` ≤ 470,000; `resumeCss` ≤ 2,500. First
-load has about 1 KB of headroom. Latest readings: `docs/city/3d-log.md`,
-"Task 19, the reviews' fixes".
+Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 200,848;
+`totalJs` ≤ 214,000; `totalCss` ≤ 10,760; `resumeJs` ≤ 470,000;
+`resumeCss` ≤ 2,500. It also fails on three.js (`WebGLRenderer`) in any
+chunk of the build, and on any stylesheet `/` doesn't link (besides the
+résumé's).
+Readings after the 3D city's removal (2026-11-22): 198,898; 204,533;
+10,531; 447,950; 1,853.
 
 ### Standing rules
 
@@ -211,33 +129,13 @@ load has about 1 KB of headroom. Latest readings: `docs/city/3d-log.md`,
   `aria-label`, titles, `alt`), and no Chinese or Japanese characters
   anywhere in `app/`; no CJK font (`tests/city-routes.test.mjs`,
   `tests/city-theme.test.mjs`).
-- Nothing 3D on `/`: no import reachable from `app/page.tsx` or
-  `app/layout.tsx` reaches `three`, `@react-three/*`, `postprocessing` or
-  `components/city3d/`, except `city3d/store.ts`
-  (`tests/city3d-bundle.test.mjs`, `budget.mjs`). The "3D city" link
-  never prefetches.
+- No three.js, React Three Fiber or `postprocessing` anywhere
+  (`budget.mjs`, `tests/city-sections-fit.test.mjs`).
 - A client component in a first load never imports values from
   `app/data/portfolio.ts` (types are fine): pass them as props from a
   server component (as `TopBar` passes the song to `MusicToggle`). One
   such import pulls the whole data file into every page's first load.
-- The kit: every material through the kit's factories
-  (`shared(materialKey(…))`; no file under `city3d/` outside `kit/` makes
-  a three.js material, `tests/city3d-contract.test.mjs`); all geometry and
-  textures generated in code from fixed seeds (`rng.ts`), no `Math.random`,
-  no downloaded or AI-made models (the paintings are the one exception:
-  ChatGPT images, masks made from them by code); no place mounts a light
-  of its own (`scenes.ts: DISTRICT_LIGHTS`, all 0), so the light count is
-  the same by day and night, so day, night and weather change uniforms only and a 3 s
-  blend compiles no shader; no new shader variants per sky.
-- Motion in the scene only through `common.tsx` (`useLive`, `useMovers`):
-  in still view nothing moves on its own, the camera cuts, the frame loop
-  is `demand`. `Post.tsx` is a composer, bloom and tone mapping only: no
-  glitch, scanlines, noise or chromatic aberration. No lanterns, dragons
-  or red-and-gold kitsch.
-- After moving a spot or a board on Home, run
-  `docs/city/scripts/visibility.mjs`; after a change to the plate's
-  colour, `docs/city/scripts/plate-compare.mjs` (each place against its
-  painting).
+- No lanterns, dragons or red-and-gold kitsch.
 
 ---
 
@@ -256,8 +154,7 @@ verbatim from `docs/city/style.md`):
 
 Accents only on edges, marks, chosen states and display type of 24px or
 larger, never body text. Glow (`--glow-cyan`) never provides contrast and
-goes under `prefers-contrast: more`. The scene's neon tones are named
-`cyan`, `rose`, `gold` in `kit/neon.ts` only.
+goes under `prefers-contrast: more`.
 
 Avoid (tests enforce most): a light theme, a toggle, anything keyed on
 `prefers-color-scheme` or `light-dark()`; magenta or amber interface
@@ -270,14 +167,12 @@ tokens or names; pure white; text under 4.5:1 on any ground or sky.
 Set in `app/layout.tsx` with `next/font/local` from `app/fonts/` (Latin
 only, OFL texts alongside): Rajdhani 500, 600 and 700 (three files) for
 headings and section names (`font-display`, `--font-display`), a squared
-signage sans; Nunito variable 400 to 700 for text (`font-sans`). Every
-word in the 3D scene uses these same fonts (the kit loads no font file of
-its own).
+signage sans; Nunito variable 400 to 700 for text (`font-sans`).
 
 Body copy is short points, not paragraphs: `.points`, each marked with a
 6px cyan square turned 45°. Figures in the text are bold through
-`<Figures>` (`lib/figures.ts`). `Heading.tsx` sets a section's heading
-levels: its 2D level on `/`, one higher in the 3D city.
+`<Figures>` (`lib/figures.ts`). A section's headings go through
+`Heading.tsx` (levels 3 to 5, under the station's `h2`).
 
 Prefer large, confident hero type, a clear heading hierarchy, restrained
 weights and generous line-height. Avoid decorative fonts.
@@ -290,16 +185,10 @@ weights and generous line-height. Avoid decorative fonts.
   strong elements per section rather than many small cards.
 - Sections lay out by their own column width, never the viewport: one
   `@container` on a wrapper, then `@min-[…]:` variants
-  (`tests/city-panel-fit.test.mjs`), so the same components fit the 2D
-  page and the 3D city's panel.
+  (`tests/city-sections-fit.test.mjs`), so a section fits any column it
+  is put in.
 - Grounds alternate: About, Experience and Contact sit on `--ink-2`.
 - Corners from `--radius` (10px) and `--radius-lg` (16px).
-- The 3D city: wide screens put the canvas fixed under the bar and the
-  panel in the left half (Interests in the right half: its painting's
-  machine is at the left edge, `frame: "left"`; the dock keeps its place
-  and the panel ends above it); the narrow layout (`FLAT_QUERY`, mirrored in
-  `city-pages.css`) keeps the scene in the top `--hero` (46svh, 64svh on
-  a phone on its side) with the panel as a dark sheet over the rest.
 
 ---
 
@@ -307,19 +196,12 @@ weights and generous line-height. Avoid decorative fonts.
 
 - The top bar (`TopBar.tsx`): the name (home), the progress line and the
   section you're at (`ProgressLine.tsx`: along the bar's foot, in the
-  right margin from 97rem), Richmond Hill's time and weather, the "3D
-  city" switch (in the bar from 80rem, the Sections menu's first entry
-  below; only where WebGL2 exists, and hidden if the city is closed), Sections, Still view and the
-  music. It never gains a row it doesn't have today, at any width
+  right margin from 97rem), Richmond Hill's time and weather, Sections,
+  Still view and the music. It never gains a row it doesn't have today, at any width
   (`docs/city/scripts/bar-fit.mjs`).
 - The Sections menu (`SectionsMenu.tsx`, a popover) jumps within the page
-  and moves focus there; on `/city/*` it points at the city and offers the
-  way back.
+  and moves focus there.
 - The hero's "View projects" and "Contact".
-- In the 3D city: the riverside's sign tags (`.city-tag` links over the
-  boards, or the panel's row of keys `.city-keys` where they can't fit),
-  Escape back to Home, "Back to Home" and "This section on the 2D page"
-  on every section page; the bar's switch reads "2D view" there.
 - The time and weather (`components/weather/WeatherClock.tsx`) is
   something to read, not a control: plain text with a `<time>`, blanks
   while loading, an "as of" tag on an old reading, "Weather unavailable"
@@ -327,7 +209,7 @@ weights and generous line-height. Avoid decorative fonts.
   page's footer (`components/ui/Colophon.tsx`).
 
 Every section is one entry in `app/sections/registry.ts`; the menu, the
-progress line, the numbers and the city's keys are generated from it.
+progress line and the numbers are generated from it.
 Never keep a second list. To add one: `docs/adding-a-section.md`
 (starter `docs/development/section-template/Greenhouse.tsx`, not served).
 
@@ -371,8 +253,7 @@ an index of every project, then one `article` per project with a level-3
 heading, cover screenshot (never cropped), summary, features (or "My
 part" when it lists contributions), the stack as one muted line, GitHub and an
 optional live demo, the rest in a native `<details>`. Skills follow,
-inside Projects. In the 3D city each project is a screen in the towers;
-choosing one there marks it current in the panel's index.
+inside Projects.
 
 Do not invent projects. Keep them polished but restrained: soft surfaces,
 hairlines, gentle hover; no huge shadows, heavy animation or badge
@@ -398,19 +279,17 @@ visible at rest, transforms and opacity only; nothing loops.
 Still view is `html[data-still="on"]`, set before first paint by
 `lib/still.ts: STILL_SCRIPT` from the visitor's choice or
 `prefers-reduced-motion`: no animation, no parallax or tilt, no moving
-weather, camera cuts instead of travel, nothing in the scene moving on
-its own. Every animation sits behind that guard and the reduced-motion
-query. No scroll hijacking: the canvas never takes wheel or touch-scroll.
-The 3D frame loop stops when the tab is hidden, when the sheet covers the
-canvas, and under the résumé.
+weather. The top bar's key changes it through `lib/stillStore.ts`. Every
+animation sits behind that guard and the reduced-motion query. No scroll
+hijacking.
 
 ---
 
 ## Responsive Design
 
 Every change must work on mobile, tablet, laptop and large desktop.
-Checked by `docs/ui/scripts/mobile-audit.mjs` (`/`, its anchors and the
-six `/city` pages, the open menu, the weather display, the progress line
+Checked by `docs/ui/scripts/mobile-audit.mjs` (`/`, its anchors, the
+open menu, the weather display, the progress line
 and the résumé dialog, at 320, 390, 430, 768, 1024 portrait and
 landscape, 1440, 1600, 844×390 and 667×375, plus 200% text at 320, 390
 and 844×390; headless Chrome with touch and emulated notch insets, not a
@@ -433,9 +312,7 @@ real device):
 
 Semantic landmarks, one `h1` per page, headings in order, a skip link,
 visible focus, keyboard access to everything, no information by colour
-alone, all painting `alt=""`. In the 3D city focus moves to the panel's
-heading on each journey (never on first load), and under
-`prefers-contrast: more` panels are opaque, with no bloom and no glow.
+alone, all painting `alt=""`. Under `prefers-contrast: more`, no glow.
 Do not sacrifice accessibility for visual styling.
 
 ---
@@ -475,7 +352,7 @@ redesigns, explain the plan first.
 
 Shared files (`package.json`, the lockfile, `next.config.ts`,
 `app/city.css`, `app/layout.tsx`, `app/sections/registry.ts`, `TopBar.tsx`,
-`city3d/{store,scenes,sceneChunks}.ts`, `kit/uniforms.ts`, `budget.mjs`)
+`budget.mjs`)
 are edited by one session at a time, never by parallel agents.
 
 The icons and share card are drawn in code:
@@ -497,7 +374,7 @@ npx tsc --noEmit
 ```
 
 For builds and audits:
-- Build: `npm run build` (the city is on unless `NEXT_PUBLIC_CITY3D=off`), then
+- Build: `npm run build`, then
   `npx next start -p 3100` (any port but the dev server's 3101). Then
   `SMOKE_URL=http://localhost:3100 npm test` and
   `node docs/audit/scripts/budget.mjs` (`npm run perf:budget`).
@@ -508,8 +385,8 @@ For builds and audits:
 
 The scripts and what they measure (production build unless marked `next
 dev`, for the `?sky=` preview):
-- `docs/audit/scripts/budget.mjs`: bundle budgets; no three.js on `/` or
-  its linked routes. `lighthouse.mjs`: cold runs, LCP and CLS per URL.
+- `docs/audit/scripts/budget.mjs`: bundle budgets; no three.js in the
+  build. `lighthouse.mjs`: cold runs, LCP and CLS per URL.
   `shots.mjs`: screenshots of every route.
 - `docs/ui/scripts/mobile-audit.mjs`: the guarantees above.
   `responsive-shots.mjs`: the pages at every width.
@@ -518,24 +395,14 @@ dev`, for the `?sky=` preview):
   `glass-states.mjs`, `glass-press.mjs`: the buttons' states and press.
   `palette-contrast.mjs`: the palette's pairs. `resume-viewer.mjs`: the
   résumé dialog. `weather-display.mjs`: the time and weather display.
-- `docs/city/scripts/city3d-perf.mjs`: draws, triangles, memory and frame
-  times per tier and place against `TIERS`; shaders compiled by blends;
-  still view's frames. `city3d-fallback.mjs`: every fallback reads and
-  doesn't shift. `city3d-keyboard.mjs`: the city by keyboard.
-  `city3d-contrast.mjs` (`next dev`): panels, tags, keys and bar over 20
-  skies. `visibility.mjs` (`next dev`): each sign on screen, uncovered,
-  out of fog, its link 44px and apart. `plate-compare.mjs` (`next dev`):
-  ΔE between each place and its painting (a measure, not a gate).
-  `bar-fit.mjs`: the bar's height at every width against
+- `docs/city/scripts/bar-fit.mjs`: the bar's height at every width against
   `docs/city/bar-baseline.json`.
 
 ### Open
 
 - Simulated-phone largest paint is about 3.0 s against the 2.5 s target
-  (`/` and `/city`; desktop about 0.7 s).
+  (`/`; desktop about 0.7 s).
 - The weather capsule shifts the layout slightly when its reading arrives
-  (CLS up to 0.02, `/` and `/city`).
-- The painted 3D city opened before my review on a real phone (its
-  match to the paintings: `docs/city/3d-log.md`, "Task 10").
+  (CLS up to 0.02).
 - `bar-fit.mjs` depends on the live weather's words, so it can fail at a
   width without any change to the bar.
