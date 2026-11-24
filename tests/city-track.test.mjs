@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { SKY_DEPTH, TRACK_MIN, parallax, scrollYForStop, stopAt, stopOffsets, trackFits } from "../app/components/city2d/trackMath.ts";
+import { FAR, ROOM_EMS, SKY_DEPTH, TRACK_MIN, landing, nearestPlace, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackRoom } from "../app/components/city2d/trackMath.ts";
 import { TRACK_SCRIPT, TRACK_WAIT_MS } from "../app/lib/track.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -82,30 +82,46 @@ test("parallax: depth 0 moves with the street, 1 stays put, and it stays within 
     }
 });
 
-test("no scroll-jacking: no wheel or touchmove listener, nothing prevented, nothing smoothed", () => {
+test("no scroll-jacking: the wheel and pointer listeners are passive, only the keys' page step is prevented, no fling", () => {
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /^"use client";/);
-  assert.doesNotMatch(src, /"wheel"|"mousewheel"|"touchmove"|"touchstart"|onWheel|onTouchMove/);
-  assert.doesNotMatch(src, /preventDefault|stopPropagation|stopImmediatePropagation/);
+  assert.doesNotMatch(src, /"mousewheel"|"touchmove"|"touchstart"|onTouchMove|stopPropagation|stopImmediatePropagation/);
+  // preventDefault only in the keys (PageDown/Space step a place, as the arrows do)
+  const keys = src.slice(src.indexOf("const onKey ="), src.indexOf("const onClick ="));
+  assert.equal((src.match(/preventDefault/g) ?? []).length, (keys.match(/preventDefault/g) ?? []).length);
   // Every listener it adds that sees scrolling input is passive
   assert.match(src, /const passive = \{ passive: true, signal \};/);
-  for (const m of src.matchAll(/addEventListener\("(scroll|pointer\w+)", \w+(, \w+)?\)/g)) assert.equal(m[2], ", passive", m[0]);
+  for (const m of src.matchAll(/addEventListener\("(scroll|wheel|pointer\w+)", \w+(, \w+)?\)/g)) assert.equal(m[2], ", passive", m[0]);
+  // The wheel answers only sideways input (A11Y-11), never a zoom, never over a sideways scroller
+  assert.match(src, /e\.ctrlKey \|\| Math\.abs\(e\.deltaX\) <= Math\.abs\(e\.deltaY\) \|\| sideways\(e\.target\)/);
+  // No fling: a released swipe lands on a place, never glides on past
+  assert.doesNotMatch(src, /FLING|\.v \*/);
+  assert.match(src, /const k = landing\(from, along\(\), xs\(\), narrow\.matches, vw \* 0\.3\)/);
   // A sideways swipe travels, but up and down stay the browser's, and pinch zoom
   assert.match(src, /e\.pointerType === "touch"/);
   const css = read("app/city-track.css");
   assert.match(css, /\.track-stage \{[^}]*touch-action: pan-y pinch-zoom;/);
   assert.match(css, /\.track \.panel \{[^}]*touch-action: pan-y pinch-zoom;/, "the panels too (a scroller sets its own)");
-  // No snapping that could trap
-  assert.doesNotMatch(css, /scroll-snap/);
+  // Snapping that never traps: near a place on a wide screen, onto each on the narrow layout, off while a sideways move goes on
+  assert.match(css, /:root\[data-track="on"\] \{[^}]*scroll-snap-type: y proximity;[^}]*overscroll-behavior-x: none;/);
+  assert.match(css, /:root\[data-track="on"\]\[data-free\] \{\s*scroll-snap-type: none;/);
+  const phone = css.slice(css.indexOf("@media (max-aspect-ratio: 1 / 1)"));
+  assert.match(phone, /\.snap-mark \{\s*scroll-snap-stop: always;/);
+  assert.match(phone, /scroll-snap-type: y mandatory;/);
+  assert.match(css, /\.snap-mark \{\s*position: absolute;\s*width: 1px;\s*height: 1px;\s*scroll-snap-align: start;/);
 });
 
-test("the keys: ArrowLeft/ArrowRight go a stop, never from a field, a menu or a dialog, and cut in still view", () => {
+test("the keys: ArrowLeft/ArrowRight, PageUp/PageDown and Space go a place, never from a field, a menu or a dialog, focus with them, and cut in still view", () => {
   const src = code(read("app/components/city2d/CityTrack.tsx"));
-  assert.match(src, /e\.key !== "ArrowLeft" && e\.key !== "ArrowRight"/);
-  assert.match(src, /e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey \|\| e\.shiftKey/, "Alt+Left is Back");
+  assert.match(src, /const arrow = e\.key === "ArrowLeft" \|\| e\.key === "ArrowRight";/);
+  assert.match(src, /const page = e\.key === "PageDown" \|\| e\.key === "PageUp" \|\| e\.key === " ";/);
+  assert.match(src, /e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey/, "Alt+Left is Back");
+  assert.match(src, /e\.shiftKey && e\.key !== " "/);
+  assert.match(src, /glide\(places\[next\]\.x, still\(\), places\[next\]\.stop\);\s*focusPanel\(places\[next\]\.panel\);/, "the step takes focus (A11Y-06)");
   assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]"/);
-  assert.match(src, /behavior: instant \? "instant" : "smooth"/);
-  assert.match(src, /const glide = \(x: number, instant = still\(\)\)/, "a glide cuts in still view");
+  assert.match(src, /if \(instant\) return cut\(\);/);
+  assert.match(src, /scrollTo\(\{ top: top \+ to, behavior: "instant" \}\)/);
+  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\)\)/, "a glide cuts in still view");
   assert.match(src, /html\.dataset\.still === "on"/);
 });
 
@@ -118,7 +134,10 @@ test("anchors, Back/Forward, links and focus all bring their stop on", () => {
   assert.match(src, /document\.addEventListener\("focusin", onFocus, \{ signal \}\)/);
   // A panel in a row (Skills, a project): the journey stops with that
   // panel on, never scrolling the page or a panel to it
-  assert.match(src, /el\.closest\("\.panel"\) \?\? el/);
+  assert.match(read("app/components/city2d/jump.ts"), /el\.closest\("\.panel"\) \?\? el\.querySelector\("\.panel"\) \?\? el/);
+  assert.match(src, /const p = panelOf\(el\);/);
+  // A link's jump takes focus to the panel (A11Y-10, A11Y-03)
+  assert.match(src, /toHash\(url\.hash, undefined, true\)/);
   assert.doesNotMatch(src, /scrollIntoView|panel\.scrollTo\(/);
   // The jump's focus never scrolls on the journey
   assert.match(read("app/components/city2d/jump.ts"), /preventScroll: Boolean\(hash\) \|\| track/);
@@ -165,17 +184,19 @@ test("the head script turns the journey on before the first paint, only on / wit
   };
   assert.equal(run(1440, 900).attrs["data-track"], "on");
   assert.equal(run(390, 844).attrs["data-track"], "on");
-  assert.equal(run(844, 390).attrs["data-track"], "on", "a phone on its side");
+  // A panel needs ROOM_EMS of room (trackRoom), so a phone on its side reads stacked
+  assert.equal(run(844, 390).attrs["data-track"], undefined, "a phone on its side");
+  assert.equal(run(1024, 768).attrs["data-track"], "on", "a small laptop");
   assert.equal(run(TRACK_MIN.width - 1, 900).attrs["data-track"], undefined);
   assert.equal(run(800, TRACK_MIN.height - 1).attrs["data-track"], undefined);
   assert.equal(run(1440, 900, "/nope").attrs["data-track"], undefined, "only the one page");
   // 200% text: the height counts in ems (TRACK_MIN.ems), so a short screen reads stacked
   assert.equal(run(844, 390, "/", false, "32px").attrs["data-track"], undefined, "a phone on its side at 200% text");
   assert.equal(run(320, 640, "/", false, "32px").attrs["data-track"], undefined, "a small phone at 200% text");
-  assert.equal(run(390, 844, "/", false, "32px").attrs["data-track"], "on", "a tall phone at 200% text");
-  assert.equal(run(667, 375).attrs["data-track"], "on", "a small phone on its side at 100%");
+  assert.equal(run(390, 844, "/", false, "32px").attrs["data-track"], undefined, "a tall phone at 200% text: its sheet under 20em");
+  assert.equal(run(667, 375).attrs["data-track"], undefined, "a small phone on its side at 100%");
   // The same rule in CityTrack's measure
-  for (const [w, h, rem] of [[844, 390, 32], [320, 640, 32], [390, 844, 32], [667, 375, 16], [319, 900, 16]]) {
+  for (const [w, h, rem] of [[844, 390, 32], [320, 640, 32], [390, 844, 32], [390, 844, 16], [667, 375, 16], [319, 900, 16], [1024, 768, 16], [1024, 768, 32], [1440, 900, 16], [320, 568, 16], [1024, 600, 16], [768, 1024, 32]]) {
     const html = run(w, h, "/", false, `${rem}px`).attrs["data-track"] === "on";
     assert.equal(trackFits(w, h, rem), html, `${w}×${h} at ${rem}px: the head script and measure() agree`);
   }
@@ -194,8 +215,8 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   const body = code(css);
   // Every rule but the keyframes is for screens with the journey on (print and no scripts read top to bottom)
   assert.match(body, /^@media screen \{/m);
-  assert.match(body, /\.track-stage \{[^}]*position: sticky;[^}]*top: 0;[^}]*height: 100dvh;[^}]*overflow: clip;/);
-  assert.match(body, /\.track-runway \{\s*height: calc\(var\(--travel, 0px\) \+ 100dvh\);/);
+  assert.match(body, /\.track-stage \{[^}]*position: sticky;[^}]*top: 0;[^}]*height: 100svh;[^}]*overflow: clip;/);
+  assert.match(body, /\.track-runway \{\s*position: relative;\s*height: calc\(var\(--travel, 0px\) \+ 100svh\);/);
   assert.match(body, /@supports \(animation-timeline: view\(\)\) \{[\s\S]*view-timeline: --runway block;[\s\S]*animation-range: contain 0% contain 100%;/);
   assert.match(body, /animation: track-move linear both;/, "one pixel along for one down");
   // Where there's no timeline, the script writes the transforms each frame
@@ -211,14 +232,14 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(body, /\.track > \.station:last-of-type \{\s*width: 100cqw;/);
   // Panels: never taller than the stage, scroll inside only when open,
   // and at their end chain on to the page (the journey goes on)
-  assert.match(body, /--room: calc\(100% - var\(--stop-top\) - var\(--foot\)\);/);
+  assert.match(body, /--room: calc\(100% - var\(--[\w-]+\) - var\(--foot\)\);/);
   assert.match(body, /\.track \.station-body \{[^}]*max-height: var\(--room\);/);
   assert.match(body, /\.station-row \.panel \{[^}]*max-height: 100%;/);
   assert.match(body, /\.track \.panel \{[^}]*overflow-y: hidden;/);
   assert.match(body, /\.track \[data-open\] \{\s*overflow-y: auto;\s*\}/);
-  assert.doesNotMatch(body, /overscroll-behavior/, "an open panel at its end hands the scroll on");
+  assert.deepEqual(body.match(/overscroll-behavior[\w-]*: \w+/g), ["overscroll-behavior-x: none"], "an open panel at its end hands the scroll on; only the page's sideways overscroll is off");
   const src2 = code(read("app/components/city2d/CityTrack.tsx"));
-  assert.match(src2, /p\.toggleAttribute\("data-open", r\.left >= -1 && r\.right <= vw \+ 1 && p\.scrollHeight > p\.clientHeight \+ 1\)/, "each panel, wholly on the screen, with more than it shows");
+  assert.match(src2, /p\.toggleAttribute\("data-open", scrolls && Math\.abs\(x - px\) <= 2\)/, "each panel, at its place, with more than it shows");
   // A stop of a row of panels is as wide as its row
   assert.match(body, /\.track > \.station:has\(> \.station-row\) \{\s*width: auto;/);
   // Phones: the painting on top, the words a sheet below
@@ -263,23 +284,8 @@ test("arrivals: each panel and its pieces enter on the runway's timeline from th
   assert.match(src, /p\.style\.setProperty\("--at", `\$\{x\}px`\)/);
 });
 
-test("Task 8: clear glass, a feathered shade behind the words, each stop's panel centred and substantial, anchors centre their panel", () => {
+test("Task 8: the arrivals never animate a key or a link; anchors centre their panel (the glass and the layout: B's tests)", () => {
   const body = code(read("app/city-track.css"));
-  // Clear glass: a barest tint, a blur, a fine light edge, the words' dark halo
-  assert.match(body, /\.track \.panel \{[^}]*border: 1px solid rgb\(230 233 238 \/ 0\.2\);[^}]*background: linear-gradient\(160deg, rgb\(79 216 238 \/ 0\.06\), rgb\(8 9 12 \/ 0\.1\)\);[^}]*backdrop-filter: blur\(14px\) brightness\(0\.72\);[^}]*text-shadow: 0 0 0\.4rem rgb\(8 9 12 \/ 0\.8\), 0 0 1\.25rem rgb\(8 9 12 \/ 0\.6\);/);
-  assert.match(body, /--shade: rgb\(8 9 12 \/ 0\.46\);/, "as light as passes city-contrast over 20 skies");
-  // Secondary words a step lighter on the glass (fix round 1, the coordinator's ruling)
-  assert.match(body, /\.track \.panel \{[^}]*--muted: #c9ced8;/);
-  // No hard scrim: a shade under each outermost block, blurred into the glass, never a solid band
-  assert.doesNotMatch(body, /:is\(\.station-head, h3, h4, p, li, summary\) \{\s*background/);
-  assert.match(body, /::before \{[^}]*inset: -1rem -1\.25rem;[^}]*background: var\(--shade\);\s*filter: blur\(0\.75rem\);/);
-  assert.doesNotMatch(body, /mask-composite/);
-  assert.doesNotMatch(body, /#contact \.panel \{[^}]*background/, "Contact the same glass");
-  // Centred and substantial: one width for every panel (within the central 80%), in the middle of its stop, most of the room
-  assert.match(body, /--w: min\(100cqw - 2 \* var\(--peek\), max\(64cqw, 68rem\)\);/);
-  assert.match(body, /\.track \.station-body \{[^}]*inset: var\(--stop-top\) auto var\(--foot\) max\(\(100cqw - var\(--w\)\) \/ 2, env\(safe-area-inset-left\)\);[^}]*min-height: calc\(var\(--room\) \* 0\.72\);[^}]*margin: auto 0;/);
-  // A row: a screen per panel, each in the middle of its own, the peek after the last
-  assert.match(body, /\.track \.station-row \{[^}]*gap: calc\(100cqw - var\(--w\)\);[^}]*padding: var\(--stop-top\) calc\(var\(--gut\) - var\(--peek\)\) var\(--foot\) var\(--gut\);/);
   // The arrivals never animate a key or a link itself (GlassPress's give is its scale)
   const set = body.match(/:is\(\.track \.panel, \.panel :is\(([^)]*)\)\)/)[1];
   assert.doesNotMatch(set, /glass|text-link/);
@@ -296,4 +302,54 @@ test("Task 8: the motion blur scales with the speed, is gone at rest, and never 
   assert.match(src, /still\(\) \|\| calm\.matches \? 0/);
   assert.match(src, /if \(d < BLUR_MIN\) \{[^}]*pano\.style\.filter = ""/, "no filter at all at rest");
   assert.match(src, /if \(!blurRaf\) blurRaf = requestAnimationFrame\(blurFrame\)/, "started by the scroll, no frames at rest");
+});
+
+test("Task 9: the places: the nearest for the label, the last reached for a key, a sideways move lands on one", () => {
+  const xs = [0, 1296, 2592, 4032, 5472];
+  assert.equal(nearestPlace(0, xs), 0);
+  assert.equal(nearestPlace(647, xs), 0);
+  assert.equal(nearestPlace(649, xs), 1, "the label switches as the next panel's middle passes the screen's (V19)");
+  assert.equal(nearestPlace(99999, xs), 4);
+  assert.equal(placeAt(1295.6, xs), 1, "half a pixel is rounding");
+  assert.equal(placeAt(1200, xs), 0);
+  // The narrow layout: one place per swipe, a nudge goes back
+  assert.equal(landing(1296, 1310, xs, true, 100), 1);
+  assert.equal(landing(1296, 1400, xs, true, 100), 2);
+  assert.equal(landing(1296, 1200, xs, true, 100), 0);
+  assert.equal(landing(1296, 3000, xs, true, 100), 3, "let go past a place: the next one on");
+  assert.equal(landing(0, -40, xs, true, 100), 0);
+  // Wide: the nearest if near, else where it is
+  assert.equal(landing(0, 1250, xs, false, 400), 1);
+  assert.equal(landing(0, 600, xs, false, 400), null);
+  assert.equal(landing(0, 10, [], true, 400), null);
+  assert.equal(FAR, 1.5);
+});
+
+test("Task 9: the snap targets, the bar's label, focus and the dissolve, from one list", () => {
+  const src = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(src, /snaps\.append\(Object\.assign\(document\.createElement\("div"\), \{ className: "snap-mark" \}\)\)/);
+  assert.match(src, /m\.dataset\.for = p\.panel\.id \|\| stops\[p\.stop\]\.id;\s*m\.style\.top = `\$\{p\.x\}px`;/);
+  assert.match(src, /<div className="track-snaps" aria-hidden="true" \/>/);
+  assert.match(src, /dispatchEvent\(new CustomEvent\("trackplace", \{ detail: place \}\)\)/);
+  assert.match(src, /dispatchEvent\(new CustomEvent\("trackjump", \{ detail: \{ to: pageSections\[stop\]\?\.id \} \}\)\)/);
+  // A long jump dissolves; the motion blur is yours only (never a jump's)
+  assert.match(src, /const far = d >= FAR \* vw;/);
+  assert.match(src, /html\.setAttribute\("data-dissolve", ""\)/);
+  assert.match(src, /auto \|\| still\(\) \|\| calm\.matches \? 0/);
+  const motion = code(read("app/motion.css"));
+  assert.match(motion, /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*:root:not\(\[data-still="on"\]\) \.track-stage \{\s*transition: opacity var\(--t-base\) var\(--ease-out\);/);
+  assert.match(motion, /:root:not\(\[data-still="on"\]\)\[data-dissolve\] \.track-stage \{\s*opacity: 0;\s*transition-duration: var\(--t-fast\);/);
+  // An overflowing panel is a region in the Tab order; one well off the screen starts at its top
+  assert.match(src, /p\.setAttribute\("tabindex", scrolls \? "0" : \(tab \?\? "-1"\)\)/);
+  assert.match(src, /if \(r\.right < -vw \|\| r\.left > 2 \* vw\) p\.scrollTop = 0;/);
+  // Before the measure every arrival is done (M13: nothing moves at hydration)
+  assert.match(code(read("app/city-track.css")), /:root\[data-track="on"\] \.track \{\s*--at: 0px;/);
+});
+
+test("Task 9: a panel needs 20em of room, or the page reads stacked", () => {
+  assert.equal(ROOM_EMS, 20);
+  assert.ok(trackRoom(844, 390) < 320 && trackRoom(667, 375) < 320, "phones on their side");
+  assert.ok(trackRoom(390, 844, 32) < 640, "a phone at 200% text");
+  assert.ok(trackRoom(1024, 768) >= 320 && trackRoom(390, 844) >= 320 && trackRoom(1440, 900) >= 320);
+  assert.ok(!trackFits(844, 390) && trackFits(1024, 768) && trackFits(390, 844) && !trackFits(390, 844, 32));
 });

@@ -3,6 +3,9 @@
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/track-journey.mjs [http://localhost:3110]
 // 1. a mouse wheel, Space/PageDown/arrow keys, the scrollbar and a touch
 //    swipe (up and sideways) all travel the city to Contact and back home;
+//    the keys and a sideways swipe go one place (panel) at a time, a
+//    sideways wheel travels, a long jump dissolves, and an arrow takes
+//    focus to the panel it lands on (Task 9);
 // 2. every anchor loaded cold lands on its stop (Experience's showing its
 //    newest role's title, and on a wide screen every entry's), each panel
 //    in a row centred on the screen; Back/Forward restore it;
@@ -97,18 +100,24 @@ try {
     await settle(page, 300);
     check((await page.evaluate(() => document.querySelector('.progress-point[aria-current="location"]')?.textContent)) === "Contact", "the metro map is at Contact at the end");
 
-    // Keys: ArrowRight stop by stop, ArrowLeft back, PageDown/Space travel
+    // Keys: ArrowRight place by place (each project and Skills), focus with
+    // it; ArrowLeft back; PageDown/Space travel
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     await page.locator("body").click({ position: { x: 1300, y: 200 } });
+    const places = await page.evaluate(() => [...document.querySelectorAll(".snap-mark")].map((m) => m.dataset.for));
     const seen = [];
-    for (let i = 0; i < 5; i++) {
+    let focused = true;
+    for (let i = 1; i < places.length; i++) {
       await page.keyboard.press("ArrowRight");
       await settle(page, 300);
       await rest(page);
-      seen.push(await atStop(page));
+      seen.push(await page.evaluate(() => { const y = scrollY - document.querySelector(".track-runway").offsetTop; return [...document.querySelectorAll(".snap-mark")].find((m) => Math.abs(parseFloat(m.style.top) - y) <= 2)?.dataset.for; }));
+      focused &&= await page.evaluate(() => { const a = document.activeElement; return a?.matches(".panel") && a.getBoundingClientRect().left >= 0 && a.getBoundingClientRect().right <= innerWidth; });
     }
-    check(seen.join() === "about,projects,experience,interests,contact", `ArrowRight goes stop by stop (${seen.join()})`);
-    for (let i = 0; i < 5; i++) {
+    check(seen.join() === places.slice(1).join(), `ArrowRight goes place by place (${seen.join()})`);
+    check(places.includes("marketlab") && places.includes("skills"), `the places include each project and Skills (${places.join()})`);
+    check(focused, "each arrow step takes focus to its panel, on the screen");
+    for (let i = 1; i < places.length; i++) {
       await page.keyboard.press("ArrowLeft");
       await settle(page, 300);
       await rest(page);
@@ -119,6 +128,9 @@ try {
       await settle(page, 250);
     }
     check((await atStop(page)) === "contact", "Space and PageDown reach Contact");
+    // (Home and End are the page's from outside a panel: in a long one
+    // that holds the focus they go to its top and its end, as in any region)
+    await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("Home");
     await settle(page);
     check((await atStop(page)) === "home", "Home goes back to the first stop");
@@ -146,6 +158,27 @@ try {
       await settle(page, 200);
       check((await atStop(page)) === "contact", "the scrollbar's range ends at Contact (overlay scrollbar)");
     }
+    // A long jump dissolves: the stage fades out, cuts, fades in
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+    await settle(page, 300);
+    await page.evaluate(() => { window.__dis = 0; const look = () => { if (document.documentElement.hasAttribute("data-dissolve")) window.__dis++; if (window.__dis < 1e4) requestAnimationFrame(look); }; requestAnimationFrame(look); });
+    await page.click('button[popovertarget="places-menu"]');
+    await page.click('#places-menu a[href="/#contact"]');
+    await settle(page, 600);
+    await rest(page);
+    const dis = await page.evaluate(() => [window.__dis, document.documentElement.hasAttribute("data-dissolve"), getComputedStyle(document.querySelector(".track-stage")).opacity]);
+    check((await atStop(page)) === "contact" && dis[0] > 0 && !dis[1] && dis[2] === "1", `a jump from Home to Contact dissolves and comes back whole (${dis})`);
+    // A sideways wheel (a trackpad swipe, a tilt wheel) travels, and lands on a place
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+    await settle(page, 300);
+    for (let i = 0; i < 6; i++) {
+      await page.mouse.wheel(200, 0);
+      await settle(page, 30);
+    }
+    await settle(page, 600);
+    await rest(page);
+    check((await atStop(page)) === "about", `a sideways wheel travels, coming to rest on the next stop (${await atStop(page)})`);
+    check((await page.evaluate(() => getComputedStyle(document.documentElement).overscrollBehaviorX)) === "none", "a sideways swipe never goes Back (overscroll-behavior-x: none)");
     // No listener here stops a scroll: nothing is prevented
     check(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)), "the page never scrolls sideways");
     await page.close();
@@ -181,7 +214,7 @@ try {
   // 1c. Closure shows the next stop's city, never its words: at each
   // settled stop, no text of another stop shows on the screen (a point
   // in its words that the browser would hit belongs to the stop you're at)
-  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 640 }, { width: 844, height: 390 }, { width: 768, height: 1024 }]) {
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 320, height: 640 }, { width: 1024, height: 600 }, { width: 768, height: 1024 }]) {
     const page = await open(ctx, "/", size);
     for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) {
       await page.evaluate((i) => {
@@ -255,7 +288,7 @@ try {
   }
 
   // 2. Anchors, cold, at three sizes; Back and Forward
-  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 844, height: 390 }]) {
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }, { width: 1024, height: 600 }]) {
     for (const id of ["about", "projects", "experience", "interests", "contact"]) {
       const page = await open(ctx, `/#${id}`, size);
       check((await atStop(page)) === id, `/#${id} cold at ${size.width}×${size.height} lands on its stop (got ${await atStop(page)})`);
@@ -337,7 +370,7 @@ try {
   // 3. Resize and turn, mid-journey
   {
     const page = await open(ctx, "/#projects");
-    for (const size of [{ width: 1024, height: 768 }, { width: 1920, height: 1080 }, { width: 390, height: 844 }, { width: 844, height: 390 }, { width: 1440, height: 900 }]) {
+    for (const size of [{ width: 1024, height: 768 }, { width: 1920, height: 1080 }, { width: 390, height: 844 }, { width: 1024, height: 600 }, { width: 1440, height: 900 }]) {
       await page.setViewportSize(size);
       await settle(page, 500);
       check((await atStop(page)) === "projects", `resized to ${size.width}×${size.height}, still at Projects (got ${await atStop(page)})`);
@@ -349,11 +382,11 @@ try {
   // scroll goes on along the city, to the next stop (nothing holds it)
   const pastExperience = (page) => page.evaluate(() => document.getElementById("experience").getBoundingClientRect().left <= 1);
   for (const how of ["wheel", "PageDown"]) {
-    const page = await open(ctx, "/#marketlab", { width: 844, height: 390 });
+    const page = await open(ctx, "/#marketlab", { width: 1024, height: 600 });
     const panel = page.locator("#marketlab");
     await settle(page, 400);
     const fit = await panel.evaluate((p) => [p.scrollHeight, p.clientHeight, Math.round(p.getBoundingClientRect().bottom), innerHeight, p.hasAttribute("data-open")]);
-    check(fit[0] > fit[1] && fit[2] <= fit[3] && fit[4], `${how}: MarketLab's panel at 844×390 is taller than it shows, fits the stage and is open (${fit})`);
+    check(fit[0] > fit[1] && fit[2] <= fit[3] && fit[4], `${how}: MarketLab's panel at 1024×600 is taller than it shows, fits the stage and is open (${fit})`);
     const box = await panel.boundingBox();
     const y0 = await page.evaluate(() => scrollY);
     if (how === "wheel") await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);

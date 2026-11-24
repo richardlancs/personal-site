@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode } from "react";
+import { pageSections, type SectionId } from "../../sections/registry";
+import { focusPanel, panelOf } from "./jump";
 import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
-import { SKY_DEPTH, panoAt, panoKeys, parallax, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
+import { FAR, SKY_DEPTH, landing, nearestPlace, panoAt, panoKeys, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -10,7 +12,8 @@ import WeatherOverlay from "./WeatherOverlay";
 // (wheel, trackpad, keys, the scrollbar, touch); a tall runway holds a
 // full-screen stage that stays put (sticky) while the track of stations in
 // it moves left by exactly as much as the page has scrolled. Nothing here
-// takes over a scroll: no wheel or touch listener, nothing prevented.
+// takes over a scroll: every wheel and pointer listener is passive, and
+// none prevents anything.
 //
 // <html data-track="on"> turns it on, set before the first paint by the
 // head script (lib/track.ts) when scripts run and the screen is at least
@@ -18,17 +21,26 @@ import WeatherOverlay from "./WeatherOverlay";
 // (and the head script falls back to that if this never runs). This sets
 // the runway's height from the track's width (--travel: how far the
 // track moves) and measures again whenever a stop or the stage changes
-// size, keeping you at the same place in the same stop. Where the browser
-// has scroll-driven animations the move is CSS (the runway's view
-// timeline); elsewhere its scroll listener writes the transforms each
-// frame (the track, the sky at 30% of its pace, the weather held still).
+// size, keeping you at the same place. Where the browser has
+// scroll-driven animations the move is CSS (the runway's view timeline);
+// elsewhere its scroll listener writes the transforms each frame (the
+// track, the sky at 30% of its pace, the weather held still).
 //
-// It also carries what a sideways page needs: ArrowLeft/ArrowRight to the
-// previous or next stop, an anchor (on load, a link, Back/Forward) to its
-// stop, focus moved into a stop off the screen brings it on, and a
-// sideways swipe (which no page scroll would answer) travels too. Jumps
-// glide, except in still view, where they cut. Rain and snow are drawn
-// once, over the whole stage (inside the track, held still against it).
+// The places: one per panel (each stop's, each project's, Skills'), where
+// that panel stands in the middle of the screen (trackMath.ts). They are
+// the page's snap targets (a zero-size .snap-mark in the runway at each:
+// city-track.css snaps near one on a wide screen, onto one on the narrow
+// layout), the keys' steps (ArrowLeft/Right, PageUp/PageDown, Space), and
+// the bar's label (the "trackplace" event, as the nearest place changes).
+//
+// It also carries what a sideways page needs: an anchor (on load, a link,
+// Back/Forward) to its panel, focus moved into a stop off the screen
+// brings it on, and a sideways swipe or wheel (which no page scroll would
+// answer) travels too, coming to rest on a place. A jump of FAR screens or
+// more dissolves (the stage fades out, cuts, fades in: motion.css); a
+// shorter one glides; in still view every one cuts. A jump (a link, a
+// key) takes focus to the panel it lands on. Rain and snow are drawn once,
+// over the whole stage (inside the track, held still against it).
 //
 // The city behind the stops is one panorama (`city`: DistrictBand.tsx,
 // panorama.ts, given by the page),
@@ -46,17 +58,27 @@ let marks: number[] | null = null;
 // journey is on: the metro map reads these as its sections' places
 export const trackMarks = () => marks;
 
+/** The bar's label (TopBar, ProgressLine): the "trackplace" event's detail, the place you're at */
+export type TrackPlace = { section: SectionId; title: string; n?: number; of?: number };
+let place: TrackPlace | null = null;
+// The last one announced, for a listener that comes after it
+export const trackPlace = () => place;
+
 const SETTLE_MS = 150; // still this long, the journey has stopped
-// The motion blur while travelling: the city's sideways blur (an SVG
-// Gaussian, horizontal only, its deviation in px) at a speed of v px/ms
-// along the street is v * BLUR_PER_SPEED, at most BLUR_MAX; under
-// BLUR_MIN it is off (no filter at all), as it is at rest
+// The motion blur while you travel (your own wheel, trackpad, touch or
+// scrollbar; never a jump): the city's sideways blur (an SVG Gaussian,
+// horizontal only, its deviation in px) at a speed of v px/ms along the
+// street is v * BLUR_PER_SPEED, at most BLUR_MAX; under BLUR_MIN it is off
+// (no filter at all), as it is at rest
 export const BLUR_PER_SPEED = 1.2;
 export const BLUR_MAX = 3;
 const BLUR_MIN = 0.2;
-const FLING_MS = 280; // how far a released swipe glides, as time at its speed
 // Where the arrows are someone else's: a field, a dialog, a menu
 const SKIP = "input, textarea, select, [contenteditable], dialog, [popover]";
+// ...and Space, which presses these
+const PRESS = "button, summary, [role=button]";
+
+type Place = { x: number; panel: HTMLElement; stop: number; at: TrackPlace };
 
 export default function CityTrack({ city, children }: { city: ReactNode; children: ReactNode }) {
   const runway = useRef<HTMLDivElement>(null);
@@ -65,69 +87,139 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     const run = runway.current;
     const stage = run?.firstElementChild as HTMLElement | null;
     const track = stage?.querySelector<HTMLElement>(".track");
-    if (!run || !stage || !track) return;
+    const snaps = run?.querySelector<HTMLElement>(".track-snaps");
+    if (!run || !stage || !track || !snaps) return;
     const html = document.documentElement;
     const stops = [...track.querySelectorAll<HTMLElement>(":scope > .station")];
-    const panels = track.querySelectorAll<HTMLElement>(".panel");
+    const panels = [...track.querySelectorAll<HTMLElement>(".panel")];
     const cssDriven = CSS.supports("animation-timeline: view()");
     const pano = stage.querySelector<HTMLElement>(".pano");
+    const narrow = matchMedia("(max-aspect-ratio: 1 / 1)");
+    const calm = matchMedia("(prefers-reduced-motion: reduce)");
     let keys = { x: [0], p: [0] };
     let offsets = [0];
+    let places: Place[] = [];
     let top = 0;
     let vw = 0;
     let travel = 0;
     let raf = 0;
-    let aim = -1; // the stop a key's glide is heading for
+    let aim = -1; // the place a key's step is heading for
     let aimTimer = 0;
+    // A jump under way (where to, along the track), and whether the scroll
+    // now is one (a jump's, not yours: no motion blur)
+    let pending = -1;
+    let auto = false;
+    let fade = 0;
+    let pendingTimer = 0;
 
     const on = () => html.dataset.track === "on";
     const still = () => html.dataset.still === "on";
     const along = () => Math.min(Math.max(scrollY - top, 0), travel);
-    const glide = (x: number, instant = still()) => {
-      scrollTo({ top: top + Math.min(Math.max(x, 0), travel), behavior: instant ? "instant" : "smooth" });
+    const xs = () => places.map((p) => p.x);
+    const ms = (token: string) => parseFloat(getComputedStyle(html).getPropertyValue(token)) || 0;
+    // A move along the track to x: a cut (still view), a glide, or past
+    // FAR screens a dissolve (the stage fades out over --t-fast, the cut is
+    // made unseen, and it fades in over --t-base: motion.css). Before a far
+    // one, the stop it is going to is named ("trackjump"), so its tiles
+    // load first (DistrictBand). A second call for the same place while
+    // one is under way (a link's focus, its hash) is the same jump.
+    const glide = (x: number, instant = still(), stop = stopAt(x, offsets)) => {
+      const to = Math.min(Math.max(x, 0), travel);
+      const d = Math.abs(to - along());
+      if (d < 1 || (pending >= 0 && Math.abs(pending - to) < 1)) return;
+      const far = d >= FAR * vw;
+      if (far) dispatchEvent(new CustomEvent("trackjump", { detail: { to: pageSections[stop]?.id } }));
+      const cut = () => scrollTo({ top: top + to, behavior: "instant" });
+      if (instant) return cut();
+      pending = to;
+      auto = true;
+      clearTimeout(pendingTimer);
+      pendingTimer = window.setTimeout(() => (pending = -1), 2000);
+      if (!far) return scrollTo({ top: top + to, behavior: "smooth" });
+      if (calm.matches) return cut();
+      html.setAttribute("data-dissolve", "");
+      clearTimeout(fade);
+      fade = window.setTimeout(() => {
+        cut();
+        pending = -1;
+        requestAnimationFrame(() => html.removeAttribute("data-dissolve"));
+      }, ms("--t-fast"));
     };
-    // Where to stop to show `el` (its panel, if it is in one): with that
-    // panel in the middle of the screen, as it stands at its stop's start
-    // (a stop's one panel) or in its own screen of a row (Projects), never
-    // before the stop's start (a phone's sheets are the screen's width)
-    // (where it is laid out, --at, not where it is drawn: one still on its
-    // way in is shifted by its arrival)
+    // Where to stop to show `el` (its panel: panelOf): with that panel in
+    // the middle of the screen, as it stands at its stop's start (a stop's
+    // one panel) or in its own screen of a row (Projects), never before
+    // the stop's start (a phone's sheets are the screen's width) (where it
+    // is laid out, --at, not where it is drawn: one still on its way in is
+    // shifted by its arrival)
     const xFor = (el: Element, i: number) => {
-      const p = (el.closest(".panel") ?? el) as HTMLElement;
+      const p = panelOf(el);
       const x = parseFloat(p.style.getPropertyValue("--at"));
       return Number.isNaN(x) ? offsets[i] : Math.max(offsets[i], x - (vw - Math.min(p.offsetWidth, vw)) / 2);
     };
     const stopOf = (el: Element) => stops.findIndex((s) => s.contains(el));
 
     // The stop an address names (#projects), or the panel in it (#skills,
-    // a project), there
-    const toHash = (hash: string, instant?: boolean) => {
+    // a project), there; from a link, focus goes with it
+    const toHash = (hash: string, instant?: boolean, focus = false) => {
       const el = document.getElementById(decodeURIComponent(hash.slice(1)) || "home");
       const i = el ? stopOf(el) : -1;
-      if (el && i >= 0) glide(xFor(el, i), instant);
+      if (!el || i < 0) return;
+      glide(xFor(el, i), instant, i);
+      if (focus) focusPanel(el);
+    };
+
+    // What each panel says while it overflows: a region in the Tab order
+    // (named by its heading), so the keys can scroll it; at rest, it only
+    // takes focus from a jump (tabIndex -1). What it had is put back.
+    const had = new Map(panels.map((p) => [p, ["tabindex", "role", "aria-labelledby"].map((a) => p.getAttribute(a))] as const));
+    const mark = (p: HTMLElement, scrolls: boolean) => {
+      const [tab, role, label] = had.get(p)!;
+      p.setAttribute("tabindex", scrolls ? "0" : (tab ?? "-1"));
+      const region = scrolls && p.localName === "div";
+      const head = p.querySelector("h1[id], h2[id], h3[id]");
+      for (const [a, own, v] of [["role", role, "region"], ["aria-labelledby", label, head?.id]] as const) {
+        if (region && !own && v) p.setAttribute(a, v);
+        else if (own) p.setAttribute(a, own);
+        else p.removeAttribute(a);
+      }
     };
 
     // A panel scrolls inside only if it has more than it shows, and only
-    // once the journey has stopped with all of it on the screen (data-open).
-    // While the city moves, no panel sliding under the pointer or the
-    // finger can catch the scroll; over a panel half on, or one that fits,
-    // it always moves the city. At its end an open panel hands the scroll
-    // on (city-track.css: it chains), so the journey goes on.
+    // once the journey has stopped at its place (data-open). While the
+    // city moves, no panel sliding under the pointer or the finger can
+    // catch the scroll; over one between places, or one that fits, it
+    // always moves the city. At its end an open panel hands the scroll on
+    // (city-track.css: it chains), so the journey goes on. One well off
+    // the screen starts again from its top.
     let settleTimer = 0;
     const settle = () => {
-      for (const p of panels) {
+      const x = along();
+      for (const { x: px, panel: p } of places) {
+        const scrolls = p.scrollHeight > p.clientHeight + 1;
+        mark(p, scrolls);
+        p.toggleAttribute("data-open", scrolls && Math.abs(x - px) <= 2);
         const r = p.getBoundingClientRect();
-        p.toggleAttribute("data-open", r.left >= -1 && r.right <= vw + 1 && p.scrollHeight > p.clientHeight + 1);
+        if (r.right < -vw || r.left > 2 * vw) p.scrollTop = 0;
       }
+    };
+    // The place you're at, for the bar's label: announced as it changes
+    let now = -1;
+    const announce = () => {
+      if (!places.length) return;
+      const k = nearestPlace(along(), xs());
+      if (k === now) return;
+      now = k;
+      place = places[k].at;
+      dispatchEvent(new CustomEvent("trackplace", { detail: place }));
     };
     const sky = stage.querySelector<HTMLElement>(".track-sky")!;
     const weather = track.lastElementChild as HTMLElement;
-    // The slight motion blur: each frame while the city moves, its speed
-    // (the scroll's, smoothed) sets how far the panorama blurs sideways;
-    // once it slows under BLUR_MIN the filter is gone. None in still view
-    // or with reduced motion; a hidden tab draws no frames at all
+    // The slight motion blur: each frame while the city moves under your
+    // own scroll, its speed (smoothed) sets how far the panorama blurs
+    // sideways; once it slows under BLUR_MIN the filter is gone. None in a
+    // jump, in still view or with reduced motion; a hidden tab draws no
+    // frames at all
     const blur = stage.querySelector("feGaussianBlur");
-    const calm = matchMedia("(prefers-reduced-motion: reduce)");
     let blurRaf = 0;
     let lastY = scrollY;
     let lastT = 0;
@@ -139,7 +231,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       lastY = scrollY;
       lastT = t;
       speed = speed * 0.6 + v * 0.4;
-      const d = !pano || !blur || !on() || still() || calm.matches ? 0 : Math.min(BLUR_MAX, speed * BLUR_PER_SPEED);
+      const d = !pano || !blur || !on() || auto || still() || calm.matches ? 0 : Math.min(BLUR_MAX, speed * BLUR_PER_SPEED);
       if (d < BLUR_MIN) {
         speed = 0;
         lastT = 0;
@@ -152,6 +244,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     };
     const frame = () => {
       raf = 0;
+      announce();
       if (cssDriven) return;
       const x = along();
       track.style.transform = `translateX(${-x}px)`;
@@ -167,6 +260,9 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         settleTimer = 0;
+        auto = false;
+        pending = -1;
+        if (free < 0) html.removeAttribute("data-free");
         settle();
       }, SETTLE_MS);
     };
@@ -181,11 +277,15 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       }
       if (!on()) {
         marks = null;
+        places = [];
+        snaps.replaceChildren();
         run.style.removeProperty("--travel");
         return dispatchEvent(new Event("trackmeasure"));
       }
-      // Where you were, in the old measure: which stop, and how far in
+      // Where you were, in the old measure: at a place (kept), or which
+      // stop and how far in
       const x = along();
+      const was = places.findIndex((p) => Math.abs(p.x - x) <= 2);
       const i = stopAt(x, offsets);
       const f = offsets.length > 2 ? (x - offsets[i]) / (offsets[i + 1] - offsets[i] || 1) : 0;
       const before = offsets;
@@ -214,43 +314,88 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
         for (let e: HTMLElement | null = p; e && e !== track; e = e.offsetParent as HTMLElement | null) x += e.offsetLeft;
         p.style.setProperty("--at", `${x}px`);
       }
+      // The places, from the panels' --at, and a snap target at each
+      const rows = new Map<number, HTMLElement[]>();
+      places = panels.map((p) => {
+        const stop = stopOf(p);
+        const s = pageSections[stop];
+        const sub = s.subsections?.find((u) => u.href === `/#${p.id}`);
+        const at: TrackPlace = { section: s.id, title: sub?.title ?? s.title };
+        if (p.matches("article")) {
+          const row = rows.get(stop) ?? [...stops[stop].querySelectorAll<HTMLElement>("article.panel")];
+          rows.set(stop, row);
+          // (its name as read: the heading less its number, hidden from assistive technology)
+          const name = [...(p.querySelector("h3")?.childNodes ?? [])].filter((c) => !(c instanceof Element && c.getAttribute("aria-hidden") === "true"));
+          Object.assign(at, { title: name.map((c) => c.textContent).join("").trim() || s.title, n: row.indexOf(p) + 1, of: row.length });
+        }
+        return { x: Math.min(Math.max(xFor(p, stop), 0), travel), panel: p, stop, at };
+      });
+      while (snaps.children.length < places.length) snaps.append(Object.assign(document.createElement("div"), { className: "snap-mark" }));
+      while (snaps.children.length > places.length) snaps.lastElementChild!.remove();
+      places.forEach((p, k) => {
+        const m = snaps.children[k] as HTMLElement;
+        m.dataset.for = p.panel.id || stops[p.stop].id;
+        m.style.top = `${p.x}px`;
+      });
       html.setAttribute("data-track-ready", "");
       dispatchEvent(new Event("trackmeasure"));
       if (first) {
         first = false;
         // Opened on an anchor: straight there
         if (location.hash.length > 1) toHash(location.hash, true);
+      } else if (was >= 0 && places[was]) {
+        // At a place: the same place, at once
+        glide(places[was].x, true);
       } else if (before.length > 2 && before.some((o, k) => Math.abs(o - offsets[k]) > 0.5)) {
         // The stops changed size (a resize, a turn): the same place in the same stop
         glide(offsets[i] + f * (offsets[i + 1] - offsets[i]), true);
       }
+      now = -1;
       frame();
       settle();
     };
 
+    // The keys, one place a step: ArrowLeft/ArrowRight, and PageUp/
+    // PageDown and Space (Shift+Space back), which first scroll a long
+    // panel that holds the focus, to its end; focus goes with the step
     const onKey = (e: KeyboardEvent) => {
-      if (!on() || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      if ((e.target as Element).closest?.(SKIP)) return;
+      if (!on() || e.altKey || e.ctrlKey || e.metaKey || !places.length) return;
+      const arrow = e.key === "ArrowLeft" || e.key === "ArrowRight";
+      const page = e.key === "PageDown" || e.key === "PageUp" || e.key === " ";
+      if (!(arrow || page) || (e.shiftKey && e.key !== " ")) return;
+      const t = e.target as Element;
+      if (t.closest?.(SKIP) || (e.key === " " && t.closest?.(PRESS))) return;
+      const dir = e.key === "ArrowRight" || e.key === "PageDown" || (e.key === " " && !e.shiftKey) ? 1 : -1;
+      if (page) {
+        const box = t.closest?.(".panel") as HTMLElement | null;
+        if (box && box.scrollHeight > box.clientHeight + 1 && (dir > 0 ? box.scrollTop + box.clientHeight < box.scrollHeight - 1 : box.scrollTop > 0)) {
+          // An open one scrolls (the browser's own); one still on its way there waits
+          if (box.hasAttribute("data-open")) return;
+          if (aim >= 0 && places[aim]?.panel === box) return e.preventDefault();
+        }
+        e.preventDefault();
+      }
       const x = along();
-      const at = aim >= 0 ? aim : stopAt(x, offsets);
-      const back = aim >= 0 || x <= offsets[at] + 1 ? at - 1 : at;
-      const next = Math.min(Math.max(e.key === "ArrowRight" ? at + 1 : back, 0), stops.length - 1);
+      const at = aim >= 0 ? aim : placeAt(x, xs());
+      const back = aim >= 0 || x <= places[at].x + 1 ? at - 1 : at;
+      const next = Math.min(Math.max(dir > 0 ? at + 1 : back, 0), places.length - 1);
       aim = next;
       clearTimeout(aimTimer);
       aimTimer = window.setTimeout(() => (aim = -1), 900);
-      glide(scrollYForStop(next, offsets, vw));
+      glide(places[next].x, still(), places[next].stop);
+      focusPanel(places[next].panel);
     };
 
-    // A link to a place on this page (the menu, the hero, the line): its
-    // stop. The link itself still navigates (the address, the history);
-    // this only moves the city, after it.
+    // A link to a place on this page (the menu, the hero, the line, a
+    // panel's "Next"): its panel, and focus with it. The link itself still
+    // navigates (the address, the history); this only moves the city,
+    // after it.
     const onClick = (e: MouseEvent) => {
       if (!on() || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const a = (e.target as Element).closest?.("a[href]") as HTMLAnchorElement | null;
       if (!a || (a.target && a.target !== "_self")) return;
       const url = new URL(a.href);
-      if (url.origin === location.origin && url.pathname === location.pathname && url.hash.length > 1) requestAnimationFrame(() => toHash(url.hash));
+      if (url.origin === location.origin && url.pathname === location.pathname && url.hash.length > 1) requestAnimationFrame(() => toHash(url.hash, undefined, true));
     };
     const onHash = () => on() && toHash(location.hash || "#home");
 
@@ -260,30 +405,64 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       if (!on() || !(el instanceof HTMLElement) || !track.contains(el)) return;
       const r = el.getBoundingClientRect();
       const i = stopOf(el);
-      if (i >= 0 && (r.left < 0 || r.right > vw)) glide(xFor(el, i));
+      if (i >= 0 && (r.left < 0 || r.right > vw)) glide(xFor(el, i), still(), i);
     };
 
-    // A sideways swipe: the page can only scroll down, so a finger moving
-    // sideways would do nothing. It travels the city instead, as far as
-    // the finger went, and a quick one glides on a little (not in still
-    // view). Up and down are the browser's own (touch-action: pan-y), and
-    // so is pinch zoom.
-    let drag: { id: number; x: number; t: number; v: number } | null = null;
+    // Sideways input, which the page's own scroll (down) would never
+    // answer: a finger moving sideways on the stage (up and down are the
+    // browser's, touch-action: pan-y, and so is pinch zoom), and a
+    // trackpad's sideways swipe or a tilt wheel (only where it is mostly
+    // sideways, and not over something that scrolls sideways itself; with
+    // overscroll-behavior-x: none on the page, so a swipe never goes Back).
+    // It travels the city as far as it went, the snapping let go meanwhile
+    // (data-free), and when it is let go it comes to rest on a place
+    // (landing): on the narrow layout the next one the way it went; on a
+    // wide screen the nearest, if near. No fling: it never goes on past.
+    let free = -1; // where the sideways move started, while it goes on
+    let wheelTimer = 0;
+    const loose = () => {
+      if (free >= 0) return;
+      free = along();
+      html.setAttribute("data-free", "");
+    };
+    const land = () => {
+      if (free < 0) return;
+      const from = free;
+      free = -1;
+      // (the snapping comes back once it has landed, at settle: back at
+      // once, it would pull the glide to the nearest place)
+      const k = landing(from, along(), xs(), narrow.matches, vw * 0.3);
+      if (k !== null) glide(places[k].x, still(), places[k].stop);
+      if (k === null || Math.abs(places[k].x - along()) < 1) html.removeAttribute("data-free");
+    };
+    const sideways = (t: EventTarget | null) => {
+      for (let el = t instanceof Element ? t : null; el && el !== track; el = el.parentElement)
+        if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(getComputedStyle(el).overflowX)) return true;
+      return false;
+    };
+    const onWheel = (e: WheelEvent) => {
+      if (!on() || e.ctrlKey || Math.abs(e.deltaX) <= Math.abs(e.deltaY) || sideways(e.target)) return;
+      loose();
+      scrollBy({ top: e.deltaX * (e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? vw : 1), behavior: "instant" });
+      clearTimeout(wheelTimer);
+      wheelTimer = window.setTimeout(land, SETTLE_MS);
+    };
+    let drag: { id: number; x: number } | null = null;
     const down = (e: PointerEvent) => {
-      if (on() && e.pointerType === "touch" && e.isPrimary) drag = { id: e.pointerId, x: e.clientX, t: e.timeStamp, v: 0 };
+      if (on() && e.pointerType === "touch" && e.isPrimary) drag = { id: e.pointerId, x: e.clientX };
     };
     const move = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
       const dx = e.clientX - drag.x;
-      const dt = Math.max(1, e.timeStamp - drag.t);
-      drag = { id: drag.id, x: e.clientX, t: e.timeStamp, v: -dx / dt };
+      drag.x = e.clientX;
+      if (!dx) return;
+      loose();
       scrollBy({ top: -dx, behavior: "instant" });
     };
     const up = (e: PointerEvent) => {
       if (!drag || e.pointerId !== drag.id) return;
-      const v = e.timeStamp - drag.t < 80 ? drag.v : 0;
       drag = null;
-      if (e.type === "pointerup" && Math.abs(v) > 0.3 && !still()) scrollBy({ top: v * FLING_MS, behavior: "smooth" });
+      land();
     };
 
     measure();
@@ -300,6 +479,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     const signal = off.signal;
     const passive = { passive: true, signal };
     addEventListener("scroll", onScroll, passive);
+    addEventListener("wheel", onWheel, passive);
     addEventListener("keydown", onKey, { signal });
     addEventListener("hashchange", onHash, { signal });
     addEventListener("popstate", onHash, { signal });
@@ -317,13 +497,21 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       cancelAnimationFrame(raf);
       cancelAnimationFrame(blurRaf);
       if (pano) pano.style.filter = "";
-      clearTimeout(aimTimer);
-      clearTimeout(settleTimer);
+      for (const t of [aimTimer, settleTimer, fade, pendingTimer, wheelTimer]) clearTimeout(t);
+      for (const p of panels) {
+        const [tab, role, label] = had.get(p)!;
+        for (const [a, v] of [["tabindex", tab], ["role", role], ["aria-labelledby", label]] as const) {
+          if (v === null) p.removeAttribute(a);
+          else p.setAttribute(a, v);
+        }
+      }
+      snaps.replaceChildren();
       marks = null;
+      place = null;
       // Gone from the page (another route): the page there reads as any
       // page does (a fallback, the head script's for the visit, stays)
       if (on()) delete html.dataset.track;
-      html.removeAttribute("data-track-ready");
+      for (const a of ["data-track-ready", "data-free", "data-dissolve"]) html.removeAttribute(a);
     };
   }, []);
 
@@ -348,6 +536,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
           </div>
         </div>
       </div>
+      {/* The snap targets, one at each place (measure fills it) */}
+      <div className="track-snaps" aria-hidden="true" />
     </div>
   );
 }

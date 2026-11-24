@@ -21,6 +21,10 @@
     /* The browser never shifts the scroll to keep something in place: a
        resize is CityTrack's to keep */
     overflow-anchor: none;
+    /* The journey rests near a panel (its .snap-mark, CityTrack: a nudge
+       settles, a fling passes); a sideways swipe never goes Back */
+    scroll-snap-type: y proximity;
+    overscroll-behavior-x: none;
     /* How much of the next stop shows at the right: 10% of the width at
        every width, so the panels keep to the central 80% */
     --peek: max(1.5rem, 10vw);
@@ -64,7 +68,23 @@
   }
 
   :root[data-track="on"] .track-runway {
-    height: calc(var(--travel, 0px) + 100dvh);
+    position: relative;
+    height: calc(var(--travel, 0px) + 100svh);
+  }
+
+  /* Sideways input under way (CityTrack: data-free) moves freely; let go,
+     it lands on a place */
+  :root[data-track="on"][data-free] {
+    scroll-snap-type: none;
+  }
+
+  /* A place: a pixel (Chrome snaps to no empty box), at the scroll that
+     centres its panel (top: from CityTrack) */
+  .snap-mark {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    scroll-snap-align: start;
   }
 
   :root[data-track="on"] .track-stage {
@@ -80,6 +100,9 @@
   }
 
   :root[data-track="on"] .track {
+    /* (each panel's place until CityTrack measures it: every arrival
+       already done, so the first paint shows Home whole) */
+    --at: 0px;
     position: relative;
     display: flex;
     width: max-content;
@@ -441,7 +464,13 @@
   /* Phones and tall screens: the painting in the top of the stage (the bar
      over it), the words a dark sheet below it, scrolling inside */
   @media (max-aspect-ratio: 1 / 1) {
+    /* One swipe, one panel: every place is a stop */
+    .snap-mark {
+      scroll-snap-stop: always;
+    }
+
     :root[data-track="on"] {
+      scroll-snap-type: y mandatory;
       --stop-band: calc(var(--bar-h) + 0.3 * (100dvh - var(--bar-h)));
       /* A sheet's sides: a phone's gutters; from 768px wide, 10% clear */
       --side: max(1.25rem, env(safe-area-inset-left), env(safe-area-inset-right), 20vw - 4.6rem);

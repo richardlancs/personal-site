@@ -46,9 +46,26 @@ export const SKY_DEPTH = 0.7;
  */
 export const TRACK_MIN = { width: 320, height: 320, ems: 22 } as const;
 
+/**
+ * The room a stop's panel has, in px, on a `w` × `h` screen with root text
+ * of `rem` px (city-track.css's layout, the bar taken as one row, 3.5rem):
+ * wide, the screen less the bar's line (bar + 0.75rem), the top line
+ * (1.5rem; none at 500px tall or less) and the map's foot (44px + 2rem,
+ * 0.75rem when short, + 8px + 0.5rem); on a phone or a tall screen, the
+ * sheet under the painting's strip (0.8 of the screen under the bar) less
+ * the foot. Under ROOM_EMS of it the page reads stacked instead.
+ */
+export const ROOM_EMS = 20;
+export function trackRoom(w: number, h: number, rem = 16): number {
+  const r = rem || 16;
+  if (w <= h) return 0.8 * (h - 3.5 * r) - (52 + 2.5 * r);
+  return h <= 500 ? h - 5.5 * r - 52 : h - 8.25 * r - 52;
+}
+
 /** Whether a screen of `w` × `h` with root text of `rem` px takes the journey. */
 export function trackFits(w: number, h: number, rem = 16): boolean {
-  return w >= TRACK_MIN.width && h >= Math.max(TRACK_MIN.height, TRACK_MIN.ems * (rem || 16));
+  const r = rem || 16;
+  return w >= TRACK_MIN.width && h >= Math.max(TRACK_MIN.height, TRACK_MIN.ems * r) && trackRoom(w, h, r) >= ROOM_EMS * r;
 }
 
 /**
@@ -90,6 +107,53 @@ export function panoKeys(offsets: number[], vw: number, scale: number, starts: n
   x.push(travel);
   p.push(still ? Math.max(0, Math.min(at(n - 1), end)) : end);
   return { x, p };
+}
+
+/**
+ * The journey's places (CityTrack.tsx): one per panel (each stop's, each
+ * project's, Skills'), each where that panel stands in the middle of the
+ * screen, in order along the track. The snap targets, the keys and the
+ * bar's label all come from this one list.
+ */
+
+/** The place nearest x: the label's, switching as the next panel's middle passes the screen's */
+export function nearestPlace(x: number, places: number[]): number {
+  let k = 0;
+  for (let i = 1; i < places.length; i++) if (Math.abs(places[i] - x) < Math.abs(places[k] - x)) k = i;
+  return k;
+}
+
+/** The last place at or before x (half a pixel is rounding): where a key's step starts */
+export function placeAt(x: number, places: number[]): number {
+  let k = 0;
+  for (let i = 1; i < places.length; i++) if (places[i] <= x + 0.5) k = i;
+  return k;
+}
+
+/** A jump this many screens or more dissolves (fade out, cut, fade in) instead of gliding */
+export const FAR = 1.5;
+
+/**
+ * Where a sideways swipe or wheel that went from `from` to `x` comes to
+ * rest. Where every panel is a stop (`one`, the narrow layout): a nudge
+ * (under `nudge` px) goes back, any more the next place the way it went,
+ * at most one past where it was let go; elsewhere the nearest place if it
+ * is within `near` px, or where it is (null) between them.
+ */
+export function landing(from: number, x: number, places: number[], one: boolean, near: number, nudge = 24): number | null {
+  if (!places.length) return null;
+  const d = x - from;
+  if (!one) {
+    const k = nearestPlace(x, places);
+    return Math.abs(places[k] - x) <= near ? k : null;
+  }
+  if (Math.abs(d) < nudge) return nearestPlace(from, places);
+  if (d > 0) {
+    for (let i = 0; i < places.length; i++) if (places[i] > from + 0.5 && places[i] >= x - 0.5) return i;
+    return places.length - 1;
+  }
+  for (let i = places.length - 1; i >= 0; i--) if (places[i] < from - 0.5 && places[i] <= x + 0.5) return i;
+  return 0;
 }
 
 /** Where the panorama stands (panoKeys) at x along the track */

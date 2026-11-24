@@ -118,7 +118,7 @@ test("the line names the sections by title, marks where you are, and its points 
   // "03 / 06 · Projects" in the top bar, hidden from assistive technology
   assert.match(src, /className="top-bar-here" aria-hidden="true"/);
   assert.match(src, /sectionNumber\(at\)/);
-  assert.match(src, /· \{at\.title\}/);
+  assert.match(src, /\{at\.title\}/);
   // Mounted once, in the top bar
   assert.match(read("app/components/city2d/TopBar.tsx"), /<ProgressLine \/>/);
   assert.doesNotMatch(read("app/page.tsx"), /ProgressLine|MetroLine/);
@@ -185,7 +185,8 @@ test("the map's CSS: transforms only, the fill eased only when it locks, and not
   // The panels clear it (city-track.css: --foot from --map-h)
   const track = read("app/city-track.css");
   assert.match(track, /--foot: calc\(var\(--map-h\) \+ max\(8px, env\(safe-area-inset-bottom\)\) \+ 0\.5rem\);/);
-  assert.match(track, /\.track \.station-body \{[^}]*inset: var\(--stop-top\) auto var\(--foot\) /);
+  assert.match(track, /--room: calc\(100% - var\(--[\w-]+\) - var\(--foot\)\);/);
+  assert.match(track, /\.track \.station-body \{[^}]*max-height: var\(--room\);/);
   // The section in the top bar from 53rem on
   assert.match(css, /@media \(min-width: 53rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
 });
