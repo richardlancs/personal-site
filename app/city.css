@@ -21,7 +21,7 @@
 /*
   The city: one dark theme (docs/city/style.md). Soft black grounds (a
   trace of blue, never warm grey), pale text, and two restrained lights,
-  cyan and the warm lantern, only for edges, marks, chosen states and
+  cyan and a sky-blue accent, only for edges, marks, chosen states and
   display type of 24px or larger, never body text.
   There is no light theme and no toggle; nothing here is keyed on the
   system's appearance. No words glow; the glass's faint glow is never
@@ -38,7 +38,9 @@
   --text: #e6e9ee;
   --muted: #9ea5b1;
   --cyan: #4fd8ee;
-  --lantern: #f4b860;
+  /* The primary action's fill: a sky blue between the painted sky and
+     --cyan (docs/city/style.md) */
+  --accent: #6cc6f2;
   --focus: #8fe9ff;
   /* The very dark navy each painting passes through on its way into the
      black (the band's fade, below): one for each ground */
@@ -56,9 +58,12 @@
   /* Glass buttons (.glass, below): a little panel over whatever is
      behind, blurred; labels stay opaque --text */
   --glass-tint: rgb(24 27 35 / 0.6);
-  /* primary: solid lantern with an ink label (11.3:1; 12.9:1 on hover) */
-  --glass-tint-strong: var(--lantern);
-  --glass-primary-hover: #f8c97f;
+  /* primary: solid accent with an ink label (10.4:1; 12.5:1 on hover),
+     edged in the night sky's navy (8.3:1 on the fill), so it stands out
+     of the glass over a light sky too */
+  --glass-tint-strong: var(--accent);
+  --glass-primary-hover: #94d6f6;
+  --accent-edge: #0b2242;
   --glass-chosen: rgb(79 216 238 / 0.16);
   --glass-border: #396c7b; /* --line 65% into --cyan */
   --glass-hi: rgb(230 233 238 / 0.11); /* the light line along the top */
@@ -103,7 +108,7 @@
   --color-text: var(--text);
   --color-muted: var(--muted);
   --color-cyan: var(--cyan);
-  --color-lantern: var(--lantern);
+  --color-accent: var(--accent);
   --color-focus: var(--focus);
 
   --font-sans: var(--font-text);
@@ -1484,10 +1489,10 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   light along its top, and an opaque --text label.
 
   The states, the same on every control:
-  - secondary (.glass); primary (.glass-primary): solid lantern, an ink
-    label (11.3:1), a heavier weight; .glass-icon, a square key for
+  - secondary (.glass); primary (.glass-primary): solid accent, an ink
+    label (10.4:1) and a navy edge, a heavier weight; .glass-icon, a square key for
     an icon
-  - hover: a little cyan (primary: a lighter lantern)
+  - hover: a little cyan (primary: a lighter accent)
   - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
     open popover): a cyan edge, doubled inside, pressed in (a shade inside,
     no shadow lift; a faint glow instead), so it reads without colour too
@@ -1542,7 +1547,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 .glass-primary {
   --tint: var(--glass-tint-strong);
   --glass-ink: var(--ink);
-  border-color: var(--lantern);
+  border-color: var(--accent-edge);
   font-weight: 700;
 }
 
@@ -1616,7 +1621,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 }
 
 .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
-  /* A chosen primary loses its lantern fill, so its label goes back to text */
+  /* A chosen primary loses its accent fill, so its label goes back to text */
   --glass-ink: var(--text);
   --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
   --glass-lift: var(--glow-cyan);

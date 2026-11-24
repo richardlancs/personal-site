@@ -119,7 +119,7 @@ test("every colour and size the résumé viewer uses is defined by the city's st
   assert.match(city, /a\[data-resume\]\[data-opening\] \{[^}]*cursor: progress/);
 });
 
-test("black is the ground and the warm secondary is the lantern: no magenta, no amber left", () => {
+test("black is the ground and the primary's fill is the sky-blue accent: no magenta, no amber left", () => {
   const files = ["app/city.css"];
   const walk = (dir) => {
     for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
@@ -133,8 +133,8 @@ test("black is the ground and the warm secondary is the lantern: no magenta, no 
   // Whole words: a three.js MeshLambertMaterial is no amber
   for (const file of files) assert.doesNotMatch(read(file), /\b(magenta|amber)\b/i, file);
   const css = read("app/city.css");
-  for (const name of ["--lantern", "--seam", "--seam-2"]) assert.match(css, new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), name);
-  for (const utility of ["lantern"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
+  for (const name of ["--accent", "--seam", "--seam-2"]) assert.match(css, new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), name);
+  for (const utility of ["accent"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
   // The fade under each painting passes through the dark navy seam
   const fade = css.match(/\.band::before \{([^}]*)\}/)?.[1] ?? "";
   // over its last 42% (the panels sit on it on the journey)

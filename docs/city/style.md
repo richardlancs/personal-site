@@ -18,7 +18,10 @@ photorealism" no longer holds for it.
 
 Palette changed by Richard, 20 November 2026: black is the main colour
 (soft black, a trace of blue), magenta is gone and the warm secondary is
-the lantern. The interface keeps that palette over the photograph.
+the lantern. Changed again by Richard, 24 November 2026: the primary
+action's fill is the sky blue `--accent` (the lantern's warm is left to
+the painted windows and the golden hour's grade). The interface keeps
+that palette over the photograph.
 
 ## The panorama
 
@@ -96,7 +99,7 @@ fading into the ground (below, "The seam").
 | `--text` | `#e6e9ee` | Body text and headings (soft white, not #fff) |
 | `--muted` | `#9ea5b1` | Secondary text |
 | `--cyan` | `#4fd8ee` | Accent: edges, links' underline, chosen state, where you are |
-| `--lantern` | `#f4b860` | The one warm accent: primary action (hover `#f8c97f`, label `--ink`), the points' dashes, the dusk grade |
+| `--accent` | `#6cc6f2` | The primary action's fill: a sky blue between the painted sky (215°) and `--cyan` (188°) (hover `#94d6f6`, label `--ink`, edge the night sky's navy `#0b2242`); `.superpowers/sdd/2026-11-22-horizontal-city/task-10/G/accent-analysis.md` |
 | `--focus` | `#8fe9ff` | Focus ring |
 | `--seam` | `#070c15` | The fade's dark navy, under a band on `--ink` |
 | `--seam-2` | `#0c121d` | The fade's dark navy, under a band on `--ink-2` |

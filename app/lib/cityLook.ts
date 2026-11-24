@@ -26,8 +26,9 @@ export function platesNeeded(blend: number): Plate[] {
   return ["day", "night"];
 }
 
-// docs/city/style.md, "Palette": --lantern and --cyan
-const LANTERN = "#f4b860";
+// The golden hour's warm light (the painted windows' hue; once the
+// --lantern token) and the palette's --cyan (docs/city/style.md)
+const GOLDEN = "#f4b860";
 const CYAN = "#4fd8ee";
 
 // The most a colour grade lies over a plate: the warm one at golden hour,
@@ -43,7 +44,7 @@ export function twilightGrade(daylight: Daylight, progress: number): { color: st
   if (daylight !== "dawn" && daylight !== "dusk") return { color: CYAN, mix: 0 };
   // How far from day toward night: dusk runs day to night, dawn night to day
   const p = daylight === "dusk" ? clamp01(progress) : 1 - clamp01(progress);
-  if (p < TURN) return { color: LANTERN, mix: GRADE_PEAK * Math.sin((Math.PI * p) / TURN) };
+  if (p < TURN) return { color: GOLDEN, mix: GRADE_PEAK * Math.sin((Math.PI * p) / TURN) };
   return { color: CYAN, mix: BLUE_PEAK * Math.sin((Math.PI * (p - TURN)) / (1 - TURN)) };
 }
 

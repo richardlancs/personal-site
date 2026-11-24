@@ -37,11 +37,15 @@ test("Projects and Experience take the central 80%; Home, the index, Interests a
   assert.match(rule(':root[data-track="on"] #contact .station-body'), /--pw: 48rem;/);
 });
 
-test("the glass is one even tint: no shade behind any block, no halo", () => {
+test("the glass is clear, a pane of the hour's sky: a feathered shade only behind the words", () => {
   const panel = rule(':root[data-track="on"] .track .panel');
-  assert.match(panel, /background: linear-gradient\(rgb\(79 216 238 \/ 0\.05\), transparent 8rem\) rgb\(8 9 12 \/ 0\.4\);/);
-  assert.match(panel, /backdrop-filter: blur\(24px\) brightness\(0\.62\);/);
-  assert.doesNotMatch(css, /--shade|text-shadow: 0 0/, "no per-block shade, no halo");
+  assert.match(panel, /backdrop-filter: blur\(14px\) brightness\(0\.72\);/);
+  assert.match(panel, /--shade: rgb\(8 9 12 \/ 0\.46\);/);
+  // the sky's colour (CityDriver's --city-night and --city-grade) in its fill and edge
+  assert.match(panel, /background: linear-gradient\(160deg, color-mix\(in srgb, var\(--sky-tone\) 12%, transparent\), rgb\(8 9 12 \/ 0\.1\) 60%\);/);
+  assert.match(panel, /border-top-color: color-mix\(in srgb, var\(--sky-tone\)/);
+  assert.match(css, /--sky-tone: color-mix\([^;]*var\(--city-night, 1\)[^;]*var\(--city-grade/);
+  assert.match(css, /\.panel :is\(\.station-head, h1, h3, h4, p, ul, nav ol, summary, \.next-stop\)[^{]*::before \{[^}]*background: var\(--shade\);\s*filter: blur\(0\.75rem\);/);
 });
 
 test("a panel with more below says so, and the cue goes at its end", () => {

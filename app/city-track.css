@@ -178,15 +178,26 @@
      Its corners are --radius-lg; what sits inside takes --radius-in, the
      outer radius less the padding.
 
-     The glass is clear: one even light tint of ink (a hint of cyan at its
-     top), a smooth blur that dims the city a little, and a fine light
-     edge, the city reading through it. The tint and the blur alone carry
-     its words' 4.5:1 over any sky (city-contrast.mjs, which counts no
-     halo); no shade behind any block. Secondary words (--muted) are a
-     step lighter on it than on the ground, still a step under --text.
-     Its words start at its top: a panel's top never moves as it grows */
+     The glass is very clear, a pane of the hour's sky: the barest wash
+     of the sky's own colour (--sky-tone: day blue, the twilight grade,
+     night navy, from CityDriver's --city-night and --city-grade) running
+     into ink, a smooth blur that dims the city a little, and an edge lit
+     in that sky, brightest along its top, the city reading through it.
+     Its words carry their own soft halo (text-shadow) and sit on a faint
+     shade blurred out past them (below), so the darkening shows only as
+     the words being readable: that, with the blur, carries their 4.5:1
+     over any sky (city-contrast.mjs, which counts no halo). Secondary
+     words (--muted) are a step lighter on it than on the ground, still a
+     step under --text. Its words start at its top: a panel's top never
+     moves as it grows. The sky's colour changes only as the hour's
+     variables do (no motion of its own) */
+  :root[data-track="on"] .track {
+    --sky-tone: color-mix(in srgb, color-mix(in srgb, #0a1d3c calc(var(--city-night, 1) * 100%), #7aa6e0), var(--city-grade, #7aa6e0) calc(var(--city-grade-mix, 0) * 100%));
+  }
+
   :root[data-track="on"] .track .panel {
     --pad: clamp(1.25rem, 3cqw, 2.5rem);
+    --shade: rgb(8 9 12 / 0.46);
     /* (secondary words a step lighter on the glass, still a step under --text) */
     --muted: #c9ced8;
     display: flex;
@@ -196,10 +207,41 @@
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
-    border: 1px solid rgb(230 233 238 / 0.2);
+    border: 1px solid color-mix(in srgb, var(--sky-tone) 30%, rgb(230 233 238 / 0.18));
+    border-top-color: color-mix(in srgb, var(--sky-tone) 55%, rgb(230 233 238 / 0.4));
     border-radius: var(--radius-lg);
-    background: linear-gradient(rgb(79 216 238 / 0.05), transparent 8rem) rgb(8 9 12 / 0.4);
-    backdrop-filter: blur(24px) brightness(0.62);
+    background: linear-gradient(160deg, color-mix(in srgb, var(--sky-tone) 12%, transparent), rgb(8 9 12 / 0.1) 60%);
+    box-shadow: inset 0 1.5rem 2.5rem -2rem color-mix(in srgb, var(--sky-tone) 35%, transparent);
+    backdrop-filter: blur(14px) brightness(0.72);
+    text-shadow: 0 0 0.4rem rgb(8 9 12 / 0.8), 0 0 1.25rem rgb(8 9 12 / 0.6);
+  }
+
+  /* (keys carry their own ground: no halo on their labels) */
+  :root[data-track="on"] .track .panel .glass {
+    text-shadow: none;
+  }
+
+  /* The shade behind each block of words (the outermost only): as wide as
+     its words, a rounded patch a rem past them blurred into the glass, so
+     it has no edge to see */
+  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul, nav ol, summary, .next-stop):not(:is(p, ul, nav ol, summary, .station-head) *) {
+    position: relative;
+  }
+
+  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul):not(:is(p, ul, nav ol, summary, .station-head) *) {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul, nav ol, summary, .next-stop):not(:empty, :is(p, ul, nav ol, summary, .station-head) *)::before {
+    content: "";
+    position: absolute;
+    inset: -1rem -1.25rem;
+    z-index: -1;
+    border-radius: 1rem;
+    background: var(--shade);
+    filter: blur(0.75rem);
+    pointer-events: none;
   }
 
   /* While a panel has more below, a fade at its foot says so ("More",
@@ -525,17 +567,18 @@
       height: var(--band-h);
     }
 
-    /* The sheet: glass over the sky that runs on under the strip, a
-       smooth gradient (nothing to blur, no shade needed behind the words:
-       the tint carries them), its words from the top */
+    /* The sheet: clearer glass over the city that runs on under the
+       strip, washed in the hour's sky at its top, a lighter blur than the
+       wide panels' and the same feathered shade behind each block of
+       words; its words from the top */
     :root[data-track="on"] .track .panel {
       --pad: 1.25rem;
       /* (a phone's gutters; from 768px wide, 10% of the width clear) */
       padding: 1.25rem var(--side) 0;
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      background: linear-gradient(rgb(79 216 238 / 0.06), transparent 40%) rgb(8 9 12 / 0.62);
-      backdrop-filter: none;
+      background: linear-gradient(color-mix(in srgb, var(--sky-tone) 14%, transparent), transparent 40%) rgb(8 9 12 / 0.5);
+      backdrop-filter: blur(12px) brightness(0.8);
     }
 
     :root[data-track="on"] .track .station-body {

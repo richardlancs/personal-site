@@ -20,14 +20,17 @@ const contrast = (a, b) => {
 };
 
 const grounds = ["--ink", "--ink-2", "--panel"];
-// The primary key: its ink label on the lantern fill, and on the fill's hover
+// The primary key: its ink label on the accent fill, and on the fill's
+// hover; and its edge (the night sky's navy) against the fill, so the key
+// keeps a 3:1 boundary over any glass, however light the sky behind it
 const primary = [
-  ["--ink", "--lantern", 4.5],
-  ["--ink", "#f8c97f", 4.5],
+  ["--ink", "--accent", 4.5],
+  ["--ink", "#94d6f6", 4.5],
+  ["#0b2242", "--accent", 3],
 ];
 const checks = [
   ...["--text", "--muted"].map((name) => ({ name, min: 4.5 })),
-  ...["--cyan", "--lantern", "--focus"].map((name) => ({ name, min: 3 })),
+  ...["--cyan", "--accent", "--focus"].map((name) => ({ name, min: 3 })),
 ];
 
 let failed = false;
@@ -49,7 +52,7 @@ if (!failed) {
 }
 if (!failed) {
   for (const [label, fill, min] of primary) {
-    const fg = palette[label];
+    const fg = palette[label] ?? label;
     const bg = palette[fill] ?? fill;
     const ratio = contrast(fg, bg);
     const ok = ratio >= min;
