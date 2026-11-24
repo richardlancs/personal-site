@@ -8,6 +8,7 @@ import { bandTiles } from "./components/city2d/panoramaImages";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
+import { PAPER_SCRIPT } from "./lib/paper";
 import { STILL_SCRIPT } from "./lib/still";
 import { richmondHill } from "./data/weather";
 import { platePreloadScript } from "./lib/platePreload";
@@ -55,11 +56,14 @@ export const metadata: Metadata = {
     "Portfolio of Richard Lan, a Computer Science student at the University of Waterloo seeking software engineering internship and co-op roles.",
 };
 
-// One dark theme, always (city.css): the browser is told so too, so form
-// controls and scrollbars are dark whatever the system appearance
+// Three papers, chosen by the visitor (lib/paper.ts), never by the system:
+// each paper sets its own color-scheme (city.css), so form controls and
+// scrollbars match it. The theme-color here is the default cream paper's
+// ground; the Paper picker sets it to the chosen paper's once the page is
+// here (ui/PaperPicker.tsx)
 export const viewport: Viewport = {
-  colorScheme: "dark",
-  themeColor: "#08090c",
+  colorScheme: "light dark",
+  themeColor: "#efe7d6",
   // The page may run under a phone's notch and home bar; the layout pads
   // for them with env(safe-area-inset-*)
   viewportFit: "cover",
@@ -78,10 +82,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       data-scroll-behavior="smooth"
       className={`${display.variable} ${text.variable}`}
-      // The scripts below set data-still and data-track on <html> before React hydrates
+      // The scripts below set data-paper, data-still and data-track on <html> before React hydrates
       suppressHydrationWarning
     >
       <head>
+        {/* The paper, before the first paint: the visitor's saved choice,
+            cream by default (lib/paper.ts) */}
+        <script dangerouslySetInnerHTML={{ __html: PAPER_SCRIPT }} />
         {/* Still view, before the first paint: the system's reduced-motion
             setting (lib/still.ts) */}
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />

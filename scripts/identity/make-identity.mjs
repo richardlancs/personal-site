@@ -1,6 +1,9 @@
-// Draws the site's icons and share image from code, like the rest of the
-// art: the mark in mark.svg, the share card from the riverside's night plate
-// (app/assets/city/panorama/night-01.webp, the home tile) with the name set in the site's own fonts.
+// Draws the site's icons and share image from code: the mark in mark.svg
+// (in the default cream paper's colours: city.css, :root[data-paper="cream"]:
+// the paper, the Prussian-blue accent, the ink and the teal accent-2), and
+// the share card, a sheet of crumpled cream paper drawn here (an SVG
+// turbulence lit from the upper left, a fixed seed) with the name set in
+// the site's own fonts.
 //
 //   PLAYWRIGHT=/path/to/node_modules/playwright/index.mjs node scripts/identity/make-identity.mjs
 //
@@ -27,10 +30,10 @@ async function png(html, width, height, type = "png") {
   return type === "png" ? page.screenshot({ type, omitBackground: true, clip }) : page.screenshot({ type, quality: 84, clip });
 }
 
-// The mark, at a size. `square`: no rounded corners and no transparency
-// (iOS rounds a touch icon itself and fills transparency with black)
+// The mark, at a size. `square`: no rounded corners, no edge and no
+// transparency (iOS rounds a touch icon itself and fills transparency with black)
 const icon = (size, square = false) =>
-  png(`<div style="width:${size}px;height:${size}px">${square ? mark.replace(/rx="7"/, 'rx="0"') : mark}</div>`.replace("<svg ", `<svg width="${size}" height="${size}" `), size, size);
+  png(`<div style="width:${size}px;height:${size}px">${square ? mark.replace(/x="0\.5" y="0\.5" width="31" height="31" rx="7"/, 'width="32" height="32" rx="0"').replace(/ stroke="#c9bca3"/, "") : mark}</div>`.replace("<svg ", `<svg width="${size}" height="${size}" `), size, size);
 
 // An .ico of PNGs (every browser since IE11 reads PNG entries)
 function ico(images) {
@@ -57,22 +60,42 @@ const sizes = [16, 32, 48];
 writeFileSync(app("favicon.ico"), ico(await Promise.all(sizes.map(async (size) => ({ size, data: await icon(size) })))));
 writeFileSync(app("apple-icon.png"), await icon(180, true));
 
-// The share card: the riverside's night plate, and the name on a sheet of
-// the site's soft-black panel at the upper left, as on the home page
+// The share card: a sheet of crumpled cream paper (large soft creases and
+// a fine grain, lit from the upper left; fixed seeds, so the same card
+// every run), and the name on a card of the same paper, a little lighter,
+// with a soft shadow, as the site's panels are
 const fonts = `
   @font-face { font-family: Rajdhani; font-weight: 700; src: url(${dataUrl(app("fonts/rajdhani-latin-700.woff2"), "font/woff2")}); }
   @font-face { font-family: Rajdhani; font-weight: 500; src: url(${dataUrl(app("fonts/rajdhani-latin-500.woff2"), "font/woff2")}); }
   @font-face { font-family: Nunito; font-weight: 600; src: url(${dataUrl(app("fonts/nunito-latin-400-700.woff2"), "font/woff2")}); }`;
+const cream = { paper: "#efe7d6", panel: "#f7f1e5", line: "#c9bca3", text: "#1d2330", accent: "#1f4f8a", accent2: "#0a6168", shadow: "rgb(74 59 34 / 0.28)" };
+const crumple = `
+  <svg width="1200" height="630" style="position:absolute;inset:0">
+    <filter id="crumple" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.006" numOctaves="5" seed="11" result="creases"/>
+      <feDiffuseLighting in="creases" surfaceScale="16" lighting-color="#fff" result="lit"><feDistantLight azimuth="225" elevation="50"/></feDiffuseLighting>
+      <feComponentTransfer in="lit" result="soft"><feFuncR type="linear" slope="0.55" intercept="0.52"/><feFuncG type="linear" slope="0.55" intercept="0.52"/><feFuncB type="linear" slope="0.55" intercept="0.52"/></feComponentTransfer>
+      <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="3" result="grain"/>
+      <feColorMatrix in="grain" type="luminanceToAlpha" result="grainA"/>
+      <feComponentTransfer in="grainA" result="fine"><feFuncA type="linear" slope="0.12" intercept="0"/></feComponentTransfer>
+      <feFlood flood-color="#000" result="black"/>
+      <feComposite in="black" in2="fine" operator="in" result="specks"/>
+      <feComposite in="specks" in2="soft" operator="over"/>
+    </filter>
+    <rect width="1200" height="630" fill="${cream.paper}"/>
+    <rect width="1200" height="630" filter="url(#crumple)" style="mix-blend-mode:multiply"/>
+  </svg>`;
 const card = `
   <style>${fonts}</style>
-  <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:#08090c">
-    <img src="${dataUrl(app("assets/city/panorama/night-01.webp"), "image/webp")}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%">
-    <div style="position:absolute;left:56px;top:56px;padding:34px 44px 34px;border-radius:14px;background:rgb(24 27 35 / 0.92);border:1px solid rgb(79 216 238 / 0.35);box-shadow:0 18px 44px -20px rgb(0 0 0 / 0.7)">
-      <div style="font-family:Rajdhani;font-weight:700;font-size:88px;line-height:1;color:#e6e9ee;letter-spacing:0.01em">Richard Lan</div>
-      <div style="margin-top:12px;font-family:Rajdhani;font-weight:500;font-size:36px;color:#4fd8ee;letter-spacing:0.04em">cs@uwaterloo</div>
-      <div style="margin-top:20px;width:56px;height:3px;border-radius:2px;background:#4fd8ee"></div>
-      <div style="margin-top:18px;font-family:Nunito;font-weight:600;font-size:26px;color:#e6e9ee">Software engineering portfolio</div>
+  <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:${cream.paper}">
+    ${crumple}
+    <div style="position:absolute;left:72px;top:72px;padding:38px 48px;border-radius:16px;background:${cream.panel};border:1px solid ${cream.line};box-shadow:0 2px 3px ${cream.shadow},0 22px 44px -18px ${cream.shadow}">
+      <div style="font-family:Rajdhani;font-weight:700;font-size:88px;line-height:1;color:${cream.text};letter-spacing:0.01em">Richard Lan</div>
+      <div style="margin-top:12px;font-family:Rajdhani;font-weight:500;font-size:36px;color:${cream.accent};letter-spacing:0.04em">cs@uwaterloo</div>
+      <div style="margin-top:20px;width:56px;height:3px;border-radius:2px;background:${cream.accent2}"></div>
+      <div style="margin-top:18px;font-family:Nunito;font-weight:600;font-size:26px;color:${cream.text}">Software engineering portfolio</div>
     </div>
+    <div style="position:absolute;right:72px;bottom:64px;width:120px;height:120px">${mark.replace("<svg ", '<svg width="120" height="120" ')}</div>
   </div>`;
 writeFileSync(`${root}public/share-card.jpg`, await png(card, 1200, 630, "jpeg"));
 

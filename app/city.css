@@ -308,7 +308,8 @@ button.text-link,
   border-bottom: 1px solid var(--line);
 }
 
-/* The bar's frosted ground, on a layer of its own under its contents: a
+/* The bar's ground, a strip of the paper (a little see-through, the page
+   softly under it), on a layer of its own under its contents: a
    backdrop-filter on the bar itself would make it the containing block
    of the metro map, which is fixed at the foot of the screen */
 .top-bar::before {
@@ -316,7 +317,7 @@ button.text-link,
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: rgb(8 9 12 / 0.86);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   pointer-events: none;
@@ -459,7 +460,7 @@ button.text-link,
   flex: none;
   height: 0.5rem;
   border-radius: 999px;
-  background: rgb(230 233 238 / 0.14);
+  background: color-mix(in srgb, var(--text) 14%, transparent);
 }
 
 .rh-blank-time {
@@ -674,6 +675,110 @@ body::after {
 .music-status:empty {
   padding: 0;
   border: 0;
+}
+
+/* ---------- The Paper picker (components/ui/PaperPicker.tsx) ----------
+   Three keys, each a dot of its paper (--swatch-*, whatever paper is on)
+   and its name, the chosen one pressed (.glass's chosen state). In the
+   bar from 80rem, where it fits on the bar's one row; below, in the
+   Sections menu, above the time and weather. 8px apart, 44px tall. */
+.paper-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.paper-picker-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.paper-key {
+  gap: 0.45rem;
+  padding-inline: 0.8rem;
+}
+
+.paper-dot {
+  flex: none;
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 1px solid color-mix(in srgb, var(--text) 45%, transparent);
+  border-radius: 50%;
+}
+
+.paper-dot-cream {
+  background: var(--swatch-cream);
+}
+
+.paper-dot-charcoal {
+  background: var(--swatch-charcoal);
+}
+
+.paper-dot-kraft {
+  background: var(--swatch-kraft);
+}
+
+/* In the bar the keys speak for themselves: the group's name is read
+   out, not drawn */
+.paper-picker-bar .paper-picker-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.paper-picker-bar {
+  display: none;
+}
+
+/* In the menu: its own row under the sections, the name above the keys */
+.paper-picker-menu {
+  margin-top: 0.5rem;
+  padding: 0.75rem 0.25rem 0.5rem;
+  border-top: 1px solid var(--line);
+}
+
+/* (narrower keys, so all three share one row in the menu's width) */
+.paper-picker-menu .paper-key {
+  gap: 0.3rem;
+  padding-inline: 0.45rem;
+}
+
+.paper-picker-menu .paper-picker-label {
+  width: 100%;
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+@media (min-width: 80rem) {
+  .paper-picker-bar {
+    display: flex;
+  }
+
+  .paper-picker-menu {
+    display: none;
+  }
+}
+
+/* Without JavaScript (no data-paper from the head script) the keys
+   couldn't work: none */
+:root:not([data-paper]) .paper-picker {
+  display: none;
+}
+
+/* A new paper cross-fades in (PaperPicker.tsx, a view transition), over
+   --t-slow; in still view and with reduced motion it is never started */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--t-slow);
+  animation-timing-function: var(--ease-in-out);
 }
 
 /* A résumé link while the viewer is on its way (ResumeHost.tsx) */

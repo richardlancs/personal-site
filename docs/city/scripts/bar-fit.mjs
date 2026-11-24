@@ -3,8 +3,10 @@
 // 900 tall; and 200% text (the root font doubled, as mobile-audit.mjs does)
 // at 320×900, 390×844 and 844×390. A page that isn't there (404) is left out.
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/city/scripts/bar-fit.mjs <base> [out.json] [baseline.json]
-// With a baseline, it compares: every width's `/` bar as tall as the
-// baseline's (exits 1 and lists the widths otherwise).
+// With a baseline, it compares: every width's `/` bar no taller than the
+// baseline's (exits 1 and lists the widths otherwise; a shorter bar, a
+// row gone, passes and is listed as a note). The Paper picker sits in the
+// bar from 80rem and in the Sections menu below, so it counts here.
 import { readFileSync, writeFileSync } from "node:fs";
 import { launch } from "../../audit/scripts/pw.mjs";
 
@@ -51,12 +53,15 @@ console.log(`wrote ${out}`);
 if (baselinePath) {
   const baseline = JSON.parse(readFileSync(baselinePath, "utf8"));
   const bad = [];
+  const shorter = [];
   for (const [key, v] of Object.entries(result["/"] ?? {})) {
     const was = baseline["/"]?.[key];
-    if (was && was.h !== v.h) bad.push(`/ ${key}: ${was.h} -> ${v.h}`);
+    if (was && v.h > was.h) bad.push(`/ ${key}: ${was.h} -> ${v.h}`);
+    else if (was && v.h < was.h) shorter.push(`${key} ${was.h} -> ${v.h}`);
   }
+  if (shorter.length) console.log(`note: shorter than the baseline at ${shorter.length} views (${shorter.slice(0, 3).join(", ")}${shorter.length > 3 ? ", …" : ""})`);
   if (bad.length) {
     console.log(`FAIL\n${bad.join("\n")}`);
     process.exitCode = 1;
-  } else console.log("ok: the bar is as tall as before at every width");
+  } else console.log("ok: the bar is no taller than before at any width");
 }

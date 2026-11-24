@@ -40,6 +40,8 @@ test("the résumé reads on a phone, opens in the phone's viewer, and never leav
   const host = read("app/components/resume/ResumeHost.tsx");
   assert.doesNotMatch(host, /location\.assign/);
   assert.match(host, /<p role="alert" className="resume-fail" style=\{FAIL_STYLE\}>/);
-  // Chosen is not focus: no outer glow or cyan rim on the chosen key
-  assert.match(read("app/components/resume/resume.css"), /\.resume \.glass\[aria-pressed="true"\] \{[^}]*--glass-lift: 0 0 transparent;[^}]*border-color: var\(--glass-border\);/);
+  // Chosen is not focus: no outer glow or rim of the accent on the chosen key
+  const chosen = read("app/components/resume/resume.css").match(/\.resume \.glass\[aria-pressed="true"\] \{([^}]*)\}/)[1];
+  assert.match(chosen, /--glass-lift: 0 0 transparent;/);
+  assert.doesNotMatch(chosen, /border-color: var\(--(focus|accent-2|cyan)\)/);
 });
