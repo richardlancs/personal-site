@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
+import { Figtree, Fraunces } from "next/font/google";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -12,30 +12,27 @@ import "./motion.css";
 import "./reveal.css";
 import "./city-track.css";
 
-// Headings and station names: Rajdhani, a squared, narrow sans with the
-// look of signage. Text: Nunito, a rounded sans, friendly and easy to read
-// at small sizes (docs/city/style.md, "Type").
+// Headings, the name and station names: Fraunces, a soft old-style serif
+// with the look of printed ink, its optical size axis on, so the name is
+// set in its high-contrast display cut and small labels in its sturdy text
+// cut. Text: Figtree, a plain, warm geometric sans, easy to read at small
+// sizes (docs/city/style.md, "Type").
 //
-// Both are kept in app/fonts/ (downloaded from Google Fonts; SIL Open Font
-// License, alongside), Latin only. Rajdhani has no variable cut, so its
-// three weights are three files; Nunito is variable, 400 to 700.
-const display = localFont({
-  src: [
-    { path: "./fonts/rajdhani-latin-500.woff2", weight: "500", style: "normal" },
-    { path: "./fonts/rajdhani-latin-600.woff2", weight: "600", style: "normal" },
-    { path: "./fonts/rajdhani-latin-700.woff2", weight: "700", style: "normal" },
-  ],
-  variable: "--font-rajdhani",
+// Both come through next/font/google: fetched at build and served from the
+// site itself (no request to Google from the visitor), Latin only, SIL Open
+// Font License. Fraunces is variable (weight and optical size; its other
+// axes left out to keep the file small); Figtree variable (the site uses
+// 400 to 700; next/font's Turbopack loader takes no weight range).
+const display = Fraunces({
+  subsets: ["latin"],
+  axes: ["opsz"],
+  variable: "--font-fraunces",
   display: "swap",
-  adjustFontFallback: "Arial",
 });
-const text = localFont({
-  src: "./fonts/nunito-latin-400-700.woff2",
-  weight: "400 700",
-  style: "normal",
-  variable: "--font-nunito",
+const text = Figtree({
+  subsets: ["latin"],
+  variable: "--font-figtree",
   display: "swap",
-  adjustFontFallback: "Arial",
 });
 
 export const metadata: Metadata = {
