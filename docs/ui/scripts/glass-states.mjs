@@ -163,7 +163,8 @@ for (const [view, opts] of Object.entries(views)) {
     }
     // The résumé zoomed in as far as it goes: "Zoom in" is disabled
     if (c.zoom) {
-      for (let i = 0; i < 12 && !(await page.locator('.resume [aria-label="Zoom in"][aria-disabled="true"]').count()); i++) await page.locator('.resume [aria-label="Zoom in"]').click();
+      for (let i = 0; i < 12 && !(await page.locator('.resume [aria-label="Zoom in"][aria-disabled="true"]').count()); i++)
+        await page.locator('.resume [aria-label="Zoom in"]').click({ timeout: 5000 }).catch(() => failures.push(`${key}: no Zoom in key (the résumé didn't open)`));
       await page.waitForTimeout(600);
     }
     await page.waitForTimeout(400);
