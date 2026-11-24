@@ -134,7 +134,7 @@
      The card is a second sheet of the theme's paper (--panel, opaque, so
      its words keep their contrast whatever the crumple under it): a
      hairline edge (--line), a lighter line along its top where the sheet
-     catches the light, and a soft two-part shadow in the theme's own
+     catches the light (a trace of --text, so it shows on black paper too), and a soft two-part shadow in the theme's own
      shadow colour (--shadow): a close one where it touches, a wide one
      where it lifts. Its words start at its top: a panel's top never moves
      as it grows */
@@ -151,7 +151,7 @@
     border-radius: var(--radius-lg);
     background: var(--panel);
     box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--paper), var(--panel) 30%),
+      inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
       0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent),
       0 1.25rem 2.5rem -1.25rem color-mix(in srgb, var(--shadow) 45%, transparent);
   }
@@ -353,7 +353,7 @@
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       box-shadow:
-        inset 0 1px 0 color-mix(in srgb, var(--paper), var(--panel) 30%),
+        inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
         0 -1px 2px color-mix(in srgb, var(--shadow) 18%, transparent),
         0 -0.75rem 1.75rem -1rem color-mix(in srgb, var(--shadow) 40%, transparent);
     }
