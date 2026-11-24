@@ -90,7 +90,8 @@
   :root[data-track="on"] .track-stage {
     position: sticky;
     top: 0;
-    height: 100dvh;
+    /* svh: the address bar showing or hiding resizes nothing */
+    height: 100svh;
     /* clip, not hidden: nothing (a jump, focus) can scroll it sideways */
     overflow: clip;
     container-type: inline-size;
@@ -139,6 +140,12 @@
     mask-image: linear-gradient(transparent, #000 15%);
   }
 
+  /* Its street runs on down to the map: only its very foot fades */
+  :root[data-track="on"] .pano::before {
+    top: 84%;
+    background: linear-gradient(transparent, var(--seam));
+  }
+
   /* Lights: at twilight the night plate's windows come on ahead of the
      dark (DistrictBand: a copy of the night plate lightening only what it
      lights, as strong as twice the night), each tile's with a flicker as
@@ -171,113 +178,124 @@
      Its corners are --radius-lg; what sits inside takes --radius-in, the
      outer radius less the padding.
 
-     The glass is very clear: the barest hint of ink and cyan, a smooth
-     blur that dims the city a little, and a fine light edge, the city
-     reading through it. Its words carry their own soft halo (text-shadow)
-     and sit on a faint shade blurred out past them (below), so the
-     darkening shows only as the words being readable: that, with the
-     blur, carries their 4.5:1 over any sky (city-contrast.mjs, which
-     counts no halo). Secondary words (--muted) are a step lighter on it
-     than on the ground, still a step under --text. Its content stands in
-     the middle of it. */
+     The glass is clear: one even light tint of ink (a hint of cyan at its
+     top), a smooth blur that dims the city a little, and a fine light
+     edge, the city reading through it. The tint and the blur alone carry
+     its words' 4.5:1 over any sky (city-contrast.mjs, which counts no
+     halo); no shade behind any block. Secondary words (--muted) are a
+     step lighter on it than on the ground, still a step under --text.
+     Its words start at its top: a panel's top never moves as it grows */
   :root[data-track="on"] .track .panel {
     --pad: clamp(1.25rem, 3cqw, 2.5rem);
-    --shade: rgb(8 9 12 / 0.46);
     /* (secondary words a step lighter on the glass, still a step under --text) */
     --muted: #c9ced8;
     display: flex;
     flex-direction: column;
-    justify-content: safe center;
-    padding: var(--pad);
+    /* (its foot's padding is the cue's, below) */
+    padding: var(--pad) var(--pad) 0;
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
     border: 1px solid rgb(230 233 238 / 0.2);
     border-radius: var(--radius-lg);
-    background: linear-gradient(160deg, rgb(79 216 238 / 0.06), rgb(8 9 12 / 0.1));
-    backdrop-filter: blur(14px) brightness(0.72);
-    text-shadow: 0 0 0.4rem rgb(8 9 12 / 0.8), 0 0 1.25rem rgb(8 9 12 / 0.6);
+    background: linear-gradient(rgb(79 216 238 / 0.05), transparent 8rem) rgb(8 9 12 / 0.4);
+    backdrop-filter: blur(24px) brightness(0.62);
   }
 
-  /* (keys carry their own ground: no halo on their labels) */
-  :root[data-track="on"] .track .panel .glass {
-    text-shadow: none;
-  }
-
-  /* The shade behind each block of words (the outermost only): as wide as
-     its words, a rounded patch a rem past them blurred into the glass, so
-     it has no edge to see */
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, nav ol, summary):not(:is(p, ul, nav ol, summary, .station-head) *) {
-    position: relative;
-  }
-
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul):not(:is(p, ul, nav ol, summary, .station-head) *) {
-    width: fit-content;
-    max-width: 100%;
-  }
-
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, nav ol, summary):not(:empty, :is(p, ul, nav ol, summary, .station-head) *)::before {
-    content: "";
-    position: absolute;
-    inset: -1rem -1.25rem;
-    z-index: -1;
-    border-radius: 1rem;
-    background: var(--shade);
-    filter: blur(0.75rem);
+  /* While a panel has more below, a fade at its foot says so ("More",
+     hidden from assistive technology: the panel is a region it can
+     scroll, CityTrack). Drawn on the panel's own scroll (scroll(nearest)):
+     a panel with nothing more has no scroll timeline, so no cue, and the
+     cue goes at the end. It takes only the panel's foot padding (it can't
+     stick inside a padding) and no pointer */
+  :root[data-track="on"] .track .panel::after {
+    content: "More \2193" / "";
+    position: sticky;
+    bottom: 0;
+    flex: none;
+    height: calc(3.5rem + var(--pad));
+    margin: -3.5rem calc(-1 * var(--side, var(--pad))) 0;
+    padding-top: 2rem;
+    background: linear-gradient(transparent, rgb(8 9 12 / 0.85) 70%);
+    color: var(--text);
+    font-size: 0.875rem;
+    text-align: center;
+    opacity: 0;
     pointer-events: none;
+    /* (without scroll timelines it ends at once, at its base: no cue) */
+    animation: more both;
+    animation-timeline: scroll(nearest);
   }
 
   :root[data-track="on"] .track [data-open] {
     overflow-y: auto;
   }
 
-  /* A stop of one panel: in the middle of the stop as it stands on the
-     screen, between the bar and the map, most of the screen (within the
-     central 80%: --peek either side; 64% of a very wide screen), its
-     content in the middle of it; never taller than the room there. So the
-     slice of the next stop that shows at the right is its city, not its
-     panel */
+  /* Every panel hangs from one top line (--line, the same at every stop),
+     centred in the screen as its stop stands, and grows down to the room
+     there (ending 8px or more above the map), scrolling inside beyond it.
+     Widths within the central 80% (--peek either side): Projects and
+     Experience all of it (--wide); About --w (64% of a very wide
+     screen); Home, the projects' index, Interests and Contact sized to
+     what they hold (--pw, in rem, so 200% text gets twice the room). So
+     the slice of the next stop that shows at the right is its city */
   :root[data-track="on"] .track {
-    --w: min(100cqw - 2 * var(--peek), max(64cqw, 68rem));
-    --room: calc(100% - var(--stop-top) - var(--foot));
+    --wide: calc(100cqw - 2 * var(--peek));
+    --w: min(var(--wide), max(64cqw, 68rem));
+    --line: calc(var(--stop-top) + 1.5rem);
+    --room: calc(100% - var(--line) - var(--foot));
   }
 
   :root[data-track="on"] .track .station-body {
     position: absolute;
-    inset: var(--stop-top) auto var(--foot) max((100cqw - var(--w)) / 2, env(safe-area-inset-left));
+    top: var(--line);
+    left: max((100cqw - min(var(--w), var(--pw, 100cqw))) / 2, env(safe-area-inset-left));
     z-index: 2;
-    width: var(--w);
-    height: fit-content;
-    min-height: calc(var(--room) * 0.72);
+    width: min(var(--w), var(--pw, 100cqw));
     max-height: var(--room);
-    margin: auto 0;
+    margin: 0;
+  }
+
+  :root[data-track="on"] #home .station-body {
+    --pw: 46rem;
+  }
+
+  :root[data-track="on"] :is(#interests .station-body, .station-row > .panel:first-child) {
+    --pw: 50rem;
+  }
+
+  :root[data-track="on"] #contact .station-body {
+    --pw: 48rem;
+  }
+
+  :root[data-track="on"] #experience .station-body {
+    --w: var(--wide);
   }
 
   /* A stop of a row of panels along the street (Projects): as wide as its
-     row, which is a screen per panel, each in the middle of its own (city
-     between them, so from one in the middle the next starts past the
-     screen's edge), less the peek after the last, as any stop */
+     row, which is a screen per panel, each in the middle of its own and
+     hanging from the top line (city between them: from a wide one in the
+     middle the next starts past the screen's edge), less the peek after
+     the last, as any stop */
   :root[data-track="on"] .track > .station:has(> .station-row) {
     width: auto;
   }
 
   :root[data-track="on"] .track .station-row {
-    --gut: max((100cqw - var(--w)) / 2, env(safe-area-inset-left));
     position: relative;
     z-index: 2;
     flex-direction: row;
-    align-items: center;
-    gap: calc(100cqw - var(--w));
+    align-items: flex-start;
+    gap: calc(2 * var(--peek));
     width: max-content;
     height: 100%;
     margin: 0;
-    padding: var(--stop-top) calc(var(--gut) - var(--peek)) var(--foot) var(--gut);
+    padding: var(--line) 0 var(--foot) max((100cqw - min(var(--wide), 50rem)) / 2, env(safe-area-inset-left));
   }
 
   :root[data-track="on"] .station-row .panel {
     flex: none;
-    width: var(--w);
-    min-height: 72%;
+    width: min(var(--wide), var(--pw, 100cqw));
     max-height: 100%;
   }
 
@@ -286,6 +304,9 @@
     max-width: calc((100svh - var(--stop-top)) * 0.8);
   }
 
+  /* Contact, the journey's end, is its best-lit stop: the city carries
+     that (below), not a coloured edge; the panel's whole edge lights once
+     an address is copied (the success moment, with the key's "Copied") */
   :root[data-track="on"] #contact .panel:has([data-copied]) {
     border-color: var(--cyan);
   }
@@ -331,9 +352,6 @@
      a veil across the towers' middles (two screens of the same mist, so
      a drift of one screen ends where it began), and a soft beam passing */
   :root[data-track="on"] .track-weather::before,
-  /* Contact, the journey's end, is its best-lit stop: the city carries
-     that (below), not a coloured edge; the panel's whole edge lights once
-     an address is copied (the success moment, with the key's "Copied") */
   :root[data-track="on"] .track-weather::after {
     content: "";
     position: absolute;
@@ -461,6 +479,22 @@
     animation-name: track-move;
   }
 
+  /* A short screen (500px tall or less): the panels hang just under the
+     bar, their headings and padding compact */
+  @media (max-height: 500px) {
+    :root[data-track="on"] .track {
+      --line: var(--stop-top);
+    }
+
+    :root[data-track="on"] .track .panel {
+      --pad: 1rem;
+    }
+
+    :root[data-track="on"] .track .station-title {
+      font-size: 2rem;
+    }
+  }
+
   /* Phones and tall screens: the painting in the top of the stage (the bar
      over it), the words a dark sheet below it, scrolling inside */
   @media (max-aspect-ratio: 1 / 1) {
@@ -471,7 +505,8 @@
 
     :root[data-track="on"] {
       scroll-snap-type: y mandatory;
-      --stop-band: calc(var(--bar-h) + 0.3 * (100dvh - var(--bar-h)));
+      /* (svh: the address bar showing or hiding moves nothing) */
+      --stop-band: calc(var(--bar-h) + 0.2 * (100svh - var(--bar-h)));
       /* A sheet's sides: a phone's gutters; from 768px wide, 10% clear */
       --side: max(1.25rem, env(safe-area-inset-left), env(safe-area-inset-right), 20vw - 4.6rem);
       --band-h: calc(var(--stop-band) + 1rem);
@@ -495,26 +530,18 @@
        the tint carries them), its words from the top */
     :root[data-track="on"] .track .panel {
       --pad: 1.25rem;
-      justify-content: flex-start;
       /* (a phone's gutters; from 768px wide, 10% of the width clear) */
-      padding: 1.25rem var(--side) 1.5rem;
+      padding: 1.25rem var(--side) 0;
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       background: linear-gradient(rgb(79 216 238 / 0.06), transparent 40%) rgb(8 9 12 / 0.62);
       backdrop-filter: none;
     }
 
-    :root[data-track="on"] .track .panel *::before {
-      --shade: transparent;
-    }
-
     :root[data-track="on"] .track .station-body {
       inset: var(--stop-band) 0 var(--foot);
       width: auto;
-      height: auto;
-      min-height: 0;
       max-height: none;
-      margin: 0;
     }
 
     /* A row: one sheet a screen wide after another */
@@ -526,7 +553,6 @@
 
     :root[data-track="on"] .station-row .panel {
       width: 100cqw;
-      min-height: 0;
       max-height: none;
     }
 
@@ -575,6 +601,13 @@
     opacity: 1;
     translate: none;
     scale: none;
+  }
+}
+
+@keyframes more {
+  from,
+  94% {
+    opacity: 1;
   }
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { platesNeeded, type Plate } from "../../lib/cityLook";
+import { pageSections } from "../../sections/registry";
 import { useCityBlend } from "./citySky";
 import { HOME_QUALITY, paintedHomePlate, tileSizes } from "./homePlate";
 import { HEIGHT } from "./panorama";
@@ -31,7 +32,8 @@ import { useNear } from "./useNear";
 // (lib/platePreload.ts), and its <img> reuses that very file. Each plate
 // stays clear until it has loaded, then fades in over the gradient. A
 // plate that fails to load is dropped for good, leaving the gradient.
-// Without scripts, the night plate.
+// A long jump (CityTrack: "trackjump") mounts its stop's tile at once, its
+// plates asked for first. Without scripts, the night plate.
 
 // Opened on a deep link (/#projects, …), which lands past the home stop
 function deepLinked(): boolean {
@@ -51,7 +53,11 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
   // The first tile of whichever band shows (the journey's, or Home's
   // station's read top to bottom) skips the wait. Read during hydration,
   // but nothing it decides is drawn until the sky is known
-  const near = useNear(ref, i === 0 && showing(whole) && !deepLinked());
+  const seen = useNear(ref, i === 0 && showing(whole) && !deepLinked());
+  // A long jump to this tile's stop (CityTrack's "trackjump", sent before
+  // it starts) asks for its plates at once, ahead of the rest
+  const target = useJumpTarget(whole ? pageSections[i]?.id : undefined);
+  const near = seen || target;
   const blend = useCityBlend();
   const [failed, setFailed] = useState<Plate[]>([]);
   const [loaded, setLoaded] = useState<Plate[]>([]);
@@ -76,7 +82,7 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
             fill
             // (mounted only once near: useNear is the lazy loading; the browser's own would wait for the stage's clip)
             loading="eager"
-            fetchPriority={home ? "high" : "low"}
+            fetchPriority={home || target ? "high" : "low"}
             onLoad={() => setLoaded((l) => (l.includes(plate) ? l : [...l, plate]))}
             onError={() => setFailed((f) => (f.includes(plate) ? f : [...f, plate]))}
           />
@@ -95,6 +101,21 @@ function Tile({ tile, i, whole }: { tile: BandTile; i: number; whole: boolean })
       )}
     </div>
   );
+}
+
+// Whether a long jump along the journey is headed for this stop (`id`):
+// false until CityTrack sends "trackjump" with it, true for good after
+function useJumpTarget(id: string | undefined): boolean {
+  const [target, setTarget] = useState(false);
+  useEffect(() => {
+    if (!id || target) return;
+    const onJump = (e: Event) => {
+      if ((e as CustomEvent<{ to?: string }>).detail?.to === id) setTarget(true);
+    };
+    addEventListener("trackjump", onJump);
+    return () => removeEventListener("trackjump", onJump);
+  }, [id, target]);
+  return target;
 }
 
 /** A station's band (`stop`: its index, `tiles`: its own tile), or without one the journey's whole panorama (`tiles`: all of them) */

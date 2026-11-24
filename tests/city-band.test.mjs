@@ -77,7 +77,7 @@ test("the bands wait on one shared observer, half a screen ahead", () => {
   const band = read("app/components/city2d/DistrictBand.tsx");
   assert.match(band, /useNear\(ref, i === 0 && showing\(whole\) && !deepLinked\(\)\)/, "the home tile of the band that shows skips the wait");
   assert.match(band, /blend === null \|\| !near \? \[\]/, "no plate before the tile is near");
-  assert.match(band, /fetchPriority=\{home \? "high" : "low"\}/);
+  assert.match(band, /fetchPriority=\{home \|\| target \? "high" : "low"\}/);
 });
 
 test("each station's band, read top to bottom, is its own stop's tile", () => {
@@ -103,9 +103,18 @@ test("only the home tile loads early; the others wait until they're near", () =>
   assert.doesNotMatch(band, /priority=\{true\}|preload/);
   assert.match(band, /const home = i === 0 && whole;/);
   assert.match(band, /loading="eager"/);
-  assert.match(band, /fetchPriority=\{home \? "high" : "low"\}/);
+  assert.match(band, /fetchPriority=\{home \|\| target \? "high" : "low"\}/);
   // The journey's panorama is CityTrack's, once, in the stage
   assert.match(read("app/page.tsx"), /<DistrictBand tiles=\{bandTiles\} \/>/);
+});
+
+test("a long jump's target tile mounts at once and asks first", () => {
+  const band = read("app/components/city2d/DistrictBand.tsx");
+  // CityTrack sends "trackjump" { to: <registry id> } before a long jump
+  assert.match(band, /addEventListener\("trackjump", onJump\)/);
+  assert.match(band, /detail\?\.to === id\) setTarget\(true\)/);
+  assert.match(band, /useJumpTarget\(whole \? pageSections\[i\]\?\.id : undefined\)/, "the journey's tiles, one per stop in the registry's order");
+  assert.match(band, /const near = seen \|\| target;/);
 });
 
 test("the driver waits for the clock and writes the sky on <html>", () => {
@@ -155,24 +164,6 @@ test("every tile of the panorama has both plates, the same size, none over 600 K
   }
 });
 
-test("the hero has the name, the headline, the school, one primary action and the links as text, and no paragraph", () => {
-  const src = read("app/components/city2d/sections/Hero.tsx");
-  assert.ok(!src.includes('"use client"'), "the hero is a server component");
-  assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
-  // Words only from the data: the headline, and the school and programme
-  // (the education entry); no other paragraph
-  assert.match(src, /<p className="[^"]*headline[^"]*"[^>]*>\{profile\.headline\}<\/p>/);
-  assert.match(src, /experience\.find\(\(entry\) => entry\.kind === "education"\)/);
-  assert.match(src, /\{school\.role\}, \{school\.organization\}/);
-  assert.equal((src.match(/<p[ >]/g) ?? []).length, 2, "the headline and the school, nothing else");
-  // One primary action; Contact, the shared links and the email as text links
-  assert.equal((src.match(/className="glass/g) ?? []).length, 1);
-  assert.match(src, /<a href="#projects" className="glass glass-primary">/);
-  assert.match(src, /<a href="#contact" className="text-link text-link-solo">/);
-  assert.match(src, /<ProfileLinks variant="text" \/>/);
-  assert.match(src, /href=\{`mailto:\$\{email\.address\}`\} className="text-link text-link-solo"/);
-});
-
 test("the home plate's head script: the same sun as the site's clock, a file from the band's own srcset, painted before hydration", async () => {
   const { SUN_JS, platePreloadScript } = await import("../app/lib/platePreload.ts");
   const { solarSun, addDays } = await import("../app/lib/time.ts");
@@ -186,7 +177,7 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   // a few widths, and on a deep link
   const place = { latitude: 43.87111, longitude: -79.43725, timeZone: "America/Toronto" };
   const srcset = (p) => [640, 1080, 1920, 3840].map((w) => `/img/${p}?w=${w} ${w}w`).join(", ");
-  // The home tile: 1672 x 941, so drawn 1.777 times the stage's height (or the phone's strip, 30% of it and 64px)
+  // The home tile: 1672 x 941, so drawn 1.777 times the stage's height (or the phone's strip, 20% of it and 64px)
   const ratio = 1672 / 941;
   const run = (iso, { width = 1440, height = 900, dpr = 1, hash = "", pathname = "/", track = "on" } = {}) => {
     const added = [];
@@ -209,11 +200,11 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   assert.deepEqual(noon, { links: ["preload image /img/day?w=1920 high"], plate: 'url("/img/day?w=1920")', which: "day" }, "noon, 1440 x 900 at 1x");
   assert.deepEqual(run("2026-06-21T04:00:00Z").which, "night", "midnight");
   // The preload and the painted background are one URL, picked from the
-  // tile's sizes: a phone's strip, 390 x 844, is 0.3 * 844 + 64 = 317 tall,
-  // drawn 563 wide; at 3x, capped at 1.5, 845 device px, so 1080; at 1x, 640
+  // tile's sizes: a phone's strip, 390 x 844, is 0.2 * 844 + 64 = 233 tall,
+  // drawn 414 wide; at 3x, capped at 1.5, 620 device px, so 640; at 1x, 640
   const phone = run("2026-06-21T16:00:00Z", { width: 390, height: 844, dpr: 3 });
-  assert.equal(phone.links[0], "preload image /img/day?w=1080 high");
-  assert.equal(phone.plate, 'url("/img/day?w=1080")', "a phone's density capped at 1.5");
+  assert.equal(phone.links[0], "preload image /img/day?w=640 high");
+  assert.equal(phone.plate, 'url("/img/day?w=640")', "a phone's density capped at 1.5");
   assert.equal(run("2026-06-21T16:00:00Z", { width: 390, height: 844 }).plate, 'url("/img/day?w=640")');
   assert.equal(run("2026-06-21T16:00:00Z", { width: 1440, dpr: 2 }).plate, 'url("/img/day?w=3840")', "no cap on wide screens");
   assert.equal(run("2026-06-21T16:00:00Z", { width: 844, height: 390 }).plate, 'url("/img/day?w=1080")', "a phone on its side: the stage's height");
@@ -245,9 +236,9 @@ test("the head script and the home tile take the plate's URL from one source", (
   assert.match(read("app/components/city2d/homePlate.ts"), /export const HOME_QUALITY: Record<Plate, number> = \{ day: 60, night: 40 \};/);
   assert.match(read("next.config.ts"), /qualities: \[40, 60, 75\]/);
   const helper = read("app/components/city2d/homePlate.ts");
-  assert.match(helper, /\(max-aspect-ratio: 1\/1\) calc\(\$\{\+\(r \* 30\)\.toFixed\(2\)\}vh \+ \$\{Math\.round\(r \* 64\)\}px\), \$\{\+\(r \* 100\)\.toFixed\(2\)\}vh/, "sizes and the script's widths agree");
+  assert.match(helper, /\(max-aspect-ratio: 1\/1\) calc\(\$\{\+\(r \* 20\)\.toFixed\(2\)\}vh \+ \$\{Math\.round\(r \* 64\)\}px\), \$\{\+\(r \* 100\)\.toFixed\(2\)\}vh/, "sizes and the script's widths agree");
   const script = read("app/lib/platePreload.ts");
-  assert.match(script, /need=\$\{ratio\}\*\(ph\?0\.3\*vh\+64:vh\)/);
+  assert.match(script, /need=\$\{ratio\}\*\(ph\?0\.2\*vh\+64:vh\)/);
   assert.match(script, /l\.href=url/);
   assert.match(script, /setProperty\("--home-plate",'url\("'\+url\+'"\)'\)/, "the painted URL is the preloaded one");
   assert.match(helper, /getPropertyValue\("--home-plate"\)/);

@@ -69,7 +69,8 @@ test("trackXForPano: where along the track the panorama has moved a given way (p
 });
 
 test("Contact is lit, and the street carries a faint plan", () => {
-  assert.match(css, /#contact::before \{[^}]*radial-gradient\(26% 40% at 74% 85%, rgb\(244 184 96/);
+  // (where its light falls: tests/city-contact.test.mjs)
+  assert.match(css, /#contact::before \{[^}]*radial-gradient\(/);
   assert.match(css, /\.track::before \{[^}]*radial-gradient\(rgb\(230 233 238 \/ 0\.08\) 1px/);
 });
 

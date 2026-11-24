@@ -51,7 +51,7 @@ export function platePreloadScript(place: Place, day: string, night: string, rat
     `p.forEach(function(x){v[x.type]=+x.value});` +
     `var s=sun(v.year,v.month,v.day,${place.latitude},${place.longitude}),now=Date.now()/1e3,` +
     `plate=now>=s[0]&&now<s[1]?"day":"night",set=plate==="day"?${q(day)}:${q(night)},` +
-    `vh=window.innerHeight,ph=window.innerWidth<=vh,dpr=window.devicePixelRatio||1,need=${ratio}*(ph?0.3*vh+64:vh)*(ph?Math.min(dpr,${PHONE_MAX_DPR}):dpr),url=null,last=null;` +
+    `vh=window.innerHeight,ph=window.innerWidth<=vh,dpr=window.devicePixelRatio||1,need=${ratio}*(ph?0.2*vh+64:vh)*(ph?Math.min(dpr,${PHONE_MAX_DPR}):dpr),url=null,last=null;` +
     `set.split(", ").forEach(function(c){var x=c.split(" "),w=parseInt(x[1],10);if(!url&&w>=need)url=x[0];if(w)last=x[0]});` +
     `url=url||last;if(!url)return;` +
     `var l=document.createElement("link");l.rel="preload";l.as="image";l.href=url;l.setAttribute("fetchpriority","high");document.head.appendChild(l);` +

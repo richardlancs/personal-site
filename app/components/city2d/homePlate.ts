@@ -3,12 +3,12 @@ import { HEIGHT } from "./panorama";
 
 // A tile's drawn width in the journey's panorama (DistrictBand.tsx), for
 // next/image's srcset: as tall as the stage, or on phones and tall screens
-// the strip at its top (city-track.css: --band-h, about 30% of the height
+// the strip at its top (city-track.css: --band-h, about 20% of the height
 // and 64px). The head script (lib/platePreload.ts) picks the home tile's
 // file by the same widths.
 export const tileSizes = (w: number) => {
   const r = w / HEIGHT;
-  return `(max-aspect-ratio: 1/1) calc(${+(r * 30).toFixed(2)}vh + ${Math.round(r * 64)}px), ${+(r * 100).toFixed(2)}vh`;
+  return `(max-aspect-ratio: 1/1) calc(${+(r * 20).toFixed(2)}vh + ${Math.round(r * 64)}px), ${+(r * 100).toFixed(2)}vh`;
 };
 
 // The home tile is the page's largest paint, so it is asked for a little

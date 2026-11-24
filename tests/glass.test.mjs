@@ -79,8 +79,8 @@ test("glass is 44px tall, with labels in opaque --text, and a fallback without b
 // Every button-like control is glass, so it shares the states and the press
 test("the Sections menu's entries and the top bar's keys are glass", () => {
   const menu = readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8").match(/<nav [^>]*id="places-menu"[\s\S]*?<\/nav>/)[0];
-  assert.equal((menu.match(/<Link [^>]*className="glass"/g) ?? []).length, 1, "one glass entry per listed section");
-  assert.equal((menu.match(/<Link [^>]*className="glass sections-menu-sub"/g) ?? []).length, 1, "and one per section's part (Skills)");
+  // (the menu's rows are plain rows, V13: tests/city-menu.test.mjs pins their style)
+  assert.equal((menu.match(/<Link [^>]*className="sections-menu-sub"/g) ?? []).length, 1, "one entry per section's part (Skills)");
   // On the one page an entry is a jump within it, so where you are comes
   // from the scroll
   assert.match(menu, /aria-current=\{s\.id === here \? "location" : undefined\}/);

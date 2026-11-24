@@ -9,9 +9,9 @@ import { bandTiles } from "./panoramaImages";
 // instead, CityTrack.tsx), then its words. The band carries no words, and
 // the place it paints isn't named: sections are named as sections.
 //
-// The words sit in panels (`.panel`): on the journey, dark glass on the
+// The words sit in panels (`.panel`): on the journey, clear glass on the
 // street, each scrolling inside once the journey has stopped with all of
-// it on the screen (CityTrack.tsx). A stop of one panel (Home, About,
+// it on the screen (CityTrack.tsx), the way on (NextStop) at its foot. A stop of one panel (Home, About,
 // Interests, Contact) gets it from here, its number and heading at its
 // top; a stop of several in a row along the street (`row`: Projects,
 // Experience) gets the row, and its section puts the heading
@@ -45,6 +45,21 @@ export function StationHead({ section }: { section: Section }) {
   );
 }
 
+// The way on from a stop's panel, at its foot: "Next: About", to the next
+// section (the journey's jump takes it like any anchor). None after the
+// last. Exported for a stop whose panels are its section's own (Projects:
+// at the foot of its last, Skills)
+export function NextStop({ section }: { section: Section }) {
+  const next = pageSections[pageSections.indexOf(section) + 1];
+  if (!next) return null;
+  return (
+    <a href={`#${next.hash}`} className="next-stop text-link text-link-solo">
+      Next: {next.title}
+      <span aria-hidden="true">&nbsp;&rarr;</span>
+    </a>
+  );
+}
+
 export default function Station({ section, heading, row, children }: { section: Section; heading?: ReactNode; row?: boolean; children?: ReactNode }) {
   const id = section.hash || "home";
   return (
@@ -56,6 +71,7 @@ export default function Station({ section, heading, row, children }: { section: 
         <div className="station-body panel">
           {heading ?? <StationHead section={section} />}
           {children}
+          <NextStop section={section} />
         </div>
       )}
     </section>
