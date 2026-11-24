@@ -3,8 +3,9 @@
 // contrast): text, muted and accent-2 at 4.5:1 or better on every ground,
 // the accent fill and the focus ring at 3:1 or better, the label on the
 // accent (and on its hover) at 4.5:1 or better. The grounds include the
-// texture's extremes (app/paper.css): each ground shaded 6% darker and 5%
-// lighter.
+// texture's extremes (app/paper.css): each ground scaled to the darkest
+// crease and the lightest ridge measured on that paper (1440x900, the
+// lowest and highest luma of the sheet over the paper's colour).
 //
 //   node docs/ui/scripts/palette-contrast.mjs
 import { readFileSync } from "node:fs";
@@ -30,8 +31,7 @@ const contrast = (a, b) => {
 };
 // The texture's crease (darker) and ridge (lighter), as a scale on each channel
 const shade = (hex, k) => `#${[1, 3, 5].map((i) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k))).toString(16).padStart(2, "0")).join("")}`;
-const CREASE = 0.94;
-const RIDGE = 1.05;
+const EXTREMES = { cream: [0.97, 1.04], charcoal: [0.95, 1.22], kraft: [0.93, 1.04] };
 
 const need = ["--paper", "--paper-2", "--panel", "--line", "--text", "--muted", "--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow", "--ink"];
 let failed = false;
@@ -59,13 +59,14 @@ const check = (paper, label, fg, bg, min) => {
 
 if (!failed) {
   for (const [paper, p] of Object.entries(papers)) {
+    const [CREASE, RIDGE] = EXTREMES[paper];
     let lowest = Infinity;
     for (const ground of ["--paper", "--paper-2", "--panel"]) {
-      for (const [where, bg] of [
-        [ground, p[ground]],
-        [`${ground} crease`, shade(p[ground], CREASE)],
-        [`${ground} ridge`, shade(p[ground], RIDGE)],
-      ]) {
+      // Cards (--panel) are opaque sheets over the texture; the grounds
+      // are what it shades
+      const grounds = [[ground, p[ground]]];
+      if (ground !== "--panel") grounds.push([`${ground} crease`, shade(p[ground], CREASE)], [`${ground} ridge`, shade(p[ground], RIDGE)]);
+      for (const [where, bg] of grounds) {
         for (const name of ["--text", "--muted", "--accent-2"]) lowest = Math.min(lowest, check(paper, `${name} on ${where}`, p[name], bg, 4.5));
         for (const name of ["--accent", "--focus"]) check(paper, `${name} on ${where}`, p[name], bg, 3);
       }

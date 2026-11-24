@@ -107,9 +107,11 @@ so its text colours are the darkest of the three papers'.
 ### The rules
 
 - `--text`, `--muted` and `--accent-2` are 4.5:1 or better on
-  `--paper`, `--paper-2` and `--panel`, and still on the texture's
-  darkest crease (the ground shaded 6% darker) and lightest ridge (5%
-  lighter).
+  `--paper`, `--paper-2` and `--panel`, and on the two grounds still at
+  the texture's darkest crease and lightest ridge (cards are opaque
+  sheets over it) as measured on each paper (cream 3%
+  darker to 4% lighter, charcoal 5% darker to 22% lighter, kraft 7%
+  darker to 4% lighter).
 - `--accent` and `--focus` are 3:1 or better on every ground (the
   texture's too); `--on-accent` is 4.5:1 or better on `--accent` and
   `--accent-hover`.
@@ -121,17 +123,20 @@ so its text colours are the darkest of the three papers'.
 
 ## The texture
 
-`app/paper.css`: one crumpled sheet, drawn in code. An inline SVG of
-fractal noise lit as a surface (`feTurbulence` into `feDiffuseLighting`)
-gives large soft creases; a second, finer noise gives the grain. It is a
-grey luminance map blended over each paper's own colour (`multiply` for
-the light papers, `screen` for charcoal), so one texture serves all
-three, its seed is fixed, it holds no photograph, it is a few hundred
-bytes, and it is crisp at any pixel ratio (it is drawn at the screen's
-resolution). It never moves: fixed to the viewport behind the journey,
-so the stops travel over one still sheet. It shades the paper by at most
-about 6% at a crease and 5% at a ridge, inside the margins above. Under
-`prefers-contrast: more` it is removed and the paper is flat.
+`app/paper.css` (imported by `city.css`): one crumpled sheet, drawn in
+code. An inline SVG: two noises of creases (`feTurbulence`, type
+turbulence, a large and a middle scale) inverted so their seams fold up
+into ridges, a fine grain added, all lit from the upper left as a surface
+(`feDiffuseLighting`). The result is a grey relief, laid over each
+paper's own colour in `soft-light` (on `body::before`, inside the body's
+own stacking context), so one texture serves all three. Its seeds are
+fixed, it holds no photograph, it is under 1 KB, and it is crisp at any
+pixel ratio (the filter is drawn at the screen's resolution). It never
+moves: fixed to the viewport behind the journey, so the stops travel over
+one still sheet. How strongly it shows is per paper (`--crumple`: cream
+1, charcoal 0.2, kraft 0.42), inside the margins above. Under
+`prefers-contrast: more` and in forced colours it is removed and the
+paper is flat.
 
 ## Type
 

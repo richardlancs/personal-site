@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./paper.css";
 /* Untracked folders that can sit in a working copy (agents' worktrees, a
    separate project): never scanned, so a local build matches Vercel's */
 @source not "../.claude";

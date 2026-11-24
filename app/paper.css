@@ -1,0 +1,52 @@
+/*
+  The crumpled paper (docs/city/style.md, "The texture"): one sheet drawn
+  in code, no photograph. Two noises of creases (feTurbulence, fixed
+  seeds), inverted so they fold up into ridges, a fine grain over them,
+  lit from the upper left (feDiffuseLighting): a grey relief laid over
+  each paper's own colour in soft-light, so the same sheet serves all
+  three. Drawn at the screen's resolution, so crisp at any pixel ratio.
+  Fixed behind the journey, so the stops travel over one still sheet; it
+  never moves. How strongly it shows is per paper (--crumple), inside the
+  palette's contrast margins (docs/ui/scripts/palette-contrast.mjs).
+*/
+:root {
+  --crumple: 1;
+}
+
+:root[data-paper="charcoal"] {
+  --crumple: 0.2;
+}
+
+:root[data-paper="kraft"] {
+  --crumple: 0.42;
+}
+
+/* Its own stacking context, so the sheet sits over the body's paper
+   colour and under everything else */
+body {
+  isolation: isolate;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'%3E%3Cfilter id='p' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='turbulence' baseFrequency='.0022' numOctaves='2' seed='11' result='a'/%3E%3CfeTurbulence type='turbulence' baseFrequency='.008' numOctaves='2' seed='5' result='b'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' seed='3' result='g'/%3E%3CfeComposite in='a' in2='b' operator='arithmetic' k2='-1' k3='-.4' k4='1' result='h'/%3E%3CfeComposite in='h' in2='g' operator='arithmetic' k2='1' k3='.03'/%3E%3CfeDiffuseLighting surfaceScale='12' lighting-color='%23fff'%3E%3CfeDistantLight azimuth='235' elevation='40'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='1600' height='1000' filter='url(%23p)'/%3E%3C/svg%3E") center / cover;
+  mix-blend-mode: soft-light;
+  opacity: var(--crumple);
+}
+
+/* More contrast asked for, or the system's own colours: flat paper */
+@media (prefers-contrast: more) {
+  body::before {
+    display: none;
+  }
+}
+
+@media (forced-colors: active) {
+  body::before {
+    display: none;
+  }
+}

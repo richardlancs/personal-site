@@ -1,7 +1,8 @@
-// The city's one dark theme (app/city.css, from docs/city/style.md): the
-// layout loads it and nothing of the park, every palette token is defined
-// with the hex the style names, glow is never relied on for contrast, and
-// no Chinese or Japanese characters are in the source.
+// The papers (app/city.css, from docs/city/style.md): three themes chosen
+// by the picker on <html data-paper>, never by the system's appearance;
+// every palette token is defined in its paper's block with the hex the
+// style names; the texture is code (app/paper.css), glow is never relied
+// on for contrast, and no Chinese or Japanese characters are in the source.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -9,35 +10,66 @@ import { test } from "node:test";
 const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 
-test("the layout loads city.css and none of the park", () => {
+test("the layout loads city.css, city.css the paper, and none of the park", () => {
   const layout = read("app/layout.tsx");
   assert.match(layout, /import "\.\/city\.css"/);
   for (const gone of ["globals.css", "WorldShell", "SkyDriver", "world3d/World3D"]) assert.ok(!layout.includes(gone), gone);
+  assert.match(read("app/city.css"), /^@import "tailwindcss";\n@import "\.\/paper\.css";/);
 });
 
-test("one dark theme: no prefers-color-scheme, no light-dark(), no theme toggle", () => {
-  const css = read("app/city.css");
-  assert.ok(!/prefers-color-scheme|light-dark\(/.test(css));
-  assert.match(css, /:root \{[^}]*color-scheme: dark;/, "the browser is told the page is dark");
-  const layout = read("app/layout.tsx");
-  assert.match(layout, /colorScheme: "dark"/);
-  assert.doesNotMatch(layout, /data-theme|ThemeToggle/);
-});
+const PAPERS = ["cream", "charcoal", "kraft"];
+const css = () => read("app/city.css");
+// A paper's own token block (cream's selector is ":root,\n:root[data-paper="cream"]")
+const block = (paper) => css().match(new RegExp(`\\n:root\\[data-paper="${paper}"\\] \\{([^}]*)\\}`))?.[1] ?? "";
 
-test("every palette token in docs/city/style.md is defined in city.css with the same hex", () => {
-  const style = read("docs/city/style.md");
-  const rows = [...style.matchAll(/^\| `(--[a-z0-9-]+)` \| `(#[0-9a-f]{6})` \|/gim)];
-  assert.ok(rows.length >= 10, `the palette table was found (${rows.length} rows)`);
-  const css = read("app/city.css");
-  const rootBlock = css.match(/\n:root \{([^}]*)\}/)?.[1] ?? "";
-  for (const [, name, hex] of rows) {
-    const value = rootBlock.match(new RegExp(`\\n\\s*${name}:\\s*(#[0-9a-f]{6});`, "i"))?.[1];
-    assert.equal(value?.toLowerCase(), hex.toLowerCase(), `${name} on :root`);
+test("three papers, picked on <html data-paper>, never by the system's appearance", () => {
+  const text = css();
+  assert.doesNotMatch(text, /prefers-color-scheme|light-dark\(/);
+  assert.match(text, /\n:root,\n:root\[data-paper="cream"\] \{/, "cream is the default on :root");
+  const schemes = { cream: "light", charcoal: "dark", kraft: "light" };
+  for (const paper of PAPERS) assert.match(block(paper), new RegExp(`\\n\\s*color-scheme: ${schemes[paper]};`), `${paper}'s color-scheme`);
+  // The picker's dots: each paper's base, whatever paper is on
+  for (const paper of PAPERS) {
+    const base = block(paper).match(/\n\s*--paper:\s*(#[0-9a-f]{6});/)?.[1];
+    assert.match(text, new RegExp(`\\n\\s*--swatch-${paper}: ${base};`), `--swatch-${paper}`);
   }
-  for (const name of ["--radius", "--font-display", "--font-text"]) assert.match(rootBlock, new RegExp(`\\n\\s*${name}:`), `${name} on :root`);
-  // themeColor is the page's ground
-  const ink = rows.find(([, name]) => name === "--ink")[2];
-  assert.match(read("app/layout.tsx"), new RegExp(`themeColor: "${ink}"`, "i"));
+});
+
+test("every palette token in docs/city/style.md is defined in its paper's block with the same hex", () => {
+  const style = read("docs/city/style.md");
+  const palette = style.split("## Palette")[1].split(/\n## /)[0];
+  for (const paper of PAPERS) {
+    const table = palette.split(new RegExp(`\\n### ${paper}\\n`, "i"))[1]?.split(/\n### /)[0] ?? "";
+    const rows = [...table.matchAll(/^\| `(--[a-z0-9-]+)` \| `(#[0-9a-f]{6})` \|/gim)];
+    assert.ok(rows.length >= 12, `${paper}: the palette table was found (${rows.length} rows)`);
+    const own = block(paper);
+    for (const [, name, hex] of rows) {
+      const value = own.match(new RegExp(`\\n\\s*${name}:\\s*(#[0-9a-f]{6});`, "i"))?.[1];
+      assert.equal(value?.toLowerCase(), hex.toLowerCase(), `${paper}: ${name}`);
+    }
+  }
+  const shared = css().match(/\n:root \{([^}]*)\}/)?.[1] ?? "";
+  for (const name of ["--radius", "--font-display", "--font-text", "--ease-out", "--t-slow"]) assert.match(shared, new RegExp(`\\n\\s*${name}:`), `${name} on :root`);
+});
+
+test("the paper tokens are Tailwind colours, and the page's ground is the paper", () => {
+  const text = css();
+  for (const name of ["paper", "paper-2", "panel", "line", "text", "muted", "accent", "accent-2", "on-accent", "focus"]) assert.match(text, new RegExp(`--color-${name}: var\\(--${name}\\);`), name);
+  assert.match(text.match(/\nhtml \{[^}]*\}/)[0], /background: var\(--paper\);/);
+  assert.match(text.match(/\nbody \{[^}]*\}/)[0], /background: var\(--paper\);/);
+});
+
+test("the paper texture is drawn in code: no image file, a fixed seed, no motion, gone under prefers-contrast: more", () => {
+  const paper = read("app/paper.css");
+  const data = [...paper.matchAll(/url\("data:image\/svg\+xml,[^"]*"\)/g)];
+  assert.equal(data.length, 1, "one inline SVG");
+  assert.doesNotMatch(paper.replace(data[0][0], ""), /url\(/, "and no other image");
+  assert.match(paper, /feTurbulence/);
+  assert.match(paper, /feDiffuseLighting/);
+  for (const m of paper.matchAll(/feTurbulence[^>]*>/g)) assert.match(m[0], /seed='\d+'/, "every noise has a fixed seed");
+  assert.doesNotMatch(paper, /animation|transition|@keyframes/);
+  assert.match(paper, /@media \(prefers-contrast: more\) \{[^}]*\{[^}]*display: none;/);
+  assert.ok(Buffer.byteLength(paper) < 4000, `paper.css is small (${Buffer.byteLength(paper)} bytes)`);
 });
 
 test("glow is dropped for prefers-contrast: more", () => {
@@ -50,7 +82,7 @@ test("glow is dropped for prefers-contrast: more", () => {
   for (const f of ["app/city.css", "app/motion.css", "app/reveal.css"]) assert.doesNotMatch(read(f), /text-shadow/, f);
   const track = read("app/city-track.css");
   for (const m of track.matchAll(/text-shadow: ([^;]*);/g)) assert.ok(m[1] === "none" || m[1].match(/rgb\(([^)]*)\)/g).every((c) => c.startsWith("rgb(8 9 12 ")), m[0]);
-  assert.match(track.slice(track.indexOf("@media (prefers-contrast: more)")), /text-shadow: none;/);
+  if (/text-shadow: (?!none)/.test(track)) assert.match(track.slice(track.indexOf("@media (prefers-contrast: more)")), /text-shadow: none;/);
   assert.doesNotMatch(read("app/city.css").match(/\.points > li::before \{[^}]*\}/)[0], /box-shadow/);
 });
 
@@ -70,7 +102,7 @@ test("no Chinese or Japanese characters in app/ source", () => {
   assert.deepEqual(found, []);
 });
 
-test("no theme toggle and no saved theme anywhere the site loads", () => {
+test("the paper is the only theme: no data-theme, no saved \"theme\", nothing keyed on the system's appearance", () => {
   const files = [];
   const walk = (dir) => {
     for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
@@ -119,8 +151,8 @@ test("every colour and size the résumé viewer uses is defined by the city's st
   assert.match(city, /a\[data-resume\]\[data-opening\] \{[^}]*cursor: progress/);
 });
 
-test("black is the ground and the primary's fill is the sky-blue accent: no magenta, no amber left", () => {
-  const files = ["app/city.css"];
+test("no magenta and no amber names; every paper has its accents", () => {
+  const files = ["app/city.css", "app/paper.css"];
   const walk = (dir) => {
     for (const entry of readdirSync(`${root}${dir}`, { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
@@ -130,18 +162,7 @@ test("black is the ground and the primary's fill is the sky-blue accent: no mage
   };
   walk("app");
   assert.ok(files.length > 10, "the walk reached the components");
-  // Whole words: a three.js MeshLambertMaterial is no amber
+  // Whole words
   for (const file of files) assert.doesNotMatch(read(file), /\b(magenta|amber)\b/i, file);
-  const css = read("app/city.css");
-  for (const name of ["--accent", "--seam", "--seam-2"]) assert.match(css, new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), name);
-  for (const utility of ["accent"]) assert.match(css, new RegExp(`--color-${utility}: var\\(--${utility}\\);`));
-  // The fade under each painting passes through the dark navy seam
-  const fade = css.match(/\.band::before \{([^}]*)\}/)?.[1] ?? "";
-  // over its last 42% (the panels sit on it on the journey)
-  assert.match(fade, /inset: 58% 0 0;/);
-  assert.match(fade, /linear-gradient\(transparent, var\(--seam\) 62%, var\(--ground, var\(--ink\)\) 80%\)/);
-  // The haze is mixed against the plates' navy, not the black ground
-  const haze = css.match(/\.band-haze \{([^}]*)\}/)?.[1] ?? "";
-  assert.match(haze, /#0e1d31/);
-  assert.doesNotMatch(haze, /var\(--ink\)/);
+  for (const paper of PAPERS) for (const name of ["--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow"]) assert.match(block(paper), new RegExp(`\\n\\s*${name}: #[0-9a-f]{6};`), `${paper}: ${name}`);
 });
