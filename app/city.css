@@ -19,33 +19,93 @@
 @source not inline("container visible static fixed absolute sticky inline table grow transform resize rounded ring outline shadow blur transition");
 
 /*
-  The city: one dark theme (docs/city/style.md). Soft black grounds (a
-  trace of blue, never warm grey), pale text, and two restrained lights,
-  cyan and a sky-blue accent, only for edges, marks, chosen states and
-  display type of 24px or larger, never body text.
-  There is no light theme and no toggle; nothing here is keyed on the
-  system's appearance. No words glow; the glass's faint glow is never
-  what gives anything its contrast, and it goes under prefers-contrast.
+  Paper (docs/city/style.md): three crumpled papers, each with its own
+  colours, chosen by the Paper picker (PaperPicker.tsx) and kept on
+  <html data-paper="cream|charcoal|kraft"> by a head script before the
+  first paint; never by the system's appearance. Cream is the default,
+  so it is also plain :root. Components use these names only, never a
+  hex. Every text colour is 4.5:1 or better on --paper, --paper-2 and
+  --panel (and on the texture's darkest crease: paper.css shades at most
+  6% darker); the accent fill 3:1 or better on each ground, its label
+  4.5:1 on it (docs/ui/scripts/palette-contrast.mjs).
+  The texture itself is in paper.css.
 */
-:root {
-  color-scheme: dark;
+/* Cream: warm ivory (hue 40) written in blue-black ink; its accents
+   from the far side of the wheel: Prussian blue (the complement, 220)
+   for the one primary action, deep teal (185, the split's near arm and
+   the mark's cyan) for links, chosen states and the metro line */
+:root,
+:root[data-paper="cream"] {
+  color-scheme: light;
+  --paper: #efe7d6;
+  --paper-2: #e7dcc6;
+  --panel: #f7f1e5;
+  --line: #c9bca3;
+  --text: #1d2330;
+  --muted: #50545c;
+  --accent: #1f4f8a;
+  --accent-hover: #2b62a6;
+  --on-accent: #f7f1e5;
+  --accent-2: #0a6168;
+  --focus: #1f4f8a;
+  --shadow: #4a3b22;
+  /* The darkest ink on this paper */
+  --ink: #1d2330;
+}
 
-  /* The palette (docs/city/style.md, verbatim) */
-  --ink: #08090c;
-  --ink-2: #101217;
-  --panel: #181b23;
-  --line: #2d323d;
-  --text: #e6e9ee;
-  --muted: #9ea5b1;
-  --cyan: #4fd8ee;
-  /* The primary action's fill: a sky blue between the painted sky and
-     --cyan (docs/city/style.md) */
-  --accent: #6cc6f2;
-  --focus: #8fe9ff;
-  /* The very dark navy each painting passes through on its way into the
-     black (the band's fade, below): one for each ground */
-  --seam: #070c15;
-  --seam-2: #0c121d;
+/* Charcoal: a cool grey-black sheet (hue 215) in chalk-white; gold (35,
+   its complement) for the primary action, the mark's cyan (analogous to
+   the paper) for links, chosen states and the line */
+:root[data-paper="charcoal"] {
+  color-scheme: dark;
+  --paper: #26282b;
+  --paper-2: #1e2023;
+  --panel: #303337;
+  --line: #474b51;
+  --text: #ece6da;
+  --muted: #aca69b;
+  --accent: #e3b55b;
+  --accent-hover: #edc679;
+  --on-accent: #1b1c1e;
+  --accent-2: #7fd4df;
+  --focus: #9fe6ef;
+  --shadow: #050506;
+  --ink: #141518;
+}
+
+/* Kraft: brown packing paper (hue 33) in near-black; navy (the
+   complement, 213) for the primary action like a blue stamp, oxblood
+   (analogous, 8: the red of a parcel stamp) for links, chosen states
+   and the line */
+:root[data-paper="kraft"] {
+  color-scheme: light;
+  --paper: #c9a77c;
+  --paper-2: #bf9c70;
+  --panel: #d6b98f;
+  --line: #9b7c55;
+  --text: #22180f;
+  --muted: #3a2a1d;
+  --accent: #1e3a5f;
+  --accent-hover: #284b78;
+  --on-accent: #f4e8d4;
+  --accent-2: #561710;
+  --focus: #1e3a5f;
+  --shadow: #3b2814;
+  --ink: #22180f;
+}
+
+:root {
+  /* Each paper's base whatever paper is on (the picker's dots) */
+  --swatch-cream: #efe7d6;
+  --swatch-charcoal: #26282b;
+  --swatch-kraft: #c9a77c;
+
+  /* Older names, kept for code that still reads them: each is now one of
+     the paper tokens. Prefer the new names. */
+  --ink-2: var(--paper-2);
+  --cyan: var(--accent-2);
+  --seam: var(--paper);
+  --seam-2: var(--paper-2);
 
   /* One family of soft corners */
   --radius: 10px;
@@ -55,25 +115,22 @@
   --font-display: var(--font-rajdhani), "Arial Narrow", Arial, sans-serif;
   --font-text: var(--font-nunito), "Helvetica Neue", Arial, sans-serif;
 
-  /* Glass buttons (.glass, below): a little panel over whatever is
-     behind, blurred; labels stay opaque --text */
-  --glass-tint: rgb(24 27 35 / 0.6);
-  /* primary: solid accent with an ink label (10.4:1; 12.5:1 on hover),
-     edged in the night sky's navy (8.3:1 on the fill), so it stands out
-     of the glass over a light sky too */
+  /* The buttons' older glass tokens, now paper: an opaque card, no blur,
+     the line for an edge, the accent fill for the primary */
+  --glass-tint: var(--panel);
   --glass-tint-strong: var(--accent);
-  --glass-primary-hover: #94d6f6;
-  --accent-edge: #0b2242;
-  --glass-chosen: rgb(79 216 238 / 0.16);
-  --glass-border: #396c7b; /* --line 65% into --cyan */
-  --glass-hi: rgb(230 233 238 / 0.11); /* the light line along the top */
-  --glass-blur: blur(12px) saturate(1.2);
-  --glass-shadow: 0 6px 18px -10px rgb(0 0 0 / 0.6);
-  --glass-fallback: rgb(24 27 35 / 0.94); /* no backdrop-filter */
-  /* Behind a focus ring, so it shows on any painting */
-  --focus-halo: 0 0 0 6px rgb(8 9 12 / 0.9);
-  /* Glow: decoration only, never counted toward contrast */
-  --glow-cyan: 0 0 14px -2px rgb(79 216 238 / 0.45);
+  --glass-primary-hover: var(--accent-hover);
+  --accent-edge: color-mix(in srgb, var(--accent) 70%, var(--ink));
+  --glass-chosen: color-mix(in srgb, var(--accent-2) 14%, var(--panel));
+  --glass-border: var(--line);
+  --glass-hi: #0000;
+  --glass-blur: none;
+  --glass-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent), 0 6px 14px -8px color-mix(in srgb, var(--shadow) 40%, transparent);
+  --glass-fallback: var(--panel);
+  /* Behind a focus ring: the paper itself, so the ring reads on a card */
+  --focus-halo: 0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
+  /* Paper doesn't glow */
+  --glow-cyan: 0 0 #0000;
 
   /* Motion (docs/ui/ux-motion-principles.md): the only durations and
      curves anything uses. Arrive with --ease-out, travel with
@@ -85,7 +142,7 @@
   --t-base: 200ms;
   --t-slow: 280ms;
   --stagger: 60ms;
-  /* Not interaction: the sky's slow day-and-night cross-fade */
+  /* Not interaction: a slow cross-fade */
   --t-sky: 3s;
 
   /* The top bar's height and where the Sections menu opens: SectionsMenu
@@ -98,9 +155,11 @@
   --scroll-offset: calc(var(--bar-h) + 0.5rem);
 }
 
-/* Makes the tokens usable as Tailwind classes, e.g. bg-ink, text-muted,
+/* Makes the tokens usable as Tailwind classes, e.g. bg-paper, text-muted,
    border-line */
 @theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-panel: var(--panel);
@@ -109,6 +168,8 @@
   --color-muted: var(--muted);
   --color-cyan: var(--cyan);
   --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+  --color-on-accent: var(--on-accent);
   --color-focus: var(--focus);
 
   --font-sans: var(--font-text);
@@ -118,7 +179,7 @@
 /* ---------- Base ---------- */
 
 html {
-  background: var(--ink);
+  background: var(--paper);
   /* A jump to part of the page stops below the sticky bar (WCAG 2.4.11) */
   scroll-padding-top: var(--scroll-offset);
 }
@@ -137,7 +198,8 @@ html {
 
 body {
   min-height: 100svh;
-  background: var(--ink);
+  /* The paper's colour; its crumple is laid over it in paper.css */
+  background: var(--paper);
   color: var(--text);
   font-family: var(--font-text);
   font-size: 1rem;

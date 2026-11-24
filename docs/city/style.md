@@ -1,127 +1,137 @@
-# The city's style
+# The site's style: paper
 
-The one description the site is tuned to: one continuous panorama of
-Shanghai, by day and by night, that the visitor travels along
-(`CLAUDE.md`, "The journey"). Every prompt used is in
-`docs/city/prompts.md`; the originals are in
-`docs/city/concepts/panorama-real/`.
+The one description the site is tuned to. At Richard's word on 24
+November 2026 the Shanghai city (its paintings, its sky, its day and
+night, the weather drawn over it, the panorama) is gone: "change it to
+something very simple such as a crumpled paper background and colour
+match my current icons and sections and overal architecture to the new
+designed background". The sideways journey stays (six stops, the metro
+map, the keys); what it travels over is now one sheet of crumpled paper.
 
-History. The first city was six gouache plates, one per section, painted
-as bands over a vertical page (frames accepted by Richard, 19 November
-2026; `docs/city/concepts/*.webp`). The horizontal city (22 November
-2026) joined the sections into one journey, first over a gouache
-panorama (`docs/city/concepts/panorama/`, superseded), then, at Richard's
-word on 23 November 2026, over a hyperrealistic one: "tell chatgpt to
-build directly off a hyperrealistic model of the city and find real city
-skyline photos to use as reference". The panorama is hyperrealistic; "no
-photorealism" no longer holds for it.
+History: the city's palette, panorama and seam are in this file's git
+history (before `paper`) and `docs/city/concepts/`.
 
-Palette changed by Richard, 20 November 2026: black is the main colour
-(soft black, a trace of blue), magenta is gone and the warm secondary is
-the lantern. Changed again by Richard, 24 November 2026: the primary
-action's fill is the sky blue `--accent` (the lantern's warm is left to
-the painted windows and the golden hour's grade). The interface keeps
-that palette over the photograph.
+## The papers
 
-## The panorama
+Three, each with its own colours, chosen by the visitor with the Paper
+picker in the bar (in the Sections menu on phones). The choice is kept
+in `localStorage["paper"]` and set as `<html data-paper="…">` by a head
+script before the first paint (`app/lib/paper.ts`), so there is no flash;
+cream is the default. Nothing is keyed on the system's appearance: a
+paper is chosen, not inferred. The tokens are in `app/city.css`, one
+block per paper (`:root[data-paper=…]`, cream also plain `:root`), and
+components use their names only, never a hex.
 
-**What it is.** Six segments, one per stop, side by side along one walk,
-each continuing the one before (no hard cuts in the picture):
+- **Cream**: warm ivory, blue-black ink. A light page.
+- **Charcoal**: a cool grey-black sheet, chalk-white words. A dark page.
+- **Kraft**: brown packing paper, near-black words. A light, mid-toned
+  page.
 
-1. Home: the riverside skyline across the river, side-on (the Oriental
-   Pearl, Jin Mao, the World Financial Center and the Shanghai Tower in
-   their real left-to-right order).
-2. About: the old brick lanes (shikumen houses, stone gate arches).
-3. Projects: the towers at street level, the circular walkway, screens.
-4. Experience: the elevated metro and an open-air station.
-5. Interests: the bright shopping street, a sightseeing tram.
-6. Contact: the riverfront's stone buildings and the clock tower, then
-   the river and the towers across it, so the journey ends where it began.
-
-No place is named anywhere a visitor reads or hears; the stops are named
-as sections.
-
-**How it was painted** (`docs/city/prompts.md`, last section). In
-ChatGPT: first a web search for real reference photos of each place and a
-spatial model of the six along one walk; then segment 1 "hyperrealistic,
-like a high-end architectural photograph or a photoreal 3D render of the
-real city", built from them; each later segment from a canvas whose left
-third is the previous segment's right third; each night an edit of its
-own day ("change only the light").
-
-**The rules every segment keeps:**
-
-- A level, nearly orthographic side-on camera at first-floor height, no
-  vanishing point in the middle; the horizon at 45% of the height.
-- Light from the upper left by day.
-- A plain, dark, empty ground (a promenade or street) across the bottom
-  third, where the panels sit.
-- Today's real city only: no future additions, no flying cars, no lens
-  flare or glitch.
-- Night lights in white, warm amber and cyan; no magenta, no purple.
-- No legible writing or characters anywhere. A segment with garbled
-  characters is regenerated or has them painted out.
-- No people in the foreground.
-- Day and night of a segment share one composition (the join script
-  registers each night onto its day, so the dusk cross-fade doesn't
-  double the buildings).
-
-**How it is joined and served.** `scripts/city-panorama.mjs` registers
-each night onto its day, aligns each segment onto the one before over
-their overlap, matches their colours across it, and cuts along the path
-of least difference (day and night alike), feathered over a few pixels.
-The strip is 941px tall and 7,196px wide; it is cut into six tiles at
-the segments' edges, so the first tile is the home stop's first view
-(`app/assets/city/panorama/{day,night}-01..06.webp`, each at most
-600 KB), and it writes `app/components/city2d/panorama.ts` (the tiles,
-each stop's stretch, the joins). Run it again rather than edit that file.
-`tests/city-panorama.test.mjs` checks the tiles, the stretches and the
-seams.
-
-**How it is drawn** (`DistrictBand.tsx`, `city-track.css`). As tall as
-the stage on wide screens, its top melting into the sky behind it
-(`mask-image`, the top 15%); on phones and tall screens, a strip about
-30% of the screen under the bar. Day, night, or the one fading into the
-other at dusk and dawn with a warm or cyan grade (`lib/cityLook.ts`);
-the night's lit windows come on first at twilight. The panorama moves by
-its own measure: each stop's start shows its own stretch. Read top to
-bottom, each station shows its own tile as a band over it, its foot
-fading into the ground (below, "The seam").
+The colour analysis behind each (the wheel, the swatches, every ratio):
+`.superpowers/sdd/2026-11-22-horizontal-city/task-12/P/paper-palettes.md`.
 
 ## Palette
 
+`docs/ui/scripts/palette-contrast.mjs` reads these tables and checks
+every pair below; `tests/city-theme.test.mjs` checks that `city.css`
+defines the same hexes.
+
+### Cream
+
+Ivory paper (hue 40). Accents from the far side of the wheel: Prussian
+blue, its complement (220), for the one primary action; deep teal (185,
+the near arm of the split complement and the mark's cyan) for links,
+chosen states and the metro line.
+
 | Token | Hex | Use |
 |---|---|---|
-| `--ink` | `#08090c` | The page's ground: soft black, a trace of blue |
-| `--ink-2` | `#101217` | Alternate ground for a section |
-| `--panel` | `#181b23` | Cards and panels that hold text |
-| `--line` | `#2d323d` | Hairlines and panel edges |
-| `--text` | `#e6e9ee` | Body text and headings (soft white, not #fff) |
-| `--muted` | `#9ea5b1` | Secondary text |
-| `--cyan` | `#4fd8ee` | Accent: edges, links' underline, chosen state, where you are |
-| `--accent` | `#6cc6f2` | The primary action's fill: a sky blue between the painted sky (215°) and `--cyan` (188°) (hover `#94d6f6`, label `--ink`, edge the night sky's navy `#0b2242`); `.superpowers/sdd/2026-11-22-horizontal-city/task-10/G/accent-analysis.md` |
-| `--focus` | `#8fe9ff` | Focus ring |
-| `--seam` | `#070c15` | The fade's dark navy, under a band on `--ink` |
-| `--seam-2` | `#0c121d` | The fade's dark navy, under a band on `--ink-2` |
+| `--paper` | `#efe7d6` | The page: the sheet the crumple is laid over |
+| `--paper-2` | `#e7dcc6` | The alternate ground |
+| `--panel` | `#f7f1e5` | Cards: a lighter sheet laid on the page |
+| `--line` | `#c9bca3` | Hairlines and card edges (decoration, not a boundary that must read) |
+| `--text` | `#1d2330` | Body text and headings: blue-black ink |
+| `--muted` | `#50545c` | Secondary text |
+| `--accent` | `#1f4f8a` | The primary action's fill |
+| `--accent-hover` | `#2b62a6` | Its hover |
+| `--on-accent` | `#f7f1e5` | The label on the accent |
+| `--accent-2` | `#0a6168` | Links, chosen states, the metro line, marks |
+| `--focus` | `#1f4f8a` | The focus ring |
+| `--shadow` | `#4a3b22` | A card's shadow (mixed toward transparent) |
+| `--ink` | `#1d2330` | The darkest ink on this paper |
 
-Lowest text contrast: `--muted` on `--panel`, 6.94:1.
+### Charcoal
 
-Accents are for edges, chosen states and display type of 24px or larger,
-never body text. `docs/ui/scripts/palette-contrast.mjs` checks the pairs.
+Grey-black paper (hue 215, little saturation). Gold, its complement (35),
+for the primary action; cyan (analogous to the paper, the mark's own) for
+links, chosen states and the line.
 
-**Over the photograph.** On the journey the words sit on see-through
-dark glass (the city reads through it); a darker, feathered scrim behind
-the words themselves, not the blur, carries their contrast, at least
-4.5:1 over every sky (`docs/ui/scripts/city-contrast.mjs`). The sky
-behind the panorama is sampled from it: `#7aa6e0` by day, `#0a1d3c` by
-night.
+| Token | Hex | Use |
+|---|---|---|
+| `--paper` | `#26282b` | The page |
+| `--paper-2` | `#1e2023` | The alternate ground |
+| `--panel` | `#303337` | Cards: a lighter sheet |
+| `--line` | `#474b51` | Hairlines and card edges |
+| `--text` | `#ece6da` | Body text and headings: chalk (warm, not white) |
+| `--muted` | `#aca69b` | Secondary text |
+| `--accent` | `#e3b55b` | The primary action's fill |
+| `--accent-hover` | `#edc679` | Its hover |
+| `--on-accent` | `#1b1c1e` | The label on the accent |
+| `--accent-2` | `#7fd4df` | Links, chosen states, the metro line, marks |
+| `--focus` | `#9fe6ef` | The focus ring |
+| `--shadow` | `#050506` | A card's shadow |
+| `--ink` | `#141518` | The darkest ink on this paper |
 
-## The seam
+### Kraft
 
-Read top to bottom, each band's last 42% fades: transparent at 58% of
-the band, then `--seam` at 14% opacity (20% of the way), 40% (38%), 72%
-(52%), solid `--seam` (62%) and the section's ground (76%). The weather's
-haze is mixed from the paintings' navy (`#0e1d31`), not the black ground.
+Brown packing paper (hue 33). Navy, its complement (213), for the
+primary action, like a blue stamp; oxblood (8, analogous: the red of a
+parcel stamp) for links, chosen states and the line. Kraft is mid-toned,
+so its text colours are the darkest of the three papers'.
+
+| Token | Hex | Use |
+|---|---|---|
+| `--paper` | `#c9a77c` | The page |
+| `--paper-2` | `#bf9c70` | The alternate ground |
+| `--panel` | `#d6b98f` | Cards: a lighter sheet |
+| `--line` | `#9b7c55` | Hairlines and card edges |
+| `--text` | `#22180f` | Body text and headings |
+| `--muted` | `#3a2a1d` | Secondary text |
+| `--accent` | `#1e3a5f` | The primary action's fill |
+| `--accent-hover` | `#284b78` | Its hover |
+| `--on-accent` | `#f4e8d4` | The label on the accent |
+| `--accent-2` | `#561710` | Links, chosen states, the metro line, marks |
+| `--focus` | `#1e3a5f` | The focus ring |
+| `--shadow` | `#3b2814` | A card's shadow |
+| `--ink` | `#22180f` | The darkest ink on this paper |
+
+### The rules
+
+- `--text`, `--muted` and `--accent-2` are 4.5:1 or better on
+  `--paper`, `--paper-2` and `--panel`, and still on the texture's
+  darkest crease (the ground shaded 6% darker) and lightest ridge (5%
+  lighter).
+- `--accent` and `--focus` are 3:1 or better on every ground (the
+  texture's too); `--on-accent` is 4.5:1 or better on `--accent` and
+  `--accent-hover`.
+- Accents are for edges, marks, chosen states, links and the one
+  primary action; body text is `--text`.
+- No pure white and no pure black text; no magenta.
+- Older token names (`--ink-2`, `--cyan`, `--seam`, `--glass-*`) are
+  aliases of these in `city.css` until nothing reads them.
+
+## The texture
+
+`app/paper.css`: one crumpled sheet, drawn in code. An inline SVG of
+fractal noise lit as a surface (`feTurbulence` into `feDiffuseLighting`)
+gives large soft creases; a second, finer noise gives the grain. It is a
+grey luminance map blended over each paper's own colour (`multiply` for
+the light papers, `screen` for charcoal), so one texture serves all
+three, its seed is fixed, it holds no photograph, it is a few hundred
+bytes, and it is crisp at any pixel ratio (it is drawn at the screen's
+resolution). It never moves: fixed to the viewport behind the journey,
+so the stops travel over one still sheet. It shades the paper by at most
+about 6% at a crease and 5% at a ridge, inside the margins above. Under
+`prefers-contrast: more` it is removed and the paper is flat.
 
 ## Type
 
