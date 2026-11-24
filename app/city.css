@@ -104,12 +104,6 @@
   --swatch-charcoal: #080809;
   --swatch-kraft: #c9a77c;
 
-  /* Older names, kept for code that still reads them: each is now one of
-     the paper tokens. Prefer the new names. */
-  --ink-2: var(--paper-2);
-  --cyan: var(--accent-2);
-  --seam-2: var(--paper-2);
-
   /* One family of soft corners */
   --radius: 10px;
   --radius-lg: 16px;
@@ -117,17 +111,6 @@
   /* Set in layout.tsx with next/font */
   --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-text: var(--font-figtree), "Helvetica Neue", Arial, sans-serif;
-
-  /* The buttons' older glass tokens, now paper: an opaque card, the line
-     for an edge (still read by the bar and the chosen key) */
-  --glass-tint: var(--panel);
-  --glass-chosen: color-mix(in srgb, var(--accent-2) 14%, var(--panel));
-  --glass-border: var(--line);
-  --glass-fallback: var(--panel);
-  /* Behind a focus ring: the paper itself, so the ring reads on a card */
-  --focus-halo: 0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
-  /* Paper doesn't glow */
-  --glow-cyan: 0 0 #0000;
 
   /* Motion (docs/ui/ux-motion-principles.md): the only durations and
      curves anything uses. Arrive with --ease-out, travel with
@@ -156,12 +139,10 @@
   --color-paper: var(--paper);
   --color-paper-2: var(--paper-2);
   --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
   --color-panel: var(--panel);
   --color-line: var(--line);
   --color-text: var(--text);
   --color-muted: var(--muted);
-  --color-cyan: var(--cyan);
   --color-accent: var(--accent);
   --color-accent-2: var(--accent-2);
   --color-on-accent: var(--on-accent);
@@ -224,7 +205,7 @@ h3,
 }
 
 ::selection {
-  background: rgb(79 216 238 / 0.35);
+  background: color-mix(in srgb, var(--accent-2) 28%, transparent);
   color: var(--text);
 }
 
@@ -279,7 +260,7 @@ button.text-link,
   font-size: 0.875rem;
   font-weight: 600;
   transform: translate(-50%, -200%);
-  --tint: var(--glass-fallback);
+  --tint: var(--panel);
 }
 
 .skip-link:focus-visible {
@@ -357,8 +338,8 @@ button.text-link,
 
 .top-bar > .rh {
   min-height: 44px;
-  border-color: var(--glass-border);
-  background: var(--glass-tint);
+  border-color: var(--line);
+  background: var(--panel);
 }
 
 /* Waterloo's time and weather (weather/WeatherClock.tsx): only
@@ -804,10 +785,10 @@ a[data-resume][data-opening] {
 
 /* The menu button is chosen while its menu is open */
 .top-bar:has(#places-menu:popover-open) [popovertarget="places-menu"] {
-  --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
-  --glass-lift: var(--glow-cyan);
-  border-color: var(--cyan);
-  background-color: var(--glass-chosen);
+  --glass-in: inset 0 0 0 1px var(--accent-2), inset 0 2px 5px -2px color-mix(in srgb, var(--shadow) 55%, transparent);
+  --glass-lift: 0 0 #0000;
+  border-color: var(--accent-2);
+  background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
 }
 
 /* Very large text on a phone: a bar taller than a quarter of the screen
@@ -847,7 +828,6 @@ a[data-resume][data-opening] {
    so each station reads as its own stop */
 .station:is(#about, #experience, #contact) {
   --ground: color-mix(in srgb, var(--paper-2) 70%, transparent);
-  --seam: var(--seam-2);
 }
 
 /* Stations, Skills and the page's content take focus only so a jump can
@@ -1607,7 +1587,8 @@ details[open] > summary.glass {
 }
 
 .glass:focus-visible {
-  --glass-out: var(--focus-halo);
+  /* Behind the ring: the paper itself, so the ring reads on a card */
+  --glass-out: 0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
   outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
@@ -1726,13 +1707,11 @@ details[open] > summary.glass {
   }
 }
 
-/* More contrast asked for: no glow anywhere, plain solid edges */
+/* More contrast asked for: the weather's capsule edged in the muted ink */
 @media (prefers-contrast: more) {
-  :root {
-    --glow-cyan: 0 0 #0000;
-    --glass-border: var(--muted);
+  .top-bar > .rh {
+    border-color: var(--muted);
   }
-
 }
 
 /* More contrast asked for: every key edged in the full ink, no shadow */

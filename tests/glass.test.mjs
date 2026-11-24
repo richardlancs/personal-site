@@ -100,14 +100,15 @@ test("the states: chosen, disabled and focus, the same on every glass control", 
   assert.match(chosen, /--glass-in: inset 0 0 0 1px var\(--accent-2\), inset/);
   // Pressed in, so nothing lifts it off the paper
   assert.match(chosen, /--glass-lift: 0 0 #0000/);
-  assert.match(css, /@media \(prefers-contrast: more\) \{\s*:root \{[^}]*--glow-cyan: 0 0 #0000/);
+  // The old city aliases are gone: every rule reads the paper tokens
+  assert.doesNotMatch(css, /--(cyan|ink-2|seam(-2)?|glow-cyan|focus-halo|glass-(tint|chosen|border|fallback))\b/);
   const disabled = block('.glass:is(:disabled, [aria-disabled="true"])');
   assert.match(disabled, /border-style: dashed/);
   assert.match(disabled, /cursor: default/);
   assert.match(disabled, /color: var\(--muted\)/);
   assert.match(css, /:where\(\.glass:not\(:disabled, \[aria-disabled="true"\]\)\):hover/, "no hover on a disabled control");
   const focus = block(".glass:focus-visible");
-  assert.match(focus, /--glass-out: var\(--focus-halo\)/);
+  assert.match(focus, /--glass-out: 0 0 0 6px color-mix\(in srgb, var\(--paper\) 90%, transparent\)/);
   assert.match(focus, /outline: 2px solid var\(--focus\)/);
   // The press never lands on a disabled control
   assert.match(press, /if \(el\.matches\(":disabled, \[aria-disabled='true'\]"\)\) return;/);

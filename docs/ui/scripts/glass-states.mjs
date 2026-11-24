@@ -23,22 +23,23 @@ const check = (ok, what) => {
 
 // A token's computed value on the page (a colour as rgb(), a shadow as
 // the browser writes it)
-const token = (page, name, prop = "color") =>
-  page.evaluate(([name, prop]) => {
+const token = (page, name, prop = "color", raw = false) =>
+  page.evaluate(([name, prop, raw]) => {
     const probe = document.createElement("i");
-    probe.style.setProperty(prop, `var(${name})`);
+    probe.style.setProperty(prop, raw ? name : `var(${name})`);
     document.body.append(probe);
     const value = getComputedStyle(probe).getPropertyValue(prop);
     probe.remove();
     return value;
-  }, [name, prop]);
+  }, [name, prop, raw]);
 
 let CYAN, FOCUS, HALO;
 const arrive = async (page, path) => {
   await page.goto(base + path, { waitUntil: "load" });
   CYAN ??= await token(page, "--accent-2");
   FOCUS ??= await token(page, "--focus");
-  HALO ??= await token(page, "--focus-halo", "box-shadow");
+  // (the halo behind the ring, .glass:focus-visible: the paper at 90%)
+  HALO ??= await token(page, "0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent)", "box-shadow", true);
   await page.waitForFunction(() => document.documentElement.hasAttribute("data-landed"), null, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(800);
 };
@@ -139,7 +140,7 @@ const controls = {
 };
 
 // The states (city.css): the chosen edge is --accent-2 (CYAN, its old
-// name), focus is --focus on --focus-halo: read from the page (arrive)
+// name), focus is --focus on a halo of the paper: read from the page (arrive)
 
 const views = {
   desktop: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },

@@ -74,10 +74,10 @@ test("the paper texture is drawn in code: no image file, a fixed seed, no motion
   assert.ok(Buffer.byteLength(paper) < 4000, `paper.css is small (${Buffer.byteLength(paper)} bytes)`);
 });
 
-test("glow is dropped for prefers-contrast: more", () => {
-  // Within that block (it runs to the next line that closes a top-level rule)
-  const block = read("app/city.css").match(/@media \(prefers-contrast: more\) \{[\s\S]*?\n\}/)?.[0] ?? "";
-  assert.match(block, /--glow-cyan: 0 0 #0000/);
+test("nothing glows, and no city colour is left", () => {
+  const city = read("app/city.css");
+  assert.doesNotMatch(city, /--glow-cyan|rgb\(79 216 238/, "paper doesn't glow; no cyan selection");
+  assert.match(city.match(/::selection \{[^}]*\}/)[0], /var\(--accent-2\)/);
   // No text glows at all (the hero's name and the point marks lost theirs);
   // the one text-shadow is the panels' dark halo (city-track.css, Task 8),
   // ink, never a colour, and gone under prefers-contrast: more
