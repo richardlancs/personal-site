@@ -132,3 +132,11 @@ test("machineDate gives machine values for the data's dates and undefined otherw
   assert.equal(machineDate(""), undefined);
   assert.equal(machineDate("Summer 2025"), undefined);
 });
+
+test("the label is plain words: no box, no capitals; \"Current\" a word, with a comma for a screen reader", () => {
+  const label = source.match(/<p className="-order-1[^"]*">[\s\S]*?<\/p>/)?.[0] ?? "";
+  assert.ok(label, "the label line");
+  assert.doesNotMatch(label, /uppercase|tracking-|exp-kind|border/);
+  assert.match(label, /<span aria-hidden="true"> · <\/span>\s*<span className="sr-only">, <\/span>/);
+  assert.doesNotMatch(read("app/city.css"), /\.exp-kind/, "the badge's box is gone");
+});

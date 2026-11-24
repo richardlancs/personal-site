@@ -260,31 +260,25 @@
 
   /* On a short screen the cover leaves room for the words */
   :root[data-track="on"] .project .depth {
-    max-width: calc((100dvh - var(--stop-top)) * 0.8);
-  }
-
-  /* Contact, the journey's end, is its best-lit stop: the panel lighter
-     with a cyan edge along its top, and the whole edge lit once an
-     address is copied (the success moment) */
-  :root[data-track="on"] #contact .panel {
-    border-top: 2px solid var(--cyan);
+    max-width: calc((100svh - var(--stop-top)) * 0.8);
   }
 
   :root[data-track="on"] #contact .panel:has([data-copied]) {
     border-color: var(--cyan);
   }
 
-  /* ...and its stretch of the city: a warm light on the open street
-     beside the panel, a cyan one high on the towers, up as the journey
-     comes to its end (below, with the motion); on a phone, in the strip */
+  /* ...its stretch of the city: a warm light on the open street at the
+     right, past the panel (never behind its words), a cyan one high on
+     the towers there, up as the journey comes to its end (below, with
+     the motion); on a phone, in the strip */
   :root[data-track="on"] #contact::before {
     content: "";
     position: absolute;
     inset: 0 0 var(--foot);
     z-index: 1;
     background:
-      radial-gradient(26% 40% at 74% 85%, rgb(244 184 96 / 0.22), transparent),
-      radial-gradient(45% 55% at 85% 30%, rgb(79 216 238 / 0.16), transparent);
+      radial-gradient(14% 38% at 95% 84%, rgb(244 184 96 / 0.28), transparent),
+      radial-gradient(30% 45% at 94% 22%, rgb(79 216 238 / 0.18), transparent);
     pointer-events: none;
   }
 
@@ -314,6 +308,9 @@
      a veil across the towers' middles (two screens of the same mist, so
      a drift of one screen ends where it began), and a soft beam passing */
   :root[data-track="on"] .track-weather::before,
+  /* Contact, the journey's end, is its best-lit stop: the city carries
+     that (below), not a coloured edge; the panel's whole edge lights once
+     an address is copied (the success moment, with the key's "Copied") */
   :root[data-track="on"] .track-weather::after {
     content: "";
     position: absolute;

@@ -1,8 +1,8 @@
 // The projects section, with Skills inside it
 // (components/city2d/sections/Projects.tsx): a row of panels along the
 // street: the index under the section's heading, then one panel per
-// project from app/data/portfolio.ts (the cover leading, on alternate
-// sides; keys at the top of the text, "My part" apart from the team's
+// project from app/data/portfolio.ts (the title, the keys, the summary,
+// then the cover, in that order in the document; "My part" apart from the team's
 // features, the rest folded into a <details>), then the skill groups.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -10,7 +10,8 @@ import { test } from "node:test";
 import { projects, skillGroups } from "../app/data/portfolio.ts";
 
 const root = new URL("../", import.meta.url).pathname;
-const source = readFileSync(`${root}app/components/city2d/sections/Projects.tsx`, "utf8");
+const read = (path) => readFileSync(`${root}${path}`, "utf8");
+const source = read("app/components/city2d/sections/Projects.tsx");
 
 // The row: from its <article to its </article>
 const row = source.slice(source.indexOf("<article"), source.indexOf("</article>"));
@@ -83,33 +84,60 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
 });
 
-test("the cover leads, matched to its words: a wide one heads them at their width, a tall one stands beside them; on a wide panel, two columns", () => {
-  // The frame is the picture's own shape: no empty bands, nothing cropped
-  assert.match(source, /style=\{\{ aspectRatio: `\$\{shots\.reduce\(\(w, s\) => w \+ s\.width \/ s\.height, 0\)\}` \}\}/);
+test("on a phone the title, the keys, the summary, then the cover, in the document's order; on a wide panel, two columns", () => {
+  // DOM order (not CSS order, which would split reading and Tab order from
+  // what the eye sees): the title, the keys, the summary, the cover
+  const at = (needle) => {
+    const i = row.indexOf(needle);
+    assert.ok(i >= 0, needle);
+    return i;
+  };
+  assert.ok(at("<Heading level={3}") < at("<Keys project={project} />"), "title, then keys");
+  assert.ok(at("<Keys project={project} />") < at("project.summary"), "keys, then summary");
+  assert.ok(at("project.summary") < at("<Picture shots={shown}"), "summary, then cover");
+  assert.doesNotMatch(row, /-order-1|\border-none\b/, "no CSS reordering");
+  // The frame is the picture's own shape (--ar): no empty bands, nothing
+  // cropped; on a phone at most a quarter of the screen tall
+  assert.match(row, /"--ar": shown\.reduce\(\(w, s\) => w \+ s\.width \/ s\.height, 0\)/);
+  assert.match(source, /aspect-\(--ar\)/);
+  assert.match(row, /max-w-\[calc\(25svh\*var\(--ar\)\)\]/);
   assert.doesNotMatch(source, /aspect-\[16\/10\]/);
-  // Wide: stacked, first (order), at the words' width
-  assert.match(row, /-order-1 min-w-0/);
   // Tall (a phone's screen or a pair): beside the words from 27.5rem
   assert.match(source, /const side = Boolean\(cover && tall\(cover\)\)/);
   assert.match(row, /@min-\[27\.5rem\]:grid-cols-\[auto_minmax\(0,1fr\)\]/);
-  // ... and on a narrow panel heads them centred at that size (never a
-  // phone's screen as tall as the sheet)
-  assert.match(row, /mx-auto max-w-full @min-\[27\.5rem\]:order-none/);
-  assert.match(row, /pair \? "w-80" : "w-48"/);
+  assert.match(row, /pair \? "@min-\[27\.5rem\]:w-80" : "@min-\[27\.5rem\]:w-48"/);
+  // A wide cover grows to the height of the words beside it
+  assert.match(source, /@min-\[45\.5rem\]:h-full @min-\[45\.5rem\]:aspect-auto/);
+  assert.match(row, /@min-\[45\.5rem\]:row-start-3 @min-\[45\.5rem\]:flex/);
   // A pair's frame is exactly its two pictures: no gap, no band
   assert.doesNotMatch(source, /justify-center gap-3/);
-  // Every panel the same substantial size (Task 8): on a wide one the title
-  // and summary over a wide cover, what I did beside them (or a tall cover,
-  // the title, then what I did: three columns)
   assert.doesNotMatch(source, /--panel-w/);
   assert.match(source, /"@min-\[45\.5rem\]:grid-cols-\[minmax\(0,1\.1fr\)_minmax\(0,1fr\)\]"/);
   assert.match(source, /@min-\[45\.5rem\]:grid-cols-\[auto_minmax\(0,1fr\)_minmax\(0,1fr\)\]/);
-  // Its corners are the panel's less its padding
   assert.match(source, /rounded-\[var\(--radius-in\)\]/);
 });
 
-test("the index's glosses stay on one line", () => {
-  assert.match(source, /<span className="min-w-0 truncate text-muted"> \{gloss\(project\.summary\)\}<\/span>/);
+test("the index's glosses wrap, never cut short", () => {
+  assert.match(source, /<span className="min-w-0 text-muted"> \{gloss\(project\.summary\)\}<\/span>/);
+  assert.doesNotMatch(source, /\btruncate\b|line-clamp/);
+});
+
+test("the extra screenshots open readable, as wide as the column, not thumbnails", () => {
+  const list = row.slice(row.indexOf("More ${project.title} screenshots"));
+  assert.match(list, /sizes=\{coverSizes\}/);
+  assert.match(list, /"h-auto w-full"/);
+  assert.doesNotMatch(source, /sizes="8rem"|h-28 w-auto|w-32/);
+});
+
+test("a picture that fails to load is a quiet framed box with its description (city.css)", () => {
+  const css = read("app/city.css");
+  assert.match(css, /\.project img::after \{[^}]*content: attr\(alt\);[^}]*background: var\(--ink-2\);[^}]*color: var\(--muted\);/);
+});
+
+test("Skills, the row's last panel, ends with the way on", () => {
+  assert.match(source, /import \{ NextStop, StationHead, order \} from "\.\.\/Station"/);
+  const skills = source.slice(source.indexOf('id="skills"'));
+  assert.match(skills, /<NextStop section=\{section\("projects"\)\} \/>\s*<\/section>/);
 });
 
 test("the stack is one muted line joined by middle dots", () => {

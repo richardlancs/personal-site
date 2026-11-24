@@ -929,13 +929,6 @@ a[data-resume][data-opening] {
   }
 }
 
-/* Work or Education, in words on a hairline label */
-.exp-kind {
-  padding: 0.125rem 0.5rem;
-  border: 1px solid rgb(230 233 238 / 0.35);
-  border-radius: 0.375rem;
-}
-
 /* The section's number and its heading, on one baseline */
 .station-head {
   display: flex;
@@ -991,17 +984,14 @@ a[data-resume][data-opening] {
   overflow-wrap: break-word;
 }
 
-/* Display type at 24px and over, so it may be neon. Keep it at 1.5rem or
-   more: under 24px it would have to be --text */
+/* The role sought, in plain words: display type in --text (a sentence,
+   not an accent), capped at 9vw so it fits a 320px screen at 200% text */
 .hero-headline {
-  margin-top: 1.25rem;
-  color: var(--cyan);
+  margin-top: 1rem;
+  color: var(--text);
   font-family: var(--font-display);
-  /* 1.5rem, capped at 9vw so it fits a 320px screen at 200% text; 9vw is
-     still 24px or more from 267px wide */
   font-size: min(1.5rem, 9vw);
   font-weight: 600;
-  letter-spacing: 0.06em;
 }
 
 .hero-actions {
@@ -1022,6 +1012,13 @@ a[data-resume][data-opening] {
    bottom, the Sections menu serves). Each station is a link, 44px or more
    each way and 8px apart: its name over a dot on the line. The fill is one
    transform of --progress (0 to 5, written on .progress-line from the
+/* On the journey the glass panel carries the name: no box in a box */
+:root[data-track="on"] .hero-backing {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
    scroll), so the map never asks for layout as the city moves. Passed
    stations have a cyan ring; the current one a larger, filled dot and its
    name in --text (not by colour alone). Its height is --map-h
@@ -1046,7 +1043,11 @@ a[data-resume][data-opening] {
 }
 
 .progress-rail {
+/* "View projects" and "Résumé", side by side, wrapping */
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 /* The line from the first dot's middle to the last's (the stations share
@@ -1058,6 +1059,27 @@ a[data-resume][data-opening] {
   overflow: hidden;
   background: var(--line);
 }
+/* A short screen (a phone on its side): a compact name and tight lines,
+   so the actions come right after it, the links on the same row where
+   they fit */
+@media (max-height: 500px) {
+  .hero-name {
+    font-size: min(2.5rem, 13vw);
+  }
+
+  .hero-headline {
+    margin-top: 0.25rem;
+    font-size: 1.125rem;
+  }
+
+  .hero-actions,
+  .hero-links {
+    display: inline-flex;
+    margin: 0.75rem 1.5rem 0 0;
+    vertical-align: middle;
+  }
+}
+
 
 .progress-fill {
   position: absolute;
@@ -1542,6 +1564,34 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
 
 /* The press: a ripple (::before) and a sweep of light (::after) */
 .glass::before,
+/* Contact: the address a Copy key has just copied is lit beside it
+   (CopyButton.tsx), for the 2 seconds its key reads "Copied" */
+.contact :has(+ .contact-copy [data-copied]) {
+  border-radius: 0.25rem;
+  background: rgb(79 216 238 / 0.16);
+  box-shadow: 0 0 0 0.25rem rgb(79 216 238 / 0.16);
+}
+
+/* A project picture that fails to load: a quiet framed box with its
+   description in muted words, not the browser's broken-image glyph (a
+   loaded image draws no ::after) */
+.project img {
+  position: relative;
+}
+
+.project img::after {
+  content: attr(alt);
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: var(--ink-2);
+  color: var(--muted);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .glass::after {
   content: "";
   position: absolute;

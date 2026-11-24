@@ -25,7 +25,8 @@ function Icon({ size, children }: { size: number; children: ReactNode }) {
   );
 }
 
-// Code brackets for GitHub, "in" for LinkedIn, a page for the résumé
+// Code brackets for GitHub, "in" for LinkedIn, a page for the résumé, an
+// envelope for the email
 const paths = {
   github: <path d="m8 8-4 4 4 4M16 8l4 4-4 4M13.5 6l-3 12" />,
   linkedin: (
@@ -40,6 +41,12 @@ const paths = {
       <path d="M14 3v5h5M9 13h6M9 17h6" />
     </>
   ),
+  email: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m4 7 8 6 8-6" />
+    </>
+  ),
 };
 
 // GitHub, LinkedIn and the résumé, the same three links wherever they're
@@ -48,7 +55,20 @@ const paths = {
 // as three <li>s, so each place keeps its own list around them. "text":
 // 44px text links (the hero, About); "keys": glass keys (Contact), full
 // width on phones. `githubNote` follows the GitHub link in muted words.
-export default function ProfileLinks({ variant, githubNote }: { variant: "text" | "keys"; githubNote?: string }) {
+// The hero leaves the résumé out (`resume={false}`: it is a glass key
+// beside "View projects" there) and adds the email (`email`, an address),
+// so its row is one style, every link an icon and a label.
+export default function ProfileLinks({
+  variant,
+  githubNote,
+  resume = true,
+  email,
+}: {
+  variant: "text" | "keys";
+  githubNote?: string;
+  resume?: boolean;
+  email?: string;
+}) {
   const keys = variant === "keys";
   const className = keys ? "glass profile-key w-full min-[480px]:w-auto" : "text-link text-link-solo gap-2";
   const size = keys ? 20 : 18;
@@ -69,12 +89,22 @@ export default function ProfileLinks({ variant, githubNote }: { variant: "text" 
           {newTab}
         </a>
       </li>
-      <li>
-        <ResumeLink className={className}>
-          <Icon size={size}>{paths.resume}</Icon>
-          Résumé
-        </ResumeLink>
-      </li>
+      {resume && (
+        <li>
+          <ResumeLink className={className}>
+            <Icon size={size}>{paths.resume}</Icon>
+            Résumé
+          </ResumeLink>
+        </li>
+      )}
+      {email && (
+        <li>
+          <a href={`mailto:${email}`} className={className}>
+            <Icon size={size}>{paths.email}</Icon>
+            Email
+          </a>
+        </li>
+      )}
     </>
   );
 }

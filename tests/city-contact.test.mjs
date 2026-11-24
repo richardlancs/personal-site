@@ -78,7 +78,9 @@ test("the copy key gives live, visible feedback and handles a missing or refused
   assert.match(copy, /className="glass"/, "a glass key");
   assert.match(copy, /aria-live="polite"/);
   assert.match(copy, /<p\s[^>]*role="status"/, "the status is a <p role=status>, as the smoke test looks for");
-  assert.doesNotMatch(copy.match(/<p\s[^>]*role="status"[^>]*>/s)?.[0] ?? "", /sr-only/, "drawn on screen");
+  // Drawn on screen, except while the key itself says "Copied" (the word
+  // once on screen, still read out)
+  assert.match(copy.match(/<p\s[^>]*role="status"[^>]*>/s)?.[0] ?? "", /\$\{copied \? "sr-only" : ""\}/, "hidden only on success");
   assert.match(copy, /data-copied=/);
   assert.match(copy, /sr-only">\s*\{value\}/, "the key's name says which address it copies");
   assert.match(copy, /navigator\.clipboard\?\.writeText/, "checks the clipboard exists");
@@ -95,4 +97,23 @@ test("no fixed pixel widths and no CJK characters", () => {
     assert.doesNotMatch(source, /\bw-\[\d+px\]|width:\s*\d+px|min-w-\[\d+px\]|max-w-\[\d+px\]/, `${name}: fixed width`);
     assert.doesNotMatch(source, /[぀-ヿ㐀-鿿]/, `${name}: CJK`);
   }
+});
+
+test("a copy is a clear moment: the key turns to \"Copied\", the address it copied lights, then all returns after 2 seconds", () => {
+  assert.match(copy, /\{copied \? "Copied" : "Copy"\}/, "the key's own label");
+  assert.match(copy, /setTimeout\(\(\) => setStatus\(null\), 2000\)/);
+  const css = read("app/city.css");
+  assert.match(css, /\.contact :has\(\+ \.contact-copy \[data-copied\]\) \{[^}]*background: rgb\(79 216 238 \/ 0\.16\)/, "the copied address lit");
+  // Every address sits right before its Copy key, so the rule finds it
+  assert.match(markup, /\{primary\.address\}<\/p>\s*<CopyButton value=\{primary\.address\}/);
+  assert.match(markup, /\{email\.address\}\s*<\/a>\s*<CopyButton value=\{email\.address\}/);
+});
+
+test("Contact is lit by the city, not a coloured edge: no cyan top border; its warm light off the words (city-track.css)", () => {
+  const css = read("app/city-track.css");
+  assert.doesNotMatch(css, /#contact \.panel \{\s*border-top/);
+  assert.match(css, /#contact \.panel:has\(\[data-copied\]\) \{\s*border-color: var\(--cyan\);/, "the whole edge still lights on a copy");
+  // The warm light at the right edge, past the central 80% where the panel stands
+  const warm = css.match(/#contact::before \{[^}]*radial-gradient\(\d+% \d+% at (\d+)% \d+%, rgb\(244 184 96/);
+  assert.ok(warm && Number(warm[1]) >= 90, "the warm light is at the right edge");
 });

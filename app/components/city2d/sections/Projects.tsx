@@ -1,10 +1,11 @@
+import type { CSSProperties } from "react";
 import Image from "next/image";
 import { projects, skillGroups, type Project, type Screenshot } from "../../../data/portfolio";
 import { newTab } from "../ProfileLinks";
 import Figures from "../Figures";
 import Heading from "../Heading";
 import { section } from "../../../sections/registry";
-import { StationHead, order } from "../Station";
+import { NextStop, StationHead, order } from "../Station";
 import Tilt from "../Tilt";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
@@ -46,18 +47,18 @@ function Keys({ project }: { project: Project }) {
   );
 }
 
-// One frame, the picture's own shape (no empty bands), the cover inside it
-// whole. When the cover and the screenshot after it are both portrait, the
-// two share the frame side by side. Each picture opens the full image in a
-// new tab. Nothing is cropped. Around the frame, its depth on a fine
-// pointer (reveal.css, "Depth"; Tilt.tsx).
-function Picture({ shots }: { shots: Screenshot[] }) {
+// One frame, the picture's own shape (no empty bands; --ar, the shape, is
+// set on the cover's cell in the article), the cover inside it whole.
+// When the cover and the screenshot after it are both portrait, the two
+// share the frame side by side. Each picture opens the full image in a new
+// tab. Nothing is cropped. A wide cover under the title, once the words
+// are beside it, grows to their height (the picture whole and centred in
+// it), so the panel has no empty well. Around the frame, its depth on a
+// fine pointer (reveal.css, "Depth"; Tilt.tsx).
+function Picture({ shots, side }: { shots: Screenshot[]; side: boolean }) {
   return (
-    <div className="depth rounded-[var(--radius-in)]" data-tilt="">
-      <figure
-        className="flex items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
-        style={{ aspectRatio: `${shots.reduce((w, s) => w + s.width / s.height, 0)}` }}
-      >
+    <div className="depth rounded-[var(--radius-in)] @min-[45.5rem]:flex-1" data-tilt="">
+      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto"}`}>
         {shots.map((shot) => (
           <a
             key={shot.src}
@@ -90,15 +91,15 @@ const h5 = "font-display text-lg font-semibold text-text";
 // The projects section (the site's most important content), then Skills:
 // a row of panels along the towers (Station's `row`), each its own stop on
 // the street. First the index, under the section's heading, each project a
-// link to its panel. Then one panel per project, never all alike (every
-// other one a size smaller): the cover leads, whole and as wide as the
-// words under it (never cropped, no empty bands), then title, summary, role,
-// the keys, then what I did ("My part", under a cyan rule, its first four
-// points) or, when the data has no contributions, what it does; then the
-// stack on one line. The rest of my part, the team's features (when my
-// part took their place) and the other screenshots fold into a <details>,
+// link to its panel. Then one panel per project, in the document in the
+// order a phone reads it: the title, the keys, the summary and role, the
+// cover (whole, never cropped, no empty bands), then what I did ("My
+// part", under a cyan rule, its first four points) or, when the data has
+// no contributions, what it does; then the stack on one line. The rest of
+// my part, the team's features (when my part took their place) and the
+// other screenshots, each as wide as the column, fold into a <details>,
 // which opens inside the panel (the panel scrolls). Then Skills, the
-// row's last panel. Everything is in the HTML; each panel arrives sideways
+// row's last panel, with the way on to the next stop. Everything is in the HTML; each panel arrives sideways
 // as it comes on (reveal.css), and the pictures' tilt is Tilt.tsx, mounted
 // here once for the whole page.
 // Each panel lays itself out by its own width (@container).
@@ -119,13 +120,12 @@ export default function Projects() {
                 <span aria-hidden="true" className="text-sm text-muted tabular-nums">
                   {String(index + 1).padStart(2, "0")}
                 </span>
-                {/* One line each: a long gloss ends in an ellipsis (the
-                    whole summary is in the panel) */}
-                <span className="flex min-w-0 items-baseline gap-2">
+                {/* The gloss wraps under a long title, never cut short */}
+                <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
                   <span className="max-w-full shrink-0 break-words font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
                     {project.title}
                   </span>
-                  <span className="min-w-0 truncate text-muted"> {gloss(project.summary)}</span>
+                  <span className="min-w-0 text-muted"> {gloss(project.summary)}</span>
                 </span>
               </a>
             </li>
@@ -158,12 +158,14 @@ export default function Projects() {
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
-          // A tall cover (a phone's screen, or a pair) stands beside the
-          // words, as tall as they are (on a narrow panel it heads them,
-          // centred, at the same size); a wide one heads them, as wide. On
-          // a wide panel the words go in two columns: the title and summary
-          // over a wide cover (or beside a tall one), and what I did beside
-          // them, so no line runs long and the cover is as tall as its text
+          // On a narrow panel everything stacks in the document's order. A
+          // tall cover (a phone's screen, or a pair) stands beside the
+          // words from 27.5rem; on a wide panel (45.5rem) the words go in
+          // two columns: the title (with the keys level with it at the
+          // right), the summary and a wide cover under it at the left (the
+          // cover growing to the words' height), what I did at the right,
+          // so no line runs long; or a tall cover, the title and summary,
+          // then the keys and what I did: three columns
           const side = Boolean(cover && tall(cover));
           return (
             <article
@@ -174,34 +176,44 @@ export default function Projects() {
               style={order(index + 1)}
             >
               <div
-                className={`grid grid-cols-1 gap-y-5 @min-[45.5rem]:grid-rows-[auto_1fr] @min-[45.5rem]:gap-x-10 ${
+                className={`grid grid-cols-1 gap-y-5 @min-[45.5rem]:grid-rows-[auto_auto_1fr] @min-[45.5rem]:gap-x-10 ${
                   side
                     ? "@min-[27.5rem]:grid-cols-[auto_minmax(0,1fr)] @min-[27.5rem]:gap-x-6 @min-[45.5rem]:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)]"
                     : "@min-[45.5rem]:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]"
                 }`}
               >
-              <header className={`min-w-0 break-words @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2" : "@min-[45.5rem]:col-start-1"}`}>
-                <Heading level={3} id={titleId} className="font-display text-3xl font-semibold tracking-tight text-text">
-                  <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-                  {project.title}
-                </Heading>
-                <p className="mt-3 max-w-[65ch] text-lg text-text"><Figures>{project.summary}</Figures></p>
-                {project.role && <p className="mt-2 max-w-[65ch] text-muted"><Figures>{project.role}</Figures></p>}
-              </header>
+              <Heading level={3} id={titleId} className={`min-w-0 break-words font-display text-3xl font-semibold tracking-tight text-text @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2" : ""}`}>
+                <span aria-hidden="true" className="mr-3 align-middle text-base font-normal text-muted tabular-nums">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                {project.title}
+              </Heading>
 
+              <div className={`min-w-0 @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2 @min-[45.5rem]:col-start-3" : "@min-[45.5rem]:col-start-2"}`}>
+                <Keys project={project} />
+              </div>
+
+              <div className={`min-w-0 break-words @min-[45.5rem]:row-start-2 ${side ? "@min-[27.5rem]:col-start-2" : "@min-[45.5rem]:col-start-1"}`}>
+                <p className="max-w-[65ch] text-lg text-text"><Figures>{project.summary}</Figures></p>
+                {project.role && <p className="mt-2 max-w-[65ch] text-muted"><Figures>{project.role}</Figures></p>}
+              </div>
+
+              {/* The cover: on a phone after the words and at most a
+                  quarter of the screen tall (--ar, its shape, gives the
+                  width for that), so the title, the keys and the summary
+                  keep the sheet; beside the words, free of that */}
               {cover && (
-                <div className={`-order-1 min-w-0 ${side ? `mx-auto max-w-full @min-[27.5rem]:order-none @min-[27.5rem]:row-span-2 @min-[27.5rem]:row-start-1 ${pair ? "w-80" : "w-48"}` : "@min-[45.5rem]:order-none @min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-2"}`}>
-                  <Picture shots={shown} />
+                <div
+                  className={`mx-auto w-full min-w-0 max-w-[calc(25svh*var(--ar))] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col"}`}
+                  style={{ "--ar": shown.reduce((w, s) => w + s.width / s.height, 0) } as CSSProperties}
+                >
+                  <Picture shots={shown} side={side} />
                 </div>
               )}
 
-              <div className={`min-w-0 break-words @min-[45.5rem]:row-span-2 @min-[45.5rem]:row-start-1 ${side ? "@min-[27.5rem]:col-start-2 @min-[45.5rem]:col-start-3" : "@min-[45.5rem]:col-start-2"}`}>
-                <Keys project={project} />
-
+              <div className={`min-w-0 break-words @min-[45.5rem]:row-span-2 @min-[45.5rem]:row-start-2 ${side ? "@min-[27.5rem]:col-start-2 @min-[45.5rem]:col-start-3" : "@min-[45.5rem]:col-start-2"}`}>
                 {part.length > 0 ? (
-                  <section className="mt-6 border-l-2 border-cyan pl-5">
+                  <section className="border-l-2 border-cyan pl-5">
                     <Heading level={4} className={h4}>My part</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {part.slice(0, SHOWN_PART).map((contribution) => (
@@ -210,7 +222,7 @@ export default function Projects() {
                     </ul>
                   </section>
                 ) : (
-                  <section className="mt-6">
+                  <section>
                     <Heading level={4} className={h4}>What it does</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {project.features.map((feature) => (
@@ -260,23 +272,25 @@ export default function Projects() {
                       </section>
                     )}
                     {extra.length > 0 && (
-                      <ul aria-label={`More ${project.title} screenshots`} className="mt-4 flex flex-wrap gap-3 pb-2">
+                      <ul aria-label={`More ${project.title} screenshots`} className="mt-4 grid gap-4 pb-2">
+                        {/* Each as wide as the column (a tall one as tall
+                            as most of the screen), so it can be read */}
                         {extra.map((shot) => (
                           <li key={shot.src}>
                             <a
                               href={shot.src}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex min-h-11 min-w-11 items-center justify-center overflow-hidden rounded-[var(--radius)] border border-line bg-ink-2"
+                              className="flex min-h-11 justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
                             >
                               <Image
                                 src={shot.src}
                                 alt={shot.alt}
                                 width={shot.width}
                                 height={shot.height}
-                                sizes="8rem"
+                                sizes={coverSizes}
                                 loading="lazy"
-                                className={tall(shot) ? "h-28 w-auto" : "h-auto w-32"}
+                                className={tall(shot) ? "h-auto max-h-[70svh] w-auto" : "h-auto w-full"}
                               />
                               {newTab}
                             </a>
@@ -308,6 +322,9 @@ export default function Projects() {
             </div>
           ))}
         </div>
+        {/* The way on, at the row's last panel (Station puts it at the foot
+            of a stop of one panel) */}
+        <NextStop section={section("projects")} />
       </section>
     </>
   );

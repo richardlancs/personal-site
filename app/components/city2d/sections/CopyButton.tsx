@@ -2,13 +2,16 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// One address's Copy key and what it last did. The status line is always in
-// the page and drawn on screen (not screen-reader-only), so the result is
-// both seen and read out. "Copied" clears after 2.5 seconds; a failure,
-// which asks the visitor to do something, stays until the next press.
-// `data-copied` puts the key in the glass "chosen" state while "Copied"
-// shows in the status line, with a tick on the key that draws itself
-// (motion.css): one signal set, the word said once. A failure shakes the
+// One address's Copy key and what it last did. A copy is the journey's
+// last moment, so it is a clear one: the key itself turns to "Copied",
+// chosen (`data-copied`, the glass "chosen" state) with a tick that draws
+// itself (motion.css), the address it copied is lit beside it (city.css,
+// "Contact"), and the panel's edge lights (city-track.css); all return
+// after 2 seconds. The status line is always in the page, a polite live
+// region, so the result is also read out (a changing key label alone isn't
+// reliably announced); it is drawn on screen for a failure, which asks the
+// visitor to do something and stays until the next press, and only read
+// out for a success, whose word is already on the key. A failure shakes the
 // key once (data-shake, set afresh on each failed press so a second failure
 // shakes again), only where motion is welcome, so a shake never waits in
 // still view to start when it's turned off.
@@ -27,7 +30,7 @@ export default function CopyButton({ value }: { value: string }) {
       if (!navigator.clipboard?.writeText) throw new Error("No clipboard");
       await navigator.clipboard.writeText(value);
       setStatus({ text: "Copied" });
-      reset.current = window.setTimeout(() => setStatus(null), 2500);
+      reset.current = window.setTimeout(() => setStatus(null), 2000);
     } catch {
       // Clipboard blocked: say so, and keep saying it; the address is
       // still there to select
@@ -58,13 +61,13 @@ export default function CopyButton({ value }: { value: string }) {
             <path d="m5 12.5 4.5 4.5L19 7.5" />
           </svg>
         )}
-        Copy
+        {copied ? "Copied" : "Copy"}
         <span className="sr-only"> {value}</span>
       </button>
       <p
         role="status"
         aria-live="polite"
-        className="contact-status min-h-[1.5em] text-base text-muted"
+        className={`contact-status min-h-[1.5em] text-base text-muted ${copied ? "sr-only" : ""}`}
         data-failed={status?.failed || undefined}
       >
         {status?.text}

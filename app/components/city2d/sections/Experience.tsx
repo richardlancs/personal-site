@@ -14,24 +14,27 @@ function When({ value }: { value: string }) {
   return date ? <time dateTime={date}>{value}</time> : <>{value}</>;
 }
 
-// One entry, a clear block: what kind it is (Work or Education, in words)
-// and "Current" while it runs, over the role (the boldest line), the
+// One entry, a clear block: what kind it is (Work or Education, in words,
+// sentence case, no box) and "Current" while it runs (a word, not the
+// timeline's filled dot alone), over the role (the boldest line), the
 // organisation, the dates, then every point. The role comes first in the
 // document, so heading navigation lands on it and reads on into the rest;
-// the label is drawn above it (order).
+// the label is drawn above it (order). Between the label's words a dot
+// for the eye and a comma for a screen reader ("Work, Current").
 function Block({ entry }: { entry: Entry }) {
   return (
     <article className="flex flex-col">
-      <Heading level={3} className="mt-2 font-display text-2xl font-bold leading-tight text-text break-words">
+      <Heading level={3} className="mt-1 font-display text-2xl font-bold leading-tight text-text break-words">
         {entry.role}
       </Heading>
-      <p className="-order-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.8125rem] font-semibold uppercase tracking-[0.12em] text-text">
-        <span className="exp-kind">{entry.kind === "education" ? "Education" : "Work"}</span>
+      <p className="-order-1 text-base text-muted">
+        {entry.kind === "education" ? "Education" : "Work"}
         {isCurrent(entry) && (
-          <span className="flex items-center gap-2">
-            <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-cyan" />
-            Current
-          </span>
+          <>
+            <span aria-hidden="true"> · </span>
+            <span className="sr-only">, </span>
+            <span className="font-semibold text-text">Current</span>
+          </>
         )}
       </p>
       <p className="mt-1 text-[1.0625rem] font-semibold text-text break-words">
