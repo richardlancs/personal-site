@@ -1,7 +1,8 @@
-// The hero (components/city2d/sections/Hero.tsx): the name, the role
-// sought in Richard's own words, the school, "View projects" with the
-// résumé beside it, and the other links in one style. (Moved here from
-// city-band.test.mjs with Task 9's item 5.)
+// The hero (components/city2d/sections/Hero.tsx): the name, the
+// programme and school as its headline, "View projects" with the résumé
+// beside it, and the other links in one style. (Moved here from
+// city-band.test.mjs with Task 9's item 5; the role-sought line taken off
+// Home at Richard's ruling, Task 10: About keeps it.)
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -11,17 +12,16 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 const src = read("app/components/city2d/sections/Hero.tsx");
 const css = read("app/city.css");
 
-test("the hero says who and what: the name, the role sought from the data, the school; no paragraph", () => {
+test("the hero says who: the name, then the programme and school as its headline; no role line, no paragraph", () => {
   assert.ok(!src.includes('"use client"'), "the hero is a server component");
   assert.match(src, /<h1[^>]*>\{profile\.name\}<\/h1>/);
-  // The role sought: the line already in `about`, nothing new
-  assert.match(src, /about\.flatMap\(\(entry\) => entry\.points\)\.find\(\(point\) => point\.startsWith\("Looking for"\)\)/);
-  assert.ok(about.flatMap((entry) => entry.points).some((point) => point.startsWith("Looking for")), "the data has the line");
-  assert.match(src, /<p className="hero-headline[^"]*"[^>]*>\{seeking\}<\/p>/);
+  // No line on the role sought on Home (About still has it, in the data)
+  assert.doesNotMatch(src, /Looking for|seeking|\babout\b/);
+  assert.ok(about.flatMap((entry) => entry.points).some((point) => point.startsWith("Looking for")), "About's line stays in the data");
   assert.doesNotMatch(src, /profile\.headline/);
   assert.match(src, /experience\.find\(\(entry\) => entry\.kind === "education"\)/);
-  assert.match(src, /\{school\.role\}, \{school\.organization\}/);
-  assert.equal((src.match(/<p[ >]/g) ?? []).length, 2, "the role and the school, nothing else");
+  assert.match(src, /<p className="hero-headline[^"]*"[^>]*>\s*\{school\.role\}, \{school\.organization\}\s*<\/p>/);
+  assert.equal((src.match(/<p[ >]/g) ?? []).length, 1, "the school, nothing else");
 });
 
 test("one primary action with the résumé beside it as plain glass; no duplicate Contact or Email", () => {
@@ -34,7 +34,7 @@ test("one primary action with the résumé beside it as plain glass; no duplicat
   assert.match(css, /\.hero-actions \{[^}]*display: flex;[^}]*gap: 0\.75rem;/);
 });
 
-test("the role is a sentence in --text, not a cyan accent; no box behind the name on the journey", () => {
+test("the headline is display type in --text, not a cyan accent; no box behind the name on the journey", () => {
   const headline = css.match(/\.hero-headline \{[^}]*\}/)?.[0] ?? "";
   assert.match(headline, /color: var\(--text\);/);
   assert.doesNotMatch(headline, /--cyan|letter-spacing/);

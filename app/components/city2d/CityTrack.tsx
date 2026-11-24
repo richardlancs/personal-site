@@ -469,6 +469,10 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       land();
     };
 
+    // The page opens on Home, never where the browser last left it (the
+    // head script's, lib/track.ts, for a page arrived at in the app too);
+    // put back on leaving, for the page after it
+    history.scrollRestoration = "manual";
     measure();
     const sizes = new ResizeObserver(() => measure());
     // Still view turned on or off: the panorama's other keys
@@ -510,6 +514,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
         }
       }
       snaps.replaceChildren();
+      history.scrollRestoration = "auto";
       marks = null;
       place = null;
       // Gone from the page (another route): the page there reads as any

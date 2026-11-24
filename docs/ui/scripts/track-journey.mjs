@@ -17,6 +17,8 @@
 //    reads top to bottom;
 // 6. (run before 5) the panorama doesn't move at hydration, and moves with
 //    the street, pixel for pixel, in still view.
+// 0. (Task 10) "/" without an anchor always opens on Home: cold, reloaded
+//    mid-journey, Back into a new document; with one, on its stop.
 // Exits 1 on any failure. Headless Chrome (pw.mjs). NO_TIMELINE=1 runs it
 // as a browser without scroll-driven animations would (Firefox, older
 // Safari): the timeline switched off, so CityTrack's frame does the move.
@@ -78,6 +80,43 @@ const newContext = async (opts = {}) => {
 };
 try {
   const ctx = await newContext();
+
+  // 0. "/" always opens on Home (Task 10): cold, after a while at rest (no
+  // snap, measure or first label moves it), reloaded mid-journey, and Back
+  // into a new document; an anchor still opens on its stop, reloaded too
+  for (const [size, opts] of [[{ width: 1440, height: 900 }, {}], [{ width: 390, height: 844 }, { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 }]]) {
+    const lctx = await newContext(opts);
+    const page = await open(lctx, "/", size);
+    const at = `${size.width}×${size.height}`;
+    const home = async (what) => {
+      await settle(page, 1200);
+      const r = await page.evaluate(() => [scrollY, history.scrollRestoration, document.querySelector('.progress-point[aria-current="location"]')?.textContent ?? "-"]);
+      check(r[0] === 0 && (await atStop(page)) === "home" && r[1] === "manual", `${at}: ${what} opens on Home (scroll ${r[0]}, restoration ${r[1]}, map at ${r[2]}, stop ${await atStop(page)})`);
+    };
+    await home("/ cold");
+    const away = () => page.evaluate(() => scrollTo({ top: Math.round(document.documentElement.scrollHeight * 0.45), behavior: "instant" }));
+    await away();
+    await settle(page, 600);
+    check((await atStop(page)) !== "home", `${at}: travelled away (at ${await atStop(page)})`);
+    await page.reload({ waitUntil: "load" });
+    await page.waitForFunction(() => document.documentElement.hasAttribute("data-track-ready"));
+    await home("a reload mid-journey");
+    await away();
+    await settle(page, 600);
+    await page.goto(base + "/icon.svg", { waitUntil: "load" });
+    await page.goBack({ waitUntil: "load" });
+    await page.waitForFunction(() => document.documentElement.hasAttribute("data-track-ready"));
+    await home(`Back from another document (${await page.evaluate(() => performance.getEntriesByType("navigation")[0]?.type)})`);
+    await page.goto(base + "/#projects", { waitUntil: "load" });
+    await settle(page, 1200);
+    check((await atStop(page)) === "projects", `${at}: /#projects still opens on Projects`);
+    await page.evaluate(() => scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+    await settle(page, 600);
+    await page.reload({ waitUntil: "load" });
+    await settle(page, 1500);
+    check((await atStop(page)) === "projects", `${at}: /#projects reloaded at Contact opens on Projects (got ${await atStop(page)})`);
+    await lctx.close();
+  }
 
   // 1. Wheel over the painting, to the end and back
   {

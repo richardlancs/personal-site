@@ -171,7 +171,9 @@ test("the head script turns the journey on before the first paint, only on / wit
       hasAttribute: (k) => k in attrs || (k === "data-track-ready" && ready),
     };
     const listeners = {};
+    const history = { scrollRestoration: "auto" };
     vm.runInNewContext(TRACK_SCRIPT, {
+      history,
       document: { documentElement: html },
       location: { pathname: path },
       innerWidth: w,
@@ -180,8 +182,19 @@ test("the head script turns the journey on before the first paint, only on / wit
       addEventListener: (t, f) => (listeners[t] = f),
       setTimeout: (f, ms) => timers.push([f, ms]),
     });
-    return { attrs, fire: () => (listeners.load?.(), timers.forEach(([f]) => f()), attrs), timers };
+    return { attrs, history, fire: () => (listeners.load?.(), timers.forEach(([f]) => f()), attrs), timers };
   };
+  // "/" opens on Home: the browser never puts back a scroll from before
+  // (a reload, Back into a new document), on the journey or stacked
+  assert.equal(run(1440, 900).history.scrollRestoration, "manual");
+  assert.equal(run(390, 844).history.scrollRestoration, "manual");
+  assert.equal(run(844, 390).history.scrollRestoration, "manual", "the stacked page too");
+  assert.equal(run(1440, 900, "/nope").history.scrollRestoration, "auto", "only on /");
+  const ct = code(read("app/components/city2d/CityTrack.tsx"));
+  assert.match(ct, /history\.scrollRestoration = "manual";\s*measure\(\);/, "CityTrack too, for a page arrived at in the app");
+  assert.match(ct, /history\.scrollRestoration = "auto";/, "and puts it back on leaving");
+  // Opened without an anchor, the first measure moves nothing (an anchor: straight there)
+  assert.match(ct, /if \(first\) \{\s*first = false;\s*if \(location\.hash\.length > 1\) toHash\(location\.hash, true\);\s*\}/);
   assert.equal(run(1440, 900).attrs["data-track"], "on");
   assert.equal(run(390, 844).attrs["data-track"], "on");
   // A panel needs ROOM_EMS of room (trackRoom), so a phone on its side reads stacked

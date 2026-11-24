@@ -275,20 +275,11 @@ button.text-link,
   gap: 0.5rem;
 }
 
-/* One family on the bar: the keys and the weather are the same pill
-   (44px, fully round, the glass's edge and fill) */
 .top-bar .glass {
-  border-radius: 999px;
   font-size: 0.875rem;
 }
 
-.top-bar > .rh {
-  min-height: 44px;
-  border-color: var(--glass-border);
-  background: var(--glass-tint);
-}
-
-/* Waterloo's time and weather (weather/WeatherClock.tsx): only
+/* Richmond Hill's time and weather (weather/WeatherClock.tsx): only
    something to read, quiet words on the bar */
 .rh {
   display: inline-flex;
@@ -1042,14 +1033,16 @@ a[data-resume][data-opening] {
   overflow-wrap: break-word;
 }
 
-/* The role sought, in plain words: display type in --text (a sentence,
-   not an accent), capped at 9vw so it fits a 320px screen at 200% text */
+/* The programme and school, straight under the name: display type in
+   --text (not an accent), capped at 9vw so it fits a 320px screen at
+   200% text */
 .hero-headline {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   color: var(--text);
   font-family: var(--font-display);
   font-size: min(1.5rem, 9vw);
   font-weight: 600;
+  line-height: 1.3;
 }
 
 /* "View projects" and "Résumé", side by side, wrapping */
