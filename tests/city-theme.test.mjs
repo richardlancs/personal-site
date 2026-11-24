@@ -62,10 +62,12 @@ test("the paper tokens are Tailwind colours, and the page's ground is the paper"
 test("the paper texture is drawn in code: no image file, a fixed seed, no motion, gone under prefers-contrast: more", () => {
   const paper = read("app/paper.css");
   const data = [...paper.matchAll(/url\("data:image\/svg\+xml,[^"]*"\)/g)];
-  assert.equal(data.length, 1, "one inline SVG");
-  assert.doesNotMatch(paper.replace(data[0][0], ""), /url\(/, "and no other image");
+  assert.equal(data.length, 2, "two inline SVGs: the light papers' sheet and charcoal's");
+  assert.doesNotMatch(data.reduce((rest, [m]) => rest.replace(m, ""), paper), /url\(/, "and no other image");
   assert.match(paper, /feTurbulence/);
   assert.match(paper, /feDiffuseLighting/);
+  // On near-black the creases are carried by light: a specular sheet, added in screen
+  assert.match(paper, /:root\[data-paper="charcoal"\] body::before \{\s*background-image: url\("data:image\/svg\+xml,[^"]*feSpecularLighting[^"]*"\);\s*mix-blend-mode: screen;/);
   for (const m of paper.matchAll(/feTurbulence[^>]*>/g)) assert.match(m[0], /seed='\d+'/, "every noise has a fixed seed");
   assert.doesNotMatch(paper, /animation|transition|@keyframes/);
   assert.match(paper, /@media \(prefers-contrast: more\) \{[^}]*\{[^}]*display: none;/);

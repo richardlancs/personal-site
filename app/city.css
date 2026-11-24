@@ -54,24 +54,27 @@
   --ink: #1d2330;
 }
 
-/* Charcoal: a cool grey-black sheet (hue 216) in chalk-white; gold (40,
-   by its complement, 36) for the primary action, the mark's cyan (analogous to
-   the paper) for links, chosen states and the line */
+/* Charcoal: black paper, as near true black as still reads as a sheet
+   (hue 240, no saturation to speak of), in chalk-white; its crumple is
+   carried by light on the ridges (paper.css). Cards are sheets laid a
+   step above it, with a deep black shadow. Gold (40, the complement of a
+   cool black) for the primary action, the mark's cyan for links, chosen
+   states and the line */
 :root[data-paper="charcoal"] {
   color-scheme: dark;
-  --paper: #26282b;
-  --paper-2: #1e2023;
-  --panel: #303337;
-  --line: #474b51;
+  --paper: #080809;
+  --paper-2: #050506;
+  --panel: #141416;
+  --line: #2a2b2f;
   --text: #ece6da;
-  --muted: #aca69b;
+  --muted: #b5afa4;
   --accent: #e3b55b;
   --accent-hover: #edc679;
-  --on-accent: #1b1c1e;
+  --on-accent: #0b0b0c;
   --accent-2: #7fd4df;
   --focus: #9fe6ef;
-  --shadow: #050506;
-  --ink: #141518;
+  --shadow: #000000;
+  --ink: #050506;
 }
 
 /* Kraft: brown packing paper (hue 34) in near-black; navy (the
@@ -98,7 +101,7 @@
 :root {
   /* Each paper's base whatever paper is on (the picker's dots) */
   --swatch-cream: #efe7d6;
-  --swatch-charcoal: #26282b;
+  --swatch-charcoal: #080809;
   --swatch-kraft: #c9a77c;
 
   /* Older names, kept for code that still reads them: each is now one of

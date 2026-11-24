@@ -61,25 +61,30 @@ chosen states and the metro line.
 
 ### Charcoal
 
-Grey-black paper (hue 216, little saturation). Gold (40, by its
-complement, 36) for the primary action; cyan (analogous to the paper, the mark's own) for
-links, chosen states and the line.
+Black paper, as near true black as still reads as a sheet (Richard, 24
+November 2026: "make the black as close to true black as visually
+possible while still maintaining the shadowy look and incorporating
+crumpled paper"). A shadow vanishes on black, so its crumple is carried
+by light on the ridges (below, "The texture"), and the cards are sheets a
+step above the paper, with a deep black shadow. Gold (40, the complement
+of a cool black) for the primary action; cyan (the mark's own) for links,
+chosen states and the line.
 
 | Token | Hex | Use |
 |---|---|---|
-| `--paper` | `#26282b` | The page |
-| `--paper-2` | `#1e2023` | The alternate ground |
-| `--panel` | `#303337` | Cards: a lighter sheet |
-| `--line` | `#474b51` | Hairlines and card edges |
+| `--paper` | `#080809` | The page: near-black |
+| `--paper-2` | `#050506` | The alternate ground, darker still |
+| `--panel` | `#141416` | Cards: a sheet a step above the black |
+| `--line` | `#2a2b2f` | Hairlines and card edges |
 | `--text` | `#ece6da` | Body text and headings: chalk (warm, not white) |
-| `--muted` | `#aca69b` | Secondary text |
+| `--muted` | `#b5afa4` | Secondary text |
 | `--accent` | `#e3b55b` | The primary action's fill |
 | `--accent-hover` | `#edc679` | Its hover |
-| `--on-accent` | `#1b1c1e` | The label on the accent |
+| `--on-accent` | `#0b0b0c` | The label on the accent |
 | `--accent-2` | `#7fd4df` | Links, chosen states, the metro line, marks |
 | `--focus` | `#9fe6ef` | The focus ring |
-| `--shadow` | `#050506` | A card's shadow |
-| `--ink` | `#141518` | The darkest ink on this paper |
+| `--shadow` | `#000000` | A card's shadow: true black, under a sheet on near-black |
+| `--ink` | `#050506` | The darkest ink on this paper |
 
 ### Kraft
 
@@ -109,9 +114,9 @@ so its text colours are the darkest of the three papers'.
 - `--text`, `--muted` and `--accent-2` are 4.5:1 or better on
   `--paper`, `--paper-2` and `--panel`, and on the two grounds still at
   the texture's darkest crease and lightest ridge (cards are opaque
-  sheets over it) as measured on each paper (cream 3%
-  darker to 4% lighter, charcoal 5% darker to 22% lighter, kraft 7%
-  darker to 4% lighter).
+  sheets over it) as measured on each paper (cream 3% darker to 4%
+  lighter, kraft 7% darker to 4% lighter; on charcoal the sheet only
+  adds light, its brightest ridge `#3c3c3c`).
 - `--accent` and `--focus` are 3:1 or better on every ground (the
   texture's too); `--on-accent` is 4.5:1 or better on `--accent` and
   `--accent-hover`.
@@ -127,14 +132,17 @@ so its text colours are the darkest of the three papers'.
 code. An inline SVG: two noises of creases (`feTurbulence`, type
 turbulence, a large and a middle scale) inverted so their seams fold up
 into ridges, a fine grain added, all lit from the upper left as a surface
-(`feDiffuseLighting`). The result is a grey relief, laid over each
-paper's own colour in `soft-light` (on `body::before`, inside the body's
-own stacking context), so one texture serves all three. Its seeds are
-fixed, it holds no photograph, it is under 1 KB, and it is crisp at any
+(`feDiffuseLighting`). The result is a grey relief, laid over the paper's
+own colour in `soft-light` (on `body::before`, inside the body's own
+stacking context), serving cream and kraft. Charcoal is near-black, where
+a shadow has nowhere to go: its sheet is the same relief lit for shine
+(`feSpecularLighting`, a tight highlight on each ridge) with a little
+light grain, added in `screen`, so the creases show as light on black. Its seeds are
+fixed, it holds no photograph, the two are about 1.3 KB gzipped, and it is crisp at any
 pixel ratio (the filter is drawn at the screen's resolution). It never
 moves: fixed to the viewport behind the journey, so the stops travel over
 one still sheet. How strongly it shows is per paper (`--crumple`: cream
-1, charcoal 0.2, kraft 0.42), inside the margins above. Under
+1, charcoal 0.25, kraft 0.42), inside the margins above. Under
 `prefers-contrast: more` and in forced colours it is removed and the
 paper is flat.
 

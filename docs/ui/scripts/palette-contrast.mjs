@@ -3,9 +3,10 @@
 // contrast): text, muted and accent-2 at 4.5:1 or better on every ground,
 // the accent fill and the focus ring at 3:1 or better, the label on the
 // accent (and on its hover) at 4.5:1 or better. The grounds include the
-// texture's extremes (app/paper.css): each ground scaled to the darkest
-// crease and the lightest ridge measured on that paper (1440x900, the
-// lowest and highest luma of the sheet over the paper's colour).
+// texture's extremes (app/paper.css), measured on each paper at 1440x900
+// (the lowest and highest luma of the sheet over the paper's colour): a
+// scale on the ground's channels, or, on charcoal's near-black, where the
+// sheet only adds light, the brightest ridge as a colour.
 //
 //   node docs/ui/scripts/palette-contrast.mjs
 import { readFileSync } from "node:fs";
@@ -29,9 +30,10 @@ const contrast = (a, b) => {
   const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 };
-// The texture's crease (darker) and ridge (lighter), as a scale on each channel
-const shade = (hex, k) => `#${[1, 3, 5].map((i) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k))).toString(16).padStart(2, "0")).join("")}`;
-const EXTREMES = { cream: [0.97, 1.04], charcoal: [0.95, 1.22], kraft: [0.93, 1.04] };
+// The texture's crease (darker) and ridge (lighter): a scale on each channel, or a colour
+const shade = (hex, k) => (typeof k === "string" ? k : scale(hex, k));
+const scale = (hex, k) => `#${[1, 3, 5].map((i) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k))).toString(16).padStart(2, "0")).join("")}`;
+const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"], kraft: [0.93, 1.04] };
 
 const need = ["--paper", "--paper-2", "--panel", "--line", "--text", "--muted", "--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow", "--ink"];
 let failed = false;

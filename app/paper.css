@@ -8,13 +8,17 @@
   Fixed behind the journey, so the stops travel over one still sheet; it
   never moves. How strongly it shows is per paper (--crumple), inside the
   palette's contrast margins (docs/ui/scripts/palette-contrast.mjs).
+  Charcoal is near-black, where a shadow has nowhere to go: its sheet is
+  the same relief lit for shine (feSpecularLighting, a tight highlight on
+  each ridge) with a little light grain, added in screen, so the creases
+  show as light on black.
 */
 :root {
   --crumple: 1;
 }
 
 :root[data-paper="charcoal"] {
-  --crumple: 0.2;
+  --crumple: 0.25;
 }
 
 :root[data-paper="kraft"] {
@@ -36,6 +40,11 @@ body::before {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'%3E%3Cfilter id='p' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='turbulence' baseFrequency='.0022' numOctaves='2' seed='11' result='a'/%3E%3CfeTurbulence type='turbulence' baseFrequency='.008' numOctaves='2' seed='5' result='b'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' seed='3' result='g'/%3E%3CfeComposite in='a' in2='b' operator='arithmetic' k2='-1' k3='-.4' k4='1' result='h'/%3E%3CfeComposite in='h' in2='g' operator='arithmetic' k2='1' k3='.03'/%3E%3CfeDiffuseLighting surfaceScale='12' lighting-color='%23fff'%3E%3CfeDistantLight azimuth='235' elevation='40'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='1600' height='1000' filter='url(%23p)'/%3E%3C/svg%3E") center / cover;
   mix-blend-mode: soft-light;
   opacity: var(--crumple);
+}
+
+:root[data-paper="charcoal"] body::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='1000'%3E%3Cfilter id='p' x='0' y='0' width='1' height='1' color-interpolation-filters='sRGB'%3E%3CfeTurbulence type='turbulence' baseFrequency='.0022' numOctaves='2' seed='11' result='a'/%3E%3CfeTurbulence type='turbulence' baseFrequency='.008' numOctaves='2' seed='5' result='b'/%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' seed='3' result='g'/%3E%3CfeComposite in='a' in2='b' operator='arithmetic' k2='-1' k3='-.4' k4='1' result='h'/%3E%3CfeComposite in='h' in2='g' operator='arithmetic' k2='1' k3='.03'/%3E%3CfeSpecularLighting surfaceScale='14' specularConstant='1' specularExponent='40' lighting-color='%23fff' result='s'%3E%3CfeDistantLight azimuth='235' elevation='40'/%3E%3C/feSpecularLighting%3E%3CfeColorMatrix in='g' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .06 0' result='n'/%3E%3CfeComposite in='s' in2='n' operator='arithmetic' k2='1' k3='1'/%3E%3C/filter%3E%3Crect width='1600' height='1000' filter='url(%23p)'/%3E%3C/svg%3E");
+  mix-blend-mode: screen;
 }
 
 /* More contrast asked for, or the system's own colours: flat paper */
