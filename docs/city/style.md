@@ -123,8 +123,10 @@ so its text colours are the darkest of the three papers'.
 - Accents are for edges, marks, chosen states, links and the one
   primary action; body text is `--text`.
 - No pure white and no pure black text; no magenta.
-- Older token names (`--ink-2`, `--cyan`, `--seam-2`, `--glass-*`) are
-  aliases of these in `city.css` until nothing reads them.
+- These names only: the city's (`--cyan`, `--ink-2`, `--seam*`,
+  `--glow-cyan`, `--focus-halo`, the `--glass-*` colours) are gone
+  (`tests/glass.test.mjs`). A key's own `--glass-in`, `--glass-out`,
+  `--glass-lift` and `--glass-ink` are its states' plumbing, not colours.
 
 ## The texture
 
@@ -148,5 +150,23 @@ paper is flat.
 
 ## Type
 
-Display: Rajdhani (OFL), weights 500 to 700, for headings and section
-names. Text: Nunito, as before.
+Printed matter, in ink: an old-style serif for what you'd set in a
+heading, a plain warm sans for reading. Both through `next/font/google`
+in `app/layout.tsx` (self-hosted at build, Latin only, `display: swap`,
+no request to Google at run time), behind the tokens `--font-display`
+and `--font-text` (Tailwind `font-display`, `font-sans`).
+
+- **Fraunces** (OFL, variable weight and optical size, `axes: ["opsz"]`)
+  for the name, headings, section names, the metro map's names and the
+  bar's name. Optical size does the work: the name gets the
+  high-contrast display cut, small labels the sturdy text cut. Weights:
+  700 the name and a station's title, 600 headings, 500 the quiet labels
+  (a station's number, the bar's "03 / 06 · Projects", the menu's rows),
+  400 the hero's programme line.
+- **Figtree** (OFL, variable weight) for everything you read: points,
+  links, keys, the weather.
+- No extra tracking: Fraunces is spaced for print. No all-caps labels.
+  The name alone is set a touch tight (-0.01em).
+- Body copy 16px, line-height 1.6; headings 1.1; nothing under 12px.
+- The share card (`scripts/identity/make-identity.mjs`) is set in the
+  same two faces, read from a running copy of the site.
