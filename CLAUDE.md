@@ -230,9 +230,9 @@ the reports per part in `.superpowers/sdd/2026-11-22-horizontal-city/task-9-{A,B
 
 Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000,
 raised at my ruling on 23 November 2026 for the UX panel's fixes;
-`totalJs` ≤ 214,000; `totalCss` ≤ 12,300, raised at my rulings on
-23 November 2026 for the highly animated horizontal city and then the
-UX panel's fixes (it only goes down from here); `resumeJs` ≤ 470,000;
+`totalJs` ≤ 214,000; `totalCss` ≤ 12,600, raised at my rulings on
+23–24 November 2026 for the highly animated horizontal city, the UX
+panel's fixes and the clear sky glass (it only goes down from here); `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. The panorama's first tile at most the bytes of the
 painted home plate it replaced, at `HOME_QUALITY`. It also fails on
 three.js (`WebGLRenderer`) in any chunk of the build, and on any
@@ -276,8 +276,10 @@ verbatim from `docs/city/style.md`):
 - `--panel` `#181b23` panels; `--line` `#2d323d` hairlines
 - `--text` `#e6e9ee` body and headings; `--muted` `#9ea5b1` secondary
 - `--cyan` `#4fd8ee` the accent; `--focus` `#8fe9ff` the focus ring
-- `--lantern` `#f4b860` the one warm accent: the primary action's fill
-  (hover `--glass-primary-hover` `#f8c97f`, label `--ink`)
+- `--accent` `#6cc6f2` the sky blue of the primary action's fill (hover
+  `#94d6f6`, label `--ink`, a night-navy edge `#0b2242`); it replaced the
+  lantern `#f4b860` on 24 November 2026 (my ruling, from a colour-wheel
+  analysis of the panorama: it sits with the sky and water blues)
 - `--seam` `#070c15`, `--seam-2` `#0c121d`: the band's fade
 
 Accents only on edges, marks, chosen states and display type of 24px or
@@ -393,7 +395,7 @@ as wide as its words, `--glass-tint` over a backdrop blur
 (`--glass-fallback` without one), a thin cyan-tinted edge, the label in
 opaque `--text`. Tertiary actions stay text links (`.text-link`; on their
 own they take 44px). States, the same everywhere:
-- `.glass-primary`: the lantern fill, an `--ink` label
+- `.glass-primary`: the sky-blue `--accent` fill, an `--ink` label
 - `.glass-icon`: a square icon key
 - hover: under `@media (hover: hover)` only
 - chosen (`aria-pressed`, `aria-selected`, `aria-current`, an open
@@ -411,10 +413,11 @@ buttons only need the class.
 ## Hero Section
 
 The home stop's panel (`city2d/sections/Hero.tsx`): the name (the page's
-one `h1`, `#home-title`, on its own dark backing), the headline from
-`profile`, the school and programme (from the education entry), ONE
-primary action, "View projects" (glass, the lantern), then Contact,
-GitHub, LinkedIn, Résumé and Email as text links (`ProfileLinks.tsx`).
+one `h1`, `#home-title`), the school and programme (from the education
+entry), "View projects" (the sky-blue accent) with a glass "Résumé"
+beside it, then GitHub, LinkedIn and Email as text links
+(`ProfileLinks.tsx`). No role line (removed at my request, 24 November
+2026). `/` always opens on Home.
 No paragraph, no caption, no list of sections. Keep it simple; no
 decorative graphics to fill space.
 
