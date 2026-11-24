@@ -81,7 +81,35 @@ test("My part shows its first four points; the rest fold under \"More of my part
   assert.match(source, /const morePart = part\.slice\(SHOWN_PART\)/);
   const details = row.slice(row.indexOf("<details"));
   assert.match(details, /morePart\.length > 0 && \([\s\S]*?<Heading level=\{4\}[^>]*>More of my part<\/Heading>[\s\S]*?morePart\.map/);
-  assert.match(source, /morePart\.length > 0 && "More of my part"/, "the summary names it");
+  assert.match(source, /morePart\.length > 0 && "the rest of my part"/, "the summary names it");
+});
+
+test("the fold's summary is a full-width glass key: \"Show more\" and what it holds, \"Show less\" when open", () => {
+  const details = row.slice(row.indexOf("<details"));
+  const summary = details.slice(details.indexOf("<summary"), details.indexOf("</summary>"));
+  assert.match(summary, /<summary className="glass w-full list-none /);
+  assert.match(summary, /group-open:hidden">Show more/);
+  assert.match(summary, /group-open:block">Show less</);
+  assert.match(summary, /group-open:hidden">\{summaryText\}/, "what it holds, while it's closed");
+  assert.match(summary, /className="chevron [^"]*group-open:rotate-180/);
+  assert.match(source, /\.join\(", "\)/);
+  // (city.css: the key reads from the left, its edge cyan while open)
+  const city = read("app/city.css");
+  assert.match(city, /summary\.glass \{\s*display: flex;\s*justify-content: space-between;/);
+  assert.match(city, /details\[open\] > summary\.glass \{\s*border-color: var\(--cyan\);/);
+});
+
+test("a fold opens in place, its height and fade on the motion tokens, only where motion is welcome", () => {
+  const city = read("app/city.css");
+  const i = city.indexOf('details::details-content {');
+  assert.ok(i > 0);
+  const guard = city.lastIndexOf("@media", i);
+  assert.match(city.slice(guard, i), /^@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*:root:not\(\[data-still="on"\]\) details \{\s*interpolate-size: allow-keywords;/);
+  const rule = city.slice(i, city.indexOf("}", i));
+  assert.match(rule, /block-size: 0;\s*opacity: 0;/);
+  assert.match(rule, /block-size var\(--t-slow\) var\(--ease-out\)/);
+  assert.match(rule, /content-visibility var\(--t-slow\) allow-discrete/);
+  assert.match(city, /details\[open\]::details-content \{\s*block-size: auto;\s*opacity: 1;/);
 });
 
 test("on a phone the title, the keys, the summary, then the cover, in the document's order; on a wide panel, two columns", () => {

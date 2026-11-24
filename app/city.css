@@ -1403,10 +1403,29 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   font-variant-numeric: tabular-nums;
 }
 
-/* A <details>' chevron (Projects, Interests) turns as its panel opens
-   (the one secondary action of opening it), and tips a little toward the
-   turn when its summary is hovered or focused: at once in still view and
-   with reduced motion */
+/* A fold (<details>: Projects, Interests): its summary a full-width glass
+   key (its hover, press and focus the glass's own), its chevron turning
+   as it opens; what it holds grows open in place, the
+   height and the fade over --t-slow (where ::details-content is known;
+   elsewhere, and in still view and with reduced motion, at once). Clipped
+   while it moves, with room for a focus ring */
+summary.glass {
+  display: flex;
+  justify-content: space-between;
+  padding-block: 0.5rem;
+  text-align: left;
+}
+
+details[open] > summary.glass {
+  border-color: var(--cyan);
+}
+
+/* (an interest's row: its mark, its name, "Show" and the chevron, 56px) */
+.interest > summary {
+  min-height: 3.5rem;
+  gap: 1rem;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   :root:not([data-still="on"]) .chevron {
     transition:
@@ -1414,14 +1433,24 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
       color var(--t-base) var(--ease-out);
   }
 
-  :root:not([data-still="on"]) details:not([open]) > summary:focus-visible .chevron {
-    rotate: 15deg;
+  :root:not([data-still="on"]) details {
+    interpolate-size: allow-keywords;
   }
-}
 
-@media (prefers-reduced-motion: no-preference) and (hover: hover) {
-  :root:not([data-still="on"]) details:not([open]) > summary:hover .chevron {
-    rotate: 15deg;
+  :root:not([data-still="on"]) details::details-content {
+    block-size: 0;
+    opacity: 0;
+    overflow: clip;
+    overflow-clip-margin: 0.5rem;
+    transition:
+      block-size var(--t-slow) var(--ease-out),
+      opacity var(--t-slow) var(--ease-out),
+      content-visibility var(--t-slow) allow-discrete;
+  }
+
+  :root:not([data-still="on"]) details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
   }
 }
 

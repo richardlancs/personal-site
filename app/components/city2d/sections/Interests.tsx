@@ -8,9 +8,11 @@ import Heading from "../Heading";
 import { order } from "../Station";
 
 // The interests: one row per interest, a single column on the ground with
-// hairlines between them. Each row is a native <details> (name="interests",
-// so opening one closes the others where the browser supports it); the
-// first starts open, and the open one's top hairline turns cyan. Inside:
+// a little room between them. Each row is a native <details>
+// (name="interests", so opening one closes the others where the browser
+// supports it), its summary a full-width glass key ("Show", "Hide" and a
+// chevron at its end; city.css, "A fold"); the first starts open, and the
+// open one's edge turns cyan. Inside:
 // the description, then the interest's photos when it has any, read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
 // docs/adding-interest-photos.md). No photos, no gallery. The rows arrive
@@ -58,7 +60,7 @@ const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 // 69.5rem).
 export default function Interests() {
   return (
-    <div className="@container interests mt-6 border-b border-line">
+    <div className="@container interests mt-6 grid gap-2">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
         return (
@@ -66,10 +68,10 @@ export default function Interests() {
             key={interest.scene}
             name="interests"
             open={i === 0}
-            className="interest reveal group border-t border-line open:border-t-cyan"
+            className="interest reveal group"
             style={order(i)}
           >
-            <summary className="flex min-h-14 cursor-pointer list-none items-center gap-4 py-4 [&::-webkit-details-marker]:hidden">
+            <summary className="glass w-full list-none [&::-webkit-details-marker]:hidden">
               <svg
                 aria-hidden="true"
                 focusable="false"
@@ -84,6 +86,12 @@ export default function Interests() {
                 {marks[interest.scene]}
               </svg>
               <Heading level={3} className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
+              {/* (said by the row's own open state, so hidden from
+                  assistive technology) */}
+              <span aria-hidden="true" className="text-sm text-muted">
+                <span className="group-open:hidden">Show</span>
+                <span className="hidden group-open:inline">Hide</span>
+              </span>
               <svg
                 aria-hidden="true"
                 focusable="false"
@@ -98,7 +106,7 @@ export default function Interests() {
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </summary>
-            <div className="pb-8 @min-[27.5rem]:pl-12">
+            <div className="pt-4 pb-8 @min-[27.5rem]:pl-16">
               <p className="max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
               {photos.length > 0 && (
                 <ul role="list" className="mt-6 grid grid-cols-2 gap-3 @min-[45.5rem]:grid-cols-3 @min-[69.5rem]:grid-cols-4">

@@ -147,14 +147,16 @@ export default function Projects() {
           const morePart = part.slice(SHOWN_PART);
           const foldedFeatures = part.length > 0;
           const folded = foldedFeatures || extra.length > 0;
-          // What the fold holds, in the order it holds it
+          // What the fold holds, in the order it holds it, under its
+          // "Show more" ("The rest of my part, what it does, 2 more
+          // screenshots")
           const summaryText = [
-            morePart.length > 0 && "More of my part",
-            foldedFeatures && "What it does",
+            morePart.length > 0 && "the rest of my part",
+            foldedFeatures && "what it does",
             extra.length > 0 && plural(extra.length),
           ]
             .filter(Boolean)
-            .join(" · ");
+            .join(", ");
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
           const titleId = `project-${slug(project.title)}`;
@@ -237,19 +239,25 @@ export default function Projects() {
                 </p>
 
                 {folded && (
-                  <details className="project-more group mt-6 border-t border-line">
-                    <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 py-2 font-semibold text-text [&::-webkit-details-marker]:hidden">
+                  <details className="project-more group mt-6">
+                    {/* A full-width glass key: "Show more" and what it
+                        holds; open, "Show less" (city.css, "A fold") */}
+                    <summary className="glass w-full list-none [&::-webkit-details-marker]:hidden">
+                      <span className="min-w-0">
+                        <span className="block font-semibold group-open:hidden">Show more<span className="sr-only">: </span></span>
+                        <span className="hidden font-semibold group-open:block">Show less</span>
+                        <span className="block text-sm text-muted first-letter:uppercase group-open:hidden">{summaryText}</span>
+                      </span>
                       <svg
                         aria-hidden="true"
                         viewBox="0 0 16 16"
-                        className="chevron size-4 shrink-0 text-cyan group-open:rotate-180"
+                        className="chevron size-5 shrink-0 text-cyan group-open:rotate-180"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
                       >
                         <path d="M3 6l5 5 5-5" />
                       </svg>
-                      {summaryText}
                     </summary>
                     {morePart.length > 0 && (
                       <section className="mt-3 border-l-2 border-cyan pl-5">

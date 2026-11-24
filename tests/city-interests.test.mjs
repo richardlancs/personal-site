@@ -10,6 +10,7 @@ import { interests } from "../app/data/portfolio.ts";
 import { interestPhotos } from "../app/lib/interestPhotos.ts";
 
 const root = new URL("../", import.meta.url).pathname;
+const read = (f) => readFileSync(`${root}${f}`, "utf8");
 const source = readFileSync(`${root}app/components/city2d/sections/Interests.tsx`, "utf8");
 
 // A temp public/interests with one folder, chess
@@ -59,7 +60,10 @@ test("every interest is a <details name=\"interests\">, only the first open", ()
   assert.equal(details.length, 1, "one <details> inside the map");
   assert.match(details[0], /name="interests"/);
   assert.match(details[0], /open=\{i === 0\}/);
-  assert.match(source, /<summary\b[^>]*min-h-14/, "the summary is at least 56px tall");
+  // its summary a full-width glass key, at least 56px tall (city.css)
+  assert.match(source, /<summary className="glass w-full list-none /);
+  assert.match(read("app/city.css"), /\.interest > summary \{\s*min-height: 3\.5rem;/, "the summary is at least 56px tall");
+  assert.match(source, /<span aria-hidden="true"[^>]*>\s*<span className="group-open:hidden">Show<\/span>\s*<span className="hidden group-open:inline">Hide<\/span>/);
   assert.match(source, /<Heading level=\{3\}[^>]*>\s*\{interest\.name\}\s*<\/Heading>/);
   assert.match(source, /\{interest\.description\}/);
   assert.match(source, /^export default function Interests\(\)/m);

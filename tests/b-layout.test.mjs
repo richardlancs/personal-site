@@ -48,6 +48,20 @@ test("the glass is clear, a pane of the hour's sky: a feathered shade only behin
   assert.match(css, /\.panel :is\(\.station-head, h1, h3, h4, p, ul, nav ol, summary, \.next-stop\)[^{]*::before \{[^}]*background: var\(--shade\);\s*filter: blur\(0\.75rem\);/);
 });
 
+test("every panel's edge is 2px of glass lit in the sky, a dark hairline and a faint ring of sky outside it; solid under more contrast", () => {
+  const panel = rule(':root[data-track="on"] .track .panel');
+  assert.match(panel, /border: 2px solid color-mix\(in srgb, var\(--sky-tone\)/);
+  assert.match(panel, /box-shadow: 0 0 0 1px rgb\(8 9 12 \/ 0\.45\), 0 0 0 5px color-mix\(in srgb, var\(--sky-tone\) 14%, transparent\)/);
+  assert.doesNotMatch(panel, /var\(--cyan\)/, "never a coloured frame");
+  assert.match(css, /border-width: 2px 0 0;/, "the phone's sheet: its top edge");
+  const more = css.slice(css.indexOf("@media (prefers-contrast: more)"));
+  assert.match(more, /\.track \.panel \{\s*border-color: var\(--muted\);\s*background: var\(--ink\);\s*box-shadow: none;/);
+});
+
+test("a glass key in a panel (a fold's summary) has no shade of its own behind it", () => {
+  assert.match(css, /summary, \.next-stop\):not\(:empty, \.glass, /);
+});
+
 test("a panel with more below says so, and the cue goes at its end", () => {
   const cue = rule(':root[data-track="on"] .track .panel::after');
   assert.match(cue, /content: "More \\2193" \/ "";/, "hidden from assistive technology");
