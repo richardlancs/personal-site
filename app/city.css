@@ -657,10 +657,10 @@ body::after {
   border-top: 1px solid var(--line);
 }
 
+/* A section's part (Skills, under Projects): set in under it */
 .sections-menu .sections-menu-sub {
   padding-left: 2.25rem;
   font-size: 1rem;
-/* A section's part (Skills, under Projects): set in under it */
 }
 
 /* The music's note, if the song can't be loaded (MusicToggle.tsx): a
