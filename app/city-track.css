@@ -148,15 +148,20 @@
      Its corners are --radius-lg; what sits inside takes --radius-in, the
      outer radius less the padding.
 
-     The glass is very clear: the barest hint of ink and cyan, a blur and
-     a fine light edge, the city reading through it. Its words carry their
-     own soft halo (text-shadow), and a soft darkening, feathered far past
-     their edges so it reads as shade, not a box (below): that, with the
-     blur, carries their 4.5:1 over any sky. Its content stands in the
-     middle of it. */
+     The glass is very clear: the barest hint of ink and cyan, a smooth
+     blur that dims the city a little, and a fine light edge, the city
+     reading through it. Its words carry their own soft halo (text-shadow)
+     and sit on a faint shade blurred out past them (below), so the
+     darkening shows only as the words being readable: that, with the
+     blur, carries their 4.5:1 over any sky (city-contrast.mjs, which
+     counts no halo). Secondary words (--muted) are a step lighter on it
+     than on the ground, still a step under --text. Its content stands in
+     the middle of it. */
   :root[data-track="on"] .track .panel {
     --pad: clamp(1.25rem, 3cqw, 2.5rem);
-    --shade: rgb(8 9 12 / 0.72);
+    --shade: rgb(8 9 12 / 0.46);
+    /* (secondary words a step lighter on the glass, still a step under --text) */
+    --muted: #c9ced8;
     display: flex;
     flex-direction: column;
     justify-content: safe center;
@@ -167,8 +172,8 @@
     border: 1px solid rgb(230 233 238 / 0.2);
     border-radius: var(--radius-lg);
     background: linear-gradient(160deg, rgb(79 216 238 / 0.06), rgb(8 9 12 / 0.1));
-    backdrop-filter: blur(10px) brightness(0.8);
-    text-shadow: 0 0 0.75rem rgb(8 9 12 / 0.9);
+    backdrop-filter: blur(14px) brightness(0.72);
+    text-shadow: 0 0 0.4rem rgb(8 9 12 / 0.8), 0 0 1.25rem rgb(8 9 12 / 0.6);
   }
 
   /* (keys carry their own ground: no halo on their labels) */
@@ -177,27 +182,25 @@
   }
 
   /* The shade behind each block of words (the outermost only): as wide as
-     its words, solid over them, fading out over a rem or so past them, so
-     two blocks' shades meet in their fades, not in a hard line */
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, ol, summary):not(:is(p, ul, ol, summary, .station-head) *) {
+     its words, a rounded patch a rem past them blurred into the glass, so
+     it has no edge to see */
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, nav ol, summary):not(:is(p, ul, nav ol, summary, .station-head) *) {
     position: relative;
   }
 
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul):not(:is(p, ul, ol, summary, .station-head) *) {
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul):not(:is(p, ul, nav ol, summary, .station-head) *) {
     width: fit-content;
     max-width: 100%;
   }
 
-  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, ol, summary):not(:empty, :is(p, ul, ol, summary, .station-head) *)::before {
+  :root[data-track="on"] .track .panel :is(.station-head, h3, h4, p, ul, nav ol, summary):not(:empty, :is(p, ul, nav ol, summary, .station-head) *)::before {
     content: "";
     position: absolute;
-    inset: -0.75rem -1.25rem;
+    inset: -1rem -1.25rem;
     z-index: -1;
+    border-radius: 1rem;
     background: var(--shade);
-    mask-image:
-      linear-gradient(90deg, transparent, #000 1.25rem calc(100% - 1.25rem), transparent),
-      linear-gradient(transparent, #000 0.75rem calc(100% - 0.75rem), transparent);
-    mask-composite: intersect;
+    filter: blur(0.75rem);
     pointer-events: none;
   }
 

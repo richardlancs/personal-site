@@ -266,11 +266,14 @@ test("arrivals: each panel and its pieces enter on the runway's timeline from th
 test("Task 8: clear glass, a feathered shade behind the words, each stop's panel centred and substantial, anchors centre their panel", () => {
   const body = code(read("app/city-track.css"));
   // Clear glass: a barest tint, a blur, a fine light edge, the words' dark halo
-  assert.match(body, /\.track \.panel \{[^}]*border: 1px solid rgb\(230 233 238 \/ 0\.2\);[^}]*background: linear-gradient\(160deg, rgb\(79 216 238 \/ 0\.06\), rgb\(8 9 12 \/ 0\.1\)\);[^}]*backdrop-filter: blur\(10px\) brightness\(0\.8\);[^}]*text-shadow: 0 0 0\.75rem rgb\(8 9 12 \/ 0\.9\);/);
-  assert.match(body, /--shade: rgb\(8 9 12 \/ 0\.72\);/, "as light as passes city-contrast over 20 skies");
-  // No hard scrim: a shade under each outermost block, feathered by a mask, never a solid band
+  assert.match(body, /\.track \.panel \{[^}]*border: 1px solid rgb\(230 233 238 \/ 0\.2\);[^}]*background: linear-gradient\(160deg, rgb\(79 216 238 \/ 0\.06\), rgb\(8 9 12 \/ 0\.1\)\);[^}]*backdrop-filter: blur\(14px\) brightness\(0\.72\);[^}]*text-shadow: 0 0 0\.4rem rgb\(8 9 12 \/ 0\.8\), 0 0 1\.25rem rgb\(8 9 12 \/ 0\.6\);/);
+  assert.match(body, /--shade: rgb\(8 9 12 \/ 0\.46\);/, "as light as passes city-contrast over 20 skies");
+  // Secondary words a step lighter on the glass (fix round 1, the coordinator's ruling)
+  assert.match(body, /\.track \.panel \{[^}]*--muted: #c9ced8;/);
+  // No hard scrim: a shade under each outermost block, blurred into the glass, never a solid band
   assert.doesNotMatch(body, /:is\(\.station-head, h3, h4, p, li, summary\) \{\s*background/);
-  assert.match(body, /::before \{[^}]*background: var\(--shade\);[^}]*mask-image:[^;]*transparent[^;]*;[^}]*mask-composite: intersect;/);
+  assert.match(body, /::before \{[^}]*inset: -1rem -1\.25rem;[^}]*background: var\(--shade\);\s*filter: blur\(0\.75rem\);/);
+  assert.doesNotMatch(body, /mask-composite/);
   assert.doesNotMatch(body, /#contact \.panel \{[^}]*background/, "Contact the same glass");
   // Centred and substantial: one width for every panel (within the central 80%), in the middle of its stop, most of the room
   assert.match(body, /--w: min\(100cqw - 2 \* var\(--peek\), max\(64cqw, 68rem\)\);/);

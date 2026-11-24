@@ -293,9 +293,12 @@ weights and generous line-height. Avoid decorative fonts.
   as wide as `--w` (the central 80%, 68rem, or 64% of a very wide
   screen) and at least 72% of the room's height, its content in its
   middle; wide panels lay their words in columns. The words' 4.5:1 comes
-  from a soft shade behind each block of words (`--shade`, feathered by
-  a mask, as wide as the words) and the blur, with a dark halo
-  (text-shadow) for the eye. Projects: a row of panels, each centred in
+  from the glass's smooth blur (which dims the city a little) and a
+  faint shade behind each block of words (`--shade`, 0.46, as wide as the
+  words and blurred into the glass, so it has no edge), with a dark halo
+  (text-shadow) for the eye; on the glass secondary words are a step
+  lighter (`--muted` `#c9ced8` inside `.panel`, the coordinator's ruling
+  of fix round 1). Projects: a row of panels, each centred in
   its own screen, city between them. Experience: one stop, all three
   entries at once on a simple timeline (three columns on a wide panel, a
   line down the side on a narrow one).
