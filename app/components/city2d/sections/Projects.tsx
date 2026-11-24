@@ -53,12 +53,13 @@ function Keys({ project }: { project: Project }) {
 // share the frame side by side. Each picture opens the full image in a new
 // tab. Nothing is cropped. A wide cover under the title, once the words
 // are beside it, grows to their height (the picture whole and centred in
-// it), so the panel has no empty well. Around the frame, its depth on a
+// it), so the panel has no empty well; with the fold open (the words far
+// taller) it keeps its own shape at the top instead of a tall dark frame. Around the frame, its depth on a
 // fine pointer (reveal.css, "Depth"; Tilt.tsx).
 function Picture({ shots, side }: { shots: Screenshot[]; side: boolean }) {
   return (
     <div className="depth rounded-[var(--radius-in)] @min-[45.5rem]:flex-1" data-tilt="">
-      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto"}`}>
+      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:h-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:aspect-(--ar)"}`}>
         {shots.map((shot) => (
           <a
             key={shot.src}
@@ -206,7 +207,7 @@ export default function Projects() {
                   keep the sheet; beside the words, free of that */}
               {cover && (
                 <div
-                  className={`mx-auto w-full min-w-0 max-w-[calc(25svh*var(--ar))] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col"}`}
+                  className={`mx-auto w-full min-w-0 max-w-[calc(25svh*var(--ar))] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col @min-[45.5rem]:[.project:has(.project-more[open])_&]:self-start"}`}
                   style={{ "--ar": shown.reduce((w, s) => w + s.width / s.height, 0) } as CSSProperties}
                 >
                   <Picture shots={shown} side={side} />

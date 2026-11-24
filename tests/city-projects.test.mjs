@@ -99,6 +99,12 @@ test("the fold's summary is a full-width glass key: \"Show more\" and what it ho
   assert.match(city, /details\[open\] > summary\.glass \{\s*border-color: var\(--cyan\);/);
 });
 
+test("a wide cover grows to the words' height, but with the fold open keeps its own shape at the top", () => {
+  const open = "@min-[45.5rem]:[.project:has(.project-more[open])_&]:";
+  assert.ok(source.includes(`${open}self-start`), "the cover's cell stops stretching");
+  assert.ok(source.includes(`${open}h-auto ${open}aspect-(--ar)`), "the frame goes back to the picture's shape");
+});
+
 test("a fold opens in place, its height and fade on the motion tokens, only where motion is welcome", () => {
   const city = read("app/city.css");
   const i = city.indexOf('details::details-content {');
