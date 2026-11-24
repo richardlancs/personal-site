@@ -15,6 +15,11 @@ const CSS_UNITS = 96 / 72;
 const STEPS = [0.25, 0.33, 0.5, 0.67, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 const MIN = STEPS[0];
 const MAX = STEPS[STEPS.length - 1];
+// A phone: fitting the width would set the words at about 5px (M9). Under
+// SMALL it opens at READABLE instead (one sideways pan; "Fit width" one
+// press away), and "Open in your viewer" hands the file to the phone's own
+const SMALL = 0.6;
+const READABLE = 0.8;
 
 type Status = { kind: "loading" } | { kind: "ready"; resume: Resume } | { kind: "error"; error: ResumeError };
 
@@ -31,7 +36,9 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
   const doc = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
-  const [fit, setFit] = useState(true);
+  // How the zoom is chosen: "auto" on opening (fit, or READABLE where
+  // fitting is too small), "fit" from the button, "zoom" from + and −
+  const [mode, setMode] = useState<"auto" | "fit" | "zoom">("auto");
   const [zoom, setZoom] = useState(1);
   const [width, setWidth] = useState(0); // the document area's inner width
   const [pageNo, setPageNo] = useState(1);
@@ -66,7 +73,9 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
   const first = status.kind === "ready" ? status.resume.pages[0] : null;
   const pageWidth = first ? first.getViewport({ scale: 1 }).width * CSS_UNITS : 816;
   const fitZoom = width > 0 ? Math.min(MAX, Math.max(MIN, width / pageWidth)) : 1;
-  const current = fit ? fitZoom : zoom;
+  const small = fitZoom < SMALL;
+  const fit = mode === "fit" || (mode === "auto" && !small);
+  const current = mode === "zoom" ? zoom : fit ? fitZoom : READABLE;
   const pages = status.kind === "ready" ? status.resume.pages.length : 0;
 
   // A zoom from the buttons keeps the middle of the view where it was
@@ -86,7 +95,7 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
 
   const zoomTo = (next: number) => {
     anchor.current = true;
-    setFit(false);
+    setMode("zoom");
     setZoom(Math.min(MAX, Math.max(MIN, next)));
   };
   const zoomIn = () => zoomTo(STEPS.find((s) => s > current + 0.001) ?? MAX);
@@ -101,13 +110,13 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
 
   // ---- Opening and closing ----
 
-  // Each opening starts at "Fit width"; opening again after a failure is
+  // Each opening starts at "Fit width" (or READABLE on a phone); opening again after a failure is
   // a fresh try
   const [shown, setShown] = useState(open);
   if (open !== shown) {
     setShown(open);
     if (open) {
-      setFit(true);
+      setMode("auto");
       if (status.kind === "error") {
         setStatus({ kind: "loading" });
         setAttempt((a) => a + 1);
@@ -140,6 +149,9 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
   useEffect(() => {
     const el = dialog.current;
     if (!el) return;
+    // (held again if anything let go while it stayed open: React's
+    // development remount runs the unmount clean-up below)
+    if (open && el.open) lockScroll();
     if (open && !el.open) {
       closing.current = false;
       el.removeAttribute("data-closing");
@@ -293,7 +305,7 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
             onClick={() => {
               if (status.kind !== "ready" || fit) return;
               anchor.current = true;
-              setFit(true);
+              setMode("fit");
             }}
           >
             {/* Two arrows apart; a tick beside them while it's on, so the
@@ -343,6 +355,14 @@ export default function ResumeViewer({ open, src, onClosed, from }: Props) {
         </div>
 
         <div className="resume-end">
+          {/* The file in a new tab, where a phone's own viewer pinch-zooms
+              (M9) */}
+          <a href={src} target="_blank" rel="noopener noreferrer" className="glass resume-open">
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+            </svg>
+            Open in your viewer<span className="sr-only"> (opens in a new tab)</span>
+          </a>
           {download}
           <button type="button" className="glass resume-close" onClick={requestClose}>
             <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -428,6 +448,7 @@ function wrapFocus(dialog: HTMLDialogElement, event: KeyboardEvent) {
 // scrollbar shows, its space is kept, so nothing shifts sideways.
 function lockScroll() {
   const root = document.documentElement;
+  if (root.classList.contains("resume-lock")) return;
   if (window.innerWidth > root.clientWidth) root.classList.add("resume-gutter");
   root.classList.add("resume-lock");
 }

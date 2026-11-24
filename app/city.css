@@ -307,13 +307,16 @@ button.text-link,
   white-space: nowrap;
 }
 
-.rh-region {
-  display: none;
+/* "Weather in", quiet: not where Richard is (R12). Not where the bar
+   is shortest of room, with the section's number beside the name */
+.rh-label {
+  color: var(--muted);
+  font-weight: 500;
 }
 
-@media (min-width: 1100px) {
-  .rh-region {
-    display: inline;
+@media (min-width: 53rem) and (max-width: 63.99rem) {
+  .rh-label {
+    display: none;
   }
 }
 
@@ -403,16 +406,14 @@ button.text-link,
   width: 3.8em;
 }
 
-/* Narrow: the name and the controls on the first row, the time and
-   weather on a row of its own under them */
+/* Narrow: one row, the name and the keys (they drop under it, to the
+   right, only with very large text); the time and weather at the foot of
+   the Sections menu instead (R7, M4) */
 @media (max-width: 719px) {
   :root {
-    --bar-h: calc(8.5rem + env(safe-area-inset-top));
+    --bar-h: calc(4.25rem + env(safe-area-inset-top));
   }
 
-  /* Wrapping rows: the keys stay beside the name while they fit and
-     drop under it (to the right) when they don't (very large text); an
-     empty full-width item breaks the line before the time and weather */
   .top-bar {
     min-height: 0;
     column-gap: 0.5rem;
@@ -422,23 +423,52 @@ button.text-link,
   }
 
   .top-bar-end {
-    order: 1;
     margin-left: auto;
   }
 
-  .top-bar::after {
-    content: "";
-    order: 2;
-    flex-basis: 100%;
-  }
-
-  .top-bar .rh {
-    order: 3;
+  .top-bar > .rh {
+    display: none;
   }
 
   .top-bar-name {
     font-size: 1.25rem;
   }
+}
+
+/* The menu's copy of the weather: only on phones, a quiet last line */
+.sections-menu .rh {
+  display: flex;
+  margin: 0.5rem 0 0;
+  border-width: 1px 0 0;
+  border-radius: 0;
+}
+
+@media (min-width: 720px) {
+  .sections-menu .rh {
+    display: none;
+  }
+}
+
+/* Still view in words where the bar has room (A11Y-14) */
+.top-bar-still-label {
+  display: none;
+}
+
+@media (min-width: 80rem) {
+  .top-bar .top-bar-still {
+    width: auto;
+    padding: 0 0.9rem;
+  }
+
+  .top-bar-still-label {
+    display: inline;
+  }
+}
+
+/* Without JavaScript (no data-still from the head script): no keys that
+   can't work, and no weather that would never fill (A11Y-13) */
+:root:not([data-still]) :is(.top-bar-still, .top-bar-music, .rh) {
+  display: none;
 }
 
 /* The smallest phones: Sections is its icon alone (its name is still
@@ -534,37 +564,43 @@ body::after {
   }
 }
 
+/* One list of plain rows, 48px tall, a tint under the pointer (V13) */
 .sections-menu :is(ul, li) {
   display: grid;
-  gap: 0.35rem;
 }
 
-.sections-menu .glass {
+.sections-menu a {
   display: flex;
-  justify-content: flex-start;
-  width: 100%;
+  align-items: center;
   min-height: 3rem;
+  padding: 0 1rem;
+  border-radius: var(--radius);
+  color: var(--muted);
   font-family: var(--font-display);
   font-size: 1.125rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
+  text-decoration: none;
 }
 
-/* Where you are: a filled dot at the end of the entry, as well as the
-   chosen glass (aria-current="location"), so not by colour alone */
-.sections-menu-here {
-  width: 0.5rem;
-  height: 0.5rem;
-  margin-left: auto;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 0 2px var(--ink), 0 0 0 3px var(--cyan);
+@media (hover: hover) {
+  .sections-menu a:hover {
+    background: rgb(79 216 238 / 0.08);
+    color: var(--text);
+  }
+}
+
+/* Where you are (aria-current="location"): a cyan bar at its left and a
+   heavier weight in --text, so not by colour alone */
+.sections-menu a[aria-current] {
+  box-shadow: inset 2px 0 var(--cyan);
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* A section's part (Skills, under Projects): set in under it */
 .sections-menu .sections-menu-sub {
-  width: calc(100% - 1.25rem);
-  margin-left: 1.25rem;
+  padding-left: 2.25rem;
   font-size: 1rem;
 }
 
@@ -1030,8 +1066,11 @@ a[data-resume][data-opening] {
 
 :root[data-track="on"] .progress-line {
   position: fixed;
-  /* (px: six 44px stations 8px apart fit a 320px screen at any text size) */
-  inset: auto max(8px, env(safe-area-inset-right), 50% - 30rem) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left), 50% - 30rem);
+  /* (px: six 44px stations 8px apart fit a 320px screen at any text size).
+     Its sides line up with the panels' central 80% (--peek: V12); the
+     phone's sheets run edge to edge, so there the map keeps 8px */
+  --map-x: var(--peek);
+  inset: auto max(8px, env(safe-area-inset-right), var(--map-x)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left), var(--map-x));
   display: block;
   padding: 0.375rem 0;
   border-radius: var(--radius-lg);
@@ -1040,6 +1079,12 @@ a[data-resume][data-opening] {
   backdrop-filter: blur(12px);
   /* (its own width decides whether every name fits: below) */
   container-type: inline-size;
+}
+
+@media (max-aspect-ratio: 1 / 1) {
+  :root[data-track="on"] .progress-line {
+    --map-x: 0px;
+  }
 }
 
 .progress-rail {
@@ -1139,19 +1184,19 @@ a[data-resume][data-opening] {
 
 /* A narrow strip (phones; tablets with large text: measured in em, so it
    follows the text size): the current station's name alone (the others
-   are still each link's name, read out), beside its dot */
+   are still each link's name, read out), centred over its dot, clear of
+   the map's edge (V16, M14) */
 @container (width < 36em) {
+  .progress-rail {
+    margin: 0 0.5rem;
+  }
+
   .progress-label {
-    align-self: flex-start;
     pointer-events: none;
   }
 
   .progress-point:not([aria-current]) .progress-label {
     opacity: 0;
-  }
-
-  .progress-points > :nth-child(n + 4) .progress-label {
-    align-self: flex-end;
   }
 }
 
@@ -1242,9 +1287,14 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
     margin-right: 0;
   }
 
+  /* (it takes the room left and cuts short with an ellipsis, so a long
+     place, "Projects · 4 of 5 Codebase Puzzles", never adds a row) */
   .top-bar-here {
     display: block;
-    margin-right: auto;
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 

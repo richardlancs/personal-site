@@ -84,11 +84,10 @@ for (const view of Object.keys(views)) {
       await visit(page, route);
       const link = await trigger(page, route);
       // The narrow layout: the page itself scrolls; scroll it a little
-      // further where it can, so a moved page would show. Not at the
-      // journey's first stop: there a scroll moves the hero sideways, its
-      // links part off the screen and on their way (focus on one rightly
-      // brings its stop back on)
-      if (view === "phone" && !(route === "/" && (await page.evaluate(() => document.documentElement.dataset.track === "on")))) await page.evaluate(() => window.scrollBy(0, 30));
+      // further where it can, so a moved page would show. Not on the
+      // journey: there a scroll moves the stop sideways (and the phone's
+      // snap points carry it on to the next stop), its links off the screen
+      if (view === "phone" && !(await page.evaluate(() => document.documentElement.dataset.track === "on"))) await page.evaluate(() => window.scrollBy(0, 30));
       const before = await page.evaluate(() => ({ url: location.href, y: window.scrollY, x: window.scrollX }));
       if (how === "pointer") {
         if (view === "phone") await link.tap();
@@ -222,7 +221,14 @@ for (const view of Object.keys(views)) {
   check(dl.href === PDF && dl.download === "richard-lan-resume.pdf" && /Download PDF/.test(dl.name), `${tag}: Download PDF link`, JSON.stringify(dl));
   check(head.ok() && /pdf/.test(head.headers()["content-type"]), `${tag}: the PDF is served`, head.headers()["content-type"]);
 
-  // Zoom
+  // Zoom. On a phone it opens at a readable zoom, not fit (fitting sets
+  // the words at about 5px: M9); fit first, then the same checks
+  const fitKey = page.getByRole("button", { name: "Fit width" });
+  if ((await fitKey.getAttribute("aria-pressed")) !== "true") {
+    check((await page.locator("dialog.resume .resume-percent").textContent()).includes("80%"), `${tag}: opens readable (80%) where fit is too small`);
+    await fitKey.click();
+    await page.waitForTimeout(400);
+  }
   const fitW = await pageWidth(page);
   const inner = await page.evaluate(() => {
     const el = document.querySelector("dialog.resume .resume-doc");

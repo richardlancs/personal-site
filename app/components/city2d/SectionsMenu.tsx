@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, type MouseEvent } from "react";
 import { listed } from "../../sections/registry";
+import WeatherClock from "../weather/WeatherClock";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { useSection } from "./useSection";
 
@@ -13,9 +14,12 @@ import { useSection } from "./useSection";
 // focus to that section (each can take focus, tabIndex -1), so the
 // keyboard carries on from there (jump.ts). A click with a modifier key
 // or the middle button is left to the browser. The section you're at
-// (useSection.ts, from the metro map) is marked: aria-current="location", and a filled dot as
-// well as the chosen glass, so not by colour alone. It grows out of its
-// key, and the city dims behind it (city.css).
+// (useSection.ts, from the metro map) is marked: aria-current="location",
+// a cyan bar at its left and a heavier weight, so not by colour alone.
+// One plain list (rows of words, not a stack of keys: V13), it grows out
+// of its key, and the city dims behind it (city.css). On phones the bar
+// is one row, and Richmond Hill's time and weather sit at the menu's foot
+// instead (WeatherClock, the same store as the bar's: city.css shows one).
 //
 // It also measures the bar it sits in: the bar's real height (--bar-h,
 // the page's scroll padding) and where the Sections button ends
@@ -78,18 +82,18 @@ export default function SectionsMenu() {
       <ul>
         {listed.map((s) => (
           <li key={s.id}>
-            <Link href={jumpHref(s.href)} onClick={go(jumpHref(s.href))} className="glass" aria-current={s.id === here ? "location" : undefined}>
+            <Link href={jumpHref(s.href)} onClick={go(jumpHref(s.href))} aria-current={s.id === here ? "location" : undefined}>
               {s.title}
-              {s.id === here && <span className="sections-menu-here" aria-hidden="true" />}
             </Link>
             {s.subsections?.map((sub) => (
-              <Link key={sub.href} href={sub.href} onClick={go(sub.href)} className="glass sections-menu-sub">
+              <Link key={sub.href} href={sub.href} onClick={go(sub.href)} className="sections-menu-sub">
                 {sub.title}
               </Link>
             ))}
           </li>
         ))}
       </ul>
+      <WeatherClock />
     </nav>
   );
 }

@@ -10,7 +10,9 @@ const unknown = () => false;
 
 // A small glass button in the corner, beside the music: Still view holds
 // the page still (lib/still.ts, lib/stillStore.ts). Pressed, nothing
-// moves on its own.
+// moves on its own. Its name in words beside the icon where the bar has
+// room (from 80rem: A11Y-14), the icon alone below (its name still read
+// out). Without JavaScript it isn't drawn (city.css): it couldn't work.
 export default function StillViewToggle() {
   const still = useSyncExternalStore(subscribeStill, getStill, unknown);
   useLayoutEffect(syncStill, []);
@@ -23,7 +25,7 @@ export default function StillViewToggle() {
       aria-label="Still view"
       aria-pressed={still}
       title={label}
-      className="glass glass-icon"
+      className="glass glass-icon top-bar-still"
     >
       {/* A framed picture of a hill and the sun: a still view. The sun
           fills in while it's on. */}
@@ -43,6 +45,9 @@ export default function StillViewToggle() {
         <path d="m3 16 5-5 4.5 4.5L15 13l6 5" />
         <circle cx="15.5" cy="9" r="1.5" fill={still ? "currentColor" : "none"} />
       </svg>
+      <span className="top-bar-still-label" aria-hidden="true">
+        Still view
+      </span>
     </button>
   );
 }

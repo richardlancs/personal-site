@@ -5,9 +5,12 @@ import { describeNow, splitMeridiem, type ClockText } from "./clockText";
 import { useRichmondHill } from "./useRichmondHill";
 import WeatherIcon from "./WeatherIcon";
 
-// Richmond Hill's time and weather, in the corner beside the Sections
-// menu (WorldControls.tsx): a small bubble of clear glass with the place,
-// the time, and the weather as an icon, a temperature and a word. Only
+// Richmond Hill's time and weather, in the top bar (TopBar.tsx; on phones
+// at the foot of the Sections menu instead, so the bar keeps one row): a
+// small bubble of clear glass with the place, labelled as the weather's
+// ("Weather in Richmond Hill", so it doesn't read as where Richard lives:
+// R12), the time, and the weather as an icon, a temperature and a word.
+// Without JavaScript it isn't drawn (city.css): it would never fill. Only
 // something to read: no button, no focus, no details to open, no press.
 // The data's credit (Open-Meteo, CC BY 4.0) is in each page's footer
 // (components/ui/Colophon.tsx).
@@ -22,8 +25,8 @@ export default function WeatherClock() {
   return (
     <p className="rh" data-status={text.status}>
       <span className="rh-place">
+        <span className="rh-label">Weather in </span>
         {richmondHill.name}
-        <span className="rh-region">, {richmondHill.region}</span>
       </span>{" "}
       {/* The spaces between the fields are for reading aloud and copying;
           the layout (flex) doesn't draw them */}

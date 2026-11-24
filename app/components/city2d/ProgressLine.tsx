@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { FAST, lockedAt, progressAt, reached, shown, type Marks } from "../../lib/progress";
 import { listed, sectionNumber } from "../../sections/registry";
 import { REDUCED_MOTION } from "../../lib/still";
-import { trackMarks } from "./CityTrack";
+import { trackMarks, trackPlace, type TrackPlace } from "./CityTrack";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
 import { setSection, useSection } from "./useSection";
 
@@ -28,7 +28,11 @@ import { setSection, useSection } from "./useSection";
 // the dots alone, the current name beside the row. It is drawn only on the
 // journey (data-track="on"): read top to bottom, the Sections menu serves.
 // The bar names the section in words too ("03 / 06 · Projects", from
-// 53rem). In still view and with reduced motion the fill steps from
+// 56rem), and the panel you're at within it ("Projects · 2 of 5 Empyrean",
+// "Projects · Skills") from CityTrack's "trackplace" event, which also
+// says which section you're at while the journey runs: the panel whose
+// middle has passed the screen's (the same list the snap points, the
+// arrows and Page Down use), so the bar, the map and the menu agree. In still view and with reduced motion the fill steps from
 // station to station and nothing pulses or eases.
 //
 // One passive scroll listener, throttled to animation frames, reads only
@@ -48,6 +52,10 @@ export default function ProgressLine() {
   const here = useSection();
   const hereIndex = Math.max(0, points.findIndex((s) => s.id === here));
   const at = points[hereIndex];
+  const [place, setPlace] = useState<TrackPlace | null>(null);
+  // The panel within the section, when it isn't the section itself
+  const part =
+    place && place.section === at.id && place.title !== at.title ? (place.n && place.of ? `${place.n} of ${place.of} ${place.title}` : place.title) : null;
 
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;
@@ -74,6 +82,14 @@ export default function ProgressLine() {
     let snapTimer = 0;
     let pulseTimer = 0;
     let pulsing: HTMLElement | undefined;
+    let placed = false; // CityTrack says where you are (the journey)
+    const toPlace = (detail: TrackPlace | null) => {
+      if (!detail || !points.some((s) => s.id === detail.section)) return;
+      placed = true;
+      setPlace(detail);
+      setSection(detail.section);
+    };
+    const onPlace = (event: Event) => toPlace((event as CustomEvent<TrackPlace>).detail);
 
     // The point's ring pulses once (not the one already pulsing)
     const pulse = (i: number) => {
@@ -134,7 +150,8 @@ export default function ProgressLine() {
         // Passed a point without landing on it (a fast scroll): it may
         // still pulse
         if (moving && lock === null) pulse(now);
-        setSection(points[now].id);
+        // (on the journey, CityTrack's event says where you are)
+        if (!placed || html.dataset.track !== "on") setSection(points[now].id);
       }
       line.style.setProperty("--progress", String(Math.round(value * 10000) / 10000));
     };
@@ -164,6 +181,9 @@ export default function ProgressLine() {
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", remeasure);
     window.addEventListener("trackmeasure", remeasure);
+    window.addEventListener("trackplace", onPlace);
+    // (one announced before this listened)
+    toPlace(trackPlace());
     // The page grows as pictures load; the bar as it wraps
     const resize = new ResizeObserver(remeasure);
     const main = document.querySelector("main");
@@ -181,6 +201,7 @@ export default function ProgressLine() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", remeasure);
       window.removeEventListener("trackmeasure", remeasure);
+      window.removeEventListener("trackplace", onPlace);
       window.removeEventListener("load", land);
       resize.disconnect();
       still.disconnect();
@@ -201,7 +222,11 @@ export default function ProgressLine() {
         <span className="top-bar-here-number">
           {sectionNumber(at)} / {sectionNumber(points[last])}
         </span>
-        <span className="top-bar-here-name"> · {at.title}</span>
+        <span className="top-bar-here-name">
+          {" · "}
+          {at.title}
+          {part && ` · ${part}`}
+        </span>
       </p>
       <nav ref={ref} aria-label="Page progress" className="progress-line" style={{ "--last": last } as CSSProperties}>
         <div className="progress-rail">

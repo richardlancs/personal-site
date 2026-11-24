@@ -10,7 +10,10 @@ const read = (path) => readFileSync(`${root}${path}`, "utf8");
 test("the Sections menu marks where you are and leaves modified clicks to the browser", () => {
   const src = read("app/components/city2d/SectionsMenu.tsx");
   assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
-  assert.match(src, /sections-menu-here/, "a mark as well as colour");
+  // One plain list (V13): rows, not glass keys; where you are is a cyan bar
+  // and a heavier weight, not by colour alone
+  assert.doesNotMatch(src.match(/<nav [\s\S]*<\/nav>/)[0], /className="glass/);
+  assert.match(read("app/city.css"), /\.sections-menu a\[aria-current\] \{\s*box-shadow: inset 2px 0 var\(--cyan\);\s*color: var\(--text\);\s*font-weight: 600;/);
   assert.match(src, /if \(!isPlainClick\(e\)\) return;/);
   const jump = read("app/components/city2d/jump.ts");
   assert.match(jump, /e\.button === 0 && !e\.metaKey && !e\.ctrlKey && !e\.shiftKey && !e\.altKey/);

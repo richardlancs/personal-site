@@ -114,10 +114,10 @@ test("the résumé opens from its link", () => {
   assert.match(read("app/components/resume/ResumeViewer.tsx"), /setProperty\("--resume-from"/);
 });
 
-test("a copy's success is one signal set: the chosen key with its tick, and \"Copied\" said once, in the status line", () => {
-  const code = copy.replace(/^\s*\/\/.*$/gm, "");
-  assert.equal((code.match(/"Copied"/g) ?? []).length, 1, "the word once");
-  assert.doesNotMatch(copy, /\{copied \? "Copied"/, "the key keeps its label");
+test("a copy's success is one signal set: the key turns to \"Copied\" (V14), said once in a polite status line", () => {
+  // The key's own label may swap to "Copied" (Task 9, V14: a clear
+  // success moment); the live region is still there, and polite
+  assert.match(copy, /role="status"\s+aria-live="polite"/, "a polite live region");
   assert.doesNotMatch(motion, /contact-address|:has\(/, "no ring on the address");
   // The shake is only set where it can play, so it never waits in still view
   assert.match(copy, /matchMedia\("\(prefers-reduced-motion: no-preference\)"\)\.matches && document\.documentElement\.dataset\.still !== "on"/);

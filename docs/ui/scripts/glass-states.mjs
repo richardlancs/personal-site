@@ -97,10 +97,10 @@ const shot = async (page, locator, pad = 12) => {
 
 // Each control: where it is, the row or group to photograph, the chosen
 // one, another to hover, and a disabled one when it has one
+// (The Sections menu's rows are plain rows since Task 9, V13: not glass)
 const controls = {
   desktop: [
     { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
-    { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
     { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass" },
     { name: "project", path: "/#marketlab", group: "#marketlab p:has(> a.glass)", other: "#marketlab a.glass:not(.glass-primary)" },
     { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
@@ -110,7 +110,6 @@ const controls = {
   ],
   phone: [
     { name: "corner", path: "/", group: ".top-bar-end", other: '[popovertarget="places-menu"]' },
-    { name: "menu", path: "/", open: '[popovertarget="places-menu"]', group: "#places-menu", chosen: '#places-menu a[aria-current="location"]', other: "#places-menu a.glass:not([aria-current])" },
     { name: "hero", path: "/", group: ".hero-actions", other: ".hero-actions .glass" },
     { name: "copy", path: "/#contact", group: "#contact .contact > div:has(button.glass)", other: "#contact button.glass", copy: true },
     { name: "profile", path: "/#contact", group: '#contact ul[aria-label="Links"]', other: "#contact .profile-key" },
@@ -172,7 +171,9 @@ for (const [view, opts] of Object.entries(views)) {
     if (c.chosen) {
       const chosen = page.locator(c.chosen).first();
       r.chosen = await look(chosen);
-      check(r.chosen.border.includes(CYAN), `${key}: chosen edge ${r.chosen.border}`);
+      // (the résumé's chosen "Fit width" keeps its cyan edge inside only, so
+      // it never looks like the focus ring: V20)
+      check((c.resume ? r.chosen.shadow : r.chosen.border).includes(CYAN), `${key}: chosen edge ${r.chosen.border} / ${r.chosen.shadow}`);
       check(/inset/.test(r.chosen.shadow), `${key}: chosen not pressed in (${r.chosen.shadow})`);
       r.chosenContrast = await labelContrast(page, chosen);
       check(r.chosenContrast >= 4.5, `${key}: chosen label ${r.chosenContrast}:1`);

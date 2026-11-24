@@ -183,6 +183,15 @@
   margin-left: -0.15rem;
 }
 
+/* "Fit width" chosen: the chosen fill, pressed in, a doubled cyan edge
+   inside, but no outer glow or cyan rim, so it never looks like the focus
+   ring (V20): the ring outside is focus's alone */
+.resume .glass[aria-pressed="true"] {
+  --glass-in: inset 0 0 0 2px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
+  --glass-lift: 0 0 transparent;
+  border-color: var(--glass-border);
+}
+
 .resume-percent,
 .resume-pageno {
   min-width: 3.4rem;
@@ -225,6 +234,18 @@
 
   .resume .glass {
     padding-inline: 0.8rem;
+  }
+}
+
+/* A phone upright: Download and Close beside the title, zoom under them,
+   "Open in your viewer" on a line of its own at the end */
+@media (max-width: 767px) {
+  .resume-end {
+    display: contents;
+  }
+
+  .resume-open {
+    order: 4;
   }
 }
 

@@ -107,7 +107,6 @@ async function frames(page, locator, name) {
   await open(page);
   for (const [name, sel, prep] of [
     ["sections", ".top-bar-sections"],
-    ["menu row", "#places-menu a.glass", () => page.locator(".top-bar-sections").click()],
   ]) {
     if (prep) {
       await prep();

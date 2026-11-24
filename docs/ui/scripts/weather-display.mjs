@@ -25,8 +25,12 @@ for (const view of ["desktop", "phone"]) {
   await page.clock.install({ time: new Date("2026-11-11T15:58:30-05:00") });
   await page.goto(base + "/", { waitUntil: "load" });
   await page.clock.runFor(3000);
-  const rh = page.locator(".rh");
+  // On a phone the bar is one row: the display is at the foot of the
+  // Sections menu instead (Task 9: R7, M4)
+  if (phone) await page.locator(".top-bar-sections").tap();
+  const rh = page.locator(phone ? "#places-menu .rh" : ".top-bar > .rh");
   await rh.waitFor();
+  check(`${view}: labelled as the weather's, not where Richard is`, (await rh.locator(".rh-place").textContent()).startsWith("Weather in "), await rh.locator(".rh-place").textContent());
 
   // What it is
   const semantics = await rh.evaluate((e) => ({
@@ -53,12 +57,12 @@ for (const view of ["desktop", "phone"]) {
   if (phone) await rh.tap();
   else await rh.click();
   await page.clock.runFor(500);
-  const after = await page.evaluate(() => ({ open: !!document.querySelector(":popover-open, dialog[open]"), pressed: !!document.querySelector(".rh[data-pressed], .rh [data-pressed]") }));
+  const after = await page.evaluate(() => ({ open: !!document.querySelector(":popover-open:not(#places-menu), dialog[open]"), pressed: !!document.querySelector(".rh[data-pressed], .rh [data-pressed]") }));
   check(`${view}: clicking opens nothing, presses nothing, goes nowhere`, !after.open && !after.pressed && page.url() === url && (await looks(rh)) === before, after);
 
   // Selectable: a double click selects a word in it
   if (!phone) {
-    await page.locator(".rh-place").dblclick();
+    await rh.locator(".rh-place").dblclick();
     const selected = await page.evaluate(() => getSelection().toString().trim());
     check(`${view}: its words can be selected`, selected.length > 0, selected);
     await page.evaluate(() => getSelection().removeAllRanges());
@@ -76,24 +80,26 @@ for (const view of ["desktop", "phone"]) {
   }
 
   // The clock still ticks: a minute later, the time and <time> follow
-  const t0 = await page.locator(".rh-time").textContent();
+  const t0 = await rh.locator(".rh-time").textContent();
   await page.clock.runFor(61_000);
-  const t1 = await page.locator(".rh-time").textContent();
+  const t1 = await rh.locator(".rh-time").textContent();
   check(`${view}: the time moves on with the clock`, t0 !== t1, { t0, t1 });
 
   // (On the fake clock, hours from the real reading, it's too old to show:
   // "unavailable". The live reading is checked below, on the real clock.)
 
-  // The hero (sections/Hero.tsx): exact headline, no paragraph, every link
+  // The hero (sections/Hero.tsx): a headline (its words are portfolio.ts's,
+  // not this script's), no paragraph, every link
   const intro = await page.evaluate(() => ({
     subtitle: document.querySelector(".hero-headline")?.textContent,
     // The headline and the school's line are the hero's only words
     paragraph: document.querySelectorAll(".hero p").length > 2,
     links: [...document.querySelectorAll(".hero a")].map((a) => [a.textContent.replace(/\s*\(opens in a new tab\)/, "").trim(), a.getAttribute("href")]),
   }));
-  check(`${view}: the subtitle is exactly cs@uwaterloo, and there's no paragraph`, intro.subtitle === "cs@uwaterloo" && !intro.paragraph, intro);
-  const want = { "View projects": "#projects", Contact: "#contact", GitHub: "https://github.com/richardlancs", LinkedIn: "https://www.linkedin.com/in/richard-lan-0312072a8", "Résumé": "/resume/richard-lan-resume.pdf" };
-  check(`${view}: View projects, Contact, GitHub, LinkedIn and Résumé, with their addresses`, Object.entries(want).every(([t, h]) => intro.links.some(([lt, lh]) => lt === t && lh === h)), intro.links);
+  check(`${view}: the hero has a headline, and there's no paragraph`, !!intro.subtitle?.trim() && !intro.paragraph, intro);
+  // (Contact left the hero's links in Task 9: Contact is the last stop)
+  const want = { "View projects": "#projects", GitHub: "https://github.com/richardlancs", LinkedIn: "https://www.linkedin.com/in/richard-lan-0312072a8", "Résumé": "/resume/richard-lan-resume.pdf" };
+  check(`${view}: View projects, GitHub, LinkedIn and Résumé, with their addresses`, Object.entries(want).every(([t, h]) => intro.links.some(([lt, lh]) => lt === t && lh === h)), intro.links);
   await ctx.close();
 
   // And they work: the actions navigate, the résumé opens over the page
@@ -119,6 +125,7 @@ for (const view of ["desktop", "phone"]) {
   for (const [label, hash] of [["View projects", "#projects"], ["Contact", "#contact"]]) {
     await p2.goto(base + "/", { waitUntil: "load" });
     const a = p2.locator(".hero a", { hasText: label }).first();
+    if (label === "Contact" && !(await a.count())) continue;
     await (phone ? a.tap() : a.click());
     await p2.waitForURL((u) => u.hash === hash, { timeout: 10000 }).catch(() => {});
     check(`${view}: ${label} goes to ${hash}`, new URL(p2.url()).hash === hash, p2.url());

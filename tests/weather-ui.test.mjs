@@ -94,10 +94,17 @@ test("the display is something to read, not a control, and announces nothing on 
   assert.match(colophon, /weatherProvider\.url/);
   assert.match(colophon, /weatherProvider\.licenceUrl/);
   assert.match(read("app/page.tsx"), /<Colophon \/>/);
-  // On narrow screens it takes a row of its own under the bar; it stays
-  // selectable text
+  // On narrow screens the bar keeps one row: the display moves to the
+  // Sections menu's foot (R7, M4); it is labelled as the weather's, not
+  // where Richard lives (R12); it stays selectable text
   const css = read("app/city.css");
-  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?\.top-bar::after \{\s*content: \"\";\s*order: 2;\s*flex-basis: 100%;[\s\S]*?\.top-bar \.rh \{\s*order: 3;/);
+  assert.match(css, /@media \(max-width: 719px\) \{[\s\S]*?--bar-h: calc\(4\.25rem [\s\S]*?\.top-bar > \.rh \{\s*display: none;/);
+  assert.match(read("app/components/city2d/SectionsMenu.tsx"), /<WeatherClock \/>\s*<\/nav>/);
+  assert.match(css, /@media \(min-width: 720px\) \{\s*\.sections-menu \.rh \{\s*display: none;/);
+  assert.match(clock, /<span className="rh-label">Weather in <\/span>/);
+  // Without JavaScript it would never fill: not drawn, nor the keys that
+  // can't work (A11Y-13)
+  assert.match(css, /:root:not\(\[data-still\]\) :is\(\.top-bar-still, \.top-bar-music, \.rh\) \{\s*display: none;/);
   const rh = css.match(/\n\.rh \{([^}]*)\}/)[1];
   assert.match(rh, /user-select: text/);
   assert.doesNotMatch(rh, /cursor: pointer/);
