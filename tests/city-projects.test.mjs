@@ -66,10 +66,10 @@ test("the keys come before the lists, and Live demo only when there is one", () 
   assert.match(source, /Code<span className="sr-only"> for \{project\.title\}<\/span>/);
 });
 
-test("My part is shown only with contributions, under an accent rule; features take its place otherwise", () => {
+test("My part is shown only with contributions, under a cyan rule; features take its place otherwise", () => {
   assert.match(source, /const part = project\.contributions \?\? \[\]/);
   assert.match(row, /part\.length > 0 \? \(/);
-  assert.match(row, /border-l-2 border-accent-2/);
+  assert.match(row, /border-l-2 border-cyan/);
   assert.match(row, /<Heading level=\{4\}[^>]*>My part<\/Heading>/);
   assert.match(row, /<Heading level=\{4\}[^>]*>What it does<\/Heading>/);
   assert.match(source, /project\.role && /);
@@ -93,10 +93,10 @@ test("the fold's summary is a full-width glass key: \"Show more\" and what it ho
   assert.match(summary, /group-open:hidden">\{summaryText\}/, "what it holds, while it's closed");
   assert.match(summary, /className="chevron [^"]*group-open:rotate-180/);
   assert.match(source, /\.join\(", "\)/);
-  // (city.css: the key reads from the left, its edge the second accent while open)
+  // (city.css: the key reads from the left, its edge cyan while open)
   const city = read("app/city.css");
   assert.match(city, /summary\.glass \{\s*display: flex;\s*justify-content: space-between;/);
-  assert.match(city, /details\[open\] > summary\.glass \{\s*border-color: var\(--accent-2\);/);
+  assert.match(city, /details\[open\] > summary\.glass \{\s*border-color: var\(--cyan\);/);
 });
 
 test("a wide cover grows to the words' height, but with the fold open keeps its own shape at the top", () => {
@@ -165,7 +165,7 @@ test("the extra screenshots open readable, as wide as the column, not thumbnails
 
 test("a picture that fails to load is a quiet framed box with its description (city.css)", () => {
   const css = read("app/city.css");
-  assert.match(css, /\.project img::after \{[^}]*content: attr\(alt\);[^}]*background: var\(--paper-2\);[^}]*color: var\(--muted\);/);
+  assert.match(css, /\.project img::after \{[^}]*content: attr\(alt\);[^}]*background: var\(--ink-2\);[^}]*color: var\(--muted\);/);
 });
 
 test("Skills, the row's last panel, ends with the way on", () => {

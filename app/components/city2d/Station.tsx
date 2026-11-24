@@ -1,16 +1,17 @@
 import type { CSSProperties, ReactNode } from "react";
 import { pageSections, sectionNumber, type Section } from "../../sections/registry";
-import DistrictBand from "./DistrictBand";
-import { bandTiles } from "./panoramaImages";
 
 // One section of the page, one stop of the journey (city.css, "Stations";
-// city-track.css): its words, on the crumpled paper of the page.
+// city-track.css): its band of painting (read top to bottom: its stretch of
+// the panorama; on the journey the one panorama behind every stop shows
+// instead, CityTrack.tsx), then its words. The band carries no words, and
+// the place it paints isn't named: sections are named as sections.
 //
-// The words sit in panels (`.panel`): on the journey, paper cards laid on
-// the paper, each scrolling inside once the journey has stopped with all of
+// The words sit in panels (`.panel`): on the journey, clear glass on the
+// street, each scrolling inside once the journey has stopped with all of
 // it on the screen (CityTrack.tsx), the way on (NextStop) at its foot. A stop of one panel (Home, About,
 // Interests, Contact) gets it from here, its number and heading at its
-// top; a stop of several in a row along the track (`row`: Projects,
+// top; a stop of several in a row along the street (`row`: Projects,
 // Experience) gets the row, and its section puts the heading
 // (StationHead) in the first of its own panels. Stacked (no scripts),
 // panels are plain blocks one under the other.
@@ -61,7 +62,6 @@ export default function Station({ section, heading, row, children }: { section: 
   const id = section.hash || "home";
   return (
     <section id={id} aria-labelledby={`${id}-title`} tabIndex={-1} className="station" data-district={section.district}>
-      <DistrictBand stop={pageSections.indexOf(section)} tiles={[bandTiles[pageSections.indexOf(section)]]} />
       {row ? (
         <div className="station-row">{children}</div>
       ) : (

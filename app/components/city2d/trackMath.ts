@@ -1,7 +1,7 @@
 // The horizontal journey's arithmetic (CityTrack.tsx): pure, so it is
 // tested without a browser. The page scrolls down; the track of stops moves
 // left by exactly as much, so a scroll of y pixels (from the top of the
-// runway) is y pixels along the city.
+// runway) is y pixels along the track.
 
 /** Where each stop starts along the track, in pixels, then the track's whole width: n + 1 numbers. */
 export function stopOffsets(widths: number[]): number[] {
@@ -27,14 +27,6 @@ export function stopAt(scrollY: number, offsets: number[], lead = 0): number {
   for (let i = 1; i < n; i++) if (offsets[i] <= scrollY + lead + 0.5) at = i;
   return at;
 }
-
-/** How far a layer at `depth` moves when the street has moved x: depth 0 moves with the street, 1 stays put. */
-export function parallax(x: number, depth: number): number {
-  return x * (1 - Math.min(Math.max(depth, 0), 1));
-}
-
-/** The sky behind the city (city-track.css: it moves 30% as far as the street) */
-export const SKY_DEPTH = 0.7;
 
 /**
  * Whether a screen this size takes the journey (smaller: the page reads top
@@ -66,47 +58,6 @@ export function trackRoom(w: number, h: number, rem = 16): number {
 export function trackFits(w: number, h: number, rem = 16): boolean {
   const r = rem || 16;
   return w >= TRACK_MIN.width && h >= Math.max(TRACK_MIN.height, TRACK_MIN.ems * r) && trackRoom(w, h, r) >= ROOM_EMS * r;
-}
-
-/**
- * The panorama along the journey (CityTrack.tsx): how far it has moved left
- * (`p`, pixels) at each place along the track (`x`), straight between them.
- * At each stop's start it stands at that stop's stretch (`starts`, in the
- * panorama's own pixels, drawn `scale` times as big): its segment
- * (`segment` wide) from its left edge, or centred where the screen is
- * narrower than a segment, except Home's, which stands at the panorama's
- * start as the first paint draws it (nothing moves when the scripts
- * arrive); at the journey's end, its own end. Never past either end, never
- * back.
- *
- * In still view (`still`) nothing may move against the street: the
- * panorama moves with it, pixel for pixel, through each stop's first screen
- * from that stop's stretch, then holds behind the rest of a row of panels,
- * and cuts to the next stop's stretch where that stop starts.
- */
-export function panoKeys(offsets: number[], vw: number, scale: number, starts: number[], width: number, segment: number, still = false): { x: number[]; p: number[] } {
-  const n = offsets.length - 1;
-  const travel = Math.max(0, offsets[n] - vw);
-  const end = Math.max(0, width * scale - vw);
-  const x: number[] = [];
-  const p: number[] = [];
-  const at = (k: number) => scale * (starts[k] ?? 0);
-  for (let k = 0; k < n && offsets[k] < travel; k++) {
-    if (still) {
-      const to = Math.min(offsets[k + 1], travel);
-      const run = Math.min(to - offsets[k], vw);
-      const from = Math.max(0, Math.min(at(k), end - run));
-      x.push(offsets[k], offsets[k] + run, to);
-      p.push(from, from + run, from + run);
-    } else {
-      x.push(offsets[k]);
-      p.push(k ? Math.min(end, Math.max(p[k - 1], at(k) + Math.max(0, (scale * segment - vw) / 2))) : 0);
-    }
-  }
-  // The journey's end: the last stop's stretch in still view (a cut), the panorama's end otherwise
-  x.push(travel);
-  p.push(still ? Math.max(0, Math.min(at(n - 1), end)) : end);
-  return { x, p };
 }
 
 /**
@@ -176,20 +127,4 @@ export function landing(from: number, x: number, places: number[], one: boolean,
   }
   for (let i = places.length - 1; i >= 0; i--) if (places[i] < from - 0.5 && places[i] <= x + 0.5) return i;
   return 0;
-}
-
-/** Where the panorama stands (panoKeys) at x along the track */
-export function panoAt(x: number, keys: { x: number[]; p: number[] }): number {
-  const { x: xs, p } = keys;
-  if (x <= xs[0]) return p[0];
-  for (let k = 1; k < xs.length; k++) if (x <= xs[k]) return p[k - 1] + ((p[k] - p[k - 1]) * (x - xs[k - 1])) / (xs[k] - xs[k - 1] || 1);
-  return p[p.length - 1];
-}
-
-/** The first place along the track (x) where the panorama has moved at least `p` (panoKeys): where a point of it reaches a given place on the screen */
-export function trackXForPano(p: number, keys: { x: number[]; p: number[] }): number {
-  const { x: xs, p: ps } = keys;
-  if (p <= ps[0]) return xs[0];
-  for (let k = 1; k < xs.length; k++) if (ps[k] >= p) return xs[k - 1] + ((xs[k] - xs[k - 1]) * (p - ps[k - 1])) / (ps[k] - ps[k - 1] || 1);
-  return xs[xs.length - 1];
 }

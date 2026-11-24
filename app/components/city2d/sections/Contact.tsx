@@ -22,7 +22,8 @@ const mailIcon = (
   </svg>
 );
 
-// The last section, the journey's end (city-track.css): under its heading, the one
+// The last section, the journey's end and its best-lit stop (its panel the
+// brightest on the street, city-track.css): under its heading, the one
 // thing someone who wants to reach me needs, "Email me" (the stop's
 // primary action, a mailto link to the first address). The address
 // itself is written under it, selectable, with a Copy key (CopyButton.tsx,

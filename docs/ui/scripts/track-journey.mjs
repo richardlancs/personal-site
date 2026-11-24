@@ -17,8 +17,8 @@
 //    over an opened long panel reach the next stop;
 // 5. without JavaScript, and with the page's scripts failing, the page
 //    reads top to bottom;
-// 6. (run before 5) the panorama doesn't move at hydration, and moves with
-//    the street, pixel for pixel, in still view.
+// 6. (run before 5) Home's stop doesn't move at hydration, and in still
+//    view a jump cuts.
 // 0. (Task 10) "/" without an anchor always opens on Home: cold, reloaded
 //    mid-journey, Back into a new document; with one, on its stop.
 // Exits 1 on any failure. Headless Chrome (pw.mjs). NO_TIMELINE=1 runs it
@@ -73,7 +73,7 @@ const newContext = async (opts = {}) => {
       CSS.supports = (a, b) => (/animation-timeline/.test(String(a)) ? false : b === undefined ? supports(a) : supports(a, b));
       addEventListener("DOMContentLoaded", () => {
         const s = document.createElement("style");
-        s.textContent = ".track, .track-sky, .track-weather, .pano { animation: none !important; }";
+        s.textContent = ".track { animation: none !important; }";
         document.head.append(s);
       });
     });
@@ -505,18 +505,16 @@ try {
     await tctx.close();
   }
 
-  // 6. The panorama (DistrictBand.tsx, trackMath.ts: panoKeys): Home's
-  // painting doesn't move when the scripts arrive; in still view the
-  // panorama moves with the street, pixel for pixel
+  // 6. Home's stop doesn't move when the scripts arrive
   {
     const c = await newContext({ viewport: { width: 1440, height: 900 } });
     // Its place on every frame from the first paint the journey is on
     await c.addInitScript(() => {
-      window.__pano = [];
+      window.__home = [];
       const look = () => {
-        const p = document.querySelector(".pano");
-        if (p && document.documentElement.dataset.track === "on") window.__pano.push([document.documentElement.hasAttribute("data-track-ready"), Math.round(p.getBoundingClientRect().left * 10) / 10]);
-        if (window.__pano.length < 400) requestAnimationFrame(look);
+        const p = document.querySelector(".track");
+        if (p && document.documentElement.dataset.track === "on") window.__home.push([document.documentElement.hasAttribute("data-track-ready"), Math.round(p.getBoundingClientRect().left * 10) / 10]);
+        if (window.__home.length < 400) requestAnimationFrame(look);
       };
       requestAnimationFrame(look);
     });
@@ -524,10 +522,10 @@ try {
     await page.goto(base + "/", { waitUntil: "load" });
     await page.waitForFunction(() => document.documentElement.hasAttribute("data-track-ready"));
     await settle(page, 600);
-    const seen = await page.evaluate(() => window.__pano);
+    const seen = await page.evaluate(() => window.__home);
     const before = seen.filter(([ready]) => !ready).map(([, x]) => x), after = seen.filter(([ready]) => ready).map(([, x]) => x);
     const all = [...before, ...after];
-    check(before.length > 0 && after.length > 0 && Math.max(...all) - Math.min(...all) <= 0.5, `Home's painting stands still through hydration (before ${[...new Set(before)]}, after ${[...new Set(after)]})`);
+    check(before.length > 0 && after.length > 0 && Math.max(...all) - Math.min(...all) <= 0.5, `Home's stop stands still through hydration (before ${[...new Set(before)]}, after ${[...new Set(after)]})`);
     await c.close();
   }
   // Task 11: with reduced motion (still view) a jump cuts, whatever its
@@ -544,29 +542,6 @@ try {
     const st = await page.evaluate(() => [document.documentElement.dataset.still, localStorage.getItem("still-view"), document.querySelectorAll(".top-bar-still, .top-bar [aria-label='Still view']").length]);
     check((await atStop(page)) === "contact" && between <= 2, `with reduced motion a jump from Home to Contact cuts (${between} scroll positions seen)`);
     check(st[0] === "on" && st[1] === null && st[2] === 0, `still view from the system setting, the old saved choice cleared, no key in the bar (${st})`);
-    await c.close();
-  }
-  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-    const c = await newContext({ viewport: size, reducedMotion: "reduce" });
-    const page = await open(c, "/", size);
-    // (scrolled freely between places: snapping would pull it onto one)
-    await page.evaluate(() => (document.documentElement.style.scrollSnapType = "none"));
-    const where = () => page.evaluate(() => [document.querySelector(".pano").getBoundingClientRect().left, document.querySelector(".track").getBoundingClientRect().left, document.documentElement.dataset.still]);
-    const moves = [];
-    for (const id of ["home", "about", "projects", "experience"]) {
-      const y = await page.evaluate((id) => {
-        const s = document.getElementById(id);
-        return document.querySelector(".track-runway").getBoundingClientRect().top + scrollY + s.offsetLeft;
-      }, id);
-      await page.evaluate((y) => scrollTo({ top: y + 1, behavior: "instant" }), y);
-      await settle(page, 200);
-      const [p0, t0, still] = await where();
-      await page.evaluate((y) => scrollTo({ top: y + 1 + Math.round(innerWidth / 3), behavior: "instant" }), y);
-      await settle(page, 200);
-      const [p1, t1] = await where();
-      moves.push([id, still, Math.round((p1 - p0) * 10) / 10, Math.round((t1 - t0) * 10) / 10]);
-    }
-    check(moves.every(([, still, p, t]) => still === "on" && t < -50 && Math.abs(p - t) <= 1), `${size.width}×${size.height}, still view: the panorama moves with the street (${moves.map((m) => m.join(" ")).join("; ")})`);
     await c.close();
   }
 

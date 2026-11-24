@@ -3,10 +3,10 @@
 // The browser half (wheel, keys, touch, anchors, resize, inner scroll, no
 // scripts) is docs/ui/scripts/track-journey.mjs.
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { GLIDE_MS, ROOM_EMS, SKY_DEPTH, TRACK_MIN, landing, nearestPlace, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackRoom, glideEase, glideMs, glideOn } from "../app/components/city2d/trackMath.ts";
+import { GLIDE_MS, ROOM_EMS, TRACK_MIN, landing, nearestPlace, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackRoom, glideEase, glideMs, glideOn } from "../app/components/city2d/trackMath.ts";
 import { TRACK_SCRIPT, TRACK_WAIT_MS } from "../app/lib/track.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -68,20 +68,6 @@ test("scrollYForStop clamps the stop number and never runs past the track's end"
   assert.equal(scrollYForStop(0, [0], 800), 0);
 });
 
-test("parallax: depth 0 moves with the street, 1 stays put, and it stays within bounds", () => {
-  assert.equal(parallax(1000, 0), 1000);
-  assert.equal(parallax(1000, 1), 0);
-  assert.ok(Math.abs(parallax(1000, 0.7) - 300) < 1e-9);
-  assert.equal(parallax(1000, -2), 1000);
-  assert.equal(parallax(1000, 3), 0);
-  for (const x of [-500, 0, 250, 9000])
-    for (const d of [0, 0.25, 0.7, 1]) {
-      const p = parallax(x, d);
-      assert.ok(Math.abs(p) <= Math.abs(x), "never further than the street");
-      assert.ok(p * x >= 0, "never the other way");
-    }
-});
-
 test("no scroll-jacking: the wheel and pointer listeners are passive, only the keys' page step is prevented, no fling", () => {
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /^"use client";/);
@@ -117,10 +103,10 @@ test("the keys: ArrowLeft/ArrowRight, PageUp/PageDown and Space go a place, neve
   assert.match(src, /const page = e\.key === "PageDown" \|\| e\.key === "PageUp" \|\| e\.key === " ";/);
   assert.match(src, /e\.altKey \|\| e\.ctrlKey \|\| e\.metaKey/, "Alt+Left is Back");
   assert.match(src, /e\.shiftKey && e\.key !== " "/);
-  assert.match(src, /glide\(places\[next\]\.x, still\(\), places\[next\]\.stop\);\s*focusPanel\(places\[next\]\.panel\);/, "the step takes focus (A11Y-06)");
+  assert.match(src, /glide\(places\[next\]\.x, still\(\)\);\s*focusPanel\(places\[next\]\.panel\);/, "the step takes focus (A11Y-06)");
   assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]"/);
   assert.match(src, /if \(instant \|\| calm\.matches \|\| document\.hidden\) return scrollTo\(\{ top: top \+ to, behavior: "instant" \}\);/, "a cut with reduced motion");
-  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\)\)/, "a glide cuts in still view");
+  assert.match(src, /const glide = \(x: number, instant = still\(\)\) =>/, "a glide cuts in still view");
   assert.match(src, /html\.dataset\.still === "on"/);
 });
 
@@ -233,9 +219,7 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(body, /animation: track-move linear both;/, "one pixel along for one down");
   // Where there's no timeline, the script writes the transforms each frame
   const src = code(read("app/components/city2d/CityTrack.tsx"));
-  assert.match(src, /track\.style\.transform = `translateX\(\$\{-x\}px\)`/);
-  assert.match(src, /weather\.style\.transform = `translateX\(\$\{x\}px\)`/);
-  assert.match(src, /sky\.style\.transform = `translateX\(\$\{-parallax\(x, still\(\) \? 0 : SKY_DEPTH\)\}px\)`/);
+  assert.match(src, /track\.style\.transform = `translateX\(\$\{-along\(\)\}px\)`/);
   assert.match(body, /scroll-padding-top: 0;/, "nothing pads the view timeline");
   // The bar floats over the stage (no first scroll that moves the page, not the city)
   assert.match(body, /:root\[data-track="on"\] \.top-bar \{\s*position: fixed;/);
@@ -254,28 +238,29 @@ test("the CSS: a sticky stage that can't be scrolled sideways, the move on the r
   assert.match(src2, /p\.toggleAttribute\("data-open", scrolls && Math\.abs\(x - px\) <= 2\)/, "each panel, at its place, with more than it shows");
   // A stop of a row of panels is as wide as its row
   assert.match(body, /\.track > \.station:has\(> \.station-row\) \{\s*width: auto;/);
-  // Phones: the painting on top, the words a sheet below
+  // Phones: the words a sheet below the bar's strip
   assert.match(body, /@media \(max-aspect-ratio: 1 \/ 1\)/);
-  // ... where no sheet shows the next one's words: each stop the whole
-  // screen, and the closure in the painting strip (the panorama as tall as
-  // the strip, running on past the stop)
+  // ... where no sheet shows the next one's words: each stop the whole screen
   const phone = body.slice(body.indexOf("@media (max-aspect-ratio: 1 / 1)"));
   assert.match(phone, /\.track > \.station \{\s*width: 100cqw;/);
-  assert.match(phone, /\.pano \{\s*bottom: auto;\s*height: var\(--band-h\);/);
 });
 
-test("depth: the sky lags the street, but not in still view; the weather is drawn once, held over the stage", () => {
+test("Task 12: no city behind the journey: no panorama, sky, parallax, weather or motion blur, only the track moves", () => {
   const body = code(read("app/city-track.css"));
-  assert.equal(SKY_DEPTH, 0.7);
-  assert.match(body, /\.track-sky \{[^}]*width: calc\(100% \+ 0\.3 \* var\(--travel, 0px\)\);/, "wide enough for its 30%");
-  assert.match(body, /@keyframes track-sky \{[\s\S]*?translateX\(calc\(-0\.3 \* var\(--travel, 0px\)\)\)/);
-  assert.match(body, /:root\[data-track="on"\]\[data-still="on"\] \.track-sky \{[^}]*width: calc\(100% \+ var\(--travel, 0px\)\);[^}]*animation-name: track-move;/);
-  assert.match(body, /@keyframes track-hold \{[\s\S]*?translateX\(var\(--travel, 0px\)\)/);
-  const track = read("app/components/city2d/CityTrack.tsx");
-  assert.equal((track.match(/<WeatherOverlay \/>/g) ?? []).length, 1);
-  assert.doesNotMatch(read("app/components/city2d/DistrictBand.tsx"), /WeatherOverlay/, "not one per band");
-  // Under prefers-contrast the panels are solid
-  assert.match(body, /@media \(prefers-contrast: more\) \{[\s\S]*\.track \.panel \{[^}]*background: var\(--ink\);/);
+  for (const gone of [".pano", ".band", ".track-sky", ".track-weather", "#contact::before", ".track::before", "@keyframes track-sky", "@keyframes track-hold", "@keyframes haze", "@keyframes beam", "@keyframes lights-on"]) assert.ok(!body.includes(gone), `city-track.css still has ${gone}`);
+  assert.match(body, /:root\[data-track="on"\] \.track \{\s*animation: track-move linear both;/, "the track alone rides the runway");
+  const src = code(read("app/components/city2d/CityTrack.tsx"));
+  for (const gone of ["pano", "WeatherOverlay", "track-sky", "feGaussianBlur", "blur", "parallax", "trackjump", "city"]) assert.ok(!src.includes(gone), `CityTrack still has ${gone}`);
+  assert.match(src, /<div className="track-stage">\s*<div className="track">\{children\}<\/div>\s*<\/div>/);
+  const math = code(read("app/components/city2d/trackMath.ts"));
+  for (const gone of ["parallax", "SKY_DEPTH", "panoKeys", "panoAt", "trackXForPano"]) assert.ok(!math.includes(gone), `trackMath still has ${gone}`);
+  for (const f of ["DistrictBand.tsx", "panorama.ts", "panoramaImages.ts", "homePlate.ts", "WeatherOverlay.tsx", "citySky.ts", "CityDriver.tsx", "useNear.ts"]) assert.ok(!existsSync(`${root}app/components/city2d/${f}`), `${f} is still there`);
+  for (const f of ["cityLook.ts", "skyParam.ts", "platePreload.ts", "precip.ts"]) assert.ok(!existsSync(`${root}app/lib/${f}`), `lib/${f} is still there`);
+  assert.ok(!existsSync(`${root}app/assets/city`), "the paintings are still there");
+  assert.doesNotMatch(read("app/layout.tsx"), /CityDriver|platePreload|PLATE_PRELOAD|panorama/);
+  assert.match(read("app/page.tsx"), /<CityTrack>/);
+  // Under prefers-contrast the panels lose their soft edges
+  assert.match(body, /@media \(prefers-contrast: more\) \{[\s\S]*\.track \.panel \{/);
 });
 
 test("arrivals: each panel and its pieces enter on the runway's timeline from the panel's place, reversing with the scroll; none in still view", () => {
@@ -305,15 +290,6 @@ test("Task 8: the arrivals never animate a key or a link; anchors centre their p
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /const x = parseFloat\(p\.style\.getPropertyValue\("--at"\)\);/);
   assert.match(src, /Math\.max\(offsets\[i\], x - \(vw - Math\.min\(p\.offsetWidth, vw\)\) \/ 2\)/);
-});
-
-test("Task 8: the motion blur scales with the speed, is gone at rest, and never in still view or with reduced motion", () => {
-  const src = code(read("app/components/city2d/CityTrack.tsx"));
-  assert.match(src, /<feGaussianBlur stdDeviation="0 0"/, "sideways only");
-  assert.match(src, /Math\.min\(BLUR_MAX, speed \* BLUR_PER_SPEED\)/);
-  assert.match(src, /still\(\) \|\| calm\.matches \? 0/);
-  assert.match(src, /if \(d < BLUR_MIN\) \{[^}]*pano\.style\.filter = ""/, "no filter at all at rest");
-  assert.match(src, /if \(!blurRaf\) blurRaf = requestAnimationFrame\(blurFrame\)/, "started by the scroll, no frames at rest");
 });
 
 test("Task 9: the places: the nearest for the label, the last reached for a key, a sideways move lands on one", () => {
@@ -362,9 +338,8 @@ test("Task 9: the snap targets, the bar's label, focus and the glide, from one l
   assert.match(src, /m\.dataset\.for = p\.panel\.id \|\| stops\[p\.stop\]\.id;\s*m\.style\.top = `\$\{p\.x\}px`;/);
   assert.match(src, /<div className="track-snaps" aria-hidden="true" \/>/);
   assert.match(src, /dispatchEvent\(new CustomEvent\("trackplace", \{ detail: place \}\)\)/);
-  assert.match(src, /dispatchEvent\(new CustomEvent\("trackjump", \{ detail: \{ to: pageSections\[stop\]\?\.id \} \}\)\)/);
   // Task 11: no dissolve, every jump glides (snapping let go meanwhile,
-  // giving way to your own scroll); the motion blur is yours only
+  // giving way to your own scroll)
   assert.doesNotMatch(src, /data-dissolve|FAR/);
   assert.doesNotMatch(code(read("app/motion.css")), /data-dissolve|\.track-stage/);
   assert.doesNotMatch(src, /behavior: "smooth"/, "the browser's smooth scroll is not the glide");
@@ -372,7 +347,6 @@ test("Task 9: the snap targets, the bar's label, focus and the glide, from one l
   assert.match(src, /html\.setAttribute\("data-free", ""\);/);
   assert.match(src, /if \(wrote >= 0 && Math\.abs\(scrollY - wrote\) > 2\) return stopGlide\(\);/, "your own scroll wins");
   assert.match(src, /addEventListener\("wheel", takeOver, passive\);\s*addEventListener\("pointerdown", takeOver, passive\);/);
-  assert.match(src, /auto \|\| still\(\) \|\| calm\.matches \? 0/);
   // An overflowing panel is a region in the Tab order; one well off the screen starts at its top
   assert.match(src, /p\.setAttribute\("tabindex", scrolls \? "0" : \(tab \?\? "-1"\)\)/);
   assert.match(src, /if \(r\.right < -vw \|\| r\.left > 2 \* vw\) p\.scrollTop = 0;/);

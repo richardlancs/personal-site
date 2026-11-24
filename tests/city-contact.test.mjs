@@ -103,14 +103,17 @@ test("a copy is a clear moment: the key turns to \"Copied\", the address it copi
   assert.match(copy, /\{copied \? "Copied" : "Copy"\}/, "the key's own label");
   assert.match(copy, /setTimeout\(\(\) => setStatus\(null\), 2000\)/);
   const css = read("app/city.css");
-  assert.match(css, /\.contact :has\(\+ \.contact-copy \[data-copied\]\) \{[^}]*background: color-mix\(in srgb, var\(--accent-2\) 14%, transparent\)/, "the copied address lit");
+  assert.match(css, /\.contact :has\(\+ \.contact-copy \[data-copied\]\) \{[^}]*background: rgb\(79 216 238 \/ 0\.16\)/, "the copied address lit");
   // Every address sits right before its Copy key, so the rule finds it
   assert.match(markup, /\{primary\.address\}<\/p>\s*<CopyButton value=\{primary\.address\}/);
   assert.match(markup, /\{email\.address\}\s*<\/a>\s*<CopyButton value=\{email\.address\}/);
 });
 
-test("Contact has no coloured edge of its own; its whole edge lights on a copy (city-track.css)", () => {
+test("Contact is lit by the city, not a coloured edge: no cyan top border; its warm light off the words (city-track.css)", () => {
   const css = read("app/city-track.css");
   assert.doesNotMatch(css, /#contact \.panel \{\s*border-top/);
-  assert.match(css, /#contact \.panel:has\(\[data-copied\]\) \{\s*border-color: var\(--accent-2\);/, "the whole edge still lights on a copy");
+  assert.match(css, /#contact \.panel:has\(\[data-copied\]\) \{\s*border-color: var\(--cyan\);/, "the whole edge still lights on a copy");
+  // The warm light at the right edge, past the central 80% where the panel stands
+  const warm = css.match(/#contact::before \{[^}]*radial-gradient\(\d+% \d+% at (\d+)% \d+%, rgb\(244 184 96/);
+  assert.ok(warm && Number(warm[1]) >= 90, "the warm light is at the right edge");
 });

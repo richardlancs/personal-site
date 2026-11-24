@@ -3,12 +3,10 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { pageSections, type SectionId } from "../../sections/registry";
 import { focusPanel, panelOf } from "./jump";
-import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
-import { SKY_DEPTH, glideEase, glideMs, glideOn, landing, nearestPlace, panoAt, panoKeys, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
-import WeatherOverlay from "./WeatherOverlay";
+import { glideEase, glideMs, glideOn, landing, nearestPlace, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits } from "./trackMath";
 
 // The horizontal journey (city-track.css): the six stations side by side,
-// one city you travel along. The page still scrolls down, as any page does
+// one long sheet you travel along. The page still scrolls down, as any page does
 // (wheel, trackpad, keys, the scrollbar, touch); a tall runway holds a
 // full-screen stage that stays put (sticky) while the track of stations in
 // it moves left by exactly as much as the page has scrolled. Nothing here
@@ -23,8 +21,7 @@ import WeatherOverlay from "./WeatherOverlay";
 // track moves) and measures again whenever a stop or the stage changes
 // size, keeping you at the same place. Where the browser has
 // scroll-driven animations the move is CSS (the runway's view timeline);
-// elsewhere its scroll listener writes the transforms each frame (the
-// track, the sky at 30% of its pace, the weather held still).
+// elsewhere its scroll listener writes the track's transform each frame.
 //
 // The places: one per panel (each stop's, each project's, Skills'), where
 // that panel stands in the middle of the screen (trackMath.ts). They are
@@ -40,19 +37,7 @@ import WeatherOverlay from "./WeatherOverlay";
 // glides along the city to its place (an eased glide, longer for a longer
 // way but never past 1.6 s: trackMath.ts, glideMs), and gives way at once
 // to your own scroll; with reduced motion (still view) every one cuts. A
-// jump (a link, a key) takes focus to the panel it lands on. Rain and snow are drawn once,
-// over the whole stage (inside the track, held still against it).
-//
-// The city behind the stops is one panorama (`city`: DistrictBand.tsx,
-// panorama.ts, given by the page),
-// drawn as tall as its band and moved along with the journey, but by its
-// own measure: each stop's start shows that stop's stretch of the city,
-// and in between it moves straight from one to the next (panoKeys), so a
-// row of panels several screens long passes slowly over its stretch and
-// the whole track is city, end to end. In still view it moves with the
-// street instead, cutting between stops (the keys are chosen again when
-// still view is turned on or off). Where the move is CSS, these keys
-// replace its keyframes (the runway's timeline, as the track's own).
+// jump (a link, a key) takes focus to the panel it lands on.
 
 let marks: number[] | null = null;
 // Each stop's scroll position (the page's, not the runway's), while the
@@ -66,14 +51,6 @@ let place: TrackPlace | null = null;
 export const trackPlace = () => place;
 
 const SETTLE_MS = 150; // still this long, the journey has stopped
-// The motion blur while you travel (your own wheel, trackpad, touch or
-// scrollbar; never a jump): the city's sideways blur (an SVG Gaussian,
-// horizontal only, its deviation in px) at a speed of v px/ms along the
-// street is v * BLUR_PER_SPEED, at most BLUR_MAX; under BLUR_MIN it is off
-// (no filter at all), as it is at rest
-export const BLUR_PER_SPEED = 1.2;
-export const BLUR_MAX = 3;
-const BLUR_MIN = 0.2;
 // Where the arrows are someone else's: a field, a dialog, a menu
 const SKIP = "input, textarea, select, [contenteditable], dialog, [popover]";
 // ...and Space, which presses these
@@ -81,7 +58,7 @@ const PRESS = "button, summary, [role=button]";
 
 type Place = { x: number; panel: HTMLElement; stop: number; at: TrackPlace };
 
-export default function CityTrack({ city, children }: { city: ReactNode; children: ReactNode }) {
+export default function CityTrack({ children }: { children: ReactNode }) {
   const runway = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -94,10 +71,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     const stops = [...track.querySelectorAll<HTMLElement>(":scope > .station")];
     const panels = [...track.querySelectorAll<HTMLElement>(".panel")];
     const cssDriven = CSS.supports("animation-timeline: view()");
-    const pano = stage.querySelector<HTMLElement>(".pano");
     const narrow = matchMedia("(max-aspect-ratio: 1 / 1)");
     const calm = matchMedia("(prefers-reduced-motion: reduce)");
-    let keys = { x: [0], p: [0] };
     let offsets = [0];
     let places: Place[] = [];
     let top = 0;
@@ -107,10 +82,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     let aim = -1; // the place a key's step is heading for
     let aimTimer = 0;
     // A jump under way (where to, along the track; its frame; the scroll it
-    // last wrote), and whether the scroll now is one (a jump's, not yours:
-    // no motion blur)
+    // last wrote)
     let pending = -1;
-    let auto = false;
     let glideRaf = 0;
     let wrote = -1;
 
@@ -127,24 +100,20 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     // A move along the track to x: a cut (still view, reduced motion), or
     // a glide, however far: one eased move a frame at a time (glideMs,
     // glideEase), the snapping let go meanwhile (data-free; it comes back
-    // at settle, the glide resting exactly on its place) and no motion
-    // blur. Your own scroll (a wheel, a finger, the scrollbar, a key) moves
+    // at settle, the glide resting exactly on its place). Your own scroll (a wheel, a finger, the scrollbar, a key) moves
     // the page from where the glide left it: the glide gives way at once.
-    // First the stop it is going to is named ("trackjump"), so its tiles
-    // load first (DistrictBand). A second call for the same place while
+    // A second call for the same place while
     // one is under way (a link's focus, its hash) is the same jump.
-    const glide = (x: number, instant = still(), stop = stopAt(x, offsets)) => {
+    const glide = (x: number, instant = still()) => {
       const to = Math.min(Math.max(x, 0), travel);
       const from = along();
       if (glideRaf && Math.abs(pending - to) < 1) return;
       if (Math.abs(to - from) < 1) return;
-      dispatchEvent(new CustomEvent("trackjump", { detail: { to: pageSections[stop]?.id } }));
       // (sent on while under way: it carries straight on, never stopping to start again)
       const ease = glideRaf ? glideOn : glideEase;
       stopGlide();
       if (instant || calm.matches || document.hidden) return scrollTo({ top: top + to, behavior: "instant" });
       pending = to;
-      auto = true;
       html.setAttribute("data-free", "");
       const t0 = performance.now();
       const ms = glideMs(to - from, vw);
@@ -178,7 +147,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       const el = document.getElementById(decodeURIComponent(hash.slice(1)) || "home");
       const i = el ? stopOf(el) : -1;
       if (!el || i < 0) return;
-      glide(xFor(el, i), instant, i);
+      glide(xFor(el, i), instant);
       if (focus) focusPanel(el);
     };
 
@@ -226,57 +195,20 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       place = places[k].at;
       dispatchEvent(new CustomEvent("trackplace", { detail: place }));
     };
-    const sky = stage.querySelector<HTMLElement>(".track-sky")!;
-    const weather = track.lastElementChild as HTMLElement;
-    // The slight motion blur: each frame while the city moves under your
-    // own scroll, its speed (smoothed) sets how far the panorama blurs
-    // sideways; once it slows under BLUR_MIN the filter is gone. None in a
-    // jump, in still view or with reduced motion; a hidden tab draws no
-    // frames at all
-    const blur = stage.querySelector("feGaussianBlur");
-    let blurRaf = 0;
-    let lastY = scrollY;
-    let lastT = 0;
-    let speed = 0;
-    const blurFrame = (t: number) => {
-      blurRaf = 0;
-      const dt = lastT ? Math.min(Math.max(t - lastT, 1), 100) : 16.7;
-      const v = Math.abs(scrollY - lastY) / dt;
-      lastY = scrollY;
-      lastT = t;
-      speed = speed * 0.6 + v * 0.4;
-      const d = !pano || !blur || !on() || auto || still() || calm.matches ? 0 : Math.min(BLUR_MAX, speed * BLUR_PER_SPEED);
-      if (d < BLUR_MIN) {
-        speed = 0;
-        lastT = 0;
-        if (pano) pano.style.filter = "";
-        return;
-      }
-      blur?.setAttribute("stdDeviation", `${d.toFixed(2)} 0`);
-      if (pano) pano.style.filter = "url(#track-blur)";
-      blurRaf = requestAnimationFrame(blurFrame);
-    };
     const frame = () => {
       raf = 0;
       announce();
       if (cssDriven) return;
-      const x = along();
-      track.style.transform = `translateX(${-x}px)`;
-      weather.style.transform = `translateX(${x}px)`;
-      // The sky lags (depth 0.7), but moves with the street in still view
-      sky.style.transform = `translateX(${-parallax(x, still() ? 0 : SKY_DEPTH)}px)`;
-      if (pano) pano.style.transform = `translateX(${-panoAt(x, keys)}px)`;
+      track.style.transform = `translateX(${-along()}px)`;
     };
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(frame);
-      if (!blurRaf) blurRaf = requestAnimationFrame(blurFrame);
       if (!settleTimer) for (const p of panels) p.removeAttribute("data-open");
       clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         settleTimer = 0;
         // (a glide that paused a moment is still under way)
         if (glideRaf) return;
-        auto = false;
         pending = -1;
         if (free < 0) html.removeAttribute("data-free");
         settle();
@@ -311,18 +243,6 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       run.style.setProperty("--travel", `${travel}px`);
       top = run.getBoundingClientRect().top + scrollY;
       marks = stops.map((_, k) => top + scrollYForStop(k, offsets, vw));
-      if (pano) {
-        keys = panoKeys(offsets, vw, pano.offsetHeight / HEIGHT, starts, WIDTH, SEGMENT, still());
-        const move = pano.getAnimations().find((a) => a instanceof CSSAnimation)?.effect as KeyframeEffect | undefined;
-        move?.setKeyframes(keys.x.map((x, k) => ({ transform: `translateX(${-keys.p[k]}px)`, offset: travel ? x / travel : 0 })));
-        // Where along the journey each tile comes on: its left edge at the
-        // screen's right edge, then at its middle (the twilight windows'
-        // flicker, city-track.css)
-        for (const t of pano.children as HTMLCollectionOf<HTMLElement>) {
-          t.style.setProperty("--lit-from", `${trackXForPano(t.offsetLeft - vw, keys)}px`);
-          t.style.setProperty("--lit-to", `${trackXForPano(t.offsetLeft - vw / 2, keys)}px`);
-        }
-      }
       // Each panel's place along the track (--at), where its arrival is
       // drawn on the runway's timeline (city-track.css, "Arrivals")
       for (const p of panels) {
@@ -398,7 +318,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       aim = next;
       clearTimeout(aimTimer);
       aimTimer = window.setTimeout(() => (aim = -1), 900);
-      glide(places[next].x, still(), places[next].stop);
+      glide(places[next].x, still());
       focusPanel(places[next].panel);
     };
 
@@ -423,7 +343,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       if (!on() || !(el instanceof HTMLElement) || !track.contains(el)) return;
       const r = el.getBoundingClientRect();
       const i = stopOf(el);
-      if (i >= 0 && (r.left < 0 || r.right > vw)) glide(xFor(el, i), still(), i);
+      if (i >= 0 && (r.left < 0 || r.right > vw)) glide(xFor(el, i), still());
     };
 
     // Sideways input, which the page's own scroll (down) would never
@@ -450,7 +370,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       // (the snapping comes back once it has landed, at settle: back at
       // once, it would pull the glide to the nearest place)
       const k = landing(from, along(), xs(), narrow.matches, vw * 0.3);
-      if (k !== null) glide(places[k].x, still(), places[k].stop);
+      if (k !== null) glide(places[k].x, still());
       if (k === null || Math.abs(places[k].x - along()) < 1) html.removeAttribute("data-free");
     };
     const sideways = (t: EventTarget | null) => {
@@ -489,9 +409,6 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     history.scrollRestoration = "manual";
     measure();
     const sizes = new ResizeObserver(() => measure());
-    // Still view turned on or off: the panorama's other keys
-    const stillness = new MutationObserver(() => measure());
-    stillness.observe(html, { attributeFilter: ["data-still"] });
     sizes.observe(stage);
     // A stop that grows (its content), and a panel's words growing (fonts,
     // pictures, a fold opened): whether it scrolls inside is asked again
@@ -520,11 +437,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     return () => {
       off.abort();
       sizes.disconnect();
-      stillness.disconnect();
       cancelAnimationFrame(raf);
-      cancelAnimationFrame(blurRaf);
       cancelAnimationFrame(glideRaf);
-      if (pano) pano.style.filter = "";
       for (const t of [aimTimer, settleTimer, wheelTimer]) clearTimeout(t);
       for (const p of panels) {
         const [tab, role, label] = had.get(p)!;
@@ -547,23 +461,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
   return (
     <div ref={runway} className="track-runway">
       <div className="track-stage">
-        {/* The motion blur's filter (above: the panorama, while it moves) */}
-        <svg aria-hidden="true" width="0" height="0" className="absolute">
-          <filter id="track-blur" x="-2%" width="104%" y="0" height="100%" colorInterpolationFilters="sRGB">
-            <feGaussianBlur stdDeviation="0 0" edgeMode="duplicate" />
-          </filter>
-        </svg>
-        {/* The sky behind the city, slower than the street */}
-        <div className="track-sky" aria-hidden="true" />
-        {/* The city: the panorama behind every stop (DistrictBand) */}
-        {city}
-        <div className="track">
-          {children}
-          {/* Rain and snow, once, over the whole stage */}
-          <div className="track-weather">
-            <WeatherOverlay />
-          </div>
-        </div>
+        <div className="track">{children}</div>
       </div>
       {/* The snap targets, one at each place (measure fills it) */}
       <div className="track-snaps" aria-hidden="true" />

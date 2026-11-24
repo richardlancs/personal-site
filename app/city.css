@@ -249,7 +249,7 @@ h3,
 .text-link {
   color: var(--text);
   text-decoration: underline;
-  text-decoration-color: var(--accent-2);
+  text-decoration-color: var(--cyan);
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   transition: text-decoration-color var(--t-base) var(--ease-out);
@@ -552,10 +552,10 @@ button.text-link,
   border-radius: var(--radius-lg);
   background: var(--panel);
   color: var(--text);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent), 0 1.25rem 2.5rem -1rem color-mix(in srgb, var(--shadow) 50%, transparent);
+  box-shadow: 0 18px 40px -20px rgb(0 0 0 / 0.8);
 }
 
-/* The page dims behind it (figure-ground): a veil over the page, under the
+/* The city dims behind it (figure-ground): a veil over the page, under the
    bar (z-index 40, the metro map in it), so the bar keeps its contrast.
    It takes no clicks: a click outside still closes the menu (light
    dismiss) and lands where it falls */
@@ -564,7 +564,7 @@ body::after {
   position: fixed;
   inset: 0;
   z-index: 39;
-  background: color-mix(in srgb, var(--shadow) 28%, transparent);
+  background: rgb(8 9 12 / 0.5);
   opacity: 0;
   pointer-events: none;
 }
@@ -630,28 +630,20 @@ body::after {
 
 @media (hover: hover) {
   .sections-menu a:hover {
-    background: color-mix(in srgb, var(--accent-2) 10%, transparent);
+    background: rgb(79 216 238 / 0.08);
     color: var(--text);
   }
 }
 
-/* Where you are (aria-current="location"): an accent bar at its left and a
+/* Where you are (aria-current="location"): a cyan bar at its left and a
    heavier weight in --text, so not by colour alone */
 .sections-menu a[aria-current] {
-  box-shadow: inset 3px 0 var(--accent-2);
+  box-shadow: inset 2px 0 var(--cyan);
   color: var(--text);
   font-weight: 600;
 }
 
 /* A section's part (Skills, under Projects): set in under it */
-/* What the bar hands the menu (TopBar: the paper picker, on phones):
-   its own row under the list, a hairline above it */
-.sections-menu > ul + :not(.rh) {
-  margin-top: 0.5rem;
-  padding: 0.75rem 0.5rem 0.25rem;
-  border-top: 1px solid var(--line);
-}
-
 .sections-menu .sections-menu-sub {
   padding-left: 2.25rem;
   font-size: 1rem;
@@ -831,16 +823,16 @@ a[data-resume][data-opening] {
 
 .station {
   position: relative;
-  /* The paper itself (its crumple on the page behind, paper.css) */
-  --ground: transparent;
+  /* The ground the band fades into at its foot (the dark navy it passes
+     through on the way is --seam, on :root) */
+  --ground: var(--ink);
   background: var(--ground);
 }
 
 /* The grounds alternate down the line: About, Experience and Contact sit
-   on a wash of the alternate paper, the crumple still showing through,
-   so each station reads as its own stop */
+   on the lighter ink, so each station reads as its own stop */
 .station:is(#about, #experience, #contact) {
-  --ground: color-mix(in srgb, var(--paper-2) 70%, transparent);
+  --ground: var(--ink-2);
   --seam: var(--seam-2);
 }
 
@@ -849,226 +841,6 @@ a[data-resume][data-opening] {
    when Chrome counts a programmatic focus after a key press as visible */
 [tabindex="-1"]:focus {
   outline: none;
-}
-
-/* ---------- The band (components/city2d/DistrictBand.tsx) ----------
-   The city's painting, in tiles of the panorama: each tile's day plate,
-   its night plate over it at --city-night (CityDriver.tsx writes the
-   --city-* variables on <html>), a twilight grade over both, and the
-   lowest 30% fading into the station's ground. Read top to bottom, a
-   station's band is its own tile, cropped to 21:9 (capped, so a very wide
-   window still shows what comes under it); on the journey it is the whole
-   panorama (city-track.css). The gradient is what shows before the
-   plates, and if one fails. No words on it. */
-
-.band {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  aspect-ratio: 21 / 9;
-  min-height: 12rem;
-  max-height: 52vh;
-  background: linear-gradient(to bottom, var(--ink-2), var(--ground, var(--ink)));
-  /* Its layers (plates, weather, grade, fade) stack among themselves only */
-  isolation: isolate;
-}
-
-/* The home tile's plate, painted before hydration: the head script
-   (lib/platePreload.ts) fetched the file and set it as --home-plate, so
-   the page's largest paint doesn't wait for the scripts; the plates then
-   fade in over the same picture */
-:root[data-home-plate] .band-tile[data-home] {
-  background: var(--home-plate) center / cover no-repeat;
-}
-
-/* The journey's whole panorama, only on the journey (city-track.css) */
-.pano {
-  display: none;
-}
-
-.band-tile,
-.band-plate,
-.band-noscript {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
-
-.band-plate img,
-.band-noscript {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* The night plate over the day plate; without the driver (no script),
-   the night plate alone */
-.band-night,
-.band-noscript {
-  opacity: var(--city-night, 1);
-}
-
-/* Twilight's grade: warm at golden hour, cyan at blue hour (lib/cityLook.ts),
-   and none by full day or night */
-.band::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: var(--city-grade);
-  opacity: var(--city-grade-mix, 0);
-  mix-blend-mode: soft-light;
-  pointer-events: none;
-}
-
-/* The foot of the band fades into the ground the words sit on, over its
-   last 42%, through the dark navy --seam, so there is no line and no grey
-   band. docs/city/style.md, "The seam". */
-.band::before {
-  content: "";
-  position: absolute;
-  inset: 58% 0 0;
-  z-index: 2;
-  background: linear-gradient(transparent, var(--seam) 62%, var(--ground, var(--ink)) 80%);
-  pointer-events: none;
-}
-
-/* A plate stays clear until it has loaded, then fades in over the
-   gradient (DistrictBand sets data-loaded), so there's no blurred stand-in
-   to snap out of */
-.band-plate img {
-  opacity: 0;
-}
-
-.band-plate[data-loaded] img {
-  opacity: 1;
-}
-
-:root:not([data-still="on"]) .band-plate img {
-  transition: opacity var(--t-slow) var(--ease-out);
-}
-
-/* Day and night cross-fade slowly, once the sky has been set (CityDriver
-   sets data-sky-ready a frame after its first write, so the page doesn't
-   fade from the fallbacks into the sky it arrives at) */
-:root[data-sky-ready]:not([data-still="on"]) .band-night,
-:root[data-sky-ready]:not([data-still="on"]) .band::after {
-  transition: opacity var(--t-sky) var(--ease-in-out);
-}
-
-/* Still view and reduced motion: the sky changes, but nothing fades */
-:root[data-still="on"] .band-plate img,
-:root[data-still="on"] .band-night,
-:root[data-still="on"] .band::after {
-  animation: none;
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) .band-plate img,
-  :root:not([data-still]) .band-night,
-  :root:not([data-still]) .band::after {
-    animation: none;
-    transition: none;
-  }
-}
-
-/* ---------- The band's weather (components/city2d/WeatherOverlay.tsx) ----------
-   Over the plates, under the twilight grade (::after, z 1, later in the
-   band) and the foot's fade (::before, z 2), except rain's sheen, which
-   lies on the fade like light on a wet street. The haze is as thick as the
-   weather (--city-haze, lib/cityLook.ts), heaviest at the top where the
-   towers go into cloud; darker rather than paler at night. The sheen and
-   the wash are CSS alone, so still view keeps them; only the canvas moves,
-   and it isn't there in still view or under reduced motion. */
-
-.band-weather {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  /* no z-index: its layers take their place among the band's own */
-}
-
-.band-haze,
-.band-wash,
-.band-precip,
-.band-sheen {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-}
-
-.band-haze {
-  /* Mixed from the plates' navy, not the black ground: a navy veil, never
-     grey smog */
-  --haze: #5d6877; /* --muted 55% into #0e1d31 */
-  background: linear-gradient(
-    to bottom,
-    var(--haze) 0%,
-    color-mix(in srgb, var(--haze) 65%, transparent) 35%,
-    color-mix(in srgb, var(--haze) 20%, transparent) 65%,
-    transparent 90%
-  );
-  opacity: var(--city-haze, 0);
-}
-
-/* At night the cloud is dark, not a pale veil over the lights */
-:root[data-daylight="night"] .band-haze {
-  --haze: #2e3b4d; /* #0e1d31 78% into --muted */
-}
-
-.band-precip {
-  width: 100%;
-  height: 100%;
-  /* Rain and snow thin out before the solid foot, where words begin */
-  -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent 88%);
-  mask-image: linear-gradient(to bottom, #000 78%, transparent 88%);
-}
-
-/* Rain: a soft band of light along the foot, above its solid ground */
-.band-sheen {
-  inset: 76% 0 12%;
-  z-index: 2;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgb(230 233 238 / 0.09) 45%,
-    rgb(79 216 238 / 0.05) 70%,
-    transparent
-  );
-  opacity: 0;
-}
-
-:root[data-weather="rain"] .band-sheen {
-  opacity: 1;
-}
-
-/* Snow: a pale wash over the whole band, faint */
-.band-wash {
-  background: var(--text);
-  opacity: 0;
-}
-
-:root[data-weather="snow"] .band-wash {
-  opacity: 0.07;
-}
-
-:root[data-daylight="night"][data-weather="snow"] .band-wash {
-  opacity: 0.04;
-}
-
-/* The weather's static parts follow the sky with the band's 3 s fade;
-   still view and reduced motion change them without fading */
-:root[data-sky-ready]:not([data-still="on"]) :is(.band-haze, .band-sheen, .band-wash) {
-  transition: opacity var(--t-sky) var(--ease-in-out);
-}
-:root[data-still="on"] :is(.band-haze, .band-sheen, .band-wash) {
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  :root:not([data-still]) :is(.band-haze, .band-sheen, .band-wash) {
-    transition: none;
-  }
 }
 
 /* A station's header (or the hero's name) starts in its band's foot, on
@@ -1112,13 +884,13 @@ a[data-resume][data-opening] {
   left: calc(-1.5rem - 6px);
   width: 12px;
   height: 12px;
-  border: 2px solid var(--accent-2);
+  border: 2px solid var(--cyan);
   border-radius: 50%;
-  background: var(--panel);
+  background: var(--ink);
 }
 
 .exp-entry[data-current]::before {
-  background: var(--accent-2);
+  background: var(--cyan);
 }
 
 @container (min-width: 45.5rem) {
@@ -1167,12 +939,12 @@ a[data-resume][data-opening] {
   display: inline-block;
   max-width: 100%;
   padding: 0.5rem 1rem;
-  border: 1px solid var(--line);
+  border: 1px solid rgb(45 50 61 / 0.7);
   border-radius: var(--radius-in, var(--radius-lg));
-  background: var(--panel);
+  background: rgb(8 9 12 / 0.94);
 }
 
-/* On the journey the paper card carries the name: no box in a box */
+/* On the journey the glass panel carries the name: no box in a box */
 :root[data-track="on"] .hero-backing {
   padding: 0;
   border: 0;
@@ -1240,13 +1012,13 @@ a[data-resume][data-opening] {
 }
 
 /* ---------- The metro map (components/city2d/ProgressLine.tsx) ----------
-   The journey's stops as stations on one line, on a strip of paper card
-   along the foot of the screen (only on the journey; read top to
+   The journey's stops as stations on one line, in a strip of the bar's
+   glass along the foot of the screen (only on the journey; read top to
    bottom, the Sections menu serves). Each station is a link, 44px or more
    each way and 8px apart: its name over a dot on the line. The fill is one
    transform of --progress (0 to 5, written on .progress-line from the
    scroll), so the map never asks for layout as the city moves. Passed
-   stations have an --accent-2 ring; the current one a larger, filled dot and its
+   stations have a cyan ring; the current one a larger, filled dot and its
    name in --text (not by colour alone). Its height is --map-h
    (city-track.css), which the panels clear. */
 
@@ -1264,8 +1036,9 @@ a[data-resume][data-opening] {
   display: block;
   padding: 0.375rem 0;
   border-radius: var(--radius-lg);
-  background: var(--panel);
-  box-shadow: inset 0 0 0 1px var(--line), 0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent), 0 0.75rem 1.5rem -0.75rem color-mix(in srgb, var(--shadow) 45%, transparent);
+  background: rgb(8 9 12 / 0.86);
+  box-shadow: inset 0 0 0 1px var(--line);
+  backdrop-filter: blur(12px);
   /* (its own width decides whether every name fits: below) */
   container-type: inline-size;
 }
@@ -1293,7 +1066,7 @@ a[data-resume][data-opening] {
 .progress-fill {
   position: absolute;
   inset: 0;
-  background: var(--accent-2);
+  background: var(--cyan);
   transform-origin: left center;
   transform: scaleX(calc(var(--progress, 0) / var(--last, 5)));
   will-change: transform;
@@ -1330,11 +1103,11 @@ a[data-resume][data-opening] {
   margin: 16px 0;
   border: 2px solid;
   border-radius: 50%;
-  background: var(--panel);
+  background: var(--ink);
 }
 
 .progress-point[data-lit] .progress-dot {
-  border-color: var(--accent-2);
+  border-color: var(--cyan);
 }
 
 .progress-point[aria-current="location"] {
@@ -1343,7 +1116,7 @@ a[data-resume][data-opening] {
 
 .progress-point[aria-current="location"] .progress-dot {
   scale: 1.5;
-  background: var(--accent-2);
+  background: var(--cyan);
 }
 
 /* A narrow strip (phones; tablets with large text: measured in em, so it
@@ -1522,7 +1295,7 @@ body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
   top: calc(0.5lh - 3px);
   width: 6px;
   height: 6px;
-  background: var(--accent-2);
+  background: var(--cyan);
   rotate: 45deg;
 }
 
@@ -1559,7 +1332,7 @@ summary.glass {
 }
 
 details[open] > summary.glass {
-  border-color: var(--accent-2);
+  border-color: var(--cyan);
 }
 
 /* (an interest's row: its mark, its name, "Show" and the chevron, 56px) */
@@ -1653,25 +1426,23 @@ details[open] > summary.glass {
 }
 
 /*
-  ---------- Keys (.glass, the class's old name) ----------
+  ---------- Glass ----------
   Every button and button-like control (tertiary actions stay text
-  links). A rounded tab of card as wide as its words, 44px tall: opaque
-  --panel, an ink edge (--text, two-fifths in), the faintest shadow
-  where it stands off the paper, and an opaque --text label. No blur:
-  paper is never see-through.
+  links). A rounded rectangle as wide as its words, 44px tall, a little
+  panel blue over whatever is behind (blurred), a thin edge, a faint
+  light along its top, and an opaque --text label.
 
-  The states, the same on every control, in every paper:
-  - secondary (.glass); primary (.glass-primary): solid --accent, an
-    --on-accent label (4.5:1 or better, palette-contrast.mjs), its edge
-    the accent a step darker, a heavier weight; .glass-icon, a square key
-    for an icon
-  - hover: a wash of --accent-2 and a full ink edge (primary: --accent-hover)
+  The states, the same on every control:
+  - secondary (.glass); primary (.glass-primary): solid accent, an ink
+    label (10.4:1) and a navy edge, a heavier weight; .glass-icon, a square key for
+    an icon
+  - hover: a little cyan (primary: a lighter accent)
   - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
-    open popover): an --accent-2 edge, doubled inside, pressed in (a shade
-    inside, no shadow under it), so it reads without colour too
-  - disabled (:disabled, aria-disabled="true"): no fill, a dashed edge,
+    open popover): a cyan edge, doubled inside, pressed in (a shade inside,
+    no shadow lift; a faint glow instead), so it reads without colour too
+  - disabled (:disabled, aria-disabled="true"): no glass, a dashed edge,
     a muted label (still 4.5:1); no hover, no press, no pointer
-  - focus: the focus ring on a halo of the paper, over any card
+  - focus: the focus ring on a dark halo, over any painting
 
   The base rule is in :where(), so a control's own class sets its size,
   type and layout without a fight; the states outweigh both.
@@ -1683,8 +1454,7 @@ details[open] > summary.glass {
   a small overshoot (--ease-spring). The give is a transition, so a quick
   second press simply turns it round; only scale, translate, rotate and
   opacity, under the label. Still view and reduced motion: a brief tint
-  instead, nothing moves. (The ripple is ink soaking out from the press
-  point, the sweep a faint shadow crossing the key.)
+  instead, nothing moves.
 */
 :where(.glass) {
   position: relative;
@@ -1697,14 +1467,16 @@ details[open] > summary.glass {
   gap: 0.5rem;
   min-height: 44px;
   padding: 0 1rem;
-  border: 1px solid var(--key-edge, color-mix(in srgb, var(--text) 40%, var(--panel)));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius);
-  background: var(--tint, var(--panel));
+  background: var(--tint, var(--glass-tint));
   color: var(--glass-ink, var(--text));
   font-weight: 500;
   text-decoration: none;
   cursor: pointer;
-  box-shadow: var(--glass-in, 0 0 #0000), var(--glass-out, var(--glass-lift, 0 1px 1px color-mix(in srgb, var(--shadow) 20%, transparent), 0 3px 8px -5px color-mix(in srgb, var(--shadow) 50%, transparent)));
+  box-shadow: var(--glass-in, inset 0 1px 0 var(--glass-hi)), var(--glass-out, var(--glass-lift, var(--glass-shadow)));
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   -webkit-tap-highlight-color: transparent;
   transition:
     background-color var(--t-base) var(--ease-out),
@@ -1717,25 +1489,16 @@ details[open] > summary.glass {
 }
 
 .glass-primary {
-  --tint: var(--accent);
-  --glass-ink: var(--on-accent);
-  border-color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  --tint: var(--glass-tint-strong);
+  --glass-ink: var(--ink);
+  border-color: var(--accent-edge);
   font-weight: 700;
 }
 
 @media (hover: hover) {
   .glass-primary:not(:disabled, [aria-disabled="true"]):hover {
-    border-color: color-mix(in srgb, var(--accent-hover) 75%, var(--text));
-    background-color: var(--accent-hover);
+    background-color: var(--glass-primary-hover);
   }
-
-/* More contrast asked for: every key edged in the full ink, no shadow */
-@media (prefers-contrast: more) {
-  :where(.glass) {
-    --key-edge: var(--text);
-    --glass-lift: 0 0 #0000;
-  }
-}
 }
 
 /* A large key: the page's one big action ("Email me", 56px) */
@@ -1765,8 +1528,8 @@ details[open] > summary.glass {
    (CopyButton.tsx), for the 2 seconds its key reads "Copied" */
 .contact :has(+ .contact-copy [data-copied]) {
   border-radius: 0.25rem;
-  background: color-mix(in srgb, var(--accent-2) 14%, transparent);
-  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--accent-2) 14%, transparent);
+  background: rgb(79 216 238 / 0.16);
+  box-shadow: 0 0 0 0.25rem rgb(79 216 238 / 0.16);
 }
 
 /* A project picture that fails to load: a quiet framed box with its
@@ -1783,7 +1546,7 @@ details[open] > summary.glass {
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: var(--paper-2);
+  background: var(--ink-2);
   color: var(--muted);
   font-size: 0.875rem;
   text-align: center;
@@ -1797,18 +1560,17 @@ details[open] > summary.glass {
 
 @media (hover: hover) {
   :where(.glass:not(:disabled, [aria-disabled="true"])):hover {
-    border-color: var(--text);
-    background-color: color-mix(in srgb, var(--tint, var(--panel)), var(--accent-2) 10%);
+    background-color: color-mix(in srgb, var(--tint, var(--glass-tint)), var(--cyan) 14%);
   }
 }
 
 .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
   /* A chosen primary loses its accent fill, so its label goes back to text */
   --glass-ink: var(--text);
-  --glass-in: inset 0 0 0 1px var(--accent-2), inset 0 2px 5px -2px color-mix(in srgb, var(--shadow) 55%, transparent);
-  --glass-lift: 0 0 #0000;
-  border-color: var(--accent-2);
-  background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+  --glass-in: inset 0 0 0 1px var(--cyan), inset 0 3px 6px -2px rgb(0 0 0 / 0.5);
+  --glass-lift: var(--glow-cyan);
+  border-color: var(--cyan);
+  background-color: var(--glass-chosen);
 }
 
 .glass:is(:disabled, [aria-disabled="true"]) {
@@ -1833,6 +1595,17 @@ details[open] > summary.glass {
   outline-offset: 3px;
 }
 
+/* Without a blur, near-opaque glass so the words still have a ground */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass {
+    background-color: var(--glass-fallback);
+  }
+
+  .glass-primary {
+    background-color: var(--tint);
+  }
+}
+
 /* The press: a ripple (::before) and a sweep of light (::after) */
 .glass::before,
 .glass::after {
@@ -1849,7 +1622,7 @@ details[open] > summary.glass {
   width: calc(2 * var(--press-r, 4rem));
   aspect-ratio: 1;
   border-radius: 50%;
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent-2) 16%, transparent), color-mix(in srgb, var(--accent-2) 8%, transparent) 62%, color-mix(in srgb, var(--accent-2) 26%, transparent) 71%, transparent 77%);
+  background: radial-gradient(closest-side, rgb(143 233 255 / 0.22), rgb(79 216 238 / 0.12) 62%, rgb(143 233 255 / 0.4) 71%, rgb(143 233 255 / 0) 77%);
 }
 
 .glass::after {
@@ -1857,7 +1630,7 @@ details[open] > summary.glass {
   bottom: -30%;
   left: 0;
   width: 60%;
-  background: radial-gradient(70% 100% at 0 50%, transparent 55%, color-mix(in srgb, var(--shadow) 14%, transparent) 68%, transparent 80%);
+  background: radial-gradient(70% 100% at 0 50%, transparent 55%, rgb(230 233 238 / 0.28) 68%, transparent 80%);
 }
 
 /* The give and the light, only where motion is welcome. The give's
@@ -1923,8 +1696,8 @@ details[open] > summary.glass {
 /* Still view and reduced motion: no ripple, no give; a moment of tint */
 @keyframes glass-tint {
   from {
-    border-color: var(--accent-2);
-    background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+    border-color: var(--cyan);
+    background-color: var(--glass-chosen);
   }
 }
 

@@ -75,11 +75,11 @@ test("the sitemap is the one page", () => {
   assert.match(sitemap, /url: siteUrl/);
 });
 
-test("a section is a labelled section with its band, its number and its heading, and no caption", () => {
+test("a section is a labelled section with its number and its heading, no band and no caption", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.ok(!src.includes('"use client"'), "Station is a server component");
   assert.match(src, /<section[^>]*id=\{id\}[^>]*aria-labelledby=\{`\$\{id\}-title`\}[^>]*tabIndex=\{-1\}/);
-  assert.match(src, /<DistrictBand stop=\{pageSections\.indexOf\(section\)\} tiles=/);
+  assert.doesNotMatch(src, /DistrictBand|bandTiles/, "no painting over a station");
   assert.match(src, /<h2 id=\{`\$\{section\.hash \|\| "home"\}-title`\}/, "the heading names the section");
   assert.match(src, /sectionNumber\(section\)/);
   assert.doesNotMatch(src, /section\.station|districtLine|station-caption|station-line/);
@@ -98,7 +98,7 @@ test("a section is a labelled section with its band, its number and its heading,
   }
 });
 
-test("home is its band, then the hero: nothing between, and no h2", () => {
+test("home is the hero: no h2", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.match(src, /\{heading \?\? <StationHead/, "the hero in place of the heading");
   assert.match(read("app/page.tsx"), /<Station section=\{section\("home"\)\} heading=\{<Hero \/>\} \/>/);
@@ -125,14 +125,14 @@ test("the home page is the six stations, with the Skills anchor inside Projects"
   // Contact, then the foot of the page (the colophon), which ends the last stop
   assert.match(page, /<Station section=\{section\("contact"\)\}>\s*<Contact \/>\s*<footer className="page-foot">\s*<Colophon \/>\s*<\/footer>\s*<\/Station>/, "contact is filled");
   // The six stations are the journey's stops (CityTrack.tsx)
-  assert.match(page, /<CityTrack city=\{<DistrictBand tiles=\{bandTiles\} \/>\}>\s*<Station section=\{section\("home"\)\}[\s\S]*<\/Station>\s*<\/CityTrack>/);
+  assert.match(page, /<CityTrack>\s*<Station section=\{section\("home"\)\}[\s\S]*<\/Station>\s*<\/CityTrack>/);
   for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) assert.match(page, new RegExp(`section\\("${id}"\\)`), `page renders ${id}`);
   assert.match(page, /<Colophon \/>/);
 });
 
-test("the band reserves its height: 21:9, never under 12rem (stacked; on the journey the stop sets it)", () => {
+test("no band of painting is styled (Task 12: the paper has no city)", () => {
   const css = read("app/city.css");
-  assert.match(css, /\.band\s*\{[^}]*aspect-ratio:\s*21\s*\/\s*9;\s*min-height: 12rem;/);
+  assert.doesNotMatch(css, /^\.band\b|\.band-(tile|plate|night|haze|wash|sheen|precip|weather)|\.pano\b|--city-(night|grade|haze)|data-sky-ready|data-home-plate/m);
 });
 
 test("the Sections menu jumps within the page and moves focus there", () => {

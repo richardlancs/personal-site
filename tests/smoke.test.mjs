@@ -170,15 +170,14 @@ test("the copy feedback is a live region drawn on screen, not screen-reader-only
   assert.doesNotMatch(copyStatus, /sr-only/, "contact: the copy status is visible");
 });
 
-test("no plate is in the HTML outside <noscript>; the home band's night plate is inside it", { skip }, async () => {
+test("no painting of the city is in the HTML, nor preloaded (Task 12)", { skip }, async () => {
   const { body } = await get("/");
-  const outside = body.replace(/<noscript>[\s\S]*?<\/noscript>/g, "");
-  assert.doesNotMatch(outside, /<img[^>]*\/_next\/static\/media\/(day|night)-\d\d\.[0-9a-z_-]+\.webp/, "a plate <img> outside <noscript>");
-  assert.doesNotMatch(outside, /<link[^>]*as="image"[^>]*(day|night)/, "a plate preload");
-  assert.match(await station("home"), /<noscript><img[^>]*src="\/_next\/static\/media\/night-01\.[^"]+\.webp"/);
+  assert.doesNotMatch(body, /\/_next\/static\/media\/(day|night)-\d\d\.[0-9a-z_-]+\.webp/, "a plate in the page");
+  assert.doesNotMatch(body, /<link[^>]*as="image"[^>]*(day|night)/, "a plate preload");
+  assert.doesNotMatch(body, /class="[^"]*\b(band|pano|track-sky|track-weather)\b/, "the city's layers");
 });
 
-test("home is the band and the hero: no caption, no place names, no h2", { skip }, async () => {
+test("home is the hero: no caption, no place names, no h2", { skip }, async () => {
   const home = await station("home");
   assert.ok(!home.includes("station-caption"), "no caption");
   assert.doesNotMatch(home, /<h2[\s>]/);

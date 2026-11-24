@@ -8,12 +8,12 @@ import { order } from "../Station";
 const school = experience.find((entry) => entry.kind === "education");
 
 // The home section's opening, the first stop's panel (city.css, "The
-// hero"): the name, the page's one h1 (on its own card where it
-// stands on the paper, read top to bottom; none inside the journey's card
+// hero"): the name, the page's one h1 (on its own dark backing where it
+// meets the painting, read top to bottom; none inside the journey's glass
 // panel); the programme and school under it, as the headline (no line
 // on the role sought: Richard's ruling, Task 10; About still says it);
 // then the two ways in, "View projects" (the page's one primary action here) and the résumé
-// beside it, a plain key; and the other ways, as text links with
+// beside it, a plain glass key; and the other ways, as text links with
 // icons: GitHub, LinkedIn and the email. No paragraph, no caption and no
 // list of sections (the Sections menu and the metro map have them). On
 // first load the four settle in one after another (reveal.css, "The

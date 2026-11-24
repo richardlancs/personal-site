@@ -1,47 +1,43 @@
-// Composited contrast of every visible word on the one-page city (`/`),
-// over every daylight and weather (4 x 5 = 20 skies), wide and on a phone.
-// The ?sky= preview is `next dev` only (CityDriver.tsx), so run it there:
-//   npx next dev -p 3101
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3101] [skies=rain-night,…] [sizes=1440x900,1600x900,390x844]  (positional: base, then skies, then sizes; "" for the default skies)
+// Composited contrast of every visible word on the one page (`/`), on each
+// of the three papers (cream, charcoal, kraft: <html data-paper>, chosen by
+// the Paper picker and kept in localStorage["paper"], lib/paper.ts), wide
+// and on a phone. Any server will do (the papers are the visitor's choice,
+// not a development preview):
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3102] [papers=cream,charcoal,kraft] [sizes=1440x900,390x844]  (positional: base, then papers, then sizes; "" for the default)
 //
 // The method is panel-contrast.mjs's: two photographs of each screen, every
 // word see-through, then magenta. The pixels that differ are the letters;
 // under them, the first photograph is what each letter stands on (its
-// backing, the ground, a painting, whatever is drawn). Each run of text's
-// own colour (composited over those pixels if it, or anything it's in, is
+// card, the crumpled paper, whatever is drawn). Each run of text's own
+// colour (composited over those pixels if it, or anything it's in, is
 // partly transparent) against each of them; the run's reading is the worst
-// of them less the darkest 2% (stray anti-aliased edge pixels), as
-// panel-contrast.mjs takes it. Glow never counts: text-shadow is off in
-// both photographs, so a glow is neither the letters nor what's under them.
+// of them less the darkest 2% (stray anti-aliased edge pixels, and the
+// paper's darkest creases under a stroke), as panel-contrast.mjs takes it.
+// Glow never counts: text-shadow is off in both photographs.
 //
 // A run fails under 4.5:1, or under 3:1 if it's large (24px and over, or
-// 18.66px and over at weight 700 or more). The hero's name on its backing
-// and the sections' headings must be measured in every sky: if
-// either isn't, that's a failure too. The page is photographed a screen at
-// a time from top to foot, in still view (nothing moves; the bands' rain
-// and snow canvases don't exist then, and no words sit on a band anyway),
-// after one pass down the page so every band has mounted its plates.
+// 18.66px and over at weight 700 or more). The hero's name and the
+// sections' headings must be measured on every paper: if either isn't,
+// that's a failure too. The page is photographed a screen at a time from
+// top to foot, in still view (nothing moves between the two photographs).
 //
-// Prints, per sky, the lowest reading in each station (and the bar, the
-// metro map and the page's foot; and, with the Sections menu open over the
-// dimmed city, the bar, the map and the menu's rows), then every failing run with its text,
-// a selector and its reading. Exits 1 on any failure, 2 if the page isn't
-// what this script expects (the sky override ignored, no stations).
+// Prints, per paper and size, the lowest reading in each station (and the
+// bar, the metro map and the page's foot; and, with the Sections menu open,
+// the bar, the map and the menu's rows), then every failing run with its
+// text, a selector and its reading. Exits 1 on any failure, 2 if the page
+// isn't what this script expects (the paper not applied, no stations).
 import { launch } from "../../audit/scripts/pw.mjs";
 
-const [base = "http://localhost:3101", skyArg, sizeArg] = process.argv.slice(2);
-const WEATHERS = ["clear", "cloudy", "rain", "snow", "neutral"];
-const DAYLIGHTS = ["dawn", "day", "dusk", "night"];
-// Dawn and dusk at their middle, where the grade is strongest
-const skies = skyArg ? skyArg.split(",") : WEATHERS.flatMap((w) => DAYLIGHTS.map((d) => `${w}-${d}-0.5`));
-// 1600 wide too: the widest strip of the metro map
-const sizes = (sizeArg || "1440x900,1600x900,390x844").split(",").map((s) => {
+const [base = "http://localhost:3102", paperArg, sizeArg] = process.argv.slice(2);
+const PAPERS = ["cream", "charcoal", "kraft"];
+const papers = paperArg ? paperArg.split(",") : PAPERS;
+const sizes = (sizeArg || "1440x900,390x844").split(",").map((s) => {
   const [width, height] = s.split("x").map(Number);
   return { name: s, width, height };
 });
-// Must be measured on every screen size in every sky
+// Must be measured on every screen size on every paper
 const REQUIRED = [
-  { sel: ".hero-name", what: "the hero's name on its backing" },
+  { sel: ".hero-name", what: "the hero's name" },
   { sel: ".station-title", what: "the sections' headings" },
 ];
 const NORMAL = 4.5;
@@ -148,7 +144,7 @@ const collect = (page) =>
     for (let n = walker.nextNode(); n; n = walker.nextNode()) {
       const text = n.textContent.replace(/\s+/g, " ").trim();
       const el = n.parentElement;
-      if (!text || !el || el.closest("svg, script, style, noscript, nextjs-portal, [data-dev-sky-panel]")) continue;
+      if (!text || !el || el.closest("svg, script, style, noscript, nextjs-portal")) continue;
       if (!el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) || srOnly(el)) continue;
       const range = document.createRange();
       range.selectNodeContents(n);
@@ -194,34 +190,25 @@ for (const size of sizes) {
   // 11: no key, no saved choice), so the context asks for reduced motion
   const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
   const page = await ctx.newPage();
-  for (const sky of skies) {
-    const [weather, daylight] = sky.split("-");
-    await page.goto(`${base}/?sky=${sky}`, { waitUntil: "load" });
-    // The driver has applied this sky (development only: a production
-    // server ignores ?sky= and this would measure the live sky instead)
-    const applied = await page
-      .waitForFunction(({ weather, daylight }) => document.documentElement.dataset.weather === weather && document.documentElement.dataset.daylight === daylight, { weather, daylight }, { timeout: 15000 })
-      .then(() => true, () => false);
-    if (!applied) {
-      const got = await page.evaluate(() => `${document.documentElement.dataset.weather}-${document.documentElement.dataset.daylight}`);
-      fatal(`?sky=${sky} wasn't applied (the page shows ${got}). Run against \`next dev\`: the sky override is development only.`);
-    }
+  for (const paper of papers) {
+    // The paper as a returning visitor's saved choice, read by the head
+    // script before the first paint
+    await page.addInitScript((paper) => {
+      try {
+        localStorage.setItem("paper", paper);
+      } catch {}
+    }, paper);
+    await page.goto(`${base}/`, { waitUntil: "load" });
+    const got = await page.evaluate(() => document.documentElement.dataset.paper);
+    if (got !== paper) fatal(`the paper "${paper}" wasn't applied (data-paper="${got}"): is the Paper picker's head script (lib/paper.ts) in?`);
     const still = await page.evaluate(() => document.documentElement.dataset.still);
     if (still !== "on") fatal(`still view isn't on (data-still="${still}") under reduced motion: the readings would move`);
-    if (!(await page.locator("section.station").count())) fatal(`no section.station on ${base}/: is this the one-page city?`);
-    // Everything at rest, except the journey's own move (the track, the sky
-    // the weather and the panorama ride the page's scroll: without it the city never
-    // goes past its first stop)
-    await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; } :not(.track, .track-sky, .track-weather, .pano), ::before, ::after { animation: none !important; } nextjs-portal, [data-dev-sky-panel] { display: none !important; }" });
-    // One pass down the page, so every band comes near and mounts its plates
-    const height = await page.evaluate(() => document.documentElement.scrollHeight);
-    for (let y = 0; y < height; y += Math.round(size.height * 0.6)) {
-      await page.evaluate((y) => scrollTo(0, y), y);
-      await page.waitForTimeout(120);
-    }
-    await page
-      .waitForFunction(() => [...document.querySelectorAll(".band-plate img")].every((img) => img.complete), null, { timeout: 20000 })
-      .catch(() => console.log(`  (${size.name} ${sky}: some plates hadn't loaded after 20 s; measuring what's drawn)`));
+    if (!(await page.locator("section.station").count())) fatal(`no section.station on ${base}/: is this the one page?`);
+    // Everything at rest, except the journey's own move (the track rides
+    // the page's scroll: without it the page never goes past its first stop)
+    await page.addStyleTag({ content: "*, *::before, *::after { transition: none !important; } :not(.track), ::before, ::after { animation: none !important; } nextjs-portal { display: none !important; }" });
+    // The fonts and the pictures in, so nothing reflows between photographs
+    await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(400);
 
     const row = {};
@@ -241,11 +228,15 @@ for (const size of sizes) {
         for (const s of run.required) seenRequired.add(s);
         const need = run.large ? LARGE : NORMAL;
         if (!row[run.where] || res.p2 < row[run.where]) row[run.where] = res.p2;
-        if (res.p2 < need) failures.push({ size: size.name, sky, where: run.where, text: run.text, sel: run.sel, ratio: res.p2, min: res.min, need, color: run.color, px: run.size });
+        if (res.p2 < need) failures.push({ size: size.name, paper, where: run.where, text: run.text, sel: run.sel, ratio: res.p2, min: res.min, need, color: run.color, px: run.size });
       });
     };
     const bar = await page.evaluate(() => document.querySelector(".top-bar")?.getBoundingClientRect().height ?? 0);
-    const step = Math.max(200, size.height - Math.round(bar) - 40);
+    // A screen at a time: down the page stacked, along it on the journey
+    // (a scroll of y is y along the track, and a phone's stop is one
+    // screen wide, so a step never passes a whole stop)
+    const along = await page.evaluate(() => document.documentElement.dataset.track === "on");
+    const step = Math.max(200, Math.min(size.height - Math.round(bar) - 40, along ? size.width - 40 : Infinity));
     const full = await page.evaluate(() => document.documentElement.scrollHeight);
     for (let y = 0; ; y += step) {
       await page.evaluate((y) => scrollTo(0, y), y);
@@ -253,7 +244,7 @@ for (const size of sizes) {
       await screen(await collect(page));
       if (y + size.height >= full) break;
     }
-    // The Sections menu open, a third of the way along: the city dims
+    // The Sections menu open, a third of the way along: the page dims
     // behind it, but the bar, the metro map and the menu's rows keep their
     // contrast (only theirs are measured: the page's words are under the
     // dimming on purpose)
@@ -262,12 +253,12 @@ for (const size of sizes) {
     await page.locator('button[popovertarget="places-menu"]').click();
     await page.waitForTimeout(250);
     const open = (await collect(page)).filter((r) => r.where === "top bar" || r.where === "metro map");
-    if (!open.some((r) => r.menu)) missing.push({ size: size.name, sky, what: "the open menu's rows", sel: "#places-menu" });
+    if (!open.some((r) => r.menu)) missing.push({ size: size.name, paper, what: "the open menu's rows", sel: "#places-menu" });
     await screen(open.map((r) => ({ ...r, where: `menu open: ${r.menu ? "menu" : r.where}` })));
     await page.keyboard.press("Escape");
-    for (const r of REQUIRED) if (!seenRequired.has(r.sel)) missing.push({ size: size.name, sky, what: r.what, sel: r.sel });
-    table.push({ size: size.name, sky, row });
-    console.log(`${size.name.padEnd(9)} ${sky.padEnd(16)} ${Object.entries(row).map(([k, v]) => `${k} ${v}`).join("  ")}`);
+    for (const r of REQUIRED) if (!seenRequired.has(r.sel)) missing.push({ size: size.name, paper, what: r.what, sel: r.sel });
+    table.push({ size: size.name, paper, row });
+    console.log(`${size.name.padEnd(9)} ${paper.padEnd(9)} ${Object.entries(row).map(([k, v]) => `${k} ${v}`).join("  ")}`);
   }
   await ctx.close();
 }
@@ -277,27 +268,27 @@ await browser.close();
 const seen = new Set();
 const unique = failures
   .filter((f) => {
-    const key = `${f.size}|${f.sky}|${f.sel}|${f.text}`;
+    const key = `${f.size}|${f.paper}|${f.sel}|${f.text}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   })
   .sort((a, b) => a.ratio - b.ratio);
 
-console.log("\nlowest per place, over every sky and size:");
+console.log("\nlowest per place, over every paper and size:");
 const lowest = {};
-for (const { size, sky, row } of table)
-  for (const [k, v] of Object.entries(row)) if (!lowest[k] || v < lowest[k].v) lowest[k] = { v, at: `${size} ${sky}` };
+for (const { size, paper, row } of table)
+  for (const [k, v] of Object.entries(row)) if (!lowest[k] || v < lowest[k].v) lowest[k] = { v, at: `${size} ${paper}` };
 for (const [k, { v, at }] of Object.entries(lowest).sort((a, b) => a[1].v - b[1].v)) console.log(`  ${k.padEnd(14)} ${String(v).padStart(6)}  (${at})`);
 
 if (unique.length) {
   console.log(`\n${unique.length} run(s) under their minimum:`);
-  for (const f of unique) console.log(`  ✗ ${f.ratio} (min ${f.min}) < ${f.need}  ${f.size} ${f.sky}  ${f.where}  ${f.sel}  "${f.text}"  ${f.color} ${f.px}px`);
+  for (const f of unique) console.log(`  ✗ ${f.ratio} (min ${f.min}) < ${f.need}  ${f.size} ${f.paper}  ${f.where}  ${f.sel}  "${f.text}"  ${f.color} ${f.px}px`);
 }
 if (missing.length) {
   console.log(`\n${missing.length} required reading(s) not measured (the element wasn't found, or too few of its pixels showed):`);
-  for (const m of missing) console.log(`  ✗ ${m.size} ${m.sky}: ${m.what} (${m.sel})`);
+  for (const m of missing) console.log(`  ✗ ${m.size} ${m.paper}: ${m.what} (${m.sel})`);
 }
 const bad = unique.length + missing.length;
-console.log(bad ? `\nFAIL: ${bad} problem(s) over ${skies.length} skies x ${sizes.length} sizes` : `\nok: every word at or above its minimum over ${skies.length} skies x ${sizes.length} sizes`);
+console.log(bad ? `\nFAIL: ${bad} problem(s) over ${papers.length} papers x ${sizes.length} sizes` : `\nok: every word at or above its minimum over ${papers.length} papers x ${sizes.length} sizes`);
 process.exit(bad ? 1 : 0);

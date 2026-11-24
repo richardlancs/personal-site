@@ -165,7 +165,7 @@ test("the map's CSS: transforms only, the fill eased only when it locks, and not
   const outside = css.replace(block, "");
   assert.doesNotMatch(outside.match(/\.progress-[a-z]+[^{]*\{[^}]*\}/g)?.join("\n") ?? "", /transition|animation/);
   // The current station: a larger, filled dot, its shape as well as its colour (not by colour alone)
-  assert.match(css, /\n\.progress-point\[aria-current="location"\] \.progress-dot \{\s*scale: 1\.5;\s*background: var\(--accent-2\);/);
+  assert.match(css, /\n\.progress-point\[aria-current="location"\] \.progress-dot \{\s*scale: 1\.5;\s*background: var\(--cyan\);/);
   assert.doesNotMatch(css, /97rem|96\.99rem/);
   // Only on the journey, fixed at the foot of the screen, clear of the home bar
   assert.match(css, /\n\.progress-line \{\s*display: none;/);

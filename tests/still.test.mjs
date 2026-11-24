@@ -69,6 +69,6 @@ test("the page's motion keys on still view, and the top bar has no key for it", 
   assert.doesNotMatch(readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8"), /prefers-reduced-motion|matchMedia/);
   // One source of truth: the page's moving parts ask the still script's
   // query (app/lib/still.ts), never the media query themselves
-  for (const file of ["city2d/ProgressLine.tsx", "city2d/WeatherOverlay.tsx"])
+  for (const file of ["city2d/ProgressLine.tsx"])
     assert.doesNotMatch(readFileSync(`${root}app/components/${file}`, "utf8").replace(/^\s*\/\/.*$/gm, ""), /prefers-reduced-motion/, file);
 });
