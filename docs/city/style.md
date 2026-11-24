@@ -118,7 +118,7 @@ so its text colours are the darkest of the three papers'.
 - Accents are for edges, marks, chosen states, links and the one
   primary action; body text is `--text`.
 - No pure white and no pure black text; no magenta.
-- Older token names (`--ink-2`, `--cyan`, `--seam`, `--glass-*`) are
+- Older token names (`--ink-2`, `--cyan`, `--seam-2`, `--glass-*`) are
   aliases of these in `city.css` until nothing reads them.
 
 ## The texture
