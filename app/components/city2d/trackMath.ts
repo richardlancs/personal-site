@@ -130,8 +130,30 @@ export function placeAt(x: number, places: number[]): number {
   return k;
 }
 
-/** A jump this many screens or more dissolves (fade out, cut, fade in) instead of gliding */
-export const FAR = 1.5;
+/**
+ * A jump's glide (CityTrack.tsx: every jump, however far, travels along
+ * the city): how long it takes, in ms, for a distance of `d` px on a
+ * screen `vw` px wide. It grows with the square root of the screens
+ * crossed, so a long one is quicker per screen than a short one, from
+ * GLIDE_MS.min (a hop to the next panel) to GLIDE_MS.max (end to end).
+ */
+export const GLIDE_MS = { min: 600, perScreen: 700, max: 1600 } as const;
+export function glideMs(d: number, vw: number): number {
+  const screens = Math.abs(d) / Math.max(1, vw);
+  return Math.round(Math.min(GLIDE_MS.max, Math.max(GLIDE_MS.min, GLIDE_MS.perScreen * Math.sqrt(screens))));
+}
+
+/** The glide's easing, t from 0 to 1: a gentle start and a soft landing (cubic in and out, near city.css's --ease-in-out), exactly 0 and 1 at the ends */
+export function glideEase(t: number): number {
+  const u = Math.min(Math.max(t, 0), 1);
+  return u < 0.5 ? 4 * u * u * u : 1 - (-2 * u + 2) ** 3 / 2;
+}
+
+/** A glide sent on to a new place while it is under way (a key held, pressed again): no gentle start, it carries straight on and lands softly (cubic out) */
+export function glideOn(t: number): number {
+  const u = Math.min(Math.max(t, 0), 1);
+  return 1 - (1 - u) ** 3;
+}
 
 /**
  * Where a sideways swipe or wheel that went from `from` to `x` comes to

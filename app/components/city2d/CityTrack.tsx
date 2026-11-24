@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { pageSections, type SectionId } from "../../sections/registry";
 import { focusPanel, panelOf } from "./jump";
 import { HEIGHT, SEGMENT, WIDTH, stops as starts } from "./panorama";
-import { FAR, SKY_DEPTH, landing, nearestPlace, panoAt, panoKeys, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
+import { SKY_DEPTH, glideEase, glideMs, glideOn, landing, nearestPlace, panoAt, panoKeys, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackXForPano } from "./trackMath";
 import WeatherOverlay from "./WeatherOverlay";
 
 // The horizontal journey (city-track.css): the six stations side by side,
@@ -36,10 +36,11 @@ import WeatherOverlay from "./WeatherOverlay";
 // It also carries what a sideways page needs: an anchor (on load, a link,
 // Back/Forward) to its panel, focus moved into a stop off the screen
 // brings it on, and a sideways swipe or wheel (which no page scroll would
-// answer) travels too, coming to rest on a place. A jump of FAR screens or
-// more dissolves (the stage fades out, cuts, fades in: motion.css); a
-// shorter one glides; in still view every one cuts. A jump (a link, a
-// key) takes focus to the panel it lands on. Rain and snow are drawn once,
+// answer) travels too, coming to rest on a place. Every jump, however far,
+// glides along the city to its place (an eased glide, longer for a longer
+// way but never past 1.6 s: trackMath.ts, glideMs), and gives way at once
+// to your own scroll; with reduced motion (still view) every one cuts. A
+// jump (a link, a key) takes focus to the panel it lands on. Rain and snow are drawn once,
 // over the whole stage (inside the track, held still against it).
 //
 // The city behind the stops is one panorama (`city`: DistrictBand.tsx,
@@ -105,47 +106,58 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     let raf = 0;
     let aim = -1; // the place a key's step is heading for
     let aimTimer = 0;
-    // A jump under way (where to, along the track), and whether the scroll
-    // now is one (a jump's, not yours: no motion blur)
+    // A jump under way (where to, along the track; its frame; the scroll it
+    // last wrote), and whether the scroll now is one (a jump's, not yours:
+    // no motion blur)
     let pending = -1;
     let auto = false;
-    let fade = 0;
-    let pendingTimer = 0;
+    let glideRaf = 0;
+    let wrote = -1;
 
     const on = () => html.dataset.track === "on";
     const still = () => html.dataset.still === "on";
     const along = () => Math.min(Math.max(scrollY - top, 0), travel);
     const xs = () => places.map((p) => p.x);
-    const ms = (token: string) => parseFloat(getComputedStyle(html).getPropertyValue(token)) || 0;
-    // A move along the track to x: a cut (still view), a glide, or past
-    // FAR screens a dissolve (the stage fades out over --t-fast, the cut is
-    // made unseen, and it fades in over --t-base: motion.css). Before a far
-    // one, the stop it is going to is named ("trackjump"), so its tiles
+    const stopGlide = () => {
+      cancelAnimationFrame(glideRaf);
+      glideRaf = 0;
+      pending = -1;
+      wrote = -1;
+    };
+    // A move along the track to x: a cut (still view, reduced motion), or
+    // a glide, however far: one eased move a frame at a time (glideMs,
+    // glideEase), the snapping let go meanwhile (data-free; it comes back
+    // at settle, the glide resting exactly on its place) and no motion
+    // blur. Your own scroll (a wheel, a finger, the scrollbar, a key) moves
+    // the page from where the glide left it: the glide gives way at once.
+    // First the stop it is going to is named ("trackjump"), so its tiles
     // load first (DistrictBand). A second call for the same place while
-    // one is under way (a link's focus, its hash) is the same jump, unless
-    // `again` (the address's: the browser's own move to an anchor stops a
-    // glide begun before it).
-    const glide = (x: number, instant = still(), stop = stopAt(x, offsets), again = false) => {
+    // one is under way (a link's focus, its hash) is the same jump.
+    const glide = (x: number, instant = still(), stop = stopAt(x, offsets)) => {
       const to = Math.min(Math.max(x, 0), travel);
-      const d = Math.abs(to - along());
-      if (d < 1 || (!again && pending >= 0 && Math.abs(pending - to) < 1)) return;
-      const far = d >= FAR * vw;
-      if (far) dispatchEvent(new CustomEvent("trackjump", { detail: { to: pageSections[stop]?.id } }));
-      const cut = () => scrollTo({ top: top + to, behavior: "instant" });
-      if (instant) return cut();
+      const from = along();
+      if (glideRaf && Math.abs(pending - to) < 1) return;
+      if (Math.abs(to - from) < 1) return;
+      dispatchEvent(new CustomEvent("trackjump", { detail: { to: pageSections[stop]?.id } }));
+      // (sent on while under way: it carries straight on, never stopping to start again)
+      const ease = glideRaf ? glideOn : glideEase;
+      stopGlide();
+      if (instant || calm.matches || document.hidden) return scrollTo({ top: top + to, behavior: "instant" });
       pending = to;
       auto = true;
-      clearTimeout(pendingTimer);
-      pendingTimer = window.setTimeout(() => (pending = -1), 2000);
-      if (!far) return scrollTo({ top: top + to, behavior: "smooth" });
-      if (calm.matches) return cut();
-      html.setAttribute("data-dissolve", "");
-      clearTimeout(fade);
-      fade = window.setTimeout(() => {
-        cut();
-        pending = -1;
-        requestAnimationFrame(() => html.removeAttribute("data-dissolve"));
-      }, ms("--t-fast"));
+      html.setAttribute("data-free", "");
+      const t0 = performance.now();
+      const ms = glideMs(to - from, vw);
+      const step = (t: number) => {
+        glideRaf = 0;
+        if (wrote >= 0 && Math.abs(scrollY - wrote) > 2) return stopGlide();
+        const k = ease((t - t0) / ms);
+        scrollTo({ top: top + from + (to - from) * k, behavior: "instant" });
+        wrote = scrollY;
+        if (k < 1) glideRaf = requestAnimationFrame(step);
+        else stopGlide();
+      };
+      glideRaf = requestAnimationFrame(step);
     };
     // Where to stop to show `el` (its panel: panelOf): with that panel in
     // the middle of the screen, as it stands at its stop's start (a stop's
@@ -162,11 +174,11 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
 
     // The stop an address names (#projects), or the panel in it (#skills,
     // a project), there; from a link, focus goes with it
-    const toHash = (hash: string, instant?: boolean, focus = false, again = false) => {
+    const toHash = (hash: string, instant?: boolean, focus = false) => {
       const el = document.getElementById(decodeURIComponent(hash.slice(1)) || "home");
       const i = el ? stopOf(el) : -1;
       if (!el || i < 0) return;
-      glide(xFor(el, i), instant, i, again);
+      glide(xFor(el, i), instant, i);
       if (focus) focusPanel(el);
     };
 
@@ -262,6 +274,8 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       clearTimeout(settleTimer);
       settleTimer = window.setTimeout(() => {
         settleTimer = 0;
+        // (a glide that paused a moment is still under way)
+        if (glideRaf) return;
         auto = false;
         pending = -1;
         if (free < 0) html.removeAttribute("data-free");
@@ -399,9 +413,9 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       const url = new URL(a.href);
       if (url.origin === location.origin && url.pathname === location.pathname && url.hash.length > 1) requestAnimationFrame(() => toHash(url.hash, undefined, true));
     };
-    // (a frame later: the browser's own move to the anchor, which would
-    // stop a glide begun before it, has been made)
-    const onHash = () => on() && requestAnimationFrame(() => toHash(location.hash || "#home", undefined, false, true));
+    // (a frame later: after the browser's own move to the anchor, which
+    // the glide's first frame then overrides)
+    const onHash = () => on() && requestAnimationFrame(() => toHash(location.hash || "#home"));
 
     // Focus moved into a stop that isn't on the screen (Tab, a jump)
     const onFocus = (e: FocusEvent) => {
@@ -488,6 +502,11 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     const passive = { passive: true, signal };
     addEventListener("scroll", onScroll, passive);
     addEventListener("wheel", onWheel, passive);
+    // Your own hand on the page (a wheel, a finger, the scrollbar) ends a
+    // glide at once, even before its first frame has moved anything
+    const takeOver = () => glideRaf && stopGlide();
+    addEventListener("wheel", takeOver, passive);
+    addEventListener("pointerdown", takeOver, passive);
     addEventListener("keydown", onKey, { signal });
     addEventListener("hashchange", onHash, { signal });
     addEventListener("popstate", onHash, { signal });
@@ -504,8 +523,9 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       stillness.disconnect();
       cancelAnimationFrame(raf);
       cancelAnimationFrame(blurRaf);
+      cancelAnimationFrame(glideRaf);
       if (pano) pano.style.filter = "";
-      for (const t of [aimTimer, settleTimer, fade, pendingTimer, wheelTimer]) clearTimeout(t);
+      for (const t of [aimTimer, settleTimer, wheelTimer]) clearTimeout(t);
       for (const p of panels) {
         const [tab, role, label] = had.get(p)!;
         for (const [a, v] of [["tabindex", tab], ["role", role], ["aria-labelledby", label]] as const) {
@@ -520,7 +540,7 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       // Gone from the page (another route): the page there reads as any
       // page does (a fallback, the head script's for the visit, stays)
       if (on()) delete html.dataset.track;
-      for (const a of ["data-track-ready", "data-free", "data-dissolve"]) html.removeAttribute(a);
+      for (const a of ["data-track-ready", "data-free"]) html.removeAttribute(a);
     };
   }, []);
 

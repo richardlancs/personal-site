@@ -463,44 +463,12 @@ button.text-link,
   }
 }
 
-/* Still view in words where the bar has room (A11Y-14) */
-.top-bar-still-label {
-  display: none;
-}
-
-@media (min-width: 80rem) {
-  .top-bar .top-bar-still {
-    width: auto;
-    padding: 0 0.9rem;
-  }
-
-  .top-bar-still-label {
-    display: inline;
-  }
-}
-
-/* Without JavaScript (no data-still from the head script): no keys that
-   can't work, and no weather that would never fill (A11Y-13) */
+/* Without JavaScript (no data-still from the head script): no key that
+   can't work, and no weather that would never fill (A11Y-13). (Sections
+   keeps its name in words at every width: Task 11 took Still view's key
+   off the bar, which left the room.) */
 :root:not([data-still]) :is(.top-bar-still, .top-bar-music, .rh) {
   display: none;
-}
-
-/* The smallest phones: Sections is its icon alone (its name is still
-   "Sections", read out), so the name and four keys share the row */
-@media (max-width: 379px) {
-  .top-bar-sections {
-    width: 44px;
-    padding: 0;
-  }
-
-  .top-bar-sections-label {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }
 
 /* ---------- The Sections menu ---------- */

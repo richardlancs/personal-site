@@ -52,7 +52,7 @@ explicit yes.
   and `trackMath.ts` (its pure arithmetic), `Station`, `DistrictBand` (the
   panorama's tiles), `panorama.ts` and `panoramaImages.ts` (written by
   `scripts/city-panorama.mjs`), `TopBar`, `ProgressLine` (the metro map),
-  `SectionsMenu`, `StillViewToggle`, `WeatherOverlay`, `CityDriver`, and
+  `SectionsMenu`, `WeatherOverlay`, `CityDriver`, and
   `sections/` with one component per section
 - `app/components/weather/`, `components/resume/`, `components/ui/`
   (`GlassPress`, `Arrivals`, `Colophon`), `components/MusicToggle.tsx`
@@ -119,8 +119,8 @@ anything, nothing smooths the wheel, nothing snaps or traps.
 - `ArrowLeft`/`ArrowRight` go to the previous or next stop; an anchor (on
   load, a link, Back/Forward) lands on its stop or its panel (`#skills`, a
   project); focus moved into a stop off the screen brings it on; a
-  sideways swipe travels (the page itself only scrolls down). Jumps glide,
-  and cut in still view. A resize or a turn keeps you at the same place
+  sideways swipe travels (the page itself only scrolls down). Every jump
+  glides along the city, however far, and cuts in still view. A resize or a turn keeps you at the same place
   in the same stop.
 - A panel taller than the stage scrolls inside, only once the journey
   has stopped with all of it on the screen (`data-open`); at its end the
@@ -204,9 +204,13 @@ the reports per part in `.superpowers/sdd/2026-11-22-horizontal-city/task-9-{A,B
   mandatory` + `scroll-snap-stop: always`. ArrowLeft/Right, PageDown/Space
   and the bar's place label ("03 / 06 · Projects · 1 of 5 MarketLab",
   from CityTrack's `trackplace` event) all use the same list.
-- Jumps longer than about 1.5 screens dissolve (fade, cut, fade) and fire
-  `trackjump` so the target's tiles load first; motion blur only on your
-  own scrolling. Sideways trackpad and tilt-wheel scroll the journey, with
+- Every jump (map, menu, anchors, Next links, keys) glides along the
+  city to its place (Task 11: no dissolve): eased, 0.6 s for a hop to 1.6 s
+  at most (`trackMath.ts: glideMs`, growing with the square root of the
+  screens crossed), snapping let go meanwhile (`data-free`), landing
+  exactly on the snap point, giving way at once to your own scroll; it
+  fires `trackjump` so the target's tiles load first; motion blur only on
+  your own scrolling, never a jump's. Sideways trackpad and tilt-wheel scroll the journey, with
   `overscroll-behavior-x: none` on `html`.
 - Panels: centred under one top line, sized by content, Projects and
   Experience about 80vw, ending above the map; one even glass tint (it is
@@ -222,7 +226,7 @@ the reports per part in `.superpowers/sdd/2026-11-22-horizontal-city/task-9-{A,B
   panels read title, keys, summary, cover; Experience without boxed
   badges; a clear "Copied" moment; the bar's place reads "Weather in
   Waterloo" (Richmond Hill before Task 10); the Sections menu as plain
-  rows; "Still view" labelled;
+  rows; "Still view" labelled (the key itself gone in Task 11);
   the résumé readable on phones with "Open in your viewer" and an offline
   note.
 
@@ -357,7 +361,7 @@ weights and generous line-height. Avoid decorative fonts.
 
 - The top bar (`TopBar.tsx`): the name (home), the section you're at in
   words from 53rem ("03 / 06 · Projects"), Waterloo's time and
-  weather, Sections, Still view and the music, all one family of 44px
+  weather, Sections (named in words at every width) and the music, all one family of 44px
   pills (the keys' glass edge and fill, fully round). It floats over the stage
   on the journey. It never gains a row it doesn't have today, at any
   width (`docs/city/scripts/bar-fit.mjs`). Tab goes through its keys
@@ -468,12 +472,13 @@ writes its own duration or curve. Nothing loops (`tests/city-motion.test.mjs`):
 the city's drift is the journey's, not the clock's.
 
 Still view is `html[data-still="on"]`, set before first paint by
-`lib/still.ts: STILL_SCRIPT` from the visitor's choice or
-`prefers-reduced-motion`: fully readable and motionless. No arrivals,
+`lib/still.ts: STILL_SCRIPT` from `prefers-reduced-motion` alone (no
+key: Task 11 took it off the bar, and an old saved choice, `still-view`
+in localStorage, is cleared): fully readable and motionless. No arrivals,
 no parallax (the sky and the panorama move with the street, pixel for
 pixel, cutting between stops), no drift, beam or flicker, no moving
-weather, jumps cut. The top bar's key changes it through
-`lib/stillStore.ts`. Every animation sits behind that guard and the
+weather, jumps cut. `lib/stillStore.ts` keeps it in step with the
+system's setting while the page is open. Every animation sits behind that guard and the
 reduced-motion query. No scroll hijacking.
 
 ---

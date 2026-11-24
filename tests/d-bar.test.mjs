@@ -19,11 +19,9 @@ test("the bar names the panel you're at from CityTrack's trackplace event (10, 1
   assert.match(css, /\.top-bar-here \{\s*display: block;\s*flex: 1 1 0;\s*min-width: 0;\s*overflow: hidden;\s*text-overflow: ellipsis;/);
 });
 
-test("Still view says so in words where the bar has room (13)", () => {
-  const still = read("app/components/city2d/StillViewToggle.tsx");
-  assert.match(still, /className="top-bar-still-label"[^>]*>\s*Still view\s*</);
-  assert.match(still, /aria-label="Still view"/);
-  assert.match(css, /@media \(min-width: 80rem\) \{\s*\.top-bar \.top-bar-still \{[^}]*width: auto;[^}]*\}\s*\.top-bar-still-label \{\s*display: inline;/);
+test("Task 11: no Still view key on the bar (still view follows the system's setting)", () => {
+  assert.doesNotMatch(read("app/components/city2d/TopBar.tsx"), /StillViewToggle/);
+  assert.doesNotMatch(css, /\.top-bar-still-label|\.top-bar \.top-bar-still/);
 });
 
 test("the map lines up with the panels' central 80%, and its phone label stays by its dot (14, 15)", () => {

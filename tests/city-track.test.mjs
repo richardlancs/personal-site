@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import vm from "node:vm";
-import { FAR, ROOM_EMS, SKY_DEPTH, TRACK_MIN, landing, nearestPlace, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackRoom } from "../app/components/city2d/trackMath.ts";
+import { GLIDE_MS, ROOM_EMS, SKY_DEPTH, TRACK_MIN, landing, nearestPlace, parallax, placeAt, scrollYForStop, stopAt, stopOffsets, trackFits, trackRoom, glideEase, glideMs, glideOn } from "../app/components/city2d/trackMath.ts";
 import { TRACK_SCRIPT, TRACK_WAIT_MS } from "../app/lib/track.ts";
 
 const root = new URL("../", import.meta.url).pathname;
@@ -119,9 +119,8 @@ test("the keys: ArrowLeft/ArrowRight, PageUp/PageDown and Space go a place, neve
   assert.match(src, /e\.shiftKey && e\.key !== " "/);
   assert.match(src, /glide\(places\[next\]\.x, still\(\), places\[next\]\.stop\);\s*focusPanel\(places\[next\]\.panel\);/, "the step takes focus (A11Y-06)");
   assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]"/);
-  assert.match(src, /if \(instant\) return cut\(\);/);
-  assert.match(src, /scrollTo\(\{ top: top \+ to, behavior: "instant" \}\)/);
-  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\), again = false\)/, "a glide cuts in still view");
+  assert.match(src, /if \(instant \|\| calm\.matches \|\| document\.hidden\) return scrollTo\(\{ top: top \+ to, behavior: "instant" \}\);/, "a cut with reduced motion");
+  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\)\)/, "a glide cuts in still view");
   assert.match(src, /html\.dataset\.still === "on"/);
 });
 
@@ -335,23 +334,45 @@ test("Task 9: the places: the nearest for the label, the last reached for a key,
   assert.equal(landing(0, 1250, xs, false, 400), 1);
   assert.equal(landing(0, 600, xs, false, 400), null);
   assert.equal(landing(0, 10, [], true, 400), null);
-  assert.equal(FAR, 1.5);
 });
 
-test("Task 9: the snap targets, the bar's label, focus and the dissolve, from one list", () => {
+test("Task 11: every jump glides, sub-linearly longer for a longer way, capped", () => {
+  assert.deepEqual(GLIDE_MS, { min: 600, perScreen: 700, max: 1600 });
+  assert.equal(glideMs(0, 1440), 600, "a hop takes the least");
+  assert.equal(glideMs(1440, 1440), 700);
+  assert.equal(glideMs(-1440 * 4, 1440), 1400, "either way");
+  assert.equal(glideMs(1440 * 30, 1440), 1600, "never past the cap");
+  assert.ok(glideMs(1440 * 4, 1440) < 4 * glideMs(1440, 1440), "quicker per screen when longer");
+  assert.equal(glideEase(0), 0);
+  assert.equal(glideEase(1), 1, "lands exactly");
+  assert.equal(glideEase(-1), 0);
+  assert.equal(glideEase(2), 1);
+  assert.equal(glideEase(0.5), 0.5);
+  for (let t = 0; t < 1; t += 0.05) assert.ok(glideEase(t + 0.05) >= glideEase(t) && glideOn(t + 0.05) >= glideOn(t), "never back");
+  // Sent on while under way (a key held): no gentle start again
+  assert.equal(glideOn(0), 0);
+  assert.equal(glideOn(1), 1);
+  assert.ok(glideOn(0.1) > 0.25 && glideEase(0.1) < 0.01);
+  assert.match(code(read("app/components/city2d/CityTrack.tsx")), /const ease = glideRaf \? glideOn : glideEase;/);
+});
+
+test("Task 9: the snap targets, the bar's label, focus and the glide, from one list", () => {
   const src = code(read("app/components/city2d/CityTrack.tsx"));
   assert.match(src, /snaps\.append\(Object\.assign\(document\.createElement\("div"\), \{ className: "snap-mark" \}\)\)/);
   assert.match(src, /m\.dataset\.for = p\.panel\.id \|\| stops\[p\.stop\]\.id;\s*m\.style\.top = `\$\{p\.x\}px`;/);
   assert.match(src, /<div className="track-snaps" aria-hidden="true" \/>/);
   assert.match(src, /dispatchEvent\(new CustomEvent\("trackplace", \{ detail: place \}\)\)/);
   assert.match(src, /dispatchEvent\(new CustomEvent\("trackjump", \{ detail: \{ to: pageSections\[stop\]\?\.id \} \}\)\)/);
-  // A long jump dissolves; the motion blur is yours only (never a jump's)
-  assert.match(src, /const far = d >= FAR \* vw;/);
-  assert.match(src, /html\.setAttribute\("data-dissolve", ""\)/);
+  // Task 11: no dissolve, every jump glides (snapping let go meanwhile,
+  // giving way to your own scroll); the motion blur is yours only
+  assert.doesNotMatch(src, /data-dissolve|FAR/);
+  assert.doesNotMatch(code(read("app/motion.css")), /data-dissolve|\.track-stage/);
+  assert.doesNotMatch(src, /behavior: "smooth"/, "the browser's smooth scroll is not the glide");
+  assert.match(src, /const ms = glideMs\(to - from, vw\);/);
+  assert.match(src, /html\.setAttribute\("data-free", ""\);/);
+  assert.match(src, /if \(wrote >= 0 && Math\.abs\(scrollY - wrote\) > 2\) return stopGlide\(\);/, "your own scroll wins");
+  assert.match(src, /addEventListener\("wheel", takeOver, passive\);\s*addEventListener\("pointerdown", takeOver, passive\);/);
   assert.match(src, /auto \|\| still\(\) \|\| calm\.matches \? 0/);
-  const motion = code(read("app/motion.css"));
-  assert.match(motion, /@media \(prefers-reduced-motion: no-preference\) \{[\s\S]*:root:not\(\[data-still="on"\]\) \.track-stage \{\s*transition: opacity var\(--t-base\) var\(--ease-out\);/);
-  assert.match(motion, /:root:not\(\[data-still="on"\]\)\[data-dissolve\] \.track-stage \{\s*opacity: 0;\s*transition-duration: var\(--t-fast\);/);
   // An overflowing panel is a region in the Tab order; one well off the screen starts at its top
   assert.match(src, /p\.setAttribute\("tabindex", scrolls \? "0" : \(tab \?\? "-1"\)\)/);
   assert.match(src, /if \(r\.right < -vw \|\| r\.left > 2 \* vw\) p\.scrollTop = 0;/);

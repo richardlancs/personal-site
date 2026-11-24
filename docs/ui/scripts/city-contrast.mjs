@@ -189,13 +189,10 @@ const failures = [];
 const missing = [];
 const table = [];
 for (const size of sizes) {
-  const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1 });
-  // Still view: nothing fades or moves between the two photographs
-  await ctx.addInitScript(() => {
-    try {
-      localStorage.setItem("still-view", "on");
-    } catch {}
-  });
+  // Still view: nothing fades or moves between the two photographs. It
+  // follows the system's reduced-motion setting alone (lib/still.ts, Task
+  // 11: no key, no saved choice), so the context asks for reduced motion
+  const ctx = await browser.newContext({ viewport: { width: size.width, height: size.height }, deviceScaleFactor: 1, reducedMotion: "reduce" });
   const page = await ctx.newPage();
   for (const sky of skies) {
     const [weather, daylight] = sky.split("-");
@@ -209,6 +206,8 @@ for (const size of sizes) {
       const got = await page.evaluate(() => `${document.documentElement.dataset.weather}-${document.documentElement.dataset.daylight}`);
       fatal(`?sky=${sky} wasn't applied (the page shows ${got}). Run against \`next dev\`: the sky override is development only.`);
     }
+    const still = await page.evaluate(() => document.documentElement.dataset.still);
+    if (still !== "on") fatal(`still view isn't on (data-still="${still}") under reduced motion: the readings would move`);
     if (!(await page.locator("section.station").count())) fatal(`no section.station on ${base}/: is this the one-page city?`);
     // Everything at rest, except the journey's own move (the track, the sky
     // the weather and the panorama ride the page's scroll: without it the city never

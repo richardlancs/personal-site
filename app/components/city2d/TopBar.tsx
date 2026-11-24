@@ -2,14 +2,13 @@ import Link from "next/link";
 import { backgroundMusic, profile } from "../../data/portfolio";
 import MusicToggle from "../MusicToggle";
 import WeatherClock from "../weather/WeatherClock";
-import StillViewToggle from "./StillViewToggle";
 import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 
 // The bar along the top of every page (city.css, "The top bar"): the
 // name, the way home; the section you're at; Waterloo's time and
 // weather, only to read; the Sections menu, built from the registry;
-// Still view; and the music (its note, if the song can't load, hangs
+// and the music (its note, if the song can't load, hangs
 // under its key); then the metro map, fixed along the foot of the screen
 // (ProgressLine.tsx). It stays at the top while the page scrolls under
 // it, clear of a notch.
@@ -30,7 +29,6 @@ export default function TopBar() {
           </svg>
           <span className="top-bar-sections-label">Sections</span>
         </button>
-        <StillViewToggle />
         <span className="top-bar-music">
           <MusicToggle backgroundMusic={backgroundMusic} />
         </span>

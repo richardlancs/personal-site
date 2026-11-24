@@ -30,17 +30,6 @@
     animation: copy-shake var(--t-slow) var(--ease-in-out);
   }
 
-  /* A long jump along the journey dissolves (CityTrack: data-dissolve):
-     the stage fades out quickly, the cut is made unseen, it fades in */
-  :root:not([data-still="on"]) .track-stage {
-    transition: opacity var(--t-base) var(--ease-out);
-  }
-
-  :root:not([data-still="on"])[data-dissolve] .track-stage {
-    opacity: 0;
-    transition-duration: var(--t-fast);
-  }
-
   /* Hover or focus previews the action: the mail lifts toward sending,
      the icons of links that leave the page lean up and right, the
      résumé's page lifts */

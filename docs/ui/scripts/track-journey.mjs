@@ -4,8 +4,10 @@
 // 1. a mouse wheel, Space/PageDown/arrow keys, the scrollbar and a touch
 //    swipe (up and sideways) all travel the city to Contact and back home;
 //    the keys and a sideways swipe go one place (panel) at a time, a
-//    sideways wheel travels, a long jump dissolves, and an arrow takes
-//    focus to the panel it lands on (Task 9);
+//    sideways wheel travels, a long jump glides the whole way (Task 11:
+//    no dissolve; eased, at most 1.6 s, landing exactly on its place, and
+//    giving way to a wheel mid-glide; a cut with reduced motion), and an
+//    arrow takes focus to the panel it lands on (Task 9);
 // 2. every anchor loaded cold lands on its stop (Experience's showing its
 //    newest role's title, and on a wide screen every entry's), each panel
 //    in a row centred on the screen; Back/Forward restore it;
@@ -39,9 +41,8 @@ const atStop = (page) =>
     return s?.id ?? null;
   });
 const settle = (page, ms = 900) => page.waitForTimeout(ms);
-// Until a glide has come to rest (a long one, across a row of panels, takes
-// the browser's smooth scroll over a second): the scroll still for ten
-// frames, at most 4 s
+// Until a glide has come to rest (a long one takes up to 1.6 s: Task 11):
+// the scroll still for ten frames, at most 4 s
 const rest = (page) =>
   page.evaluate(async () => {
     const t0 = performance.now();
@@ -200,16 +201,41 @@ try {
       await settle(page, 200);
       check((await atStop(page)) === "contact", "the scrollbar's range ends at Contact (overlay scrollbar)");
     }
-    // A long jump dissolves: the stage fades out, cuts, fades in
+    // Task 11: a long jump glides the whole way, never dissolving: the
+    // scroll every frame, rising, many frames, at most 1.6 s (and a bit),
+    // the stage whole throughout, landing exactly on Contact's place
+    const record = () => page.evaluate(() => { window.__ys = []; window.__op = []; const t0 = performance.now(); const look = () => { window.__ys.push([performance.now() - t0, scrollY]); window.__op.push(getComputedStyle(document.querySelector(".track-stage")).opacity); if (performance.now() - t0 < 3000) requestAnimationFrame(look); }; requestAnimationFrame(look); });
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     await settle(page, 300);
-    await page.evaluate(() => { window.__dis = 0; const look = () => { if (document.documentElement.hasAttribute("data-dissolve")) window.__dis++; if (window.__dis < 1e4) requestAnimationFrame(look); }; requestAnimationFrame(look); });
+    await record();
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#contact"]');
-    await settle(page, 600);
+    await settle(page, 2200);
     await rest(page);
-    const dis = await page.evaluate(() => [window.__dis, document.documentElement.hasAttribute("data-dissolve"), getComputedStyle(document.querySelector(".track-stage")).opacity]);
-    check((await atStop(page)) === "contact" && dis[0] > 0 && !dis[1] && dis[2] === "1", `a jump from Home to Contact dissolves and comes back whole (${dis})`);
+    const g = await page.evaluate(() => {
+      const ys = window.__ys;
+      const end = ys[ys.length - 1][1];
+      const moving = ys.filter(([, y], k) => k && y !== ys[k - 1][1]);
+      const back = ys.some(([, y], k) => k && y < ys[k - 1][1] - 1);
+      const mark = document.querySelector('.snap-mark[data-for="contact"]');
+      const want = mark.getBoundingClientRect().top + scrollY;
+      return { frames: moving.length, ms: moving.length ? Math.round(moving[moving.length - 1][0] - moving[0][0]) : 0, back, off: Math.abs(end - want), faded: window.__op.some((o) => o !== "1"), dissolve: document.documentElement.hasAttribute("data-dissolve"), free: document.documentElement.hasAttribute("data-free") };
+    });
+    check((await atStop(page)) === "contact" && g.frames >= 20 && g.ms >= 500 && g.ms <= 1800 && !g.back && g.off <= 1 && !g.faded && !g.dissolve && !g.free, `a jump from Home to Contact glides along the city and lands on its place (${JSON.stringify(g)})`);
+    await page.screenshot({ path: ".superpowers/sdd/2026-11-22-horizontal-city/task-11/J/landed-contact.png" });
+    // A wheel mid-glide takes over: the glide gives way, and the page rests where you took it
+    await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
+    await settle(page, 300);
+    await page.click('button[popovertarget="places-menu"]');
+    await page.click('#places-menu a[href="/#contact"]');
+    await settle(page, 350);
+    await page.screenshot({ path: ".superpowers/sdd/2026-11-22-horizontal-city/task-11/J/mid-glide.png" });
+    await page.mouse.move(720, 450);
+    await page.mouse.wheel(0, -300);
+    await settle(page, 1800);
+    await rest(page);
+    const taken = await atStop(page);
+    check(taken !== "contact" && !(await page.evaluate(() => document.documentElement.hasAttribute("data-free"))), `a wheel mid-glide stops it short of Contact (rests at ${taken})`);
     // A sideways wheel (a trackpad swipe, a tilt wheel) travels, and lands on a place
     await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
     await settle(page, 300);
@@ -444,7 +470,8 @@ try {
     check(first[1] > 0 && first[0] === y0, `${how} over it scrolls the panel first, not the city (${y0} → ${first})`);
     let reached = false;
     let end = false;
-    for (let i = 0; i < 120 && !reached; i++) {
+    // (up to 240 steps: each panel's glide, 0.6 s at least, then its own scroll: Task 11)
+    for (let i = 0; i < 240 && !reached; i++) {
       end ||= await page.evaluate(() => { const p = document.getElementById("marketlab"); return p.scrollTop + p.clientHeight >= p.scrollHeight - 2; });
       await step();
       await settle(page, 60);
@@ -501,6 +528,22 @@ try {
     const before = seen.filter(([ready]) => !ready).map(([, x]) => x), after = seen.filter(([ready]) => ready).map(([, x]) => x);
     const all = [...before, ...after];
     check(before.length > 0 && after.length > 0 && Math.max(...all) - Math.min(...all) <= 0.5, `Home's painting stands still through hydration (before ${[...new Set(before)]}, after ${[...new Set(after)]})`);
+    await c.close();
+  }
+  // Task 11: with reduced motion (still view) a jump cuts, whatever its
+  // length; the bar has no Still view key, and an old saved choice is gone
+  {
+    const c = await newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: "reduce" });
+    await c.addInitScript(() => { try { if (!sessionStorage.getItem("seeded")) { localStorage.setItem("still-view", "off"); sessionStorage.setItem("seeded", "1"); } } catch {} });
+    const page = await open(c, "/");
+    await page.evaluate(() => { window.__ys = []; const look = () => { window.__ys.push(scrollY); if (window.__ys.length < 120) requestAnimationFrame(look); }; requestAnimationFrame(look); });
+    await page.click('button[popovertarget="places-menu"]');
+    await page.click('#places-menu a[href="/#contact"]');
+    await settle(page, 1500);
+    const between = await page.evaluate(() => new Set(window.__ys).size);
+    const st = await page.evaluate(() => [document.documentElement.dataset.still, localStorage.getItem("still-view"), document.querySelectorAll(".top-bar-still, .top-bar [aria-label='Still view']").length]);
+    check((await atStop(page)) === "contact" && between <= 2, `with reduced motion a jump from Home to Contact cuts (${between} scroll positions seen)`);
+    check(st[0] === "on" && st[1] === null && st[2] === 0, `still view from the system setting, the old saved choice cleared, no key in the bar (${st})`);
     await c.close();
   }
   for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {

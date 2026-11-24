@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react";
+import { syncStill } from "../../lib/stillStore";
 import { listed } from "../../sections/registry";
 import WeatherClock from "../weather/WeatherClock";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
@@ -36,6 +37,9 @@ import { useSection } from "./useSection";
 export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
   const here = useSection();
+  // Still view follows the system's setting (lib/stillStore.ts); the menu
+  // is on every page, so it puts the attribute back after hydration
+  useLayoutEffect(syncStill, []);
   // Close, then hand focus to the section
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;
