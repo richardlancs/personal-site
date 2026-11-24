@@ -30,7 +30,10 @@ const dir = process.argv[2] || ".next";
 // file's predecessor (initial JS of index.html). The city's `/` measured
 // 198,092 then (finish pass), so this is about 1.4% headroom: growth past
 // the old home is a decision, not an accident.
-const HOME_JS_LIMIT = 200_848;
+// Raised to 203,000 at Richard's ruling, 23 November 2026, for the UX
+// panel's 22 fixes (snap, dissolving jumps, the place label, the résumé on
+// phones: 202,609 when ruled). Only goes down from here.
+const HOME_JS_LIMIT = 203_000;
 // About 5% over the city's measurement after round 2 (10,247, round 2's
 // finish pass, 20 November 2026), set only after its dead CSS was gone:
 // the unused interest-card rules, and the utilities Tailwind made for the
@@ -39,8 +42,9 @@ const HOME_JS_LIMIT = 200_848;
 // line, figures, the list marker). Raised to 12,000 at Richard's ruling,
 // 23 November 2026, for the horizontal city he asked to be "highly
 // animated" (the journey, the arrivals, the metro map, the living city:
-// 11,590 when ruled). Only goes down from here.
-const TOTAL_CSS_LIMIT = 12_000;
+// 11,590 when ruled). Raised again to 12,300 at his ruling the same day
+// for the UX panel's 22 fixes (12,257 when ruled). Only goes down from here.
+const TOTAL_CSS_LIMIT = 12_300;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;

@@ -194,13 +194,43 @@ The old addresses (`/about`, `/projects`, `/experience`, `/interests`,
 (`/city`, `/city/<section>`) to `/` and the anchors, all temporary
 (`next.config.ts`).
 
+### The UX panel's fixes (23 November 2026)
+
+Built from `docs/ui/ux-review-2026-11-23.md` (four reviewers, debated;
+the reports per part in `.superpowers/sdd/2026-11-22-horizontal-city/task-9-{A,B,C,D}-report.md`):
+- Snap: one 1px snap mark per panel (`.snap-mark` in `.track-runway`) at
+  its centred position; wide screens `y proximity`, the narrow layout `y
+  mandatory` + `scroll-snap-stop: always`. ArrowLeft/Right, PageDown/Space
+  and the bar's place label ("03 / 06 · Projects · 1 of 5 MarketLab",
+  from CityTrack's `trackplace` event) all use the same list.
+- Jumps longer than about 1.5 screens dissolve (fade, cut, fade) and fire
+  `trackjump` so the target's tiles load first; motion blur only on your
+  own scrolling. Sideways trackpad and tilt-wheel scroll the journey, with
+  `overscroll-behavior-x: none` on `html`.
+- Panels: centred under one top line, sized by content, Projects and
+  Experience about 80vw, ending above the map; one even glass tint (it is
+  darker than "very transparent" to keep 4.5:1 by day); a "More ↓" fade
+  and a "Next: … →" link (`Station.tsx: NextStop`).
+- The journey runs only where a panel gets at least 20em of room
+  (`trackMath.ts: trackRoom`); phones held sideways at 100% text and 200%
+  text on short screens read the stacked page.
+- Phones: a one-row bar (the weather moves into the menu), the painting
+  strip 20% of the screen below the bar, `svh` sizing.
+- Home leads with the role ("Looking for a software engineering
+  internship or co-op."), Résumé a glass key beside View projects; project
+  panels read title, keys, summary, cover; Experience without boxed
+  badges; a clear "Copied" moment; the bar's place reads "Weather in
+  Richmond Hill"; the Sections menu as plain rows; "Still view" labelled;
+  the résumé readable on phones with "Open in your viewer" and an offline
+  note.
+
 ### Budgets (`docs/audit/scripts/budget.mjs`)
 
-Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 200,848
-(and the journey may not grow it by more than 3 KB over the 2026-11-22
-reading); `totalJs` ≤ 214,000; `totalCss` ≤ 12,000, raised at my
-ruling on 23 November 2026 for the highly animated horizontal city (it
-only goes down from here); `resumeJs` ≤ 470,000;
+Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000,
+raised at my ruling on 23 November 2026 for the UX panel's fixes;
+`totalJs` ≤ 214,000; `totalCss` ≤ 12,300, raised at my rulings on
+23 November 2026 for the highly animated horizontal city and then the
+UX panel's fixes (it only goes down from here); `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. The panorama's first tile at most the bytes of the
 painted home plate it replaced, at `HOME_QUALITY`. It also fails on
 three.js (`WebGLRenderer`) in any chunk of the build, and on any
