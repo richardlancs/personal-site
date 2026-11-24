@@ -163,7 +163,7 @@ async function frames(page, locator, name) {
 // 5. Reduced motion and still view: a still tint, no ripple or give
 for (const [name, opts, init] of [
   ["reduced", { reducedMotion: "reduce" }],
-  ["still", {}, () => localStorage.setItem("still-view", "on")],
+  ["still", { reducedMotion: "reduce" }], // still view follows reduced motion alone (no key since Task 11)
 ]) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts });
   if (init) await ctx.addInitScript(init);

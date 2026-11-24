@@ -433,8 +433,10 @@ Projects are the most important content (`city2d/sections/Projects.tsx`):
 an index of every project, then one `article` per project with a level-3
 heading, cover screenshot (never cropped), summary, features (or "My
 part" when it lists contributions), the stack as one muted line, GitHub and an
-optional live demo, the rest in a native `<details>` (it opens inside its
-panel, which then scrolls). On the journey: the index as the row's first
+optional live demo, the rest in a native `<details>` whose summary is a full-width glass
+"Show more" / "Show less" key with a turning chevron (it opens smoothly in
+place inside its panel, which then scrolls; a wide cover keeps its own
+shape at the top while it is open). On the journey: the index as the row's first
 panel, then one panel per project along the towers, each centred in
 its own screen (on a wide panel, the title and a wide cover in one
 column and what I did in the other; a tall cover beside them), Skills
@@ -444,7 +446,8 @@ Do not invent projects. Keep them polished but restrained: soft surfaces,
 hairlines, gentle hover; no huge shadows, heavy animation or badge
 clutter.
 
-Interests (`sections/Interests.tsx`) are native `<details>` rows with
+Interests (`sections/Interests.tsx`) are native `<details>` rows (each
+summary a full-width glass "Show" / "Hide" key) with
 optional photos read from `public/interests/<scene>/` at build time. To
 add photos: `docs/adding-interest-photos.md` (no code; captions in
 `portfolio.ts`).

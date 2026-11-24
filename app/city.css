@@ -467,7 +467,7 @@ button.text-link,
    can't work, and no weather that would never fill (A11Y-13). (Sections
    keeps its name in words at every width: Task 11 took Still view's key
    off the bar, which left the room.) */
-:root:not([data-still]) :is(.top-bar-still, .top-bar-music, .rh) {
+:root:not([data-still]) :is(.top-bar-music, .rh) {
   display: none;
 }
 

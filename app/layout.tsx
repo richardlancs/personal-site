@@ -82,8 +82,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <head>
-        {/* Still view, before the first paint: the visitor's saved choice,
-            or the system's reduced-motion setting (lib/still.ts) */}
+        {/* Still view, before the first paint: the system's reduced-motion
+            setting (lib/still.ts) */}
         <script dangerouslySetInnerHTML={{ __html: STILL_SCRIPT }} />
         {/* The horizontal journey, on before the first paint where scripts
             run and the screen has room (lib/track.ts) */}

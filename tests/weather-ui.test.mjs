@@ -104,7 +104,7 @@ test("the display is something to read, not a control, and announces nothing on 
   assert.match(clock, /<span className="rh-label">Weather in <\/span>/);
   // Without JavaScript it would never fill: not drawn, nor the keys that
   // can't work (A11Y-13)
-  assert.match(css, /:root:not\(\[data-still\]\) :is\(\.top-bar-still, \.top-bar-music, \.rh\) \{\s*display: none;/);
+  assert.match(css, /:root:not\(\[data-still\]\) :is\(\.top-bar-music, \.rh\) \{\s*display: none;/);
   const rh = css.match(/\n\.rh \{([^}]*)\}/)[1];
   assert.match(rh, /user-select: text/);
   assert.doesNotMatch(rh, /cursor: pointer/);
