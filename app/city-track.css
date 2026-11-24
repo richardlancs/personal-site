@@ -94,7 +94,7 @@
     /* clip, not hidden: nothing (a jump, focus) can scroll it sideways */
     overflow: clip;
     container-type: inline-size;
-    background: var(--ink);
+    /* (no ground of its own: the paper, paper.css, shows through) */
     /* Up and down are the page's; a sideways swipe travels (CityTrack) */
     touch-action: pan-y pinch-zoom;
   }
@@ -127,32 +127,19 @@
      only if it has more than it shows (CityTrack: data-open), so a panel
      sliding past, or one that fits, never catches the scroll. At its end
      an open panel's scroll chains on to the page (overscroll-behavior
-     left at auto), so the wheel, Space and PageDown go on along the city.
+     left at auto), so the wheel, Space and PageDown go on along the journey.
      Its corners are --radius-lg; what sits inside takes --radius-in, the
      outer radius less the padding.
 
-     The glass is very clear, a pane of the hour's sky: the barest wash
-     of the sky's own colour (--sky-tone: day blue, the twilight grade,
-     night navy, from CityDriver's --city-night and --city-grade) running
-     into ink, a smooth blur that dims the city a little, and an edge lit
-     in that sky, brightest along its top, the city reading through it.
-     Its words carry their own soft halo (text-shadow) and sit on a faint
-     shade blurred out past them (below), so the darkening shows only as
-     the words being readable: that, with the blur, carries their 4.5:1
-     over any sky (city-contrast.mjs, which counts no halo). Secondary
-     words (--muted) are a step lighter on it than on the ground, still a
-     step under --text. Its words start at its top: a panel's top never
-     moves as it grows. The sky's colour changes only as the hour's
-     variables do (no motion of its own) */
-  :root[data-track="on"] .track {
-    --sky-tone: color-mix(in srgb, color-mix(in srgb, #0a1d3c calc(var(--city-night, 1) * 100%), #7aa6e0), var(--city-grade, #7aa6e0) calc(var(--city-grade-mix, 0) * 100%));
-  }
-
+     The card is a second sheet of the theme's paper (--panel, opaque, so
+     its words keep their contrast whatever the crumple under it): a
+     hairline edge (--line), a lighter line along its top where the sheet
+     catches the light, and a soft two-part shadow in the theme's own
+     shadow colour (--shadow): a close one where it touches, a wide one
+     where it lifts. Its words start at its top: a panel's top never moves
+     as it grows */
   :root[data-track="on"] .track .panel {
     --pad: clamp(1.25rem, 3cqw, 2.5rem);
-    --shade: rgb(8 9 12 / 0.46);
-    /* (secondary words a step lighter on the glass, still a step under --text) */
-    --muted: #c9ced8;
     display: flex;
     flex-direction: column;
     /* (its foot's padding is the cue's, below) */
@@ -160,44 +147,13 @@
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
-    /* (the edge: 2px of glass lit in the sky, brightest along its top,
-       a dark hairline outside it and a faint ring of sky past that, so
-       the pane stands clear of any painting; never a coloured frame) */
-    border: 2px solid color-mix(in srgb, var(--sky-tone) 45%, rgb(230 233 238 / 0.34));
-    border-top-color: color-mix(in srgb, var(--sky-tone) 50%, rgb(230 233 238 / 0.62));
+    border: 1px solid var(--line);
     border-radius: var(--radius-lg);
-    background: linear-gradient(160deg, color-mix(in srgb, var(--sky-tone) 12%, transparent), rgb(8 9 12 / 0.1) 60%);
-    box-shadow: 0 0 0 1px rgb(8 9 12 / 0.45), 0 0 0 5px color-mix(in srgb, var(--sky-tone) 14%, transparent), inset 0 1.5rem 2.5rem -2rem color-mix(in srgb, var(--sky-tone) 35%, transparent);
-    backdrop-filter: blur(14px) brightness(0.72);
-    text-shadow: 0 0 0.4rem rgb(8 9 12 / 0.8), 0 0 1.25rem rgb(8 9 12 / 0.6);
-  }
-
-  /* (keys carry their own ground: no halo on their labels) */
-  :root[data-track="on"] .track .panel .glass {
-    text-shadow: none;
-  }
-
-  /* The shade behind each block of words (the outermost only): as wide as
-     its words, a rounded patch a rem past them blurred into the glass, so
-     it has no edge to see */
-  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul, nav ol, summary, .next-stop):not(:is(p, ul, nav ol, summary, .station-head) *) {
-    position: relative;
-  }
-
-  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul):not(:is(p, ul, nav ol, summary, .station-head) *) {
-    width: fit-content;
-    max-width: 100%;
-  }
-
-  :root[data-track="on"] .track .panel :is(.station-head, h1, h3, h4, p, ul, nav ol, summary, .next-stop):not(:empty, .glass, :is(p, ul, nav ol, summary, .station-head) *)::before {
-    content: "";
-    position: absolute;
-    inset: -1rem -1.25rem;
-    z-index: -1;
-    border-radius: 1rem;
-    background: var(--shade);
-    filter: blur(0.75rem);
-    pointer-events: none;
+    background: var(--panel);
+    box-shadow:
+      inset 0 1px 0 color-mix(in srgb, var(--paper), var(--panel) 30%),
+      0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent),
+      0 1.25rem 2.5rem -1.25rem color-mix(in srgb, var(--shadow) 45%, transparent);
   }
 
   /* While a panel has more below, a fade at its foot says so ("More",
@@ -214,7 +170,7 @@
     height: calc(3.5rem + var(--pad));
     margin: -3.5rem calc(-1 * var(--side, var(--pad))) 0;
     padding-top: 2rem;
-    background: linear-gradient(transparent, rgb(8 9 12 / 0.85) 70%);
+    background: linear-gradient(color-mix(in srgb, var(--panel) 0%, transparent), var(--panel) 70%);
     color: var(--text);
     font-size: 0.875rem;
     text-align: center;
@@ -229,24 +185,24 @@
     overflow-y: auto;
   }
 
-  /* Every panel hangs from one top line (--line, the same at every stop),
+  /* Every panel hangs from one top line (--hang, the same at every stop),
      centred in the screen as its stop stands, and grows down to the room
      there (ending 8px or more above the map), scrolling inside beyond it.
      Widths within the central 80% (--peek either side): Projects and
      Experience all of it (--wide); About --w (64% of a very wide
      screen); Home, the projects' index, Interests and Contact sized to
      what they hold (--pw, in rem, so 200% text gets twice the room). So
-     the slice of the next stop that shows at the right is its city */
+     the slice of the next stop that shows at the right is clear paper */
   :root[data-track="on"] .track {
     --wide: calc(100cqw - 2 * var(--peek));
     --w: min(var(--wide), max(64cqw, 68rem));
-    --line: calc(var(--stop-top) + 1.5rem);
-    --room: calc(100% - var(--line) - var(--foot));
+    --hang: calc(var(--stop-top) + 1.5rem);
+    --room: calc(100% - var(--hang) - var(--foot));
   }
 
   :root[data-track="on"] .track .station-body {
     position: absolute;
-    top: var(--line);
+    top: var(--hang);
     left: max((100cqw - min(var(--w), var(--pw, 100cqw))) / 2, env(safe-area-inset-left));
     z-index: 2;
     width: min(var(--w), var(--pw, 100cqw));
@@ -270,9 +226,9 @@
     --w: var(--wide);
   }
 
-  /* A stop of a row of panels along the street (Projects): as wide as its
+  /* A stop of a row of panels along the track (Projects): as wide as its
      row, which is a screen per panel, each in the middle of its own and
-     hanging from the top line (city between them: from a wide one in the
+     hanging from the top line (paper between them: from a wide one in the
      middle the next starts past the screen's edge), less the peek after
      the last, as any stop */
   :root[data-track="on"] .track > .station:has(> .station-row) {
@@ -288,7 +244,7 @@
     width: max-content;
     height: 100%;
     margin: 0;
-    padding: var(--line) 0 var(--foot) max((100cqw - min(var(--wide), 50rem)) / 2, env(safe-area-inset-left));
+    padding: var(--hang) 0 var(--foot) max((100cqw - min(var(--wide), 50rem)) / 2, env(safe-area-inset-left));
   }
 
   :root[data-track="on"] .station-row .panel {
@@ -302,11 +258,10 @@
     max-width: calc((100svh - var(--stop-top)) * 0.8);
   }
 
-  /* Contact, the journey's end, is its best-lit stop: the city carries
-     that (below), not a coloured edge; the panel's whole edge lights once
+  /* Contact, the journey's end: no coloured edge of its own; the panel's whole edge lights once
      an address is copied (the success moment, with the key's "Copied") */
   :root[data-track="on"] #contact .panel:has([data-copied]) {
-    border-color: var(--cyan);
+    border-color: var(--accent-2);
   }
 
   @supports (animation-timeline: view()) {
@@ -353,7 +308,7 @@
      bar, their headings and padding compact */
   @media (max-height: 500px) {
     :root[data-track="on"] .track {
-      --line: var(--stop-top);
+      --hang: var(--stop-top);
     }
 
     :root[data-track="on"] .track .panel {
@@ -395,10 +350,12 @@
       --pad: 1.25rem;
       /* (a phone's gutters; from 768px wide, 10% of the width clear) */
       padding: 1.25rem var(--side) 0;
-      border-width: 2px 0 0;
+      border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-      background: linear-gradient(color-mix(in srgb, var(--sky-tone) 14%, transparent), transparent 40%) rgb(8 9 12 / 0.5);
-      backdrop-filter: blur(12px) brightness(0.8);
+      box-shadow:
+        inset 0 1px 0 color-mix(in srgb, var(--paper), var(--panel) 30%),
+        0 -1px 2px color-mix(in srgb, var(--shadow) 18%, transparent),
+        0 -0.75rem 1.75rem -1rem color-mix(in srgb, var(--shadow) 40%, transparent);
     }
 
     :root[data-track="on"] .track .station-body {
@@ -450,13 +407,11 @@
   }
 }
 
-/* Under prefers-contrast the panels are solid */
+/* Under prefers-contrast the cards are edged in the text's own colour,
+   with no shadow */
 @media (prefers-contrast: more) {
   :root[data-track="on"] .track .panel {
-    border-color: var(--muted);
-    background: var(--ink);
+    border-color: var(--text);
     box-shadow: none;
-    backdrop-filter: none;
-    text-shadow: none;
   }
 }

@@ -59,7 +59,7 @@ function Keys({ project }: { project: Project }) {
 function Picture({ shots, side }: { shots: Screenshot[]; side: boolean }) {
   return (
     <div className="depth rounded-[var(--radius-in)] @min-[45.5rem]:flex-1" data-tilt="">
-      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:h-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:aspect-(--ar)"}`}>
+      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:h-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:aspect-(--ar)"}`}>
         {shots.map((shot) => (
           <a
             key={shot.src}
@@ -95,7 +95,7 @@ const h5 = "font-display text-lg font-semibold text-text";
 // link to its panel. Then one panel per project, in the document in the
 // order a phone reads it: the title, the keys, the summary and role, the
 // cover (whole, never cropped, no empty bands), then what I did ("My
-// part", under a cyan rule, its first four points) or, when the data has
+// part", under an accent rule, its first four points) or, when the data has
 // no contributions, what it does; then the stack on one line. The rest of
 // my part, the team's features (when my part took their place) and the
 // other screenshots, each as wide as the column, fold into a <details>,
@@ -123,7 +123,7 @@ export default function Projects() {
                 </span>
                 {/* The gloss wraps under a long title, never cut short */}
                 <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
-                  <span className="max-w-full shrink-0 break-words font-display text-lg font-semibold text-text underline decoration-cyan decoration-1 underline-offset-4 group-hover:decoration-2">
+                  <span className="max-w-full shrink-0 break-words font-display text-lg font-semibold text-text underline decoration-accent-2 decoration-1 underline-offset-4 group-hover:decoration-2">
                     {project.title}
                   </span>
                   <span className="min-w-0 text-muted"> {gloss(project.summary)}</span>
@@ -216,7 +216,7 @@ export default function Projects() {
 
               <div className={`min-w-0 break-words @min-[45.5rem]:row-span-2 @min-[45.5rem]:row-start-2 ${side ? "@min-[27.5rem]:col-start-2 @min-[45.5rem]:col-start-3" : "@min-[45.5rem]:col-start-2"}`}>
                 {part.length > 0 ? (
-                  <section className="border-l-2 border-cyan pl-5">
+                  <section className="border-l-2 border-accent-2 pl-5">
                     <Heading level={4} className={h4}>My part</Heading>
                     <ul role="list" className="points mt-3 space-y-2 text-text">
                       {part.slice(0, SHOWN_PART).map((contribution) => (
@@ -252,7 +252,7 @@ export default function Projects() {
                       <svg
                         aria-hidden="true"
                         viewBox="0 0 16 16"
-                        className="chevron size-5 shrink-0 text-cyan group-open:rotate-180"
+                        className="chevron size-5 shrink-0 text-accent-2 group-open:rotate-180"
                         fill="none"
                         stroke="currentColor"
                         strokeWidth="2"
@@ -261,7 +261,7 @@ export default function Projects() {
                       </svg>
                     </summary>
                     {morePart.length > 0 && (
-                      <section className="mt-3 border-l-2 border-cyan pl-5">
+                      <section className="mt-3 border-l-2 border-accent-2 pl-5">
                         <Heading level={4} className={h5}>More of my part</Heading>
                         <ul role="list" className="points points-quiet mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
@@ -290,7 +290,7 @@ export default function Projects() {
                               href={shot.src}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex min-h-11 justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-ink-2"
+                              className="flex min-h-11 justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2"
                             >
                               <Image
                                 src={shot.src}

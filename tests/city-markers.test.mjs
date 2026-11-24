@@ -1,4 +1,4 @@
-// The list marker (city.css, .points): one small light-blue diamond,
+// The list marker (city.css, .points): one small diamond in --accent-2,
 // defined once, used by every content list; the folded lists' diamond is
 // muted. Drawn with ::before, so never read out or copied.
 import assert from "node:assert/strict";
@@ -8,14 +8,14 @@ import { test } from "node:test";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 const css = read("app/city.css").replace(/\/\*[\s\S]*?\*\//g, "");
 
-test("exactly one marker definition: a 6px cyan square turned 45°, centred on the first line", () => {
+test("exactly one marker definition: a 6px --accent-2 square turned 45°, centred on the first line", () => {
   const markers = [...css.matchAll(/([^{}]+)\{([^}]*rotate: 45deg[^}]*)\}/g)];
   assert.equal(markers.length, 1, "one diamond");
   const [, selector, body] = markers[0];
   assert.equal(selector.trim(), ".points > li::before");
   assert.match(body, /content: "";/, "drawn, not a character");
   assert.match(body, /width: 6px;\s*height: 6px;/);
-  assert.match(body, /background: var\(--cyan\);/);
+  assert.match(body, /background: var\(--accent-2\);/);
   assert.match(body, /top: calc\(0\.5lh - 3px\);/, "on the middle of the first line, whatever its height");
   assert.doesNotMatch(body, /box-shadow/, "no glow");
   assert.doesNotMatch(body, /animation|transition/, "nothing moves");

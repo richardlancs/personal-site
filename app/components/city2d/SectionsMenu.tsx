@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import { syncStill } from "../../lib/stillStore";
 import { listed } from "../../sections/registry";
 import WeatherClock from "../weather/WeatherClock";
@@ -16,7 +16,7 @@ import { useSection } from "./useSection";
 // keyboard carries on from there (jump.ts). A click with a modifier key
 // or the middle button is left to the browser. The section you're at
 // (useSection.ts, from the metro map) is marked: aria-current="location",
-// a cyan bar at its left and a heavier weight, so not by colour alone.
+// an accent bar at its left and a heavier weight, so not by colour alone.
 // One plain list (rows of words, not a stack of keys: V13), it grows out
 // of its key, and the city dims behind it (city.css). On phones the bar
 // is one row, and Waterloo's time and weather sit at the menu's foot
@@ -34,7 +34,10 @@ import { useSection } from "./useSection";
 // back to sticky once the bar is clearly shorter (under 22%), so a phone's
 // toolbar coming and going (the screen's height changing by a little) can't
 // flip it back and forth mid-scroll.
-export default function SectionsMenu() {
+//
+// children: what the bar hands the menu to show on phones, before the time
+// and weather (TopBar passes the paper picker).
+export default function SectionsMenu({ children }: { children?: ReactNode }) {
   const nav = useRef<HTMLElement>(null);
   const here = useSection();
   // Still view follows the system's setting (lib/stillStore.ts); the menu
@@ -97,6 +100,7 @@ export default function SectionsMenu() {
           </li>
         ))}
       </ul>
+      {children}
       <WeatherClock />
     </nav>
   );
