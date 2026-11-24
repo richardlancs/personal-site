@@ -4,16 +4,13 @@ import DistrictBand from "./DistrictBand";
 import { bandTiles } from "./panoramaImages";
 
 // One section of the page, one stop of the journey (city.css, "Stations";
-// city-track.css): its band of painting (read top to bottom: its stretch of
-// the panorama; on the journey the one panorama behind every stop shows
-// instead, CityTrack.tsx), then its words. The band carries no words, and
-// the place it paints isn't named: sections are named as sections.
+// city-track.css): its words, on the crumpled paper of the page.
 //
-// The words sit in panels (`.panel`): on the journey, clear glass on the
-// street, each scrolling inside once the journey has stopped with all of
+// The words sit in panels (`.panel`): on the journey, paper cards laid on
+// the paper, each scrolling inside once the journey has stopped with all of
 // it on the screen (CityTrack.tsx), the way on (NextStop) at its foot. A stop of one panel (Home, About,
 // Interests, Contact) gets it from here, its number and heading at its
-// top; a stop of several in a row along the street (`row`: Projects,
+// top; a stop of several in a row along the track (`row`: Projects,
 // Experience) gets the row, and its section puts the heading
 // (StationHead) in the first of its own panels. Stacked (no scripts),
 // panels are plain blocks one under the other.

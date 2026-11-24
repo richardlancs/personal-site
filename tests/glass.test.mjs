@@ -62,14 +62,17 @@ test("the keys used most (the top bar's, the Sections menu's) get the tint at on
   assert.doesNotMatch(keyframes("glass-tint"), /scale|translate|transform/);
 });
 
-test("glass is 44px tall, with labels in opaque --text, and a fallback without blur", () => {
+test("a key is 44px tall, opaque paper with labels in opaque --text, no blur", () => {
   // In :where(), so a control's own class sets its size and type over it
   const glass = block(":where(.glass)");
   assert.match(glass, /min-height: 44px/);
   assert.match(glass, /color: var\(--glass-ink, var\(--text\)\)/);
   assert.match(glass, /border-radius: var\(--radius\)/);
-  assert.match(glass, /backdrop-filter: var\(--glass-blur\)/);
-  assert.match(css, /@supports not \(\(backdrop-filter: blur\(1px\)\) or \(-webkit-backdrop-filter: blur\(1px\)\)\) \{\s*\.glass \{\s*background-color: var\(--glass-fallback\)/);
+  assert.match(glass, /background: var\(--tint, var\(--panel\)\)/);
+  assert.match(glass, /border: 1px solid var\(--key-edge, color-mix\(in srgb, var\(--text\) 40%, var\(--panel\)\)\)/);
+  assert.doesNotMatch(glass, /backdrop-filter/, "paper is never see-through");
+  const primary = block(".glass-primary");
+  assert.match(primary, /--tint: var\(--accent\);\s*--glass-ink: var\(--on-accent\);/);
   // The press layers sit under the label and inside the button
   assert.match(glass, /overflow: hidden/);
   assert.match(glass, /isolation: isolate/);
@@ -92,11 +95,11 @@ test("the Sections menu's entries and the top bar's keys are glass", () => {
 test("the states: chosen, disabled and focus, the same on every glass control", () => {
   const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\], \[aria-selected="true"\], \[aria-current="page"\], \[aria-current="location"\], \[aria-expanded="true"\], \[data-copied\]\),?[^{]*\{([^}]*)\}/)?.[1];
   assert.ok(chosen, "one rule for every chosen state");
-  assert.match(chosen, /border-color: var\(--cyan\)/);
+  assert.match(chosen, /border-color: var\(--accent-2\)/);
   // Pressed in: a shade inside, a doubled edge. Not colour alone.
-  assert.match(chosen, /--glass-in: inset 0 0 0 1px var\(--cyan\), inset/);
-  // Its glow is a token that prefers-contrast: more empties
-  assert.match(chosen, /--glass-lift: var\(--glow-cyan\)/);
+  assert.match(chosen, /--glass-in: inset 0 0 0 1px var\(--accent-2\), inset/);
+  // Pressed in, so nothing lifts it off the paper
+  assert.match(chosen, /--glass-lift: 0 0 #0000/);
   assert.match(css, /@media \(prefers-contrast: more\) \{\s*:root \{[^}]*--glow-cyan: 0 0 #0000/);
   const disabled = block('.glass:is(:disabled, [aria-disabled="true"])');
   assert.match(disabled, /border-style: dashed/);

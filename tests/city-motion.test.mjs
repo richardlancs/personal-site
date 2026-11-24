@@ -98,11 +98,11 @@ test("the Sections menu grows from its key, opens slower than it closes, and is 
   assert.match(city, /@starting-style \{\s*:root:not\(\[data-still="on"\]\) \.sections-menu:popover-open/);
   assert.doesNotMatch(city, /@keyframes menu-in/);
   assert.match(city, /\.sections-menu \{[^}]*overscroll-behavior: contain/);
-  // The city dims behind it (figure-ground): a veil under the bar (so the
+  // The page dims behind it (figure-ground): a veil under the bar (so the
   // bar keeps its contrast), taking no clicks, so a click outside still
   // closes it (light dismiss); faded only where motion is welcome
   assert.doesNotMatch(city, /::backdrop/);
-  assert.match(city, /\nbody::after \{[^}]*position: fixed;[^}]*z-index: 39;[^}]*background: rgb\(8 9 12 \/ 0\.5\);[^}]*opacity: 0;[^}]*pointer-events: none;/);
+  assert.match(city, /\nbody::after \{[^}]*position: fixed;[^}]*z-index: 39;[^}]*background: color-mix\(in srgb, var\(--shadow\) 28%, transparent\);[^}]*opacity: 0;[^}]*pointer-events: none;/);
   assert.match(city, /\.top-bar \{[^}]*z-index: 40;/);
   assert.match(city, /\n:root:has\(#places-menu:popover-open\) body::after \{\s*opacity: 1;/);
   assert.match(city, /:root:not\(\[data-still="on"\]\) body::after \{\s*transition: opacity var\(--t-base\) var\(--ease-out\);/);

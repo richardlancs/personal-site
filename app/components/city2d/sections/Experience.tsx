@@ -87,7 +87,7 @@ export default function Experience() {
       <ol
         role="list"
         aria-label="Work and education, newest first"
-        className="mt-6 grid gap-8 border-l border-cyan/60 pl-6 @min-[45.5rem]:grid-cols-3 @min-[45.5rem]:gap-x-8 @min-[45.5rem]:border-t @min-[45.5rem]:border-l-0 @min-[45.5rem]:pt-6 @min-[45.5rem]:pl-0"
+        className="mt-6 grid gap-8 border-l border-accent-2/60 pl-6 @min-[45.5rem]:grid-cols-3 @min-[45.5rem]:gap-x-8 @min-[45.5rem]:border-t @min-[45.5rem]:border-l-0 @min-[45.5rem]:pt-6 @min-[45.5rem]:pl-0"
       >
         {sortNewestFirst(experience).map((entry, i) => (
           <li

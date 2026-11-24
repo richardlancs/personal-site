@@ -79,7 +79,7 @@ test("the section: one stop, every entry at once, newest first, on one timeline;
   assert.match(source, /entry\.kind === "education" \? "Education" : "Work"/);
   // Three columns once the panel is wide enough, a line down the side before that
   assert.match(source, /@min-\[45\.5rem\]:grid-cols-3/);
-  assert.match(source, /border-l border-cyan\/60 pl-6/);
+  assert.match(source, /border-l border-accent-2\/60 pl-6/);
   assert.match(source, /data-current=\{isCurrent\(entry\) \|\| undefined\}/);
   assert.doesNotMatch(source, /<h2[\s>]/, "StationHead supplies the h2");
   assert.doesNotMatch(source, /"use client"/);

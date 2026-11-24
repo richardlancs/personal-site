@@ -1,5 +1,5 @@
 // The journey's panels (city-track.css, components/city2d/Station.tsx):
-// one top line, widths by what each holds, one even glass tint, the "More"
+// one top line, widths by what each holds, paper cards, the "More"
 // cue while a panel has more below, the way on at a panel's foot, and the
 // phone's sheet given the screen (UX review 2026-11-23, items 2, 3, 4, 7, 9).
 import { test } from "node:test";
@@ -17,13 +17,14 @@ const rule = (sel) => {
 };
 
 test("every panel hangs from one top line and ends above the map", () => {
-  assert.match(css, /--line: calc\(var\(--stop-top\) \+ 1\.5rem\);\s*--room: calc\(100% - var\(--line\) - var\(--foot\)\);/);
+  // (--hang: --line is the hairline colour, used inside the cards)
+  assert.match(css, /--hang: calc\(var\(--stop-top\) \+ 1\.5rem\);\s*--room: calc\(100% - var\(--hang\) - var\(--foot\)\);/);
   const body = rule(':root[data-track="on"] .track .station-body');
-  assert.match(body, /top: var\(--line\);/);
+  assert.match(body, /top: var\(--hang\);/);
   assert.match(body, /max-height: var\(--room\);/);
   assert.match(body, /margin: 0;/, "the stacked page's pull-up doesn't move the line");
   assert.doesNotMatch(body, /min-height|margin: auto/, "sized by what it holds, never re-centred as it grows");
-  assert.match(rule(':root[data-track="on"] .track .station-row'), /align-items: flex-start;[\s\S]*padding: var\(--line\) 0 var\(--foot\)/);
+  assert.match(rule(':root[data-track="on"] .track .station-row'), /align-items: flex-start;[\s\S]*padding: var\(--hang\) 0 var\(--foot\)/);
   assert.doesNotMatch(css, /justify-content: safe center/, "a panel's words start at its top");
 });
 
@@ -37,29 +38,20 @@ test("Projects and Experience take the central 80%; Home, the index, Interests a
   assert.match(rule(':root[data-track="on"] #contact .station-body'), /--pw: 48rem;/);
 });
 
-test("the glass is clear, a pane of the hour's sky: a feathered shade only behind the words", () => {
+test("every panel is a paper card: opaque --panel, a hairline edge, a soft shadow in the paper's own --shadow; no blur, no halo, no shade", () => {
   const panel = rule(':root[data-track="on"] .track .panel');
-  assert.match(panel, /backdrop-filter: blur\(14px\) brightness\(0\.72\);/);
-  assert.match(panel, /--shade: rgb\(8 9 12 \/ 0\.46\);/);
-  // the sky's colour (CityDriver's --city-night and --city-grade) in its fill and edge
-  assert.match(panel, /background: linear-gradient\(160deg, color-mix\(in srgb, var\(--sky-tone\) 12%, transparent\), rgb\(8 9 12 \/ 0\.1\) 60%\);/);
-  assert.match(panel, /border-top-color: color-mix\(in srgb, var\(--sky-tone\)/);
-  assert.match(css, /--sky-tone: color-mix\([^;]*var\(--city-night, 1\)[^;]*var\(--city-grade/);
-  assert.match(css, /\.panel :is\(\.station-head, h1, h3, h4, p, ul, nav ol, summary, \.next-stop\)[^{]*::before \{[^}]*background: var\(--shade\);\s*filter: blur\(0\.75rem\);/);
-});
-
-test("every panel's edge is 2px of glass lit in the sky, a dark hairline and a faint ring of sky outside it; solid under more contrast", () => {
-  const panel = rule(':root[data-track="on"] .track .panel');
-  assert.match(panel, /border: 2px solid color-mix\(in srgb, var\(--sky-tone\)/);
-  assert.match(panel, /box-shadow: 0 0 0 1px rgb\(8 9 12 \/ 0\.45\), 0 0 0 5px color-mix\(in srgb, var\(--sky-tone\) 14%, transparent\)/);
-  assert.doesNotMatch(panel, /var\(--cyan\)/, "never a coloured frame");
-  assert.match(css, /border-width: 2px 0 0;/, "the phone's sheet: its top edge");
+  assert.match(panel, /border: 1px solid var\(--line\);/);
+  assert.match(panel, /background: var\(--panel\);/);
+  assert.match(panel, /box-shadow:[^;]*color-mix\(in srgb, var\(--shadow\) \d+%, transparent\)/);
+  assert.doesNotMatch(css, /backdrop-filter|text-shadow|--shade|--sky-tone\)/, "paper is never see-through and its words need no halo");
+  assert.doesNotMatch(css, /rgb\(|#[0-9a-f]{3,8}\b/i, "only tokens");
+  assert.match(css, /border-width: 1px 0 0;/, "the phone's sheet: its top edge");
   const more = css.slice(css.indexOf("@media (prefers-contrast: more)"));
-  assert.match(more, /\.track \.panel \{\s*border-color: var\(--muted\);\s*background: var\(--ink\);\s*box-shadow: none;/);
+  assert.match(more, /\.track \.panel \{\s*border-color: var\(--text\);\s*box-shadow: none;/);
 });
 
-test("a glass key in a panel (a fold's summary) has no shade of its own behind it", () => {
-  assert.match(css, /summary, \.next-stop\):not\(:empty, \.glass, /);
+test("the More cue fades into the card's own paper", () => {
+  assert.match(rule(':root[data-track="on"] .track .panel::after'), /background: linear-gradient\([^;]*var\(--panel\) 70%\);/);
 });
 
 test("a panel with more below says so, and the cue goes at its end", () => {
@@ -88,5 +80,5 @@ test("phones: the sheet gets the screen, sized from svh", () => {
 
 test("short screens: panels just under the bar, compact headings", () => {
   const short = css.slice(css.lastIndexOf("@media (max-height: 500px)"));
-  assert.match(short, /--line: var\(--stop-top\);[\s\S]*--pad: 1rem;[\s\S]*\.station-title \{\s*font-size: 2rem;/);
+  assert.match(short, /--hang: var\(--stop-top\);[\s\S]*--pad: 1rem;[\s\S]*\.station-title \{\s*font-size: 2rem;/);
 });

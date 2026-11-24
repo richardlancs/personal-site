@@ -12,14 +12,14 @@ import { order } from "../Station";
 // (name="interests", so opening one closes the others where the browser
 // supports it), its summary a full-width glass key ("Show", "Hide" and a
 // chevron at its end; city.css, "A fold"); the first starts open, and the
-// open one's edge turns cyan. Inside:
+// open one's edge turns to the accent. Inside:
 // the description, then the interest's photos when it has any, read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
 // docs/adding-interest-photos.md). No photos, no gallery. The rows arrive
 // in order as they scroll in, and each photo's frame has depth on a fine
 // pointer (reveal.css; the tilt is Tilt.tsx, mounted in Projects.tsx).
 
-// Line marks on a 24-unit grid, in cyan (currentColor). Decoration only.
+// Line marks on a 24-unit grid, in the second accent (currentColor). Decoration only.
 const marks: Record<Interest["scene"], ReactNode> = {
   basketball: (
     <>
@@ -81,7 +81,7 @@ export default function Interests() {
                 strokeWidth="1.5"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="size-8 shrink-0 text-cyan"
+                className="size-8 shrink-0 text-accent-2"
               >
                 {marks[interest.scene]}
               </svg>
@@ -101,7 +101,7 @@ export default function Interests() {
                 strokeWidth="1.75"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="chevron size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-cyan"
+                className="chevron size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-accent-2"
               >
                 <path d="m6 9 6 6 6-6" />
               </svg>
