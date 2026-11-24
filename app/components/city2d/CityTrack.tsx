@@ -122,11 +122,13 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
     // made unseen, and it fades in over --t-base: motion.css). Before a far
     // one, the stop it is going to is named ("trackjump"), so its tiles
     // load first (DistrictBand). A second call for the same place while
-    // one is under way (a link's focus, its hash) is the same jump.
-    const glide = (x: number, instant = still(), stop = stopAt(x, offsets)) => {
+    // one is under way (a link's focus, its hash) is the same jump, unless
+    // `again` (the address's: the browser's own move to an anchor stops a
+    // glide begun before it).
+    const glide = (x: number, instant = still(), stop = stopAt(x, offsets), again = false) => {
       const to = Math.min(Math.max(x, 0), travel);
       const d = Math.abs(to - along());
-      if (d < 1 || (pending >= 0 && Math.abs(pending - to) < 1)) return;
+      if (d < 1 || (!again && pending >= 0 && Math.abs(pending - to) < 1)) return;
       const far = d >= FAR * vw;
       if (far) dispatchEvent(new CustomEvent("trackjump", { detail: { to: pageSections[stop]?.id } }));
       const cut = () => scrollTo({ top: top + to, behavior: "instant" });
@@ -160,11 +162,11 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
 
     // The stop an address names (#projects), or the panel in it (#skills,
     // a project), there; from a link, focus goes with it
-    const toHash = (hash: string, instant?: boolean, focus = false) => {
+    const toHash = (hash: string, instant?: boolean, focus = false, again = false) => {
       const el = document.getElementById(decodeURIComponent(hash.slice(1)) || "home");
       const i = el ? stopOf(el) : -1;
       if (!el || i < 0) return;
-      glide(xFor(el, i), instant, i);
+      glide(xFor(el, i), instant, i, again);
       if (focus) focusPanel(el);
     };
 
@@ -397,7 +399,9 @@ export default function CityTrack({ city, children }: { city: ReactNode; childre
       const url = new URL(a.href);
       if (url.origin === location.origin && url.pathname === location.pathname && url.hash.length > 1) requestAnimationFrame(() => toHash(url.hash, undefined, true));
     };
-    const onHash = () => on() && toHash(location.hash || "#home");
+    // (a frame later: the browser's own move to the anchor, which would
+    // stop a glide begun before it, has been made)
+    const onHash = () => on() && requestAnimationFrame(() => toHash(location.hash || "#home", undefined, false, true));
 
     // Focus moved into a stop that isn't on the screen (Tab, a jump)
     const onFocus = (e: FocusEvent) => {

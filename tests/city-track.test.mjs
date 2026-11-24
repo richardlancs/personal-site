@@ -121,7 +121,7 @@ test("the keys: ArrowLeft/ArrowRight, PageUp/PageDown and Space go a place, neve
   assert.match(src, /const SKIP = "input, textarea, select, \[contenteditable\], dialog, \[popover\]"/);
   assert.match(src, /if \(instant\) return cut\(\);/);
   assert.match(src, /scrollTo\(\{ top: top \+ to, behavior: "instant" \}\)/);
-  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\)\)/, "a glide cuts in still view");
+  assert.match(src, /const glide = \(x: number, instant = still\(\), stop = stopAt\(x, offsets\), again = false\)/, "a glide cuts in still view");
   assert.match(src, /html\.dataset\.still === "on"/);
 });
 

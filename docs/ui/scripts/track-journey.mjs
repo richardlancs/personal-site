@@ -29,10 +29,11 @@ const check = (ok, what) => {
   if (!ok) failures.push(what);
 };
 
-// Which stop is at the left edge (its left within 2px of 0), or null
+// Which stop is under the middle of the screen (a panel rests centred
+// there, its stop around it: Task 9's places), or null
 const atStop = (page) =>
   page.evaluate(() => {
-    const s = [...document.querySelectorAll(".track > .station")].find((el) => Math.abs(el.getBoundingClientRect().left) <= 2);
+    const s = [...document.querySelectorAll(".track > .station")].find((el) => { const r = el.getBoundingClientRect(); return r.left <= innerWidth / 2 && r.right > innerWidth / 2; });
     return s?.id ?? null;
   });
 const settle = (page, ms = 900) => page.waitForTimeout(ms);
@@ -133,9 +134,11 @@ try {
     await page.evaluate(() => document.activeElement?.blur());
     await page.keyboard.press("Home");
     await settle(page);
+    await rest(page);
     check((await atStop(page)) === "home", "Home goes back to the first stop");
     await page.keyboard.press("End");
     await settle(page);
+    await rest(page);
     check((await atStop(page)) === "contact", "End goes to the last stop");
 
     // The scrollbar: the page scrolls down like any page (dragging it is a scroll)
@@ -225,7 +228,7 @@ try {
       await settle(page, 300);
       const seen = await page.evaluate(() => {
         const stops = [...document.querySelectorAll(".track > .station")];
-        const here = stops.find((s) => Math.abs(s.getBoundingClientRect().left) <= 2);
+        const here = stops.find((s) => { const r = s.getBoundingClientRect(); return r.left <= innerWidth / 2 && r.right > innerWidth / 2; });
         const out = [];
         const walker = document.createTreeWalker(document.querySelector(".track"), NodeFilter.SHOW_TEXT);
         for (let n = walker.nextNode(); n; n = walker.nextNode()) {
@@ -335,11 +338,13 @@ try {
     const page = await open(ctx, "/");
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#experience"]');
+    await page.waitForFunction(() => location.hash === "#experience");
     await settle(page, 300);
     await rest(page);
     check((await atStop(page)) === "experience", "the Sections menu goes to Experience");
     await page.click('button[popovertarget="places-menu"]');
     await page.click('#places-menu a[href="/#contact"]');
+    await page.waitForFunction(() => location.hash === "#contact");
     await settle(page, 300);
     await rest(page);
     check((await atStop(page)) === "contact", "then to Contact");
@@ -399,12 +404,17 @@ try {
     const first = await page.evaluate(() => [scrollY, document.getElementById("marketlab").scrollTop]);
     check(first[1] > 0 && first[0] === y0, `${how} over it scrolls the panel first, not the city (${y0} → ${first})`);
     let reached = false;
+    let end = false;
     for (let i = 0; i < 120 && !reached; i++) {
+      end ||= await page.evaluate(() => { const p = document.getElementById("marketlab"); return p.scrollTop + p.clientHeight >= p.scrollHeight - 2; });
       await step();
       await settle(page, 60);
       reached = await pastExperience(page);
     }
-    const end = await page.evaluate(() => { const p = document.getElementById("marketlab"); return p.scrollTop + p.clientHeight >= p.scrollHeight - 2; });
+    // (well off the screen, it starts again from its top: M6)
+    await settle(page, 400);
+    const reset = await page.evaluate(() => document.getElementById("marketlab").scrollTop === 0);
+    check(reset, `${how}: MarketLab, left well behind, starts again from its top`);
     check(end && reached, `${how}: at the panel's end it goes on along the city, to the next stop (panel at its end ${end}, Experience reached ${reached})`);
     await page.close();
   }
@@ -457,6 +467,8 @@ try {
   for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
     const c = await newContext({ viewport: size, reducedMotion: "reduce" });
     const page = await open(c, "/", size);
+    // (scrolled freely between places: snapping would pull it onto one)
+    await page.evaluate(() => (document.documentElement.style.scrollSnapType = "none"));
     const where = () => page.evaluate(() => [document.querySelector(".pano").getBoundingClientRect().left, document.querySelector(".track").getBoundingClientRect().left, document.documentElement.dataset.still]);
     const moves = [];
     for (const id of ["home", "about", "projects", "experience"]) {
