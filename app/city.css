@@ -635,18 +635,19 @@ body::after {
   font-weight: 600;
 }
 
-/* A section's part (Skills, under Projects): set in under it */
 /* What the bar hands the menu (TopBar: the paper picker, on phones):
-   its own row under the list, a hairline above it */
+   its own row under the list, a hairline above it; no side padding of
+   its own, so the picker's three keys fit one row at 320px */
 .sections-menu > ul + :not(.rh) {
   margin-top: 0.5rem;
-  padding: 0.75rem 0.5rem 0.25rem;
+  padding: 0.75rem 0 0.25rem;
   border-top: 1px solid var(--line);
 }
 
 .sections-menu .sections-menu-sub {
   padding-left: 2.25rem;
   font-size: 1rem;
+/* A section's part (Skills, under Projects): set in under it */
 }
 
 /* The music's note, if the song can't be loaded (MusicToggle.tsx): a
@@ -1500,14 +1501,6 @@ details[open] > summary.glass {
     border-color: color-mix(in srgb, var(--accent-hover) 75%, var(--text));
     background-color: var(--accent-hover);
   }
-
-/* More contrast asked for: every key edged in the full ink, no shadow */
-@media (prefers-contrast: more) {
-  :where(.glass) {
-    --key-edge: var(--text);
-    --glass-lift: 0 0 #0000;
-  }
-}
 }
 
 /* A large key: the page's one big action ("Email me", 56px) */
@@ -1726,4 +1719,12 @@ details[open] > summary.glass {
     --glass-border: var(--muted);
   }
 
+}
+
+/* More contrast asked for: every key edged in the full ink, no shadow */
+@media (prefers-contrast: more) {
+  :where(.glass) {
+    --key-edge: var(--text);
+    --glass-lift: 0 0 #0000;
+  }
 }

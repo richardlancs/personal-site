@@ -135,8 +135,7 @@
 /* ---------- Print: everything, at rest ---------- */
 
 @media print {
-  .hero-arrive,
-  .band-plate {
+  .hero-arrive {
     animation: none !important;
   }
 }

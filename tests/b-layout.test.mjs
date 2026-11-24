@@ -74,7 +74,8 @@ test("the way on sits at the foot of each one-panel stop, to the next section by
 
 test("phones: the sheet gets the screen, sized from svh", () => {
   assert.match(rule(':root[data-track="on"] .track-stage'), /height: 100svh;/);
-  assert.match(css, /--stop-band: calc\(var\(--bar-h\) \+ 0\.2 \* \(100svh - var\(--bar-h\)\)\);/);
+  // (just under the bar: no empty strip where the painting was)
+  assert.match(css, /--stop-band: calc\(var\(--bar-h\) \+ 0\.75rem\);/);
   assert.doesNotMatch(css.replace(/\.track-runway \{[^}]*\}/, ""), /100dvh/, "nothing but the runway (CityTrack's) sized from dvh");
 });
 

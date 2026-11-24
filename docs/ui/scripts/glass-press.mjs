@@ -3,8 +3,8 @@
 // off-centre; keyboard, from the middle), that it settles within --t-slow
 // (280 ms), that the action isn't delayed, that rapid presses never stack,
 // that the keys used most (the top bar's, the Sections menu's rows) get a
-// tint with no give or light, the still/reduced-motion tint, and the
-// no-blur fallback rule.
+// tint with no give or light, the still/reduced-motion tint, and that no
+// key is see-through (paper: no backdrop-filter, and so no fallback rule).
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-press.mjs <base> [outDir=docs/ui/screenshots]
 // Frames are taken by pausing the press's animations at fixed times (Web
 // Animations API), so they're exact, not whatever a screenshot's timing
@@ -181,16 +181,12 @@ for (const [name, opts, init] of [
   await ctx.close();
 }
 
-// 6. No backdrop-filter: the fallback rule is in the stylesheet
+// 6. Paper is never see-through: no key has a backdrop-filter
 {
   const page = await browser.newPage();
   await open(page);
-  report.fallbackRule = await page.evaluate(() => {
-    for (const sheet of document.styleSheets)
-      for (const rule of sheet.cssRules) if (rule instanceof CSSSupportsRule && /not.*backdrop-filter/.test(rule.conditionText)) return rule.conditionText;
-    return null;
-  });
-  check(Boolean(report.fallbackRule), "the no-blur fallback rule");
+  report.blurred = await page.evaluate(() => [...document.querySelectorAll(".glass")].filter((el) => !/^(none)?$/.test(getComputedStyle(el).backdropFilter)).map((el) => el.outerHTML.slice(0, 60)));
+  check(report.blurred.length === 0, `keys with a backdrop-filter: ${report.blurred.join(", ")}`);
   await page.close();
 }
 

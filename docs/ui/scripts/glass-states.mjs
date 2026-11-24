@@ -1,17 +1,18 @@
 // Every button-like control's states (city.css, .glass): default, hover,
 // chosen, disabled and keyboard focus, photographed and measured, on wide
 // screens (1440) and a phone (390). For each control it checks that it is
-// glass, that the chosen state has the cyan edge and is pressed in (an
-// inset shade), that disabled is dashed with the default cursor and its
-// label is still 4.5:1 on what's behind, and that focus draws the focus
-// ring on its dark halo. Round 2 (20 November 2026): rewritten for the
-// one-page city and its black palette (the park's controls are gone).
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-states.mjs <base> [outDir=docs/ui/screenshots]
-// Sheets: glass2-<view>-<control>.jpg
+// a key (.glass), that the chosen state has the --accent-2 edge and is
+// pressed in (an inset shade), that disabled is dashed with the default
+// cursor and its label is still 4.5:1 on what's behind, and that focus
+// draws the focus ring on its halo. Task 12 (24 November 2026): the
+// paper themes; the colours are read from the page's own tokens, for the
+// paper given (cream, charcoal or kraft; run once per paper).
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-states.mjs <base> [outDir=docs/ui/screenshots] [paper=cream]
+// Sheets: glass2-<paper>-<view>-<control>.jpg
 import { mkdirSync } from "node:fs";
 import { launch } from "../../audit/scripts/pw.mjs";
 
-const [base = "http://localhost:3100", out = "docs/ui/screenshots"] = process.argv.slice(2);
+const [base = "http://localhost:3100", out = "docs/ui/screenshots", paper = "cream"] = process.argv.slice(2);
 mkdirSync(out, { recursive: true });
 const browser = await launch();
 const failures = [];
@@ -20,8 +21,24 @@ const check = (ok, what) => {
   if (!ok) failures.push(what);
 };
 
+// A token's computed value on the page (a colour as rgb(), a shadow as
+// the browser writes it)
+const token = (page, name, prop = "color") =>
+  page.evaluate(([name, prop]) => {
+    const probe = document.createElement("i");
+    probe.style.setProperty(prop, `var(${name})`);
+    document.body.append(probe);
+    const value = getComputedStyle(probe).getPropertyValue(prop);
+    probe.remove();
+    return value;
+  }, [name, prop]);
+
+let CYAN, FOCUS, HALO;
 const arrive = async (page, path) => {
   await page.goto(base + path, { waitUntil: "load" });
+  CYAN ??= await token(page, "--accent-2");
+  FOCUS ??= await token(page, "--focus");
+  HALO ??= await token(page, "--focus-halo", "box-shadow");
   await page.waitForFunction(() => document.documentElement.hasAttribute("data-landed"), null, { timeout: 30000 }).catch(() => {});
   await page.waitForTimeout(800);
 };
@@ -81,7 +98,7 @@ async function labelContrast(page, locator) {
 async function sheet(shots, file) {
   const p = await browser.newPage({ viewport: { width: 1100, height: 300 }, deviceScaleFactor: 1 });
   const cells = shots.map(([caption, b]) => `<figure style="margin:0"><img style="display:block;max-width:100%" src="data:image/png;base64,${b.toString("base64")}"><figcaption style="margin-top:4px">${caption}</figcaption></figure>`).join("");
-  await p.setContent(`<body style="margin:0;background:#08090c;font:600 13px system-ui;color:#e6e9ee"><div style="display:grid;gap:12px;padding:12px">${cells}</div></body>`);
+  await p.setContent(`<body style="margin:0;background:#26282b;font:600 13px system-ui;color:#ece6da"><div style="display:grid;gap:12px;padding:12px">${cells}</div></body>`);
   await p.waitForTimeout(150);
   await p.screenshot({ path: file, type: "jpeg", quality: 80, fullPage: true });
   await p.close();
@@ -92,7 +109,10 @@ const shot = async (page, locator, pad = 12) => {
   const box = await locator.boundingBox();
   const vp = page.viewportSize();
   const x = Math.max(0, box.x - pad), y = Math.max(0, box.y - pad);
-  return page.screenshot({ clip: { x, y, width: Math.min(vp.width - x, box.width + 2 * pad), height: Math.min(vp.height - y, box.height + 2 * pad) } });
+  const width = Math.min(vp.width - x, box.width + 2 * pad), height = Math.min(vp.height - y, box.height + 2 * pad);
+  // (off the screen: the journey moved it on; the whole view instead)
+  if (width < 2 || height < 2) return page.screenshot();
+  return page.screenshot({ clip: { x, y, width, height } });
 };
 
 // Each control: where it is, the row or group to photograph, the chosen
@@ -118,11 +138,8 @@ const controls = {
   ],
 };
 
-// The city's states (city.css): the chosen edge is --cyan, focus is
-// --focus on a dark halo
-const CYAN = "rgb(79, 216, 238)";
-const FOCUS = "rgb(143, 233, 255)";
-const HALO = "rgba(8, 9, 12, 0.9) 0px 0px 0px 6px";
+// The states (city.css): the chosen edge is --accent-2 (CYAN, its old
+// name), focus is --focus on --focus-halo: read from the page (arrive)
 
 const views = {
   desktop: { viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 },
@@ -131,6 +148,8 @@ const views = {
 
 for (const [view, opts] of Object.entries(views)) {
   const ctx = await browser.newContext({ ...opts, permissions: ["clipboard-read", "clipboard-write"] });
+  // The paper, before the head script reads it (lib/paper.ts)
+  await ctx.addInitScript((p) => localStorage.setItem("paper", p), paper);
   const page = await ctx.newPage();
   for (let c of controls[view]) {
     const key = `${view} ${c.name}`;
@@ -237,7 +256,7 @@ for (const [view, opts] of Object.entries(views)) {
     check(r.pressedByKeyboard, `${key}: no press from the keyboard`);
     await page.keyboard.press("Escape").catch(() => {});
 
-    await sheet(shots, `${out}/glass2-${view}-${c.name}.jpg`);
+    await sheet(shots, `${out}/glass2-${paper}-${view}-${c.name}.jpg`);
   }
   await ctx.close();
 }

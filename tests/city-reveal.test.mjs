@@ -118,7 +118,7 @@ test("keyframes and the arrival move only transforms and opacity", () => {
 test("print shows everything at rest", () => {
   const print = all.find((b) => b.context.includes("@media print"));
   assert.ok(print, "a @media print block");
-  for (const sel of [".hero-arrive", ".band-plate"]) assert.ok(print.prelude.includes(sel), sel);
+  assert.ok(print.prelude.includes(".hero-arrive"), ".hero-arrive");
   assert.match(print.body, /animation: none !important/);
 });
 
