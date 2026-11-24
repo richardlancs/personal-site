@@ -38,8 +38,8 @@ defines the same hexes.
 
 ### Cream
 
-Ivory paper (hue 40). Accents from the far side of the wheel: Prussian
-blue, its complement (220), for the one primary action; deep teal (185,
+Ivory paper (hue 41). Accents from the far side of the wheel: Prussian
+blue (213, by its complement, 221) for the one primary action; deep teal (184,
 the near arm of the split complement and the mark's cyan) for links,
 chosen states and the metro line.
 
@@ -61,8 +61,8 @@ chosen states and the metro line.
 
 ### Charcoal
 
-Grey-black paper (hue 215, little saturation). Gold, its complement (35),
-for the primary action; cyan (analogous to the paper, the mark's own) for
+Grey-black paper (hue 216, little saturation). Gold (40, by its
+complement, 36) for the primary action; cyan (analogous to the paper, the mark's own) for
 links, chosen states and the line.
 
 | Token | Hex | Use |
@@ -83,8 +83,8 @@ links, chosen states and the line.
 
 ### Kraft
 
-Brown packing paper (hue 33). Navy, its complement (213), for the
-primary action, like a blue stamp; oxblood (8, analogous: the red of a
+Brown packing paper (hue 34). Navy, its complement (214), for the
+primary action, like a blue stamp; oxblood (6, analogous: the red of a
 parcel stamp) for links, chosen states and the line. Kraft is mid-toned,
 so its text colours are the darkest of the three papers'.
 

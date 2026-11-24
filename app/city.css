@@ -26,14 +26,14 @@
   first paint; never by the system's appearance. Cream is the default,
   so it is also plain :root. Components use these names only, never a
   hex. Every text colour is 4.5:1 or better on --paper, --paper-2 and
-  --panel (and on the texture's darkest crease: paper.css shades at most
-  6% darker); the accent fill 3:1 or better on each ground, its label
+  --panel, and the grounds still are at the texture's darkest crease and
+  lightest ridge (paper.css, measured per paper); the accent fill 3:1 or better on each ground, its label
   4.5:1 on it (docs/ui/scripts/palette-contrast.mjs).
   The texture itself is in paper.css.
 */
-/* Cream: warm ivory (hue 40) written in blue-black ink; its accents
-   from the far side of the wheel: Prussian blue (the complement, 220)
-   for the one primary action, deep teal (185, the split's near arm and
+/* Cream: warm ivory (hue 41) written in blue-black ink; its accents
+   from the far side of the wheel: Prussian blue (213, by the complement, 221)
+   for the one primary action, deep teal (184, the split's near arm and
    the mark's cyan) for links, chosen states and the metro line */
 :root,
 :root[data-paper="cream"] {
@@ -54,8 +54,8 @@
   --ink: #1d2330;
 }
 
-/* Charcoal: a cool grey-black sheet (hue 215) in chalk-white; gold (35,
-   its complement) for the primary action, the mark's cyan (analogous to
+/* Charcoal: a cool grey-black sheet (hue 216) in chalk-white; gold (40,
+   by its complement, 36) for the primary action, the mark's cyan (analogous to
    the paper) for links, chosen states and the line */
 :root[data-paper="charcoal"] {
   color-scheme: dark;
@@ -74,9 +74,9 @@
   --ink: #141518;
 }
 
-/* Kraft: brown packing paper (hue 33) in near-black; navy (the
-   complement, 213) for the primary action like a blue stamp, oxblood
-   (analogous, 8: the red of a parcel stamp) for links, chosen states
+/* Kraft: brown packing paper (hue 34) in near-black; navy (the
+   complement, 214) for the primary action like a blue stamp, oxblood
+   (analogous, 6: the red of a parcel stamp) for links, chosen states
    and the line */
 :root[data-paper="kraft"] {
   color-scheme: light;
@@ -105,7 +105,6 @@
      the paper tokens. Prefer the new names. */
   --ink-2: var(--paper-2);
   --cyan: var(--accent-2);
-  --seam: var(--paper);
   --seam-2: var(--paper-2);
 
   /* One family of soft corners */
@@ -116,17 +115,11 @@
   --font-display: var(--font-rajdhani), "Arial Narrow", Arial, sans-serif;
   --font-text: var(--font-nunito), "Helvetica Neue", Arial, sans-serif;
 
-  /* The buttons' older glass tokens, now paper: an opaque card, no blur,
-     the line for an edge, the accent fill for the primary */
+  /* The buttons' older glass tokens, now paper: an opaque card, the line
+     for an edge (still read by the bar and the chosen key) */
   --glass-tint: var(--panel);
-  --glass-tint-strong: var(--accent);
-  --glass-primary-hover: var(--accent-hover);
-  --accent-edge: color-mix(in srgb, var(--accent) 70%, var(--ink));
   --glass-chosen: color-mix(in srgb, var(--accent-2) 14%, var(--panel));
   --glass-border: var(--line);
-  --glass-hi: #0000;
-  --glass-blur: none;
-  --glass-shadow: 0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent), 0 6px 14px -8px color-mix(in srgb, var(--shadow) 40%, transparent);
   --glass-fallback: var(--panel);
   /* Behind a focus ring: the paper itself, so the ring reads on a card */
   --focus-halo: 0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
@@ -143,8 +136,6 @@
   --t-base: 200ms;
   --t-slow: 280ms;
   --stagger: 60ms;
-  /* Not interaction: a slow cross-fade */
-  --t-sky: 3s;
 
   /* The top bar's height and where the Sections menu opens: SectionsMenu
      measures the bar and writes both on <html> (a ResizeObserver), so they
