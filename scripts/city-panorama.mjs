@@ -24,7 +24,14 @@
 // The strip is 941 px tall, as painted; the tiles are cut at each
 // segment's right edge (give or take a few pixels), so the first tile is
 // the first segment (the home stop's first view), and each stop's stretch
-// starts where its segment does. sharp comes with Next.
+// starts where its segment does.
+// 5. The tiles are written at SCALE times the strip (Lanczos, then a mild
+//    unsharp mask, on the whole strip at once so no tile edge differs):
+//    the stage is about 900 px tall, so a 2x screen draws the painting
+//    about 1800 device pixels tall, and the browser's own upscale of the
+//    941 px painting was soft (task-10-H-report.md). next/image makes
+//    every smaller width from these, so 1x screens lose nothing.
+// sharp comes with Next.
 import { mkdirSync, statSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 
@@ -35,7 +42,9 @@ const H = 941;
 const OUT = "app/assets/city/panorama";
 const FEATHER = 12; // px, the cut's soft edge
 const MARGIN = 24; // px, the cut keeps this far inside the overlap
-const MAX_KB = 600;
+const MAX_KB = 1000;
+const SCALE = 2; // the tiles' pixels per strip pixel
+const SHARPEN = { sigma: 0.8, m1: 0.5, m2: 1 }; // after the upscale: mild, no halos
 
 // ---------- Images: RGB floats ----------
 
@@ -407,20 +416,27 @@ const smooth = (c) => {
 const cuts = [0, ...segs.slice(0, N - 1).map((s) => smooth(s.x + s.day.w)), W];
 const stops = segs.map((s) => s.x);
 mkdirSync(OUT, { recursive: true });
+const big = {};
+for (const t of ["day", "night"])
+  big[t] = await sharp(Buffer.from(strips[t].buffer), { raw: { width: W, height: H, channels: 3 } })
+    .resize(W * SCALE, H * SCALE, { kernel: "lanczos3" })
+    .sharpen(SHARPEN)
+    .raw()
+    .toBuffer();
 const tiles = [];
 for (let i = 0; i < N; i++) {
   const x = cuts[i], w = cuts[i + 1] - cuts[i];
   for (const t of ["day", "night"]) {
     const file = `${OUT}/${t}-0${i + 1}.webp`;
-    let quality = 88;
+    let quality = 90;
     do {
-      await sharp(Buffer.from(strips[t].buffer), { raw: { width: W, height: H, channels: 3 } })
-        .extract({ left: x, top: 0, width: w, height: H })
+      await sharp(big[t], { raw: { width: W * SCALE, height: H * SCALE, channels: 3 } })
+        .extract({ left: x * SCALE, top: 0, width: w * SCALE, height: H * SCALE })
         .webp({ quality, effort: 6 })
         .toFile(file);
       quality -= 4;
     } while (statSync(file).size > MAX_KB * 1024 && quality > 50);
-    console.log(file, `${w}x${H}`, Math.round(statSync(file).size / 1024) + " KB", "q" + (quality + 4));
+    console.log(file, `${w * SCALE}x${H * SCALE}`, Math.round(statSync(file).size / 1024) + " KB", "q" + (quality + 4));
   }
   tiles.push({ x, w });
 }
@@ -440,10 +456,12 @@ const ts = `// The city of the journey: one continuous panorama, by day and by n
 // starts where its segment does (stops: Home, About, Projects,
 // Experience, Interests, Contact) and runs to the next one's start (the
 // last to WIDTH); a segment is SEGMENT wide, so at a stop's start its
-// segment shows as it was painted. The pictures: panoramaImages.ts.
+// segment shows as it was painted. The pictures: panoramaImages.ts, each
+// SCALE times its tile's size here (upscaled, for 2x screens).
 export const WIDTH = ${W};
 export const HEIGHT = ${H};
 export const SEGMENT = ${segs[0].day.w};
+export const SCALE = ${SCALE};
 export const stops = [${stops.join(", ")}];
 
 /** The tiles, left to right: where each starts and how wide it is */

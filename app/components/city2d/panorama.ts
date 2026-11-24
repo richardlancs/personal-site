@@ -5,10 +5,12 @@
 // starts where its segment does (stops: Home, About, Projects,
 // Experience, Interests, Contact) and runs to the next one's start (the
 // last to WIDTH); a segment is SEGMENT wide, so at a stop's start its
-// segment shows as it was painted. The pictures: panoramaImages.ts.
+// segment shows as it was painted. The pictures: panoramaImages.ts, each
+// SCALE times its tile's size here (upscaled, for 2x screens).
 export const WIDTH = 7196;
 export const HEIGHT = 941;
 export const SEGMENT = 1672;
+export const SCALE = 2;
 export const stops = [0, 1115, 2230, 3353, 4473, 5608];
 
 /** The tiles, left to right: where each starts and how wide it is */

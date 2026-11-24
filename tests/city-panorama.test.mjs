@@ -17,13 +17,14 @@ const num = (name) => Number(pano.match(new RegExp(`export const ${name} = (\\d+
 const WIDTH = num("WIDTH");
 const HEIGHT = num("HEIGHT");
 const SEGMENT = num("SEGMENT");
+const SCALE = num("SCALE");
 const stops = pano.match(/export const stops = \[([^\]]*)\]/)[1].split(",").map(Number);
 const tiles = [...pano.matchAll(/\{ x: (\d+), w: (\d+) \}/g)].map((m, i) => ({ x: +m[1], w: +m[2], n: `0${i + 1}` }));
 const images = read("app/components/city2d/panoramaImages.ts");
 const joins = JSON.parse(pano.match(/export const joins = (\[.*\]);/)[1]);
 const file = (t, n) => `${root}app/assets/city/panorama/${t}-${n}.webp`;
 
-test("tiles exist by day and by night, the same count and sizes, side by side across the whole strip", async () => {
+test("tiles exist by day and by night, the same count and sizes (SCALE times the strip's, for 2x screens), side by side across the whole strip", async () => {
   assert.equal(tiles.length, 6);
   let x = 0;
   for (const t of tiles) {
@@ -32,8 +33,8 @@ test("tiles exist by day and by night, the same count and sizes, side by side ac
     const [day, night] = ["day", "night"].map((p) => file(p, t.n));
     assert.ok(existsSync(day) && existsSync(night), `tile ${t.n}`);
     const [a, b] = await Promise.all([sharp(day).metadata(), sharp(night).metadata()]);
-    assert.deepEqual([a.width, a.height], [t.w, HEIGHT], `day ${t.n}`);
-    assert.deepEqual([b.width, b.height], [t.w, HEIGHT], `night ${t.n}`);
+    assert.deepEqual([a.width, a.height], [t.w * SCALE, HEIGHT * SCALE], `day ${t.n}`);
+    assert.deepEqual([b.width, b.height], [t.w * SCALE, HEIGHT * SCALE], `night ${t.n}`);
     assert.ok(images.includes(`import day${t.n} from "../../assets/city/panorama/day-${t.n}.webp";`));
     assert.ok(images.includes(`import night${t.n} from "../../assets/city/panorama/night-${t.n}.webp";`));
     assert.ok(images.includes(`{ day: day${t.n}, night: night${t.n} },`));
@@ -62,10 +63,10 @@ function lab(r, g, b) {
 
 test("the seams: across each join the colour changes no more than twice as much as between the neighbouring columns around it", { timeout: 120_000 }, async () => {
   for (const t of ["day", "night"]) {
-    // The strip, put back together from its tiles
+    // The strip, put back together from its tiles (each brought back to the strip's scale)
     const strip = new Uint8Array(WIDTH * HEIGHT * 3);
     for (const tile of tiles) {
-      const { data } = await sharp(file(t, tile.n)).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      const { data } = await sharp(file(t, tile.n)).removeAlpha().resize(tile.w, HEIGHT, { kernel: "lanczos3" }).raw().toBuffer({ resolveWithObject: true });
       for (let y = 0; y < HEIGHT; y++) strip.set(data.subarray(y * tile.w * 3, (y + 1) * tile.w * 3), (y * WIDTH + tile.x) * 3);
     }
     const L = new Float32Array(WIDTH * HEIGHT * 3);

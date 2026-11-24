@@ -150,7 +150,7 @@ test("the band's day/night cross-fade, grade and bottom fade, still in still vie
   assert.match(css, /prefers-reduced-motion: reduce\) \{\s*:root:not\(\[data-still\]\)[^{]*\.band/);
 });
 
-test("every tile of the panorama has both plates, the same size, none over 600 KB", () => {
+test("every tile of the panorama has both plates, the same size, none over 1000 KB (2x, for 2x screens)", () => {
   const pano = read("app/components/city2d/panoramaImages.ts");
   const count = (pano.match(/\{ day: day\d\d, night: night\d\d \}/g) ?? []).length;
   assert.equal(count, 6);
@@ -158,7 +158,7 @@ test("every tile of the panorama has both plates, the same size, none over 600 K
     const [day, night] = ["day", "night"].map((t) => `${root}app/assets/city/panorama/${t}-0${i}.webp`);
     for (const f of [day, night]) {
       assert.ok(existsSync(f), f);
-      assert.ok(statSync(f).size <= 600 * 1024, `${f} is ${statSync(f).size} bytes`);
+      assert.ok(statSync(f).size <= 1000 * 1024, `${f} is ${statSync(f).size} bytes`);
     }
     assert.deepEqual(webpSize(day), webpSize(night), `tile ${i}: the day and night plates differ in size`);
   }
@@ -231,10 +231,10 @@ test("the head script and the home tile take the plate's URL from one source", (
   const layout = read("app/layout.tsx");
   assert.match(layout, /getImageProps\(\{ src: home\[plate\], alt: "", fill: true, sizes: tileSizes\(home\.w\), quality: HOME_QUALITY\[plate\] \}\)/, "the tile's own srcset, sizes and quality");
   assert.match(layout, /platePreloadScript\(richmondHill, tileSrcSet\("day"\), tileSrcSet\("night"\), home\.w \/ HEIGHT\)/);
-  // The same quality on the tile's own <img>, and allowed by the config: 60 by day, 40 by night
+  // The same quality on the tile's own <img>, and allowed by the config: 75 by day, 60 by night
   assert.match(read("app/components/city2d/DistrictBand.tsx"), /quality: home \? HOME_QUALITY\[plate\] : undefined/);
-  assert.match(read("app/components/city2d/homePlate.ts"), /export const HOME_QUALITY: Record<Plate, number> = \{ day: 60, night: 40 \};/);
-  assert.match(read("next.config.ts"), /qualities: \[40, 60, 75\]/);
+  assert.match(read("app/components/city2d/homePlate.ts"), /export const HOME_QUALITY: Record<Plate, number> = \{ day: 75, night: 60 \};/);
+  assert.match(read("next.config.ts"), /qualities: \[60, 75\]/);
   const helper = read("app/components/city2d/homePlate.ts");
   assert.match(helper, /\(max-aspect-ratio: 1\/1\) calc\(\$\{\+\(r \* 20\)\.toFixed\(2\)\}vh \+ \$\{Math\.round\(r \* 64\)\}px\), \$\{\+\(r \* 100\)\.toFixed\(2\)\}vh/, "sizes and the script's widths agree");
   const script = read("app/lib/platePreload.ts");
