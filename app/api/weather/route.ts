@@ -1,10 +1,10 @@
 import { cacheLife } from "next/cache";
 import { connection } from "next/server";
-import { richmondHill, WEATHER_CACHE_SECONDS, weatherProvider } from "../../data/weather";
+import { waterloo, WEATHER_CACHE_SECONDS, weatherProvider } from "../../data/weather";
 import type { WeatherResponse } from "../../lib/sky";
 import { forecastUrl, parseForecast } from "../../lib/weather";
 
-// GET /api/weather: Richmond Hill's current weather and the days' sun, for
+// GET /api/weather: Waterloo's current weather and the days' sun, for
 // the corner display and the world (components/weather/useRichmondHill.ts).
 //
 // Caching. The handler only reads a `use cache` function, so with Cache
@@ -53,7 +53,7 @@ async function fetchWeather(): Promise<WeatherResponse> {
 
   let res: Response;
   try {
-    res = await fetch(forecastUrl(endpoint, richmondHill), {
+    res = await fetch(forecastUrl(endpoint, waterloo), {
       headers: { accept: "application/json" },
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
@@ -69,7 +69,7 @@ async function fetchWeather(): Promise<WeatherResponse> {
     // The body can also time out while it streams in
     return fail(err instanceof Error && err.name === "TimeoutError" ? "timeout" : "malformed");
   }
-  const reading = parseForecast(json, fetchedAt, richmondHill.timeZone);
+  const reading = parseForecast(json, fetchedAt, waterloo.timeZone);
   if (!reading) return fail("malformed");
 
   // Refreshed after 15 minutes; after an hour with no visitor the next one

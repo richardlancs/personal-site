@@ -1,4 +1,4 @@
-// The Richmond Hill display (components/weather): its words in every
+// The Waterloo display (components/weather): its words in every
 // state, worked out from the hook's shape (lib/sky.ts), and the rules it
 // keeps: no made-up values, no announcement every minute, an icon for
 // every condition.

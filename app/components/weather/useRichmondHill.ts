@@ -1,17 +1,17 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { richmondHill, WEATHER_CACHE_SECONDS } from "../../data/weather";
+import { waterloo, WEATHER_CACHE_SECONDS } from "../../data/weather";
 import type { RichmondHillNow, WeatherReading } from "../../lib/sky";
 import { isDaytime, richmondHillClock } from "../../lib/time";
 import { describeWeather, isWeatherReading, readingAge } from "../../lib/weather";
 
-// Richmond Hill's time and weather for the page: one store for the whole
+// Waterloo's time and weather for the page: one store for the whole
 // page, however many components read it. While anything reads it there is
 // one clock timer, ticking on each minute boundary, and one weather
 // timer, asking /api/weather about every 15 minutes while the tab is
 // visible (and on coming back to it, if a refresh is due). A clock tick
-// never fetches, except once on a new Richmond Hill date if the reading
+// never fetches, except once on a new Waterloo date if the reading
 // doesn't have that day's sun. When nothing reads the store, both stop;
 // what it knows is kept, so a remount doesn't fetch again early.
 //
@@ -59,7 +59,7 @@ function compute(): RichmondHillNow {
   const usable = age === "unusable" ? null : reading;
   // The sun comes from the reading even when its weather is too old to
   // show: sunrise and sunset don't go stale
-  const clock = richmondHillClock(ms, reading, richmondHill);
+  const clock = richmondHillClock(ms, reading, waterloo);
   return {
     now: minuteOf(ms),
     time: clock.time,
@@ -89,7 +89,7 @@ function scheduleTick() {
 function tick() {
   const date = snapshot?.date;
   update();
-  // A new day in Richmond Hill (at its midnight, whatever the visitor's
+  // A new day in Waterloo (at its midnight, whatever the visitor's
   // time zone or daylight saving): the day's sun is recomputed by
   // compute(); if the reading doesn't cover the new date, fetch one
   if (date && snapshot && snapshot.date !== date && !reading?.sun.some((s) => s.date === snapshot!.date)) load();

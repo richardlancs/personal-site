@@ -1,4 +1,4 @@
-// The words of the Richmond Hill display (WeatherClock.tsx), worked out
+// The words of the Waterloo display (WeatherClock.tsx), worked out
 // from what the hook gives (useRichmondHill, RichmondHillNow in lib/sky.ts).
 // Plain functions, no React, so the tests can read every state. Nothing
 // here makes a value up: a field the reading doesn't have is left out.

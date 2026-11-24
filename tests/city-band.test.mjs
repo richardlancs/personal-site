@@ -1,6 +1,6 @@
 // The city's painting (components/city2d/DistrictBand.tsx: the journey's
 // panorama, or a station's band read top to bottom), the driver that sets
-// its sky on <html> from Richmond Hill's clock (CityDriver.tsx), the tiles
+// its sky on <html> from Waterloo's clock (CityDriver.tsx), the tiles
 // themselves (app/assets/city/panorama/; their joins: city-panorama.test)
 // and the hero over the first stop (sections/Hero.tsx).
 import assert from "node:assert/strict";
@@ -170,12 +170,12 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   const sun = new Function(`return ${SUN_JS}`)();
   for (let date = "2026-01-01"; date < "2028-01-01"; date = addDays(date, 1)) {
     const [y, m, d] = date.split("-").map(Number);
-    const { sunrise, sunset } = solarSun(date, 43.87111, -79.43725);
-    assert.deepEqual(sun(y, m, d, 43.87111, -79.43725), [sunrise, sunset], date);
+    const { sunrise, sunset } = solarSun(date, 43.4668, -80.51639);
+    assert.deepEqual(sun(y, m, d, 43.4668, -80.51639), [sunrise, sunset], date);
   }
   // Run it in a fake page: at noon, midnight and either side of sunset, at
   // a few widths, and on a deep link
-  const place = { latitude: 43.87111, longitude: -79.43725, timeZone: "America/Toronto" };
+  const place = { latitude: 43.4668, longitude: -80.51639, timeZone: "America/Toronto" };
   const srcset = (p) => [640, 1080, 1920, 3840].map((w) => `/img/${p}?w=${w} ${w}w`).join(", ");
   // The home tile: 1672 x 941, so drawn 1.777 times the stage's height (or the phone's strip, 20% of it and 64px)
   const ratio = 1672 / 941;
@@ -212,7 +212,7 @@ test("the home plate's head script: the same sun as the site's clock, a file fro
   // Read top to bottom (no journey), the stations' bands have no home tile: nothing fetched
   assert.deepEqual(run("2026-06-21T16:00:00Z", { track: null }), { links: [], plate: null, which: null });
   // Twilight: the plate the blend is closer to (day before sunset, night after)
-  const { sunset } = solarSun("2026-06-21", 43.87111, -79.43725);
+  const { sunset } = solarSun("2026-06-21", 43.4668, -80.51639);
   assert.equal(run(new Date((sunset - 600) * 1000).toISOString()).which, "day", "ten minutes before sunset");
   assert.equal(run(new Date((sunset + 600) * 1000).toISOString()).which, "night", "ten minutes after sunset");
   // A deep link lands below the home band: nothing fetched or painted

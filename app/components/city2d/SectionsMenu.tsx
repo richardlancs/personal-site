@@ -18,7 +18,7 @@ import { useSection } from "./useSection";
 // a cyan bar at its left and a heavier weight, so not by colour alone.
 // One plain list (rows of words, not a stack of keys: V13), it grows out
 // of its key, and the city dims behind it (city.css). On phones the bar
-// is one row, and Richmond Hill's time and weather sit at the menu's foot
+// is one row, and Waterloo's time and weather sit at the menu's foot
 // instead (WeatherClock, the same store as the bar's: city.css shows one).
 //
 // It also measures the bar it sits in: the bar's real height (--bar-h,

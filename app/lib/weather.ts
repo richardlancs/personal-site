@@ -1,4 +1,4 @@
-// Richmond Hill's weather, as pure functions: the Open-Meteo request, the
+// Waterloo's weather, as pure functions: the Open-Meteo request, the
 // strict reading of its response, what a WMO weather code is called and
 // how the world draws it, and how old a reading may be before it's shown
 // as stale or not at all. No fetching or React here; the route
@@ -39,7 +39,7 @@ const isObject = (v: unknown): v is Record<string, unknown> => typeof v === "obj
 const isNumber = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const inRange = (v: unknown, min: number, max: number): v is number => isNumber(v) && v >= min && v <= max;
 
-// Richmond Hill's local date (YYYY-MM-DD) of a Unix time
+// Waterloo's local date (YYYY-MM-DD) of a Unix time
 function dateIn(timeZone: string, unixSeconds: number): string {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(
     new Date(unixSeconds * 1000),

@@ -62,7 +62,8 @@ for (const view of ["desktop", "phone"]) {
 
   // Selectable: a double click selects a word in it
   if (!phone) {
-    await rh.locator(".rh-place").dblclick();
+    // (on its first word: the middle of "Weather in Waterloo" is a space)
+    await rh.locator(".rh-place").dblclick({ position: { x: 8, y: 8 } });
     const selected = await page.evaluate(() => getSelection().toString().trim());
     check(`${view}: its words can be selected`, selected.length > 0, selected);
     await page.evaluate(() => getSelection().removeAllRanges());

@@ -275,11 +275,20 @@ button.text-link,
   gap: 0.5rem;
 }
 
+/* One family on the bar: the keys and the weather are the same pill
+   (44px, fully round, the glass's edge and fill) */
 .top-bar .glass {
+  border-radius: 999px;
   font-size: 0.875rem;
 }
 
-/* Richmond Hill's time and weather (weather/WeatherClock.tsx): only
+.top-bar > .rh {
+  min-height: 44px;
+  border-color: var(--glass-border);
+  background: var(--glass-tint);
+}
+
+/* Waterloo's time and weather (weather/WeatherClock.tsx): only
    something to read, quiet words on the bar */
 .rh {
   display: inline-flex;

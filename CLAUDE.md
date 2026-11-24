@@ -157,7 +157,8 @@ cuts the tiles into `app/assets/city/panorama/`, writing `panorama.ts`
   hero's name on its own dark backing. Places are never named anywhere a
   visitor reads or hears.
 
-Light and weather follow Richmond Hill: the hour and that day's sunrise
+Light and weather follow Waterloo, Ontario (`app/data/weather.ts`;
+Richmond Hill until 2026-11-24): the hour and that day's sunrise
 and sunset pick the day plate, the night plate, or a cross-fade with a
 warm or cyan grade at dawn and dusk (`lib/cityLook.ts`), over the whole
 panorama; cloudy, rain and snow are drawn once over the stage in CSS and
@@ -220,7 +221,8 @@ the reports per part in `.superpowers/sdd/2026-11-22-horizontal-city/task-9-{A,B
   internship or co-op."), Résumé a glass key beside View projects; project
   panels read title, keys, summary, cover; Experience without boxed
   badges; a clear "Copied" moment; the bar's place reads "Weather in
-  Richmond Hill"; the Sections menu as plain rows; "Still view" labelled;
+  Waterloo" (Richmond Hill before Task 10); the Sections menu as plain
+  rows; "Still view" labelled;
   the résumé readable on phones with "Open in your viewer" and an offline
   note.
 
@@ -352,8 +354,9 @@ weights and generous line-height. Avoid decorative fonts.
 ## Navigation
 
 - The top bar (`TopBar.tsx`): the name (home), the section you're at in
-  words from 53rem ("03 / 06 · Projects"), Richmond Hill's time and
-  weather, Sections, Still view and the music. It floats over the stage
+  words from 53rem ("03 / 06 · Projects"), Waterloo's time and
+  weather, Sections, Still view and the music, all one family of 44px
+  pills (the keys' glass edge and fill, fully round). It floats over the stage
   on the journey. It never gains a row it doesn't have today, at any
   width (`docs/city/scripts/bar-fit.mjs`). Tab goes through its keys
   first, then the map.

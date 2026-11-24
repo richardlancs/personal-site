@@ -1,4 +1,4 @@
-// Richmond Hill's clock and daylight, as pure functions. Local time and
+// Waterloo's clock and daylight, as pure functions. Local time and
 // date come from Intl with the place's time zone, so daylight-saving
 // changes are the platform's job: there are no offsets in this file.
 //
@@ -58,7 +58,7 @@ const RAD = Math.PI / 180;
 // (https://gml.noaa.gov/grad/solcalc/solareqns.PDF): the equation of time
 // and the sun's declination from the fractional year, and the hour angle
 // at which the sun's centre is 0.833° below the horizon (refraction and
-// the sun's radius). Good to a minute or two at Richmond Hill's latitude,
+// the sun's radius). Good to a minute or two at Waterloo's latitude,
 // which is all the world's daylight needs. Used only when there's no
 // reading: it's astronomy, so it never stands in for weather.
 export function solarSun(date: string, latitude: number, longitude: number): Sun {
@@ -84,7 +84,7 @@ export function solarSun(date: string, latitude: number, longitude: number): Sun
 
   const lat = latitude * RAD;
   const cosHa = Math.cos(90.833 * RAD) / (Math.cos(lat) * Math.cos(decl)) - Math.tan(lat) * Math.tan(decl);
-  // Polar day or night can't happen at Richmond Hill; clamp for safety
+  // Polar day or night can't happen at Waterloo; clamp for safety
   const ha = Math.acos(Math.min(1, Math.max(-1, cosHa))) / RAD;
 
   // Minutes after UTC midnight of the date (sunset can pass 1440: the
@@ -151,7 +151,7 @@ export function richmondHillClock(
 }
 
 // Whether to word the weather for day or night ("Sunny" or "Clear"): by
-// Richmond Hill's own sun, the same clock the world's daylight follows,
+// Waterloo's own sun, the same clock the world's daylight follows,
 // so the label and the scene agree at sunrise and sunset. The reading's
 // is_day is only used when the day's sun isn't known.
 export function isDaytime(nowSeconds: number, sun: Sun, fallback: boolean): boolean {

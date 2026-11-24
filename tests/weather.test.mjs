@@ -1,9 +1,9 @@
-// Richmond Hill's weather (app/lib/weather.ts): the Open-Meteo request,
+// Waterloo's weather (app/lib/weather.ts): the Open-Meteo request,
 // strict reading of its response, WMO codes → label, preset and icon, and
 // when a reading is stale.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { richmondHill, weatherProvider } from "../app/data/weather.ts";
+import { waterloo, weatherProvider } from "../app/data/weather.ts";
 import {
   describeWeather,
   forecastUrl,
@@ -14,9 +14,10 @@ import {
   UNUSABLE_AFTER_SECONDS,
 } from "../app/lib/weather.ts";
 
-const TZ = richmondHill.timeZone;
+const TZ = waterloo.timeZone;
 
-// A real response for Richmond Hill (reading of 10 November 2026, 04:15
+// A real response for Richmond Hill, where the clock followed until
+// November 2026; only its shape matters here (reading of 10 November 2026, 04:15
 // EST), as Open-Meteo sent it to forecastUrl's request (timeformat=unixtime,
 // past_days=1, forecast_days=3); only generationtime_ms, elevation and
 // timezone_abbreviation left out
@@ -36,11 +37,17 @@ const sample = () => ({
 });
 const FETCHED = 1794302400; // five minutes after the reading
 
+test("the clock and the weather follow Waterloo, Ontario (GeoNames 6176823)", () => {
+  assert.equal(waterloo.name, "Waterloo");
+  assert.equal(waterloo.timeZone, "America/Toronto");
+  assert.ok(Math.abs(waterloo.latitude - 43.4668) < 0.01 && Math.abs(waterloo.longitude + 80.5164) < 0.01);
+});
+
 test("the request asks Open-Meteo for the configured place, in Toronto time, as Unix seconds", () => {
-  const url = new URL(forecastUrl(weatherProvider.forecastEndpoint, richmondHill));
+  const url = new URL(forecastUrl(weatherProvider.forecastEndpoint, waterloo));
   assert.equal(url.origin + url.pathname, "https://api.open-meteo.com/v1/forecast");
-  assert.equal(url.searchParams.get("latitude"), String(richmondHill.latitude));
-  assert.equal(url.searchParams.get("longitude"), String(richmondHill.longitude));
+  assert.equal(url.searchParams.get("latitude"), String(waterloo.latitude));
+  assert.equal(url.searchParams.get("longitude"), String(waterloo.longitude));
   assert.equal(url.searchParams.get("timezone"), "America/Toronto");
   assert.equal(url.searchParams.get("timeformat"), "unixtime");
   assert.deepEqual(url.searchParams.get("current").split(","), ["temperature_2m", "weather_code", "cloud_cover", "is_day"]);

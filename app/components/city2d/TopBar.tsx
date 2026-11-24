@@ -7,7 +7,7 @@ import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 
 // The bar along the top of every page (city.css, "The top bar"): the
-// name, the way home; the section you're at; Richmond Hill's time and
+// name, the way home; the section you're at; Waterloo's time and
 // weather, only to read; the Sections menu, built from the registry;
 // Still view; and the music (its note, if the song can't load, hangs
 // under its key); then the metro map, fixed along the foot of the screen

@@ -1,18 +1,25 @@
-// Where the weather and the clock in the corner are for: always Richmond
-// Hill, wherever the visitor is (no geolocation is ever asked for).
+// Where the weather and the clock in the corner are for: always Waterloo,
+// Ontario, wherever the visitor is (no geolocation is ever asked for).
+// The sky's sunrise and sunset (lib/time.ts, lib/platePreload.ts) follow
+// these same coordinates.
 //
 // Coordinates verified once with Open-Meteo's geocoding API
-// (https://geocoding-api.open-meteo.com/v1/search?name=Richmond+Hill):
-// GeoNames 6122091, "Richmond Hill, Ontario, CA", America/Toronto,
-// elevation 232 m. Checked 10 November 2026.
-export const richmondHill = {
-  name: "Richmond Hill",
+// (https://geocoding-api.open-meteo.com/v1/search?name=Waterloo&country=CA):
+// GeoNames 6176823, "Waterloo, Ontario, CA", America/Toronto,
+// elevation 325 m. Checked 24 November 2026.
+export const waterloo = {
+  name: "Waterloo",
   region: "Ontario",
-  latitude: 43.87111,
-  longitude: -79.43725,
+  latitude: 43.4668,
+  longitude: -80.51639,
   timeZone: "America/Toronto",
-  geonamesId: 6122091,
+  geonamesId: 6176823,
 } as const;
+
+// The old name, still read by app/layout.tsx (the head script's sun) and
+// pinned by tests/city-band.test.mjs; the same place. Remove once those
+// say `waterloo`.
+export const richmondHill = waterloo;
 
 // The data comes from Open-Meteo (free, no key; CC BY 4.0). Attribution
 // is in each page's footer (components/ui/Colophon.tsx).

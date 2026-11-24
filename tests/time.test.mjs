@@ -1,19 +1,31 @@
-// Richmond Hill's clock and daylight (app/lib/time.ts): local time and
+// Waterloo's clock and daylight (app/lib/time.ts): local time and
 // date through daylight-saving changes and midnights, the astronomical
 // sun, and the daylight phases around sunrise and sunset.
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { richmondHill } from "../app/data/weather.ts";
+import { waterloo } from "../app/data/weather.ts";
 import { addDays, daylightAt, isDaytime, localDate, localTime, richmondHillClock, solarSun, sunOn, TWILIGHT_SECONDS } from "../app/lib/time.ts";
 import { parseForecast } from "../app/lib/weather.ts";
 
-const TZ = richmondHill.timeZone;
-const { latitude, longitude } = richmondHill;
+const TZ = waterloo.timeZone;
+const { latitude, longitude } = waterloo;
 const at = (iso) => Date.parse(iso);
 const MIN = 60;
 
-// Open-Meteo's sunrise and sunset for Richmond Hill, 9–12 November 2026
-// (the same response as tests/weather.test.mjs)
+// Open-Meteo's sunrise and sunset for Waterloo, 23–26 November 2026
+// (fetched 24 November 2026 with forecastUrl's request)
+const waterlooSun = {
+  "2026-11-23": { sunrise: 1795436749, sunset: 1795470655 },
+  "2026-11-24": { sunrise: 1795523223, sunset: 1795557018 },
+  "2026-11-25": { sunrise: 1795609696, sunset: 1795643383 },
+  "2026-11-26": { sunrise: 1795696168, sunset: 1795729750 },
+};
+
+// Open-Meteo's sunrise and sunset for Richmond Hill (43.87111 N,
+// 79.43725 W, where the clock followed until November 2026), 9–12
+// November 2026 (the same response as tests/weather.test.mjs). The other
+// tests use them only as a reading's numbers.
+const RICHMOND_HILL = { latitude: 43.87111, longitude: -79.43725 };
 const openMeteoSun = {
   "2026-11-09": { sunrise: 1794225881, sunset: 1794261482 },
   "2026-11-10": { sunrise: 1794312361, sunset: 1794347814 },
@@ -55,7 +67,7 @@ test("fall back (1 November 2026): 1 AM happens twice", () => {
   assert.equal(localDate(at("2026-11-02T05:00:00Z"), TZ), "2026-11-02");
 });
 
-test("the date changes at Richmond Hill's midnight, not UTC's", () => {
+test("the date changes at Waterloo's midnight, not UTC's", () => {
   // UTC midnight is still the evening before in Toronto
   assert.equal(localDate(at("2026-11-10T00:00:00Z"), TZ), "2026-11-09");
   assert.equal(localTime(at("2026-11-10T00:00:00Z"), TZ), "7:00 PM");
@@ -79,15 +91,18 @@ test("calendar arithmetic crosses months, years and leap days", () => {
 });
 
 test("the astronomical sun is within three minutes of Open-Meteo's", () => {
-  for (const [date, real] of Object.entries(openMeteoSun)) {
-    const s = solarSun(date, latitude, longitude);
+  for (const [date, real, place] of [
+    ...Object.entries(waterlooSun).map(([d, r]) => [d, r, { latitude, longitude }]),
+    ...Object.entries(openMeteoSun).map(([d, r]) => [d, r, RICHMOND_HILL]),
+  ]) {
+    const s = solarSun(date, place.latitude, place.longitude);
     assert.ok(Math.abs(s.sunrise - real.sunrise) < 3 * MIN, `${date} sunrise off by ${s.sunrise - real.sunrise} s`);
     assert.ok(Math.abs(s.sunset - real.sunset) < 3 * MIN, `${date} sunset off by ${s.sunset - real.sunset} s`);
   }
 });
 
 test("the astronomical sun follows the seasons and daylight saving on the local clock", () => {
-  // Midsummer in the Toronto area: sunrise about 5:35 AM, sunset about 9:03 PM (EDT)
+  // Midsummer in southern Ontario: sunrise about 5:40 AM, sunset about 9:07 PM (EDT)
   const june = solarSun("2026-06-21", latitude, longitude);
   assert.match(localTime(june.sunrise * 1000, TZ), /^5:[34]\d AM$/);
   assert.match(localTime(june.sunset * 1000, TZ), /^(8:5\d|9:0\d) PM$/);
@@ -150,20 +165,20 @@ test("the clock takes the day's sun from the reading, or from astronomy without 
   const reading = parseForecast(body, 1794302400, TZ);
   const noonish = at("2026-11-10T17:30:00Z");
 
-  const live = richmondHillClock(noonish, reading, richmondHill);
+  const live = richmondHillClock(noonish, reading, waterloo);
   assert.equal(live.time, "12:30 PM");
   assert.equal(live.date, "2026-11-10");
   assert.equal(live.daylight.phase, "day");
   assert.equal(live.daylight.sunrise, openMeteoSun["2026-11-10"].sunrise);
   assert.equal(live.daylight.sunset, openMeteoSun["2026-11-10"].sunset);
 
-  const astro = richmondHillClock(noonish, null, richmondHill);
+  const astro = richmondHillClock(noonish, null, waterloo);
   assert.equal(astro.daylight.phase, "day");
   assert.deepEqual({ sunrise: astro.daylight.sunrise, sunset: astro.daylight.sunset }, solarSun("2026-11-10", latitude, longitude));
 
-  // Past Richmond Hill's midnight the next day's sun comes from the reading
+  // Past Waterloo's midnight the next day's sun comes from the reading
   // (it was fetched the day before) ...
-  const after = richmondHillClock(at("2026-11-11T05:01:00Z"), reading, richmondHill);
+  const after = richmondHillClock(at("2026-11-11T05:01:00Z"), reading, waterloo);
   assert.equal(after.date, "2026-11-11");
   assert.equal(after.time, "12:01 AM");
   assert.equal(after.daylight.phase, "night");
@@ -172,7 +187,7 @@ test("the clock takes the day's sun from the reading, or from astronomy without 
   assert.deepEqual(sunOn("2026-11-20", reading, latitude, longitude), solarSun("2026-11-20", latitude, longitude));
 });
 
-test("Sunny or Clear follows Richmond Hill's sun, not the reading's is_day", () => {
+test("Sunny or Clear follows Waterloo's sun, not the reading's is_day", () => {
   // 10 November 2026: sunrise 7:06 AM, sunset 4:56 PM EST
   const sun = { sunrise: 1794312361, sunset: 1794347814 };
   const at = (h, m) => Date.UTC(2026, 10, 10, h + 5, m) / 1000; // EST is UTC-5

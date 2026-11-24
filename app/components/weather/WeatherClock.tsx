@@ -1,14 +1,14 @@
 "use client";
 
-import { richmondHill } from "../../data/weather";
+import { waterloo } from "../../data/weather";
 import { describeNow, splitMeridiem, type ClockText } from "./clockText";
 import { useRichmondHill } from "./useRichmondHill";
 import WeatherIcon from "./WeatherIcon";
 
-// Richmond Hill's time and weather, in the top bar (TopBar.tsx; on phones
+// Waterloo's time and weather, in the top bar (TopBar.tsx; on phones
 // at the foot of the Sections menu instead, so the bar keeps one row): a
 // small bubble of clear glass with the place, labelled as the weather's
-// ("Weather in Richmond Hill", so it doesn't read as where Richard lives:
+// ("Weather in Waterloo", so it doesn't read as where Richard lives:
 // R12), the time, and the weather as an icon, a temperature and a word.
 // Without JavaScript it isn't drawn (city.css): it would never fill. Only
 // something to read: no button, no focus, no details to open, no press.
@@ -16,17 +16,17 @@ import WeatherIcon from "./WeatherIcon";
 // (components/ui/Colophon.tsx).
 //
 // Nothing moves or shifts as values arrive: every field keeps its room
-// (globals.css, "The Richmond Hill display"), and until the clock and the
+// (globals.css, "The Waterloo display"), and until the clock and the
 // weather are known the room is drawn as a faint blank, never as a guess.
 // The minute tick isn't announced: there is no live region here.
 export default function WeatherClock() {
-  const text = describeNow(useRichmondHill(), richmondHill.timeZone);
+  const text = describeNow(useRichmondHill(), waterloo.timeZone);
 
   return (
     <p className="rh" data-status={text.status}>
       <span className="rh-place">
         <span className="rh-label">Weather in </span>
-        {richmondHill.name}
+        {waterloo.name}
       </span>{" "}
       {/* The spaces between the fields are for reading aloud and copying;
           the layout (flex) doesn't draw them */}
