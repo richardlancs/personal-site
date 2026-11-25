@@ -15,6 +15,8 @@ const rule = (sel) => {
   assert.ok(i >= 0, `no rule ${sel}`);
   return css.slice(i, css.indexOf("}", i));
 };
+// (the last rule for a selector: the More pill's own, after the rule it shares)
+const lastRule = (sel) => css.slice(css.lastIndexOf(`${sel} {`), css.indexOf("}", css.lastIndexOf(`${sel} {`)));
 
 test("every panel hangs from one top line and ends above the map", () => {
   // (--hang: --line is the hairline colour, used inside the cards)
@@ -54,14 +56,22 @@ test("every panel is a pane of clear glass: a whisper of --panel, a texture and 
   assert.match(more, /\.track \.panel \{\s*border-color: var\(--text\);\s*box-shadow: none;\s*background: var\(--panel\);/, "solid under more contrast");
 });
 
-test("the More cue fades into the paper behind the glass", () => {
-  assert.match(rule(':root[data-track="on"] .track .panel::after'), /background: linear-gradient\([^;]*var\(--paper\) 70%\);/);
+test("the More cue: the words fade into the paper behind the glass, and a pill on the solid part says so", () => {
+  assert.match(rule(':root[data-track="on"] .track .panel::before'), /background: linear-gradient\([^;]*var\(--paper\) 50%\);/);
+  const pill = lastRule(':root[data-track="on"] .track .panel::after');
+  // on the fade's solid half (6rem tall, solid from 3rem up from the foot):
+  // the pill's top is at most 0.5rem + 1.75rem + its edges from the foot
+  assert.match(rule(':root[data-track="on"] .track .panel::before'), /height: 6rem;/);
+  assert.match(pill, /bottom: 0\.5rem;\s*align-self: center;/);
+  assert.match(pill, /margin: max\(0\.5rem, var\(--pad\) - 2\.375rem\) 0 0\.5rem;/, "its place kept at the foot, so it never sits on the last words");
+  assert.match(pill, /border: 1px solid var\(--rim\);\s*border-radius: 999px;\s*background: var\(--paper\);/);
+  assert.match(pill, /line-height: 1\.75rem;/);
 });
 
 test("a panel with more below says so, and the cue goes at its end", () => {
-  const cue = rule(':root[data-track="on"] .track .panel::after');
-  assert.match(cue, /content: "More \\2193" \/ "";/, "hidden from assistive technology");
-  assert.match(cue, /position: sticky;\s*bottom: 0;/);
+  assert.match(lastRule(':root[data-track="on"] .track .panel::after'), /content: "More \\2193" \/ "";/, "hidden from assistive technology");
+  const cue = rule(':root[data-track="on"] .track .panel::before,\n  :root[data-track="on"] .track .panel::after');
+  assert.match(cue, /order: 1;\s*position: sticky;\s*bottom: 0;/, "after the words, stuck to the foot");
   assert.match(cue, /opacity: 0;\s*pointer-events: none;/, "none without a scroll timeline, and never in the way");
   // (where there are no scroll timelines it ends at once, at its base: no cue)
   assert.match(cue, /animation: more both;\s*animation-timeline: scroll\(nearest\);/);

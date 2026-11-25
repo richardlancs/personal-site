@@ -176,29 +176,49 @@
     --reed: 9%;
   }
 
-  /* While a panel has more below, a fade at its foot says so ("More",
-     hidden from assistive technology: the panel is a region it can
-     scroll, CityTrack). Drawn on the panel's own scroll (scroll(nearest)):
-     a panel with nothing more has no scroll timeline, so no cue, and the
-     cue goes at the end. It takes only the panel's foot padding (it can't
-     stick inside a padding) and no pointer */
+  /* While a panel has more below, its foot says so: the words fade into
+     the paper (::before) and on the solid part of that fade, never over a
+     word, a small pill reads "More" (::after, hidden from assistive
+     technology: the panel is a region it can scroll, CityTrack). Both
+     after the words (order), stuck to the foot. Drawn on the panel's own
+     scroll (scroll(nearest)): a panel with nothing more has no scroll
+     timeline, so no cue, and the cue goes at the end. The pill's place is
+     kept at the foot (the panel's foot padding, at least its height); no
+     pointer. (z-index: over the words' own positioned pieces, which
+     paint in the order of the page, not of order) */
+  :root[data-track="on"] .track .panel::before,
   :root[data-track="on"] .track .panel::after {
-    content: "More \2193" / "";
+    order: 1;
     position: sticky;
     bottom: 0;
+    z-index: 1;
     flex: none;
-    height: calc(3.5rem + var(--pad));
-    margin: -3.5rem calc(-1 * var(--side, var(--pad))) 0;
-    padding-top: 2rem;
-    background: linear-gradient(color-mix(in srgb, var(--paper) 0%, transparent), var(--paper) 70%);
-    color: var(--text);
-    font-size: 0.875rem;
-    text-align: center;
     opacity: 0;
     pointer-events: none;
     /* (without scroll timelines it ends at once, at its base: no cue) */
     animation: more both;
     animation-timeline: scroll(nearest);
+  }
+
+  :root[data-track="on"] .track .panel::before {
+    content: "";
+    height: 6rem;
+    margin: -6rem calc(-1 * var(--side, var(--pad))) 0;
+    background: linear-gradient(color-mix(in srgb, var(--paper) 0%, transparent), var(--paper) 50%);
+  }
+
+  :root[data-track="on"] .track .panel::after {
+    content: "More \2193" / "";
+    bottom: 0.5rem;
+    align-self: center;
+    margin: max(0.5rem, var(--pad) - 2.375rem) 0 0.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--rim);
+    border-radius: 999px;
+    background: var(--paper);
+    color: var(--text);
+    font-size: 0.875rem;
+    line-height: 1.75rem;
   }
 
   :root[data-track="on"] .track [data-open] {
