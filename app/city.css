@@ -115,9 +115,9 @@
   --radius: 10px;
   --radius-lg: 16px;
 
-  /* Set in layout.tsx with next/font */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-text: var(--font-figtree), "Helvetica Neue", Arial, sans-serif;
+  /* Set in layout.tsx with next/font (Newsreader, Hanken Grotesk) */
+  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-text: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
 
   /* Motion (docs/ui/ux-motion-principles.md): the only durations and
      curves anything uses. Arrive with --ease-out, travel with
@@ -196,7 +196,7 @@ h3,
 .font-display {
   font-family: var(--font-display);
   line-height: 1.1;
-  /* Fraunces is spaced for print: no extra tracking */
+  /* Newsreader is spaced for print: no extra tracking */
   letter-spacing: 0;
 }
 
@@ -954,10 +954,15 @@ a[data-resume][data-opening] {
 .hero-name {
   color: var(--text);
   font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
-  font-weight: 700;
+  /* The one personal touch: the name hand-set in the serif's italic, at a
+     medium weight, so it reads like a signature over a printed page
+     (layout.tsx loads that one face alone) */
+  font-family: var(--font-newsreader-italic), var(--font-display);
+  font-style: italic;
+  font-weight: 500;
   line-height: 1.1;
   /* The serif's display cut sits a touch tight at this size */
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
   overflow-wrap: break-word;
 }
 

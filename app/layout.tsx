@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Fraunces } from "next/font/google";
+import { Hanken_Grotesk, Newsreader } from "next/font/google";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -12,26 +12,34 @@ import "./motion.css";
 import "./reveal.css";
 import "./city-track.css";
 
-// Headings, the name and station names: Fraunces, a soft old-style serif
-// with the look of printed ink, its optical size axis on, so the name is
-// set in its high-contrast display cut and small labels in its sturdy text
-// cut. Text: Figtree, a plain, warm geometric sans, easy to read at small
-// sizes (docs/city/style.md, "Type").
+// Headings and station names: Newsreader, a book-and-newspaper serif,
+// sober and editorial. The name alone is set in its italic (city.css,
+// .hero-name), the one personal, hand-set touch: that single face (500
+// italic) is loaded on its own, so the rest of the italic never ships.
+// Text: Hanken Grotesk, a calm, open grotesque, easy to read at small sizes
+// (docs/city/style.md, "Type").
 //
 // Both come through next/font/google: fetched at build and served from the
 // site itself (no request to Google from the visitor), Latin only, SIL Open
-// Font License. Fraunces is variable (weight and optical size; its other
-// axes left out to keep the file small); Figtree variable (the site uses
-// 400 to 700; next/font's Turbopack loader takes no weight range).
-const display = Fraunces({
+// Font License. Newsreader upright is its variable weight axis (its optical
+// size axis left out: it doubles the file for a barely visible change);
+// Hanken Grotesk variable (the site uses 400 to 700; next/font's Turbopack
+// loader takes no weight range).
+const display = Newsreader({
   subsets: ["latin"],
-  axes: ["opsz"],
-  variable: "--font-fraunces",
+  variable: "--font-newsreader",
   display: "swap",
 });
-const text = Figtree({
+const signature = Newsreader({
   subsets: ["latin"],
-  variable: "--font-figtree",
+  weight: "500",
+  style: "italic",
+  variable: "--font-newsreader-italic",
+  display: "swap",
+});
+const text = Hanken_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-hanken",
   display: "swap",
 });
 
@@ -64,7 +72,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${display.variable} ${text.variable}`}
+      className={`${display.variable} ${signature.variable} ${text.variable}`}
       // The scripts below set data-paper, data-still and data-track on <html> before React hydrates
       suppressHydrationWarning
     >

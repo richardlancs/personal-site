@@ -3,7 +3,7 @@
 // the paper, the Prussian-blue accent, the ink and the teal accent-2), and
 // the share card, a sheet of crumpled cream paper drawn here (an SVG
 // turbulence lit from the upper left, a fixed seed) with the name set in
-// the site's own fonts: Fraunces and Figtree, as next/font/google serves
+// the site's own fonts: Newsreader and Hanken Grotesk, as next/font/google serves
 // them from a running copy of the site (no font file kept in the repo or
 // fetched from anywhere else; the site at <base> must be up: `next dev`
 // or `next start`).
@@ -25,14 +25,15 @@ const [base = "http://localhost:3100"] = process.argv.slice(2);
 const browser = await launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 
-// The site's two families (layout.tsx: --font-fraunces, --font-figtree),
+// The site's families (layout.tsx: --font-newsreader, its italic for the
+// name --font-newsreader-italic, --font-hanken),
 // their Latin faces read from its own stylesheets and fetched from it, as
 // data URLs for the card
 await page.goto(base, { waitUntil: "load" });
 const faces = await page.evaluate(async () => {
   const root = getComputedStyle(document.documentElement);
   const family = (name) => root.getPropertyValue(name).split(",")[0].trim().replace(/^['"]|['"]$/g, "");
-  const want = { Display: family("--font-fraunces"), Text: family("--font-figtree") };
+  const want = { Display: family("--font-newsreader"), Name: family("--font-newsreader-italic"), Text: family("--font-hanken") };
   const out = [];
   for (const sheet of document.styleSheets) {
     let rules;
@@ -40,19 +41,20 @@ const faces = await page.evaluate(async () => {
     for (const rule of rules) {
       if (!(rule instanceof CSSFontFaceRule)) continue;
       const name = rule.style.getPropertyValue("font-family").trim().replace(/^['"]|['"]$/g, "");
-      const as = Object.keys(want).find((k) => want[k] === name);
+      const style = rule.style.getPropertyValue("font-style") || "normal";
+      const as = Object.keys(want).find((k) => want[k] === name && (k === "Name") === (style === "italic"));
       const range = rule.style.getPropertyValue("unicode-range");
       if (!as || (range && !/U\+0+-F?FF\b/i.test(range))) continue;
       const src = rule.style.getPropertyValue("src").match(/url\(["']?([^"')]+)/)[1];
       const bytes = new Uint8Array(await (await fetch(new URL(src, sheet.href ?? location.href))).arrayBuffer());
       let bin = "";
       for (const b of bytes) bin += String.fromCharCode(b);
-      out.push({ as, weight: rule.style.getPropertyValue("font-weight") || "100 900", data: btoa(bin) });
+      out.push({ as, weight: rule.style.getPropertyValue("font-weight") || "100 900", style, data: btoa(bin) });
     }
   }
   return out;
 });
-for (const as of ["Display", "Text"]) if (!faces.some((f) => f.as === as)) throw new Error(`no ${as} font found at ${base}: is the site running?`);
+for (const as of ["Display", "Name", "Text"]) if (!faces.some((f) => f.as === as)) throw new Error(`no ${as} font found at ${base}: is the site running?`);
 
 async function png(html, width, height, type = "png") {
   await page.setViewportSize({ width, height });
@@ -96,7 +98,7 @@ writeFileSync(app("apple-icon.png"), await icon(180, true));
 // a fine grain, lit from the upper left; fixed seeds, so the same card
 // every run), and the name on a card of the same paper, a little lighter,
 // with a soft shadow, as the site's panels are
-const fonts = faces.map((f) => `@font-face { font-family: Card${f.as}; font-weight: ${f.weight}; src: url(data:font/woff2;base64,${f.data}); }`).join("\n");
+const fonts = faces.map((f) => `@font-face { font-family: Card${f.as}; font-weight: ${f.weight}; font-style: ${f.style}; src: url(data:font/woff2;base64,${f.data}); }`).join("\n");
 const cream = { paper: "#efe7d6", panel: "#f7f1e5", line: "#c9bca3", text: "#1d2330", accent: "#1f4f8a", accent2: "#0a6168", shadow: "rgb(74 59 34 / 0.28)" };
 const crumple = `
   <svg width="1200" height="630" style="position:absolute;inset:0">
@@ -119,7 +121,7 @@ const card = `
   <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:${cream.paper}">
     ${crumple}
     <div style="position:absolute;left:72px;top:72px;padding:38px 48px;border-radius:16px;background:${cream.panel};border:1px solid ${cream.line};box-shadow:0 2px 3px ${cream.shadow},0 22px 44px -18px ${cream.shadow}">
-      <div style="font-family:CardDisplay;font-weight:700;font-size:92px;line-height:1.05;color:${cream.text};letter-spacing:-0.01em">Richard Lan</div>
+      <div style="font-family:CardName,CardDisplay;font-style:italic;font-weight:500;font-size:92px;line-height:1.05;color:${cream.text};letter-spacing:-0.015em">Richard Lan</div>
       <div style="margin-top:14px;font-family:CardDisplay;font-weight:400;font-size:36px;color:${cream.accent}">cs@uwaterloo</div>
       <div style="margin-top:20px;width:56px;height:3px;border-radius:2px;background:${cream.accent2}"></div>
       <div style="margin-top:18px;font-family:CardText;font-weight:500;font-size:26px;color:${cream.text}">Software engineering portfolio</div>
