@@ -1,12 +1,12 @@
 // Draws the site's icons and share image from code: the mark in mark.svg
 // (in the default cream paper's colours: city.css, :root[data-paper="cream"]:
-// the paper, the Prussian-blue accent, the ink and the teal accent-2), and
+// the paper, the claret accent, the ink and the teal accent-2), and
 // the share card, a sheet of crumpled cream paper drawn here (an SVG
 // turbulence lit from the upper left, a fixed seed) with the name set in
-// the site's own fonts: Newsreader and Hanken Grotesk, as next/font/google serves
-// them from a running copy of the site (no font file kept in the repo or
-// fetched from anywhere else; the site at <base> must be up: `next dev`
-// or `next start`).
+// the site's own fonts: Newsreader and Hanken Grotesk, as next/font/local
+// serves them (app/fonts) from a running copy of the site (nothing fetched
+// from anywhere else; the site at <base> must be up: `next dev` or
+// `next start`).
 //
 //   PLAYWRIGHT=/path/to/node_modules/playwright/index.mjs node scripts/identity/make-identity.mjs [base=http://localhost:3100]
 //
@@ -99,7 +99,11 @@ writeFileSync(app("apple-icon.png"), await icon(180, true));
 // every run), and the name on a card of the same paper, a little lighter,
 // with a soft shadow, as the site's panels are
 const fonts = faces.map((f) => `@font-face { font-family: Card${f.as}; font-weight: ${f.weight}; font-style: ${f.style}; src: url(data:font/woff2;base64,${f.data}); }`).join("\n");
-const cream = { paper: "#efe7d6", panel: "#f7f1e5", line: "#c9bca3", text: "#1d2330", accent: "#1f4f8a", accent2: "#0a6168", shadow: "rgb(74 59 34 / 0.28)" };
+// The cream paper's colours, read from its tokens (city.css)
+const css = readFileSync(app("city.css"), "utf8");
+const creamBlock = css.slice(css.indexOf(':root[data-paper="cream"] {'), css.indexOf("}", css.indexOf(':root[data-paper="cream"] {')));
+const token = (name) => creamBlock.match(new RegExp(`\\n\\s*--${name}: (#[0-9a-f]{6});`))[1];
+const cream = { paper: token("paper"), panel: token("panel"), line: token("line"), text: token("text"), accent: token("accent"), accent2: token("accent-2"), shadow: "rgb(74 59 34 / 0.28)" };
 const crumple = `
   <svg width="1200" height="630" style="position:absolute;inset:0">
     <filter id="crumple" x="0" y="0" width="100%" height="100%">
