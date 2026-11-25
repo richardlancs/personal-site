@@ -40,8 +40,7 @@ explicit yes.
   `CityTrack`
 - `app/layout.tsx`: root layout (fonts, the head scripts: paper, still
   view, the journey; top bar, résumé host, glass press)
-- `app/fonts/`: Newsreader (upright, and the italic 500 for the name)
-  and Hanken Grotesk, Latin woff2, with their OFL texts
+- `app/fonts/`: Fredoka and Nunito, Latin woff2, with their OFL texts
 - `app/city.css` (the paper tokens, the bar, the map, the keys, the page
   read top to bottom), `app/paper.css` (the crumpled texture),
   `app/city-track.css` (the journey: stage, panels, arrivals),
@@ -54,7 +53,7 @@ explicit yes.
   and `trackMath.ts` (its pure arithmetic), `Station`, `TopBar`,
   `ProgressLine` (the metro map), `SectionsMenu`, `Tilt` (the covers'
   tilt), and `sections/` with one component per section
-- `app/components/ui/`: `PaperPicker`, `GlassPress`, `Arrivals`,
+- `app/components/ui/`: `DayNight`, `GlassPress`, `Arrivals`,
   `Colophon`, `Notice`; also `components/weather/`, `components/resume/`,
   `components/MusicToggle.tsx`
 - `app/lib/`: pure logic (time, weather and its types in `sky.ts`, the
@@ -76,8 +75,10 @@ first: a recruiter finds the name, the projects and the contact links in
 seconds. My words of 24 November 2026: "overhaul the entire shanghai
 design, change it to something very simple such as a crumpled paper
 background and colour match my current icons and sections and overal
-architecture to the new designed background"; three papers, each with its
-own colours, and a picker; "Keep the sideways journey". The style sheet is
+architecture to the new designed background"; "Keep the sideways journey".
+Round 8 (25 November 2026) cut the papers to two, day and night, with one
+day/night key: "get rid of the kraft theme and change the theme shifter
+into a night and day button". The style sheet is
 `docs/city/style.md` (papers, palette, texture, type); the colour analysis
 `.superpowers/sdd/2026-11-22-horizontal-city/task-12/P/paper-palettes.md`.
 
@@ -97,20 +98,29 @@ city's (`/city`, `/city/<section>`) to `/` and the anchors, all temporary
 
 ### The papers
 
-`<html data-paper="cream|charcoal|kraft">`, set before the first paint by
-`lib/paper.ts: PAPER_SCRIPT` from `localStorage["paper"]` (cream when
-missing, unknown or blocked), so no flash. Chosen by the visitor, never
-by the system's appearance (no `prefers-color-scheme`). The Paper picker
-(`PaperPicker.tsx`): three keys, each a dot of its paper and its name,
-`aria-pressed`, in a group labelled "Paper"; in the bar from 80rem, in the
-Sections menu below (never both); hidden without scripts. A choice saves,
-sets `data-paper` and the `theme-color` at once, with a cross-fade (a view
-transition over `--t-slow`; instant in still view).
+Two: day is cream, night is charcoal. `<html data-paper="cream|charcoal">`,
+set before the first paint by `lib/paper.ts: PAPER_SCRIPT` from
+`localStorage["paper"]` (cream when missing, unknown, an old `kraft`, or
+blocked), so no flash. Chosen by the visitor, never by the system's
+appearance (no `prefers-color-scheme`). The day/night key (`ui/DayNight.tsx`):
+one square glass icon key (`.glass-icon`, 44px) in the bar at every width,
+before Sections; "Night mode", `aria-pressed` at night; hidden without
+scripts. Its icon is an outline sun that turns into an outline crescent
+moon (the rays draw in and turn away, the disc grows, a carving circle
+slides over it: an SVG mask cuts the disc's edge, the same circle's edge
+clipped to the disc draws the inner curve), over `--t-morph` (460ms) on
+`--ease-in-out`, and back. It is drawn from `data-paper`, so it is right
+from the first paint and nothing turns on load. Hover (`hover: hover`
+only) plays a small part of the turn (the rays in a little, the circle
+peeking over the sun; at night the circle backing off) over `--t-base`
+and takes it back. Still view: an instant swap, nothing on hover. A press
+saves, sets `data-paper` and the `theme-color` at once, with a cross-fade
+(a view transition over `--t-slow`; instant in still view).
 
 The texture (`app/paper.css`): one inline SVG drawn in code (crease noise
 lit as a surface, a fine grain, fixed seeds, about 1.3 KB gzip), on a
 fixed `body::before` (body is `isolation: isolate`), never moving: the
-stops travel over one still sheet. Cream and kraft take it in `soft-light`;
+stops travel over one still sheet. Cream takes it in `soft-light`;
 charcoal its own specular sheet in `screen` (light on the ridges). Its
 strength per paper is `--crumple`. Gone under `prefers-contrast: more` and
 forced colours.
@@ -141,9 +151,9 @@ anything, nothing smooths the wheel, nothing traps.
   panels, a screen per panel.
 - Snap: one 1px snap mark per panel (`.snap-mark`); wide screens `y
   proximity`, the narrow layout `y mandatory` + `scroll-snap-stop:
-  always`. ArrowLeft/Right, PageDown/Space and the bar's place label
-  ("03 / 06 · Projects · 1 of 5 MarketLab", from `trackplace`) use the
-  same list.
+  always`. ArrowLeft/Right and PageDown/Space use the same list, and
+  CityTrack's `trackplace` event tells the map and the menu which
+  section you're at (the bar names no place: round 8).
 - Every jump (map, menu, anchors, Next links, keys) glides to its place:
   eased, 0.6 s for a hop to 1.6 s at most (`trackMath.ts: glideMs`),
   snapping let go meanwhile (`data-free`), giving way at once to your own
@@ -158,8 +168,8 @@ anything, nothing smooths the wheel, nothing traps.
 - The panels and the phone sheets are clear glass over the crumple
   (round 7): a whisper of `--panel` (6%), no blur, fine vertical reeds,
   one corner sheen, a crisp inner top highlight and a second inner edge
-  in the paper's own light (`--hi`), a rim (`--rim`: darker on cream and
-  kraft, light on charcoal) and the soft two-part `--shadow`. Solid
+  in the paper's own light (`--hi`), a rim (`--rim`: darker on cream,
+  light on charcoal) and the soft two-part `--shadow`. Solid
   `--panel` under `prefers-contrast: more`; no texture under forced
   colours. Nothing in it moves.
 - Without scripts, under the sizes above, in print, or after the
@@ -171,10 +181,10 @@ Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
 `totalJs` ≤ 214,000; `totalCss` ≤ 12,700; `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. It also fails on three.js in any chunk and on any
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
-these: Newsreader (upright and the name's italic) and Hanken Grotesk are
-about 118.5 KB of woff2, all three preloaded (Fraunces and Figtree were
-87.6 KB). Latest reading (round 7, 24 November 2026): `totalCss` 12,654,
-`homeInitialJs` 198,025, `totalJs` 203,660.
+these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
+(Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
+(round 8, 25 November 2026): `totalCss` 12,355, `homeInitialJs` 197,985,
+`totalJs` 203,620.
 
 ### Standing rules
 
@@ -201,34 +211,33 @@ about 118.5 KB of woff2, all three preloaded (Fraunces and Figtree were
 
 ## Color Palette
 
-Per paper, in `app/city.css` (`:root, :root[data-paper="cream"]`,
-`:root[data-paper="charcoal"]`, `:root[data-paper="kraft"]`), verbatim
-from `docs/city/style.md`, each chosen on the colour wheel from its
-paper's hue:
+Per paper, in `app/city.css` (`:root, :root[data-paper="cream"]` for day,
+`:root[data-paper="charcoal"]` for night), verbatim from
+`docs/city/style.md`, each chosen on the colour wheel from its paper's
+hue:
 
-| Token | Cream (ivory, hue 41) | Charcoal (near-black) | Kraft (brown, hue 34) |
-|---|---|---|---|
-| `--paper` | `#efe7d6` | `#080809` | `#c9a77c` |
-| `--paper-2` | `#e7dcc6` | `#050506` | `#bf9c70` |
-| `--panel` | `#f7f1e5` | `#141416` | `#d6b98f` |
-| `--line` | `#c9bca3` | `#2a2b2f` | `#9b7c55` |
-| `--text` | `#1d2330` blue-black ink | `#ece6da` chalk | `#22180f` |
-| `--muted` | `#50545c` | `#b5afa4` | `#3a2a1d` |
-| `--accent` | `#7a2a30` claret (analogous, warm) | `#c99a3e` gold leaf (complement) | `#1e3a5f` navy (complement) |
-| `--accent-hover` | `#8c353c` | `#d9ad55` | `#284b78` |
-| `--accent-fill` | (the flat accent) | foil: `#ad7f30` to `#e6c477`, a top-edge highlight | (the flat accent) |
-| `--on-accent` | `#f7f1e5` | `#0b0b0c` | `#f4e8d4` |
-| `--accent-2` | `#0a6168` teal (split) | `#7fd4df` cyan (the mark's) | `#561710` oxblood (analogous) |
-| `--focus` | `#0f7c86` bright teal | `#9fe6ef` | `#7a2418` bright oxblood |
-| `--shadow` | `#4a3b22` | `#000000` | `#3b2814` |
+| Token | Cream, day (ivory, hue 41) | Charcoal, night (near-black) |
+|---|---|---|
+| `--paper` | `#efe7d6` | `#080809` |
+| `--paper-2` | `#e7dcc6` | `#050506` |
+| `--panel` | `#f7f1e5` | `#141416` |
+| `--line` | `#c9bca3` | `#2a2b2f` |
+| `--text` | `#1d2330` blue-black ink | `#ece6da` chalk |
+| `--muted` | `#50545c` | `#b5afa4` |
+| `--accent` | `#7a2a30` claret (analogous, warm) | `#c99a3e` gold leaf (complement) |
+| `--accent-hover` | `#8c353c` | `#d9ad55` |
+| `--accent-fill` | (the flat accent) | foil: `#ad7f30` to `#e6c477`, a top-edge highlight |
+| `--on-accent` | `#f7f1e5` | `#0b0b0c` |
+| `--accent-2` | `#0a6168` teal (split) | `#7fd4df` cyan (the mark's) |
+| `--focus` | `#0f7c86` bright teal | `#9fe6ef` |
+| `--shadow` | `#4a3b22` | `#000000` |
 
 `--ink` is each paper's darkest ink. `--accent` is the one primary
 action's fill; `--accent-2` links, chosen states, the metro line and
-marks; body text is always `--text`. `--swatch-*` are the picker's dots.
+marks; body text is always `--text`.
 `--focus` is each paper's own ring, a brighter cousin of its `--accent-2`
 and never the accent fill's colour, so a focused primary key shows its
-ring apart from its face (round 7: cream's was the old navy accent,
-kraft's the same navy as its key). Reasoning for the round 7 accents:
+ring apart from its face (round 7: cream's was the old navy accent). Reasoning for the round 7 accents:
 `.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 
 Contrast floors (`docs/ui/scripts/palette-contrast.mjs`, live
@@ -246,14 +255,15 @@ old token names (`--cyan`, `--ink-2`, `--seam*`, `--glow-cyan`,
 Set in `app/layout.tsx` with `next/font/local` from `app/fonts/` (OFL
 texts alongside; the Latin subsets as Google Fonts cuts them, so the
 stylesheet carries one `@font-face` per face, not one per script:
-`display: swap`): **Newsreader** (variable weight, a sober book and
-newspaper serif) for headings, section names, the map and the bar's
-name (`font-display`, `--font-display`); the name alone in **Newsreader
-italic 500** (`--font-newsreader-italic`, its one face loaded on its
-own), the one personal, hand-set touch; **Hanken Grotesk** (variable, a
-calm, open grotesque) for text (`font-sans`, `--font-text`). No extra
-tracking and no all-caps labels; weights 700 for a station's title, 600
-headings, 500 the name and quiet labels, 400 the hero's programme line.
+`display: swap`; copyright lines exactly as in google/fonts). Round 8,
+my words: "use a font that shows a lot of personality almost like a
+childlike happiness". **Fredoka** (variable weight, round and bouncy)
+for headings, section names, the name, the map and the bar's name
+(`font-display`, `--font-display`); **Nunito** (variable, a soft rounded
+sans) for text (`font-sans`, `--font-text`). The name is upright, never
+italic. No extra tracking and no all-caps labels; weights 700 for a
+station's title and the bar's name, 600 headings and the name, 500 quiet
+labels, 400 the hero's programme line.
 Details: `docs/city/style.md`, "Type".
 
 Body copy is short points, not paragraphs: `.points`, each marked with a
@@ -296,9 +306,11 @@ weights and generous line-height. Avoid decorative fonts.
 
 ## Navigation
 
-- The top bar (`TopBar.tsx`): the name (home), the section you're at in
-  words from 53rem ("03 / 06 · Projects"), Waterloo's time and weather,
-  the Paper picker (from 80rem), Sections and the music, all 44px pills.
+- The top bar (`TopBar.tsx`): the name (home), Waterloo's time and
+  weather (from 768px; in the Sections menu below), the day/night key,
+  Sections and the music, all 44px pills. No place label (round 8). Under
+  368px the name steps down and Sections drops its icon (its name stays
+  in words), so the bar keeps one row.
   It floats over the stage on the journey. It never gains a row it
   doesn't have today, at any width (`docs/city/scripts/bar-fit.mjs`). Tab
   goes through its keys first, then the map.
@@ -310,7 +322,7 @@ weights and generous line-height. Avoid decorative fonts.
   alone. It is the page's one source of where you are (`useSection.ts`).
 - The Sections menu (`SectionsMenu.tsx`, a popover) grows from its key,
   the page dims behind it; it jumps along the journey and moves focus
-  there; on phones it also holds the Paper picker and the weather.
+  there; under 768px it also holds the weather.
 - The hero's one primary action, "View projects", "Résumé" beside it, and
   its text links (GitHub, LinkedIn, Email).
 - The time and weather (`components/weather/WeatherClock.tsx`) is
@@ -394,13 +406,14 @@ work). Every stop has its own choreographed arrival as the journey reaches
 it (the panel, then its heading, pictures, points and links in sequence,
 `--stagger` apart), on the runway's timeline (`--at`, `city-track.css`),
 so scrolling back plays it in reverse; live hover and press feedback on
-every control; the map animating between stations; the papers'
-cross-fade. Transform and opacity only. Where there's no scroll timeline,
+every control; the map animating between stations; the day/night
+key's sun turning into the moon and the papers' cross-fade. Transform and opacity only. Where there's no scroll timeline,
 the stops simply show (`ui/arrive.ts`). The paper itself never moves.
 
 The tokens are in `city.css` (`--ease-out`, `--ease-in-out`,
 `--ease-spring`, `--t-fast` 120ms, `--t-base` 200ms, `--t-slow` 280ms,
-`--stagger` 60ms); no transition writes its own duration or curve.
+`--stagger` 60ms, `--t-morph` 460ms for the day/night key's turn); no
+transition writes its own duration or curve.
 Nothing loops (`tests/city-motion.test.mjs`).
 
 Still view is `html[data-still="on"]`, set before first paint by
@@ -415,7 +428,7 @@ reduced-motion query. No scroll hijacking.
 ## Responsive Design
 
 Every change must work on mobile, tablet, laptop and large desktop, in
-all three papers. Checked by `docs/ui/scripts/mobile-audit.mjs` (`/` and
+both papers. Checked by `docs/ui/scripts/mobile-audit.mjs` (`/` and
 each anchor as the journey's stop it lands on, the open menu, the weather
 display, the metro map and the résumé dialog, at 320, 390, 430, 768, 1024
 portrait and landscape, 1440, 1600, 844×390 and 667×375, plus 200% text
@@ -441,7 +454,7 @@ insets, not a real device):
 ## Accessibility
 
 Semantic landmarks, one `h1` per page, headings in order, a skip link,
-visible focus, keyboard access to everything (the picker included), no
+visible focus, keyboard access to everything (the day/night key included), no
 information by colour alone, decorative images `alt=""`. The journey
 reads in order for a keyboard and a screen reader (focus brings its stop
 on); the page reads top to bottom without scripts. Under
@@ -491,8 +504,8 @@ are edited by one session at a time, never by parallel agents.
 
 The icons and share card are drawn in code:
 `scripts/identity/make-identity.mjs` (from `mark.svg`, in cream's colours;
-the card a sheet of crumpled cream paper with the name in Newsreader
-italic and the rest in Newsreader and Hanken Grotesk, read from a
+the card a sheet of crumpled cream paper with the name upright in
+Fredoka and the rest in Fredoka and Nunito, read from a
 running copy of the site: pass its address; cream's colours read from
 its tokens in `city.css`) writes
 `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png` and

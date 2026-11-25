@@ -13,19 +13,20 @@ history (before `paper`) and `docs/city/concepts/`.
 
 ## The papers
 
-Three, each with its own colours, chosen by the visitor with the Paper
-picker in the bar (in the Sections menu on phones). The choice is kept
+Two, day and night, each with its own colours, chosen by the visitor
+with the day/night key in the bar, at every width (round 8: kraft is
+gone, and the three-swatch picker with it). The choice is kept
 in `localStorage["paper"]` and set as `<html data-paper="…">` by a head
 script before the first paint (`app/lib/paper.ts`), so there is no flash;
-cream is the default. Nothing is keyed on the system's appearance: a
+cream (day) is the default, and anything else saved (an old `kraft`)
+is day too. Nothing is keyed on the system's appearance: a
 paper is chosen, not inferred. The tokens are in `app/city.css`, one
 block per paper (`:root[data-paper=…]`, cream also plain `:root`), and
 components use their names only, never a hex.
 
-- **Cream**: warm ivory, blue-black ink. A light page.
-- **Charcoal**: a cool grey-black sheet, chalk-white words. A dark page.
-- **Kraft**: brown packing paper, near-black words. A light, mid-toned
-  page.
+- **Cream** (day): warm ivory, blue-black ink. A light page.
+- **Charcoal** (night): a cool grey-black sheet, chalk-white words. A
+  dark page.
 
 The colour analysis behind each (the wheel, the swatches, every ratio):
 `.superpowers/sdd/2026-11-22-horizontal-city/task-12/P/paper-palettes.md`.
@@ -89,41 +90,17 @@ across it; cyan (the mark's own) for links, chosen states and the line.
 | `--shadow` | `#000000` | A card's shadow: true black, under a sheet on near-black |
 | `--ink` | `#050506` | The darkest ink on this paper |
 
-### Kraft
-
-Brown packing paper (hue 34). Navy, its complement (214), for the
-primary action, like a blue stamp; oxblood (6, analogous: the red of a
-parcel stamp) for links, chosen states and the line. Kraft is mid-toned,
-so its text colours are the darkest of the three papers'.
-
-| Token | Hex | Use |
-|---|---|---|
-| `--paper` | `#c9a77c` | The page |
-| `--paper-2` | `#bf9c70` | The alternate ground |
-| `--panel` | `#d6b98f` | Cards: a lighter sheet |
-| `--line` | `#9b7c55` | Hairlines and card edges |
-| `--text` | `#22180f` | Body text and headings |
-| `--muted` | `#3a2a1d` | Secondary text |
-| `--accent` | `#1e3a5f` | The primary action's fill |
-| `--accent-hover` | `#284b78` | Its hover |
-| `--on-accent` | `#f4e8d4` | The label on the accent |
-| `--accent-2` | `#561710` | Links, chosen states, the metro line, marks |
-| `--focus` | `#7a2418` | The focus ring |
-| `--shadow` | `#3b2814` | A card's shadow |
-| `--ink` | `#22180f` | The darkest ink on this paper |
-
 ### The rules
 
 - `--text`, `--muted` and `--accent-2` are 4.5:1 or better on
   `--paper`, `--paper-2` and `--panel`, and on the two grounds still at
   the texture's darkest crease and lightest ridge (the panels are clear
   glass, so their words sit on the paper itself) as measured on each paper (cream 3% darker to 4%
-  lighter, kraft 7% darker to 4% lighter; on charcoal the sheet only
+  lighter; on charcoal the sheet only
   adds light, its brightest ridge `#3c3c3c`).
 - `--accent` and `--focus` are 3:1 or better on every ground (the
   texture's too). `--focus` is each paper's own ring, a brighter cousin
-  of its `--accent-2` (cream a bright teal, charcoal a pale cyan, kraft a
-  bright oxblood) and never the accent fill's colour, so a focused
+  of its `--accent-2` (cream a bright teal, charcoal a pale cyan) and never the accent fill's colour, so a focused
   primary key shows its ring apart from its face; `--on-accent` is 4.5:1 or better on `--accent` and
   `--accent-hover`, and on the darkest and lightest grain of the primary
   key's textured face at rest and on hover (sampled in the browser; the
@@ -144,7 +121,7 @@ turbulence, a large and a middle scale) inverted so their seams fold up
 into ridges, a fine grain added, all lit from the upper left as a surface
 (`feDiffuseLighting`). The result is a grey relief, laid over the paper's
 own colour in `soft-light` (on `body::before`, inside the body's own
-stacking context), serving cream and kraft. Charcoal is near-black, where
+stacking context), serving cream. Charcoal is near-black, where
 a shadow has nowhere to go: its sheet is the same relief lit for shine
 (`feSpecularLighting`, a tight highlight on each ridge) with a little
 light grain, added in `screen`, so the creases show as light on black. Its seeds are
@@ -152,7 +129,7 @@ fixed, it holds no photograph, the two are about 1.3 KB gzipped, and it is crisp
 pixel ratio (the filter is drawn at the screen's resolution). It never
 moves: fixed to the viewport behind the journey, so the stops travel over
 one still sheet. How strongly it shows is per paper (`--crumple`: cream
-1, charcoal 0.25, kraft 0.42), inside the margins above. Under
+1, charcoal 0.25), inside the margins above. Under
 `prefers-contrast: more` and in forced colours it is removed and the
 paper is flat.
 
@@ -166,10 +143,10 @@ paper showing through.
 
 - A panel: a whisper of `--panel` (6%); fine vertical reeds (a 1px line
   every 4px) and one sheen across its top-left corner, both in the
-  paper's own light (`--hi`: `--panel` on cream and kraft, `--text` at
+  paper's own light (`--hi`: `--panel` on cream, `--text` at
   45% on charcoal); a crisp inner highlight along its top and a second
   1px inner edge for the glass's thickness; a rim (`--rim`: `--shadow`
-  at 34% on the light papers, `--text` at 24% on charcoal) and the soft
+  at 34% on cream, `--text` at 24% on charcoal) and the soft
   two-part `--shadow` lift. A phone's sheet is the same glass, its top
   edge alone.
 - A secondary key: no fill at all, a crisp ink edge (`--text` 40% in),
@@ -189,7 +166,7 @@ The one primary action in each paper (`.glass-primary`) is not a flat
 fill: one shared grain (`--key-grain` on `:root`: a fractal noise in
 code, fixed seed, drawn out sideways into brushed streaks, grey at half
 strength, laid in `soft-light`) over the accent. The family is the same
-on every paper; on cream and kraft it lies on the flat `--accent` and
+on every paper; on cream it lies on the flat `--accent` and
 reads as book cloth; on charcoal over gold leaf (`--accent-fill` in its
 token block: `#ad7f30` to `#e6c477` and back, a light band at 46% and a
 thin highlight along the top edge). Hover lays a wash of `--accent-hover`
@@ -199,31 +176,34 @@ Under `prefers-contrast: more` and in forced colours the face is flat
 
 ## Type
 
-Professional, still personal (round 7, Richard: "make the font more
-personal, looks more professional but still personal"): a sober book and
-newspaper serif for headings, a calm grotesque for reading, and one
-hand-set touch, the name in the serif's italic. All through
-`next/font/local` in `app/layout.tsx`, from `app/fonts/` (OFL texts
-alongside): the Latin subsets as Google Fonts cuts them, so the
-stylesheet carries one `@font-face` per face (`display: swap`, all three
+Joyful, still easy to read (round 8, Richard: "use a font that shows a
+lot of personality almost like a childlike happiness"): a round, bouncy
+display face for headings and the name, and a rounded sans of the same
+warmth for reading. All through `next/font/local` in `app/layout.tsx`,
+from `app/fonts/` (OFL texts alongside, their copyright lines exactly as
+in google/fonts): the Latin subsets as Google Fonts cuts them, so the
+stylesheet carries one `@font-face` per face (`display: swap`, both
 preloaded), behind the tokens `--font-display` and `--font-text`
-(Tailwind `font-display`, `font-sans`). The comparison of pairings:
-`.superpowers/sdd/2026-11-22-horizontal-city/task-13/F/`.
+(Tailwind `font-display`, `font-sans`). The comparison of pairings
+(Fredoka with Nunito, Baloo 2 with Quicksand, Grandstander with Nunito):
+`.superpowers/sdd/2026-11-22-horizontal-city/task-14/fonts/`. Fredoka
+won: its round terminals and soft, wide bowls carry the happiness, yet a
+station's title or a project's name reads at a glance; Grandstander's
+hand-drawn wobble tired the eye in the programme line and the menu, and
+Quicksand's thin strokes went pale at body sizes.
 
-- **Newsreader** (OFL, variable weight; its optical size axis left out,
-  it doubles the file for a barely visible change) for headings, section
-  names, the metro map's names and the bar's name. Weights: 700 a
-  station's title, 600 headings, 500 the quiet labels (a station's
-  number, the bar's "03 / 06 · Projects", the menu's rows), 400 the
-  hero's programme line.
-- **Newsreader italic 500** for the name alone (`.hero-name`,
-  `--font-newsreader-italic`, that one face loaded on its own): it reads
-  like a signature over a printed page. Never for body text.
-- **Hanken Grotesk** (OFL, variable weight) for everything you read:
-  points, links, keys, the weather.
-- No extra tracking: Newsreader is spaced for print. No all-caps labels.
-  The name alone is set a touch tight (-0.015em).
+- **Fredoka** (OFL, variable weight 300 to 700) for headings, section
+  names, the name, the metro map's names and the bar's name. Weights:
+  700 a station's title and the bar's name, 600 headings and the hero's
+  name, 500 the quiet labels (a station's number, the menu's rows), 400
+  the hero's programme line.
+- The name (`.hero-name`) is upright, never italic: Fredoka 600, a touch
+  tight (-0.01em).
+- **Nunito** (OFL, variable weight) for everything you read: points,
+  links, keys, the weather.
+- No extra tracking otherwise: Fredoka is spaced generously already. No
+  all-caps labels.
 - Body copy 16px, line-height 1.6; headings 1.1; nothing under 12px.
 - The share card (`scripts/identity/make-identity.mjs`) is set in the
-  same faces (the name in the italic), read from a running copy of the
+  same faces (the name upright in Fredoka 600), read from a running copy of the
   site, in cream's colours read from its tokens (the claret accent).
