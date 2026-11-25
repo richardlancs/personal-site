@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Hanken_Grotesk, Newsreader } from "next/font/google";
+import localFont from "next/font/local";
 import TopBar from "./components/city2d/TopBar";
 import ResumeHost from "./components/resume/ResumeHost";
 import GlassPress from "./components/ui/GlassPress";
@@ -19,26 +19,31 @@ import "./city-track.css";
 // Text: Hanken Grotesk, a calm, open grotesque, easy to read at small sizes
 // (docs/city/style.md, "Type").
 //
-// Both come through next/font/google: fetched at build and served from the
-// site itself (no request to Google from the visitor), Latin only, SIL Open
-// Font License. Newsreader upright is its variable weight axis (its optical
-// size axis left out: it doubles the file for a barely visible change);
-// Hanken Grotesk variable (the site uses 400 to 700; next/font's Turbopack
-// loader takes no weight range).
-const display = Newsreader({
-  subsets: ["latin"],
+// All three faces are kept in app/fonts (OFL texts alongside) and set with
+// next/font/local, served from the site itself: their Latin subsets alone,
+// as Google Fonts cuts them (every character the site uses is in it), so
+// the stylesheet carries one @font-face for each and none for scripts the
+// page never shows. Newsreader upright is its variable weight axis (its
+// optical size axis left out: it doubles the file for a barely visible
+// change); Hanken Grotesk variable (the site uses 400 to 700).
+const display = localFont({
+  src: "./fonts/newsreader-latin.woff2",
+  weight: "200 800",
   variable: "--font-newsreader",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
-const signature = Newsreader({
-  subsets: ["latin"],
+const signature = localFont({
+  src: "./fonts/newsreader-latin-500-italic.woff2",
   weight: "500",
   style: "italic",
   variable: "--font-newsreader-italic",
   display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
-const text = Hanken_Grotesk({
-  subsets: ["latin"],
+const text = localFont({
+  src: "./fonts/hanken-grotesk-latin.woff2",
+  weight: "100 900",
   variable: "--font-hanken",
   display: "swap",
 });
