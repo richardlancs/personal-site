@@ -116,12 +116,15 @@ so its text colours are the darkest of the three papers'.
 
 - `--text`, `--muted` and `--accent-2` are 4.5:1 or better on
   `--paper`, `--paper-2` and `--panel`, and on the two grounds still at
-  the texture's darkest crease and lightest ridge (cards are opaque
-  sheets over it) as measured on each paper (cream 3% darker to 4%
+  the texture's darkest crease and lightest ridge (the panels are clear
+  glass, so their words sit on the paper itself) as measured on each paper (cream 3% darker to 4%
   lighter, kraft 7% darker to 4% lighter; on charcoal the sheet only
   adds light, its brightest ridge `#3c3c3c`).
 - `--accent` and `--focus` are 3:1 or better on every ground (the
-  texture's too); `--on-accent` is 4.5:1 or better on `--accent` and
+  texture's too). `--focus` is each paper's own ring, a brighter cousin
+  of its `--accent-2` (cream a bright teal, charcoal a pale cyan, kraft a
+  bright oxblood) and never the accent fill's colour, so a focused
+  primary key shows its ring apart from its face; `--on-accent` is 4.5:1 or better on `--accent` and
   `--accent-hover`, and on the darkest and lightest grain of the primary
   key's textured face at rest and on hover (sampled in the browser; the
   values are in `palette-contrast.mjs`, `FILLS`).
@@ -153,6 +156,33 @@ one still sheet. How strongly it shows is per paper (`--crumple`: cream
 `prefers-contrast: more` and in forced colours it is removed and the
 paper is flat.
 
+## The glass
+
+Round 7 (25 November 2026, Richard: "make each of the backgrounds
+completely clear glass texture"). The panels and the phone sheets
+(`.track .panel`, `app/city-track.css`) and every secondary key
+(`.glass`, `city.css`) are clear glass over the crumple: no blur, the
+paper showing through.
+
+- A panel: a whisper of `--panel` (6%); fine vertical reeds (a 1px line
+  every 4px) and one sheen across its top-left corner, both in the
+  paper's own light (`--hi`: `--panel` on cream and kraft, `--text` at
+  45% on charcoal); a crisp inner highlight along its top and a second
+  1px inner edge for the glass's thickness; a rim (`--rim`: `--shadow`
+  at 34% on the light papers, `--text` at 24% on charcoal) and the soft
+  two-part `--shadow` lift. A phone's sheet is the same glass, its top
+  edge alone.
+- A secondary key: no fill at all, a crisp ink edge (`--text` 40% in),
+  the faintest shadow; hover and chosen a translucent `--accent-2` (10%,
+  12%). The skip link keeps an opaque `--panel`; Experience's dots have
+  a `--paper` middle, a hole in the glass.
+- The "More ↓" cue at a panel's foot: the words fade into `--paper`, and
+  a small pill (a `--paper` ground, a `--rim` edge, fully round) sits on
+  the solid part of that fade, never over a word.
+- Under `prefers-contrast: more` a panel is a solid `--panel` card with a
+  `--text` edge and no shadow; in forced colours, no texture or sheen.
+  Nothing in the glass moves.
+
 ## The primary key's face
 
 The one primary action in each paper (`.glass-primary`) is not a flat
@@ -169,23 +199,31 @@ Under `prefers-contrast: more` and in forced colours the face is flat
 
 ## Type
 
-Printed matter, in ink: an old-style serif for what you'd set in a
-heading, a plain warm sans for reading. Both through `next/font/google`
-in `app/layout.tsx` (self-hosted at build, Latin only, `display: swap`,
-no request to Google at run time), behind the tokens `--font-display`
-and `--font-text` (Tailwind `font-display`, `font-sans`).
+Professional, still personal (round 7, Richard: "make the font more
+personal, looks more professional but still personal"): a sober book and
+newspaper serif for headings, a calm grotesque for reading, and one
+hand-set touch, the name in the serif's italic. All through
+`next/font/local` in `app/layout.tsx`, from `app/fonts/` (OFL texts
+alongside): the Latin subsets as Google Fonts cuts them, so the
+stylesheet carries one `@font-face` per face (`display: swap`, all three
+preloaded), behind the tokens `--font-display` and `--font-text`
+(Tailwind `font-display`, `font-sans`). The comparison of pairings:
+`.superpowers/sdd/2026-11-22-horizontal-city/task-13/F/`.
 
-- **Fraunces** (OFL, variable weight and optical size, `axes: ["opsz"]`)
-  for the name, headings, section names, the metro map's names and the
-  bar's name. Optical size does the work: the name gets the
-  high-contrast display cut, small labels the sturdy text cut. Weights:
-  700 the name and a station's title, 600 headings, 500 the quiet labels
-  (a station's number, the bar's "03 / 06 · Projects", the menu's rows),
-  400 the hero's programme line.
-- **Figtree** (OFL, variable weight) for everything you read: points,
-  links, keys, the weather.
-- No extra tracking: Fraunces is spaced for print. No all-caps labels.
-  The name alone is set a touch tight (-0.01em).
+- **Newsreader** (OFL, variable weight; its optical size axis left out,
+  it doubles the file for a barely visible change) for headings, section
+  names, the metro map's names and the bar's name. Weights: 700 a
+  station's title, 600 headings, 500 the quiet labels (a station's
+  number, the bar's "03 / 06 · Projects", the menu's rows), 400 the
+  hero's programme line.
+- **Newsreader italic 500** for the name alone (`.hero-name`,
+  `--font-newsreader-italic`, that one face loaded on its own): it reads
+  like a signature over a printed page. Never for body text.
+- **Hanken Grotesk** (OFL, variable weight) for everything you read:
+  points, links, keys, the weather.
+- No extra tracking: Newsreader is spaced for print. No all-caps labels.
+  The name alone is set a touch tight (-0.015em).
 - Body copy 16px, line-height 1.6; headings 1.1; nothing under 12px.
 - The share card (`scripts/identity/make-identity.mjs`) is set in the
-  same two faces, read from a running copy of the site.
+  same faces (the name in the italic), read from a running copy of the
+  site, in cream's colours read from its tokens (the claret accent).

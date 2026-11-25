@@ -40,6 +40,8 @@ explicit yes.
   `CityTrack`
 - `app/layout.tsx`: root layout (fonts, the head scripts: paper, still
   view, the journey; top bar, résumé host, glass press)
+- `app/fonts/`: Newsreader (upright, and the italic 500 for the name)
+  and Hanken Grotesk, Latin woff2, with their OFL texts
 - `app/city.css` (the paper tokens, the bar, the map, the keys, the page
   read top to bottom), `app/paper.css` (the crumpled texture),
   `app/city-track.css` (the journey: stage, panels, arrivals),
@@ -148,8 +150,18 @@ anything, nothing smooths the wheel, nothing traps.
   scroll; it cuts in still view. A resize or a turn keeps the place.
 - A panel taller than the stage scrolls inside, only once the journey
   has stopped with all of it on the screen (`data-open`); at its end the
-  scroll chains on. Each panel has a "More ↓" fade and a "Next: … →" link
+  scroll chains on. While it has more below, its words fade into the
+  paper at its foot (`::before`) and a small "More ↓" pill sits on the
+  solid part of that fade (`::after`), its place kept at the foot so it
+  never covers a word. Each panel ends with a "Next: … →" link
   (`Station.tsx: NextStop`).
+- The panels and the phone sheets are clear glass over the crumple
+  (round 7): a whisper of `--panel` (6%), no blur, fine vertical reeds,
+  one corner sheen, a crisp inner top highlight and a second inner edge
+  in the paper's own light (`--hi`), a rim (`--rim`: darker on cream and
+  kraft, light on charcoal) and the soft two-part `--shadow`. Solid
+  `--panel` under `prefers-contrast: more`; no texture under forced
+  colours. Nothing in it moves.
 - Without scripts, under the sizes above, in print, or after the
   fallback, the page reads top to bottom.
 
@@ -159,9 +171,10 @@ Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
 `totalJs` ≤ 214,000; `totalCss` ≤ 12,700; `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. It also fails on three.js in any chunk and on any
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
-these: Fraunces and Figtree are about 87.6 KB of woff2, both preloaded
-(Rajdhani and Nunito were 66.8 KB). The paper redesign removed the
-panorama (6.3 MB of images) and its code; no build reading yet.
+these: Newsreader (upright and the name's italic) and Hanken Grotesk are
+about 118.5 KB of woff2, all three preloaded (Fraunces and Figtree were
+87.6 KB). Latest reading (round 7, 24 November 2026): `totalCss` 12,654,
+`homeInitialJs` 198,025, `totalJs` 203,660.
 
 ### Standing rules
 
@@ -201,16 +214,22 @@ paper's hue:
 | `--line` | `#c9bca3` | `#2a2b2f` | `#9b7c55` |
 | `--text` | `#1d2330` blue-black ink | `#ece6da` chalk | `#22180f` |
 | `--muted` | `#50545c` | `#b5afa4` | `#3a2a1d` |
-| `--accent` | `#1f4f8a` Prussian blue (complement) | `#e3b55b` gold (complement) | `#1e3a5f` navy (complement) |
-| `--accent-hover` | `#2b62a6` | `#edc679` | `#284b78` |
+| `--accent` | `#7a2a30` claret (analogous, warm) | `#c99a3e` gold leaf (complement) | `#1e3a5f` navy (complement) |
+| `--accent-hover` | `#8c353c` | `#d9ad55` | `#284b78` |
+| `--accent-fill` | (the flat accent) | foil: `#ad7f30` to `#e6c477`, a top-edge highlight | (the flat accent) |
 | `--on-accent` | `#f7f1e5` | `#0b0b0c` | `#f4e8d4` |
 | `--accent-2` | `#0a6168` teal (split) | `#7fd4df` cyan (the mark's) | `#561710` oxblood (analogous) |
-| `--focus` | `#1f4f8a` | `#9fe6ef` | `#1e3a5f` |
+| `--focus` | `#0f7c86` bright teal | `#9fe6ef` | `#7a2418` bright oxblood |
 | `--shadow` | `#4a3b22` | `#000000` | `#3b2814` |
 
 `--ink` is each paper's darkest ink. `--accent` is the one primary
 action's fill; `--accent-2` links, chosen states, the metro line and
 marks; body text is always `--text`. `--swatch-*` are the picker's dots.
+`--focus` is each paper's own ring, a brighter cousin of its `--accent-2`
+and never the accent fill's colour, so a focused primary key shows its
+ring apart from its face (round 7: cream's was the old navy accent,
+kraft's the same navy as its key). Reasoning for the round 7 accents:
+`.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 
 Contrast floors (`docs/ui/scripts/palette-contrast.mjs`, live
 `city-contrast.mjs`): `--text`, `--muted` and `--accent-2` 4.5:1 or
@@ -224,14 +243,18 @@ old token names (`--cyan`, `--ink-2`, `--seam*`, `--glow-cyan`,
 
 ## Typography
 
-Set in `app/layout.tsx` with `next/font/google` (self-hosted at build,
-Latin only, `display: swap`): **Fraunces** (variable weight and optical
-size) for the name, headings, section names, the map and the bar's name
-(`font-display`, `--font-display`); **Figtree** (variable) for text
-(`font-sans`, `--font-text`). No extra tracking and no all-caps labels;
-weights 700 for the name and a station's title, 600 headings, 500 quiet
-labels, 400 the hero's programme line. Details: `docs/city/style.md`,
-"Type".
+Set in `app/layout.tsx` with `next/font/local` from `app/fonts/` (OFL
+texts alongside; the Latin subsets as Google Fonts cuts them, so the
+stylesheet carries one `@font-face` per face, not one per script:
+`display: swap`): **Newsreader** (variable weight, a sober book and
+newspaper serif) for headings, section names, the map and the bar's
+name (`font-display`, `--font-display`); the name alone in **Newsreader
+italic 500** (`--font-newsreader-italic`, its one face loaded on its
+own), the one personal, hand-set touch; **Hanken Grotesk** (variable, a
+calm, open grotesque) for text (`font-sans`, `--font-text`). No extra
+tracking and no all-caps labels; weights 700 for a station's title, 600
+headings, 500 the name and quiet labels, 400 the hero's programme line.
+Details: `docs/city/style.md`, "Type".
 
 Body copy is short points, not paragraphs: `.points`, each marked with a
 small `--accent-2` diamond. Figures in the text are bold through
@@ -249,15 +272,15 @@ weights and generous line-height. Avoid decorative fonts.
   section rather than many small cards. On the journey each stop's panel
   is centred in its stop and substantial, inside the central 80% (`--peek`
   10% clear each side from 768px; phones keep their 16px gutters).
-- Wide screens: each stop's words on a paper card (`.panel`): opaque
-  `--panel`, a `--line` hairline, a faint `--text` highlight along its top
-  and a two-part shadow from `--shadow`, no blur; centred between the bar
+- Wide screens: each stop's words on a pane of clear glass (`.panel`,
+  "The journey" above: the crumple shows through, reeds, a corner sheen,
+  a `--rim` and a two-part shadow from `--shadow`, no blur); centred between the bar
   and the map, hanging from one top line (`--hang`), as wide as `--w`;
   wide panels lay their words in columns. Projects: a row of cards, each
   in its own screen. Experience: one stop, the three entries on a simple
   timeline.
 - Phones and tall screens (`max-aspect-ratio: 1/1`): each stop a screen
-  wide, its words a paper sheet from just under the bar to the map
+  wide, its words a sheet of the same glass from just under the bar to the map
   (`--stop-band`), edge to edge, rounded at the top, scrolling inside.
 - Images match their text: as tall as the words beside them, or as wide
   when stacked; covers never cropped awkwardly.
@@ -304,13 +327,20 @@ second list. To add one: `docs/adding-a-section.md` (starter
 ### Buttons
 
 Every button-like control is a key (`.glass` in `city.css`, the class name
-kept from the city): 44px tall, as wide as its words, opaque `--panel`
-with an ink edge (`--text` 40% into the panel) and a faint shadow, the
-label in `--text`. Tertiary actions stay text links (`.text-link`; on
-their own they take 44px). States, the same everywhere:
-- `.glass-primary`: the `--accent` fill, an `--on-accent` label
+kept from the city): 44px tall, as wide as its words, clear glass (no
+fill: the paper shows through) with a crisp ink edge (`--text` 40% into
+the panel) and a faint shadow, the label in `--text`. Tertiary actions
+stay text links (`.text-link`; on their own they take 44px). States, the
+same everywhere:
+- `.glass-primary`: the textured accent face, an `--on-accent` label
+  (4.5:1 over every grain of it): one brushed grain (`--key-grain`, an
+  inline SVG noise, fixed seed, in `soft-light`) over `--accent-fill`
+  (charcoal's gold-leaf foil) over the flat `--accent`; hover lays a
+  wash of `--accent-hover` over it, the grain kept; chosen, still view's
+  tint, more contrast and forced colours are flat
 - `.glass-icon`: a square icon key
-- hover: under `@media (hover: hover)` only, a wash of `--accent-2`
+- hover: under `@media (hover: hover)` only, a translucent wash of
+  `--accent-2` (10%; chosen 12%)
 - chosen (`aria-pressed`, `aria-selected`, `aria-current`, an open
   popover, copied): an `--accent-2` edge doubled inside, pressed in
 - disabled: dashed edge, muted label still 4.5:1, no hover or pointer
@@ -461,8 +491,10 @@ are edited by one session at a time, never by parallel agents.
 
 The icons and share card are drawn in code:
 `scripts/identity/make-identity.mjs` (from `mark.svg`, in cream's colours;
-the card a sheet of crumpled cream paper with the name in Fraunces and
-Figtree, read from a running copy of the site: pass its address) writes
+the card a sheet of crumpled cream paper with the name in Newsreader
+italic and the rest in Newsreader and Hanken Grotesk, read from a
+running copy of the site: pass its address; cream's colours read from
+its tokens in `city.css`) writes
 `app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png` and
 `public/share-card.jpg`. Rerun it after changing the mark, cream's
 colours or the fonts.
