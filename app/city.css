@@ -463,9 +463,10 @@ button.text-link,
 
 /* Narrow: one row, the name and the keys (they drop under it, to the
    right, only with very large text); the time and weather at the foot of
-   the Sections menu instead (R7, M4); up to 768px, where the bar has room
-   for the weather beside the day/night key */
-@media (max-width: 767px) {
+   the Sections menu instead (R7, M4); up to 820px, where the bar has room
+   for the weather beside the day/night key (with the room main had for a
+   long condition) */
+@media (max-width: 819px) {
   :root {
     --bar-h: calc(4.25rem + env(safe-area-inset-top));
   }
@@ -478,7 +479,12 @@ button.text-link,
     padding-left: max(1rem, env(safe-area-inset-left));
   }
 
+  /* (with very large text the keys wrap, right-aligned, rather than run
+     past the screen) */
   .top-bar-end {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 100%;
     margin-left: auto;
   }
 
@@ -499,7 +505,7 @@ button.text-link,
   border-radius: 0;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 820px) {
   .sections-menu .rh {
     display: none;
   }

@@ -307,7 +307,7 @@ weights and generous line-height. Avoid decorative fonts.
 ## Navigation
 
 - The top bar (`TopBar.tsx`): the name (home), Waterloo's time and
-  weather (from 768px; in the Sections menu below), the day/night key,
+  weather (from 820px; in the Sections menu below), the day/night key,
   Sections and the music, all 44px pills. No place label (round 8). Under
   368px the name steps down and Sections drops its icon (its name stays
   in words), so the bar keeps one row.
@@ -322,7 +322,7 @@ weights and generous line-height. Avoid decorative fonts.
   alone. It is the page's one source of where you are (`useSection.ts`).
 - The Sections menu (`SectionsMenu.tsx`, a popover) grows from its key,
   the page dims behind it; it jumps along the journey and moves focus
-  there; under 768px it also holds the weather.
+  there; under 820px it also holds the weather.
 - The hero's one primary action, "View projects", "Résumé" beside it, and
   its text links (GitHub, LinkedIn, Email).
 - The time and weather (`components/weather/WeatherClock.tsx`) is
