@@ -57,7 +57,7 @@ reasoning: `.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 | `--accent-hover` | `#8c353c` | Its hover |
 | `--on-accent` | `#f7f1e5` | The label on the accent |
 | `--accent-2` | `#0a6168` | Links, chosen states, the metro line, marks |
-| `--focus` | `#1f4f8a` | The focus ring |
+| `--focus` | `#0f7c86` | The focus ring |
 | `--shadow` | `#4a3b22` | A card's shadow (mixed toward transparent) |
 | `--ink` | `#1d2330` | The darkest ink on this paper |
 
@@ -108,7 +108,7 @@ so its text colours are the darkest of the three papers'.
 | `--accent-hover` | `#284b78` | Its hover |
 | `--on-accent` | `#f4e8d4` | The label on the accent |
 | `--accent-2` | `#561710` | Links, chosen states, the metro line, marks |
-| `--focus` | `#1e3a5f` | The focus ring |
+| `--focus` | `#7a2418` | The focus ring |
 | `--shadow` | `#3b2814` | A card's shadow |
 | `--ink` | `#22180f` | The darkest ink on this paper |
 

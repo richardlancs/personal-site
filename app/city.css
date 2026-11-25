@@ -17,7 +17,7 @@
    class: each would be a dead utility */
 @source not "./**/*.css";
 @source not "../package-lock.json";
-@source not inline("container visible static fixed absolute sticky inline table grow transform resize rounded ring outline shadow blur transition");
+@source not inline("container visible static fixed absolute sticky inline table grow transform resize rounded ring outline shadow blur transition italic");
 
 /*
   Paper (docs/city/style.md): three crumpled papers, each with its own
@@ -49,7 +49,7 @@
   --accent-hover: #8c353c;
   --on-accent: #f7f1e5;
   --accent-2: #0a6168;
-  --focus: #1f4f8a;
+  --focus: #0f7c86;
   --shadow: #4a3b22;
   /* The darkest ink on this paper */
   --ink: #1d2330;
@@ -95,7 +95,7 @@
   --accent-hover: #284b78;
   --on-accent: #f4e8d4;
   --accent-2: #561710;
-  --focus: #1e3a5f;
+  --focus: #7a2418;
   --shadow: #3b2814;
   --ink: #22180f;
 }
@@ -345,7 +345,6 @@ button.text-link,
 
 .top-bar > .rh {
   min-height: 44px;
-  border-color: var(--line);
   background: var(--panel);
 }
 
@@ -1733,15 +1732,13 @@ details[open] > summary.glass {
   }
 }
 
-/* More contrast asked for: the weather's capsule edged in the muted ink */
+/* More contrast asked for: the weather's capsule edged in the muted ink,
+   every key in the full ink, with no shadow */
 @media (prefers-contrast: more) {
   .top-bar > .rh {
     border-color: var(--muted);
   }
-}
 
-/* More contrast asked for: every key edged in the full ink, no shadow */
-@media (prefers-contrast: more) {
   :where(.glass) {
     --key-edge: var(--text);
     --glass-lift: 0 0 #0000;
