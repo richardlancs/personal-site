@@ -137,8 +137,7 @@
      paper at its darkest crease and lightest ridge). What makes it read
      as glass is drawn in the paper's own light (--hi: --panel on the
      light papers, a trace of --text on black): fine vertical reeds, a
-     sheen across its top-left corner and a fainter one at the opposite
-     corner, a crisp inner highlight along its top and a second inner
+     sheen across its top-left corner, a crisp inner highlight along its top and a second inner
      edge for the glass's thickness, a rim (--rim: a darker edge in the
      paper's --shadow on the light papers, a light one on black) and a
      soft two-part shadow in --shadow: a close one where it touches, a
@@ -161,7 +160,6 @@
     border-radius: var(--radius-lg);
     background:
       linear-gradient(125deg, color-mix(in srgb, var(--hi) var(--sheen), transparent), transparent 16rem),
-      linear-gradient(305deg, color-mix(in srgb, var(--hi) calc(var(--sheen) / 2), transparent), transparent 6rem),
       repeating-linear-gradient(90deg, color-mix(in srgb, var(--hi) var(--reed), transparent) 0 1px, transparent 0 4px)
       color-mix(in srgb, var(--panel) 6%, transparent);
     box-shadow:
