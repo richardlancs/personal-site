@@ -38,10 +38,12 @@ defines the same hexes.
 
 ### Cream
 
-Ivory paper (hue 41). Accents from the far side of the wheel: Prussian
-blue (213, by its complement, 221) for the one primary action; deep teal (184,
-the near arm of the split complement and the mark's cyan) for links,
-chosen states and the metro line.
+Ivory paper (hue 41). Claret (355, analogous on the warm side of the
+wheel: book cloth, a wax seal, an editor's red ink) for the one primary
+action, chosen at Richard's word on 25 November 2026 over the navy that
+read as corporate; deep teal (184, the near arm of the split complement
+and the mark's cyan) for links, chosen states and the metro line. The
+reasoning: `.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 
 | Token | Hex | Use |
 |---|---|---|
@@ -51,8 +53,8 @@ chosen states and the metro line.
 | `--line` | `#c9bca3` | Hairlines and card edges (decoration, not a boundary that must read) |
 | `--text` | `#1d2330` | Body text and headings: blue-black ink |
 | `--muted` | `#50545c` | Secondary text |
-| `--accent` | `#1f4f8a` | The primary action's fill |
-| `--accent-hover` | `#2b62a6` | Its hover |
+| `--accent` | `#7a2a30` | The primary action's fill (under its textured face) |
+| `--accent-hover` | `#8c353c` | Its hover |
 | `--on-accent` | `#f7f1e5` | The label on the accent |
 | `--accent-2` | `#0a6168` | Links, chosen states, the metro line, marks |
 | `--focus` | `#1f4f8a` | The focus ring |
@@ -67,8 +69,9 @@ possible while still maintaining the shadowy look and incorporating
 crumpled paper"). A shadow vanishes on black, so its crumple is carried
 by light on the ridges (below, "The texture"), and the cards are sheets a
 step above the paper, with a deep black shadow. Gold (40, the complement
-of a cool black) for the primary action; cyan (the mark's own) for links,
-chosen states and the line.
+of a cool black) for the primary action, as gold leaf: deeper and warmer
+than the flat yellow it replaced (25 November 2026), a foil's light band
+across it; cyan (the mark's own) for links, chosen states and the line.
 
 | Token | Hex | Use |
 |---|---|---|
@@ -78,8 +81,8 @@ chosen states and the line.
 | `--line` | `#2a2b2f` | Hairlines and card edges |
 | `--text` | `#ece6da` | Body text and headings: chalk (warm, not white) |
 | `--muted` | `#b5afa4` | Secondary text |
-| `--accent` | `#e3b55b` | The primary action's fill |
-| `--accent-hover` | `#edc679` | Its hover |
+| `--accent` | `#c99a3e` | The primary action's fill (under its textured face) |
+| `--accent-hover` | `#d9ad55` | Its hover |
 | `--on-accent` | `#0b0b0c` | The label on the accent |
 | `--accent-2` | `#7fd4df` | Links, chosen states, the metro line, marks |
 | `--focus` | `#9fe6ef` | The focus ring |
@@ -119,7 +122,9 @@ so its text colours are the darkest of the three papers'.
   adds light, its brightest ridge `#3c3c3c`).
 - `--accent` and `--focus` are 3:1 or better on every ground (the
   texture's too); `--on-accent` is 4.5:1 or better on `--accent` and
-  `--accent-hover`.
+  `--accent-hover`, and on the darkest and lightest grain of the primary
+  key's textured face at rest and on hover (sampled in the browser; the
+  values are in `palette-contrast.mjs`, `FILLS`).
 - Accents are for edges, marks, chosen states, links and the one
   primary action; body text is `--text`.
 - No pure white and no pure black text; no magenta.
@@ -147,6 +152,21 @@ one still sheet. How strongly it shows is per paper (`--crumple`: cream
 1, charcoal 0.25, kraft 0.42), inside the margins above. Under
 `prefers-contrast: more` and in forced colours it is removed and the
 paper is flat.
+
+## The primary key's face
+
+The one primary action in each paper (`.glass-primary`) is not a flat
+fill: a gradient per paper (`--accent-fill`, in its token block) under
+one shared grain (`--key-grain` on `:root`: a fractal noise in code,
+fixed seed, drawn out sideways into brushed streaks, grey at half
+strength, laid in `soft-light`). The family is the same on every paper;
+on charcoal the gradient is gold leaf (`#ad7f30` to `#e6c477` and back,
+a light band at 46% and a thin highlight along the top edge), on cream
+and kraft a quiet fall of the accent from top left to bottom right, so
+the grain reads as book cloth. Hover lays a wash of `--accent-hover`
+over the face, keeping the grain; chosen and disabled drop the face.
+Under `prefers-contrast: more` and in forced colours the face is flat
+`--accent`. Nothing on it moves.
 
 ## Type
 

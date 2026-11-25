@@ -79,6 +79,25 @@ test("a key is 44px tall, opaque paper with labels in opaque --text, no blur", (
   assert.match(block(".glass::before,\n.glass::after"), /z-index: -1/);
 });
 
+test("the primary key's face: one grain in code over each paper's accent fill, kept on hover, dropped when chosen or for more contrast", () => {
+  const root = css.match(/\n:root \{([^}]*)\}/)?.[1] ?? "";
+  const grain = root.match(/--key-grain: url\("data:image\/svg\+xml,([^"]*)"\);/)?.[1];
+  assert.ok(grain, "one inline SVG grain on :root");
+  assert.match(grain, /feTurbulence[^>]*seed='\d+'/, "a fixed seed");
+  for (const paper of ["cream", "charcoal", "kraft"]) {
+    const own = css.match(new RegExp(`\\n:root\\[data-paper="${paper}"\\] \\{([^}]*)\\}`))?.[1] ?? "";
+    assert.match(own, /\n\s*--accent-fill: [^;]*linear-gradient\(/, `${paper}: --accent-fill`);
+  }
+  const primary = block(".glass-primary");
+  assert.match(primary, /background-image: var\(--key-grain\), var\(--key-wash, [^)]*\)\), var\(--accent-fill\);/);
+  assert.match(primary, /background-blend-mode: soft-light, normal/);
+  assert.match(css, /\.glass-primary:not\(:disabled, \[aria-disabled="true"\]\):hover \{\s*--key-wash: linear-gradient\(/, "hover washes the face, the grain kept");
+  const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\][^{]*\{([^}]*)\}/)?.[1] ?? "";
+  assert.match(chosen, /background-image: none/);
+  assert.match(css, /@media \(prefers-contrast: more\), \(forced-colors: active\) \{\s*\.glass-primary \{\s*background-image: none;/);
+  assert.match(keyframes("glass-tint"), /background-image: none/);
+});
+
 // Every button-like control is glass, so it shares the states and the press
 test("the Sections menu's entries and the top bar's keys are glass", () => {
   const menu = readFileSync(`${root}app/components/city2d/SectionsMenu.tsx`, "utf8").match(/<nav [^>]*id="places-menu"[\s\S]*?<\/nav>/)[0];

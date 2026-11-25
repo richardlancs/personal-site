@@ -31,10 +31,12 @@
   4.5:1 on it (docs/ui/scripts/palette-contrast.mjs).
   The texture itself is in paper.css.
 */
-/* Cream: warm ivory (hue 41) written in blue-black ink; its accents
-   from the far side of the wheel: Prussian blue (213, by the complement, 221)
-   for the one primary action, deep teal (184, the split's near arm and
-   the mark's cyan) for links, chosen states and the metro line */
+/* Cream: warm ivory (hue 41) written in blue-black ink. Claret (355,
+   analogous on the warm side: book cloth, a wax seal, an editor's red
+   ink) for the one primary action; deep teal (184, the split's near arm
+   and the mark's cyan) for links, chosen states and the metro line.
+   --accent-fill is the primary key's face under the shared grain
+   (task-13/A/accents.md) */
 :root,
 :root[data-paper="cream"] {
   color-scheme: light;
@@ -44,8 +46,9 @@
   --line: #c9bca3;
   --text: #1d2330;
   --muted: #50545c;
-  --accent: #1f4f8a;
-  --accent-hover: #2b62a6;
+  --accent: #7a2a30;
+  --accent-hover: #8c353c;
+  --accent-fill: linear-gradient(165deg, #86323a, #7a2a30 55%, #6c2329);
   --on-accent: #f7f1e5;
   --accent-2: #0a6168;
   --focus: #1f4f8a;
@@ -57,9 +60,9 @@
 /* Charcoal: black paper, as near true black as still reads as a sheet
    (hue 240, no saturation to speak of), in chalk-white; its crumple is
    carried by light on the ridges (paper.css). Cards are sheets laid a
-   step above it, with a deep black shadow. Gold (40, the complement of a
-   cool black) for the primary action, the mark's cyan for links, chosen
-   states and the line */
+   step above it, with a deep black shadow. Gold leaf (40, the complement
+   of a cool black: deep, warm, a foil's light band across it) for the
+   primary action, the mark's cyan for links, chosen states and the line */
 :root[data-paper="charcoal"] {
   color-scheme: dark;
   --paper: #080809;
@@ -68,8 +71,9 @@
   --line: #2a2b2f;
   --text: #ece6da;
   --muted: #b5afa4;
-  --accent: #e3b55b;
-  --accent-hover: #edc679;
+  --accent: #c99a3e;
+  --accent-hover: #d9ad55;
+  --accent-fill: linear-gradient(#f3d99099, #0000 2px), linear-gradient(115deg, #ad7f30, #d4a64c 32%, #e6c477 46%, #c29440 60%, #a97c2e);
   --on-accent: #0b0b0c;
   --accent-2: #7fd4df;
   --focus: #9fe6ef;
@@ -91,6 +95,7 @@
   --muted: #3a2a1d;
   --accent: #1e3a5f;
   --accent-hover: #284b78;
+  --accent-fill: linear-gradient(165deg, #24436c, #1e3a5f 55%, #193253);
   --on-accent: #f4e8d4;
   --accent-2: #561710;
   --focus: #1e3a5f;
@@ -103,6 +108,11 @@
   --swatch-cream: #efe7d6;
   --swatch-charcoal: #080809;
   --swatch-kraft: #c9a77c;
+
+  /* The primary key's grain: one small noise in code (a fixed seed),
+     drawn out sideways into brushed streaks, grey, laid over its face in
+     soft-light at half strength; the same on every paper */
+  --key-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Cfilter id='k' x='0' y='0' width='1' height='1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 .5'/%3E%3C/filter%3E%3Crect width='240' height='120' filter='url(%23k)'/%3E%3C/svg%3E");
 
   /* One family of soft corners */
   --radius: 10px;
@@ -1424,11 +1434,13 @@ details[open] > summary.glass {
   paper is never see-through.
 
   The states, the same on every control, in every paper:
-  - secondary (.glass); primary (.glass-primary): solid --accent, an
-    --on-accent label (4.5:1 or better, palette-contrast.mjs), its edge
-    the accent a step darker, a heavier weight; .glass-icon, a square key
+  - secondary (.glass); primary (.glass-primary): the paper's textured
+    --accent-fill (charcoal's gold leaf), an --on-accent label (4.5:1 or
+    better over every grain of it, palette-contrast.mjs), its edge the
+    accent toward the ink, a heavier weight; .glass-icon, a square key
     for an icon
-  - hover: a wash of --accent-2 and a full ink edge (primary: --accent-hover)
+  - hover: a wash of --accent-2 and a full ink edge (primary: a wash of
+    --accent-hover over its face, the grain kept)
   - chosen (aria-pressed, aria-selected, aria-current, data-copied, an
     open popover): an --accent-2 edge, doubled inside, pressed in (a shade
     inside, no shadow under it), so it reads without colour too
@@ -1483,13 +1495,25 @@ details[open] > summary.glass {
   --tint: var(--accent);
   --glass-ink: var(--on-accent);
   border-color: color-mix(in srgb, var(--accent) 75%, var(--text));
+  /* Its face: the grain over a light wash (hover only) over the paper's
+     --accent-fill, the flat --accent under all three */
+  background-image: var(--key-grain), var(--key-wash, linear-gradient(#0000 0 0)), var(--accent-fill);
+  background-blend-mode: soft-light, normal, normal, normal;
   font-weight: 700;
 }
 
 @media (hover: hover) {
   .glass-primary:not(:disabled, [aria-disabled="true"]):hover {
+    --key-wash: linear-gradient(color-mix(in srgb, var(--accent-hover) 55%, transparent) 0 0);
     border-color: color-mix(in srgb, var(--accent-hover) 75%, var(--text));
     background-color: var(--accent-hover);
+  }
+}
+
+/* More contrast, or the system's colours: a flat fill */
+@media (prefers-contrast: more), (forced-colors: active) {
+  .glass-primary {
+    background-image: none;
   }
 }
 
@@ -1564,6 +1588,7 @@ details[open] > summary.glass {
   --glass-lift: 0 0 #0000;
   border-color: var(--accent-2);
   background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+  background-image: none;
 }
 
 .glass:is(:disabled, [aria-disabled="true"]) {
@@ -1681,6 +1706,7 @@ details[open] > summary.glass {
   from {
     border-color: var(--accent-2);
     background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+    background-image: none;
   }
 }
 

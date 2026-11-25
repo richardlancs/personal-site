@@ -2,7 +2,8 @@
 // "### <paper>" table each) before any CSS is built on them (WCAG 2.1
 // contrast): text, muted and accent-2 at 4.5:1 or better on every ground,
 // the accent fill and the focus ring at 3:1 or better, the label on the
-// accent (and on its hover) at 4.5:1 or better. The grounds include the
+// accent (and on its hover, and on every grain of its textured face) at
+// 4.5:1 or better. The grounds include the
 // texture's extremes (app/paper.css), measured on each paper at 1440x900
 // (the lowest and highest luma of the sheet over the paper's colour): a
 // scale on the ground's channels, or, on charcoal's near-black, where the
@@ -34,6 +35,17 @@ const contrast = (a, b) => {
 const shade = (hex, k) => (typeof k === "string" ? k : scale(hex, k));
 const scale = (hex, k) => `#${[1, 3, 5].map((i) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k))).toString(16).padStart(2, "0")).join("")}`;
 const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"], kraft: [0.93, 1.04] };
+
+// The primary key's textured face (app/city.css: --key-grain over
+// --accent-fill, and the hover's wash of --accent-hover): its darkest and
+// lightest pixel at rest and on hover, sampled in headless Chrome at
+// 1440x900 with the label hidden (inside the edge). The label must hold
+// 4.5:1 on every grain of it.
+const FILLS = {
+  cream: { rest: ["#72272d", "#984a52"], hover: ["#812f36", "#9c4d54"] },
+  charcoal: { rest: ["#b08235", "#ecd18c"], hover: ["#c79b47", "#e5c57d"] },
+  kraft: { rest: ["#1c3658", "#3b5b81"], hover: ["#22426b", "#3e6188"] },
+};
 
 const need = ["--paper", "--paper-2", "--panel", "--line", "--text", "--muted", "--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow", "--ink"];
 let failed = false;
@@ -75,6 +87,10 @@ if (!failed) {
     }
     check(paper, "--on-accent on --accent", p["--on-accent"], p["--accent"], 4.5);
     check(paper, "--on-accent on --accent-hover", p["--on-accent"], p["--accent-hover"], 4.5);
+    for (const [state, [dark, light]] of Object.entries(FILLS[paper] ?? {})) {
+      check(paper, `--on-accent on the textured face (${state}, darkest)`, p["--on-accent"], dark, 4.5);
+      check(paper, `--on-accent on the textured face (${state}, lightest)`, p["--on-accent"], light, 4.5);
+    }
     console.log(`     ${paper}: lowest text pair ${lowest.toFixed(2)}:1`);
   }
 }
