@@ -134,7 +134,8 @@ test("on a phone the title, the keys, the summary, then the cover, in the docume
   // cropped; on a phone at most a quarter of the screen tall
   assert.match(row, /"--ar": shown\.reduce\(\(w, s\) => w \+ s\.width \/ s\.height, 0\)/);
   assert.match(source, /aspect-\(--ar\)/);
-  assert.match(row, /max-w-\[calc\(25svh\*var\(--ar\)\)\]/);
+  // (never under a 44px target in its frame, Task 15)
+  assert.match(row, /max-w-\[max\(calc\(25svh\*var\(--ar\)\),46px\)\]/);
   assert.doesNotMatch(source, /aspect-\[16\/10\]/);
   // Tall (a phone's screen or a pair): beside the words from 27.5rem
   assert.match(source, /const side = Boolean\(cover && tall\(cover\)\)/);

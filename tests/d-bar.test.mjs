@@ -29,7 +29,9 @@ test("the map lines up with the panels' central 80%, and its phone label stays b
   assert.match(css, /@media \(max-aspect-ratio: 1 \/ 1\) \{\s*:root\[data-track="on"\] \.progress-line \{\s*--map-x: 0px;/);
   const narrow = css.match(/@container \(width < 36em\) \{([\s\S]*?)\n\}/)[1];
   assert.doesNotMatch(narrow, /align-self/, "centred over its dot, not pinned to a side");
-  assert.match(narrow, /\.progress-rail \{\s*margin: 0 0\.5rem;/, "clear of the map's edge");
+  // (clear of the map's edge by up to 0.5rem: only what six 44px stations
+  // 8px apart leave, none on a 320px screen, Task 15)
+  assert.match(narrow, /\.progress-rail \{\s*margin: 0 clamp\(0px, \(100cqw - 304px\) \/ 2, 0\.5rem\);/, "clear of the map's edge");
 });
 
 test("the résumé reads on a phone, opens in the phone's viewer, and never leaves the site offline (11, 20)", () => {

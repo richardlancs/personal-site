@@ -57,10 +57,13 @@ const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
 
 // The rows lay themselves out by the list's own width (@container: the
 // indent from 27.5rem, the gallery 3 across from 45.5rem and 4 from
-// 69.5rem).
+// 69.5rem). One column that may shrink (grid-cols-1: minmax(0, 1fr)): an
+// auto column grows to the rows' longest unbroken run (an icon, a heading's
+// word at 200% text, Show and the chevron side by side), wider than a
+// phone, and the page then scrolls sideways.
 export default function Interests() {
   return (
-    <div className="@container interests mt-6 grid gap-2">
+    <div className="@container interests mt-6 grid grid-cols-1 gap-2">
       {interests.map((interest, i) => {
         const photos = interestPhotos(interest.scene, interest.name, interest.captions);
         return (

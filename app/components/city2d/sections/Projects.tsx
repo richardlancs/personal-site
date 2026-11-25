@@ -204,10 +204,12 @@ export default function Projects() {
               {/* The cover: on a phone after the words and at most a
                   quarter of the screen tall (--ar, its shape, gives the
                   width for that), so the title, the keys and the summary
-                  keep the sheet; beside the words, free of that */}
+                  keep the sheet; beside the words, free of that. Never
+                  narrower than a 44px target in its 1px frame (a portrait
+                  cover on a phone on its side with large text) */}
               {cover && (
                 <div
-                  className={`mx-auto w-full min-w-0 max-w-[calc(25svh*var(--ar))] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col @min-[45.5rem]:[.project:has(.project-more[open])_&]:self-start"}`}
+                  className={`mx-auto w-full min-w-0 max-w-[max(calc(25svh*var(--ar)),46px)] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col @min-[45.5rem]:[.project:has(.project-more[open])_&]:self-start"}`}
                   style={{ "--ar": shown.reduce((w, s) => w + s.width / s.height, 0) } as CSSProperties}
                 >
                   <Picture shots={shown} side={side} />

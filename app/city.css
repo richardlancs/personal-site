@@ -1102,8 +1102,10 @@ a[data-resume][data-opening] {
    are still each link's name, read out), centred over its dot, clear of
    the map's edge (V16, M14) */
 @container (width < 36em) {
+  /* (only what the six 44px stations, 8px apart, leave: none on a 320px
+     screen, where the strip is 304px) */
   .progress-rail {
-    margin: 0 0.5rem;
+    margin: 0 clamp(0px, (100cqw - 304px) / 2, 0.5rem);
   }
 
   .progress-label {
