@@ -131,14 +131,24 @@
      Its corners are --radius-lg; what sits inside takes --radius-in, the
      outer radius less the padding.
 
-     The card is a second sheet of the theme's paper (--panel, opaque, so
-     its words keep their contrast whatever the crumple under it): a
-     hairline edge (--line), a lighter line along its top where the sheet
-     catches the light (a trace of --text, so it shows on black paper too), and a soft two-part shadow in the theme's own
-     shadow colour (--shadow): a close one where it touches, a wide one
-     where it lifts. Its words start at its top: a panel's top never moves
-     as it grows */
+     The card is a pane of clear glass over the crumpled paper: no tint
+     but a whisper of --panel, no blur, so the crumple shows through it
+     (its words keep their contrast: every text colour is 4.5:1 on the
+     paper at its darkest crease and lightest ridge). What makes it read
+     as glass is drawn in the paper's own light (--hi: --panel on the
+     light papers, a trace of --text on black): fine vertical reeds, a
+     sheen across its top-left corner and a fainter one at the opposite
+     corner, a crisp inner highlight along its top and a second inner
+     edge for the glass's thickness, a rim (--rim: a darker edge in the
+     paper's --shadow on the light papers, a light one on black) and a
+     soft two-part shadow in --shadow: a close one where it touches, a
+     wide one where it lifts. Nothing in it moves. Its words start at its
+     top: a panel's top never moves as it grows */
   :root[data-track="on"] .track .panel {
+    --hi: var(--panel);
+    --rim: color-mix(in srgb, var(--shadow) 34%, transparent);
+    --sheen: 50%;
+    --reed: 16%;
     --pad: clamp(1.25rem, 3cqw, 2.5rem);
     display: flex;
     flex-direction: column;
@@ -147,13 +157,25 @@
     overflow-y: hidden;
     scrollbar-gutter: stable;
     touch-action: pan-y pinch-zoom;
-    border: 1px solid var(--line);
+    border: 1px solid var(--rim);
     border-radius: var(--radius-lg);
-    background: var(--panel);
+    background:
+      linear-gradient(125deg, color-mix(in srgb, var(--hi) var(--sheen), transparent), transparent 16rem),
+      linear-gradient(305deg, color-mix(in srgb, var(--hi) calc(var(--sheen) / 2), transparent), transparent 6rem),
+      repeating-linear-gradient(90deg, color-mix(in srgb, var(--hi) var(--reed), transparent) 0 1px, transparent 0 4px)
+      color-mix(in srgb, var(--panel) 6%, transparent);
     box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
+      inset 0 1px 0 color-mix(in srgb, var(--hi) 80%, transparent),
+      inset 0 0 0 1px color-mix(in srgb, var(--hi) 22%, transparent),
       0 1px 2px color-mix(in srgb, var(--shadow) 22%, transparent),
       0 1.25rem 2.5rem -1.25rem color-mix(in srgb, var(--shadow) 45%, transparent);
+  }
+
+  :root[data-paper="charcoal"][data-track="on"] .track .panel {
+    --hi: color-mix(in srgb, var(--text) 45%, transparent);
+    --rim: color-mix(in srgb, var(--text) 24%, transparent);
+    --sheen: 18%;
+    --reed: 9%;
   }
 
   /* While a panel has more below, a fade at its foot says so ("More",
@@ -170,7 +192,7 @@
     height: calc(3.5rem + var(--pad));
     margin: -3.5rem calc(-1 * var(--side, var(--pad))) 0;
     padding-top: 2rem;
-    background: linear-gradient(color-mix(in srgb, var(--panel) 0%, transparent), var(--panel) 70%);
+    background: linear-gradient(color-mix(in srgb, var(--paper) 0%, transparent), var(--paper) 70%);
     color: var(--text);
     font-size: 0.875rem;
     text-align: center;
@@ -343,7 +365,7 @@
       width: 100cqw;
     }
 
-    /* The sheet: a card of the same paper laid over the screen under the
+    /* The sheet: the same clear glass laid over the screen under the
        bar, edge to edge, its top edge and corners rounded and its
        shadow cast upward onto the paper above; its words from the top */
     :root[data-track="on"] .track .panel {
@@ -353,7 +375,7 @@
       border-width: 1px 0 0;
       border-radius: var(--radius-lg) var(--radius-lg) 0 0;
       box-shadow:
-        inset 0 1px 0 color-mix(in srgb, var(--text) 7%, transparent),
+        inset 0 1px 0 color-mix(in srgb, var(--hi) 80%, transparent),
         0 -1px 2px color-mix(in srgb, var(--shadow) 18%, transparent),
         0 -0.75rem 1.75rem -1rem color-mix(in srgb, var(--shadow) 40%, transparent);
     }
@@ -407,11 +429,19 @@
   }
 }
 
-/* Under prefers-contrast the cards are edged in the text's own colour,
-   with no shadow */
+/* Under prefers-contrast the glass is a solid card of --panel, edged in
+   the text's own colour, with no shadow; with the system's own colours,
+   no texture or sheen */
 @media (prefers-contrast: more) {
   :root[data-track="on"] .track .panel {
     border-color: var(--text);
     box-shadow: none;
+    background: var(--panel);
+  }
+}
+
+@media (forced-colors: active) {
+  :root[data-track="on"] .track .panel {
+    background-image: none;
   }
 }

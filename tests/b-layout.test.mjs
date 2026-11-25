@@ -1,5 +1,5 @@
 // The journey's panels (city-track.css, components/city2d/Station.tsx):
-// one top line, widths by what each holds, paper cards, the "More"
+// one top line, widths by what each holds, clear glass panes, the "More"
 // cue while a panel has more below, the way on at a panel's foot, and the
 // phone's sheet given the screen (UX review 2026-11-23, items 2, 3, 4, 7, 9).
 import { test } from "node:test";
@@ -38,20 +38,24 @@ test("Projects and Experience take the central 80%; Home, the index, Interests a
   assert.match(rule(':root[data-track="on"] #contact .station-body'), /--pw: 48rem;/);
 });
 
-test("every panel is a paper card: opaque --panel, a hairline edge, a soft shadow in the paper's own --shadow; no blur, no halo, no shade", () => {
+test("every panel is a pane of clear glass: a whisper of --panel, a texture and sheen in the paper's light, a rim, a soft shadow in the paper's own --shadow; no blur, no halo, no shade", () => {
   const panel = rule(':root[data-track="on"] .track .panel');
-  assert.match(panel, /border: 1px solid var\(--line\);/);
-  assert.match(panel, /background: var\(--panel\);/);
-  assert.match(panel, /box-shadow:[^;]*color-mix\(in srgb, var\(--shadow\) \d+%, transparent\)/);
-  assert.doesNotMatch(css, /backdrop-filter|text-shadow|--shade|--sky-tone\)/, "paper is never see-through and its words need no halo");
+  assert.match(panel, /border: 1px solid var\(--rim\);/);
+  assert.match(panel, /--rim: color-mix\(in srgb, var\(--shadow\) \d+%, transparent\);/, "a darker rim on the light papers");
+  assert.match(panel, /repeating-linear-gradient\(/, "a texture that reads as glass");
+  assert.match(panel, /color-mix\(in srgb, var\(--panel\) [0-9]%, transparent\);/, "no more than a whisper of tint");
+  assert.doesNotMatch(panel, /background: var\(--panel\);/, "see-through, not a card");
+  assert.match(panel, /box-shadow:[^;]*inset 0 1px 0 color-mix\(in srgb, var\(--hi\)[^;]*color-mix\(in srgb, var\(--shadow\) \d+%, transparent\)/);
+  assert.match(rule(':root[data-paper="charcoal"][data-track="on"] .track .panel'), /--rim: color-mix\(in srgb, var\(--text\) \d+%, transparent\);/, "a light rim on black");
+  assert.doesNotMatch(css, /backdrop-filter|text-shadow|--shade|--sky-tone\)/, "no blur, and its words need no halo");
   assert.doesNotMatch(css, /rgb\(|#[0-9a-f]{3,8}\b/i, "only tokens");
   assert.match(css, /border-width: 1px 0 0;/, "the phone's sheet: its top edge");
   const more = css.slice(css.indexOf("@media (prefers-contrast: more)"));
-  assert.match(more, /\.track \.panel \{\s*border-color: var\(--text\);\s*box-shadow: none;/);
+  assert.match(more, /\.track \.panel \{\s*border-color: var\(--text\);\s*box-shadow: none;\s*background: var\(--panel\);/, "solid under more contrast");
 });
 
-test("the More cue fades into the card's own paper", () => {
-  assert.match(rule(':root[data-track="on"] .track .panel::after'), /background: linear-gradient\([^;]*var\(--panel\) 70%\);/);
+test("the More cue fades into the paper behind the glass", () => {
+  assert.match(rule(':root[data-track="on"] .track .panel::after'), /background: linear-gradient\([^;]*var\(--paper\) 70%\);/);
 });
 
 test("a panel with more below says so, and the cue goes at its end", () => {
