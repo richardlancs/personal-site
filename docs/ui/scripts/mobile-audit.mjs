@@ -618,20 +618,36 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
     }
 
     // The time and weather: something to read, not a control. Not in the
-    // tab order, no popover, and a tap on it opens nothing and goes nowhere
+    // tab order, no popover, and a tap on it opens nothing and goes nowhere.
+    // There are two copies (TopBar and SectionsMenu, the same store):
+    // the bar's from 820px, the menu's below (city.css shows one). Each
+    // holds no control; the one that shows is tapped where it shows (the
+    // menu's with the menu open: the tap must leave the menu the only open
+    // layer, open, and the address as it was)
     step = "weather";
-    const display = page.locator(".rh");
-    if (await display.isVisible()) {
-      await page.evaluate(() => scrollTo(0, 0));
-      const passive = await display.evaluate((e) => !e.matches("button, a, [tabindex], [popovertarget]") && !e.querySelector("button, a, [tabindex], [popovertarget]"));
-      if (!passive) report("tap", where, "the time and weather display holds a control");
-      if (profile.touch) {
+    await page.evaluate(() => scrollTo(0, 0));
+    const holds = await page.evaluate(() => [...document.querySelectorAll(".rh")].filter((e) => e.matches("button, a, [tabindex], [popovertarget]") || e.querySelector("button, a, [tabindex], [popovertarget]")).length);
+    if (holds) report("tap", where, "the time and weather display holds a control");
+    const barDisplay = page.locator(".top-bar > .rh");
+    const menuDisplay = page.locator("#places-menu .rh");
+    if (profile.touch && (await barDisplay.isVisible())) {
+      const before = page.url();
+      await barDisplay.tap();
+      await page.waitForTimeout(250);
+      const opened = await page.evaluate(() => !!document.querySelector(":popover-open, dialog[open]"));
+      if (opened || page.url() !== before) report("tap", where, "a tap on the time and weather did something");
+    } else if (profile.touch) {
+      await press(profile, sections);
+      await page.waitForTimeout(350);
+      if (await menuDisplay.isVisible()) {
         const before = page.url();
-        await display.tap();
+        await menuDisplay.tap();
         await page.waitForTimeout(250);
-        const opened = await page.evaluate(() => !!document.querySelector(":popover-open, dialog[open]"));
-        if (opened || page.url() !== before) report("tap", where, "a tap on the time and weather did something");
-      }
+        const layers = await page.evaluate(() => [...document.querySelectorAll(":popover-open, dialog[open]")].map((e) => e.id));
+        if (layers.length !== 1 || layers[0] !== "places-menu" || page.url() !== before) report("tap", where, `a tap on the menu's time and weather did something (open: ${layers.join(", ") || "nothing"})`);
+      } else report("tap", where, "the time and weather shows neither in the bar nor in the menu");
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(200);
     }
 
     // The résumé
@@ -777,7 +793,12 @@ for (const profile of profiles.filter((p) => !process.env.ONLY || process.env.ON
   // Backdrop-filtered things on screen while a phone scrolls a long page
   if (profile.name === "390") {
     for (const route of ["/"]) {
-      await visit(page, route);
+      try {
+        await visit(page, route);
+      } catch (e) {
+        report("error", `${profile.name} ${route} [backdrop]`, String(e.message).split("\n")[0]);
+        continue;
+      }
       const counts = [];
       for (const y of [0.25, 0.5, 0.75]) {
         await page.evaluate((f) => scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * f), y);
