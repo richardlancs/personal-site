@@ -115,10 +115,8 @@ test("the line names the sections by title, marks where you are, and its points 
   assert.match(read("app/components/city2d/jump.ts"), /href === "\/" \? "\/#home" : href/);
   assert.match(src, /\{s\.title\}/);
   assert.match(src, /aria-current=\{s\.id === here \? "location" : undefined\}/);
-  // "03 / 06 · Projects" in the top bar, hidden from assistive technology
-  assert.match(src, /className="top-bar-here" aria-hidden="true"/);
-  assert.match(src, /sectionNumber\(at\)/);
-  assert.match(src, /\{at\.title\}/);
+  // No place label in the top bar ("03 / 06 · Projects"): the map and the menu say where you are
+  assert.doesNotMatch(src, /top-bar-here|sectionNumber/);
   // Mounted once, in the top bar
   assert.match(read("app/components/city2d/TopBar.tsx"), /<ProgressLine \/>/);
   assert.doesNotMatch(read("app/page.tsx"), /ProgressLine|MetroLine/);
@@ -147,7 +145,7 @@ test("the snap: eased only on arriving at a point in a slow scroll, never armed 
   assert.match(src, /attributeFilter: \["data-still", "data-bar-tall"\]/);
   // Not on a page without the sections
   assert.match(src, /!document\.getElementById\("home"\)\) return;/);
-  assert.match(read("app/city.css"), /body:not\(:has\(#home\)\) :is\(\.progress-line, \.top-bar-here\) \{\s*display: none;/);
+  assert.match(read("app/city.css"), /body:not\(:has\(#home\)\) \.progress-line \{\s*display: none;/);
 });
 
 test("the map's CSS: transforms only, the fill eased only when it locks, and nothing moves in still view", () => {
@@ -187,6 +185,6 @@ test("the map's CSS: transforms only, the fill eased only when it locks, and not
   assert.match(track, /--foot: calc\(var\(--map-h\) \+ max\(8px, env\(safe-area-inset-bottom\)\) \+ 0\.5rem\);/);
   assert.match(track, /--room: calc\(100% - var\(--[\w-]+\) - var\(--foot\)\);/);
   assert.match(track, /\.track \.station-body \{[^}]*max-height: var\(--room\);/);
-  // The section in the top bar from 53rem on
-  assert.match(css, /@media \(min-width: 53rem\) \{[^@]*\.top-bar-here \{\s*display: block;/);
+  // No section named in the top bar, at any width
+  assert.doesNotMatch(css, /top-bar-here/);
 });

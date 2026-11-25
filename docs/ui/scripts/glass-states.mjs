@@ -6,7 +6,7 @@
 // cursor and its label is still 4.5:1 on what's behind, and that focus
 // draws the focus ring on its halo. Task 12 (24 November 2026): the
 // paper themes; the colours are read from the page's own tokens, for the
-// paper given (cream, charcoal or kraft; run once per paper).
+// paper given (cream or charcoal; run once per paper).
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-states.mjs <base> [outDir=docs/ui/screenshots] [paper=cream]
 // Sheets: glass2-<paper>-<view>-<control>.jpg
 import { mkdirSync } from "node:fs";

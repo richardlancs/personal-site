@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useRef, type CSSProperties, type MouseEvent } from "react";
 import { FAST, lockedAt, progressAt, reached, shown, type Marks } from "../../lib/progress";
-import { listed, sectionNumber } from "../../sections/registry";
+import { listed } from "../../sections/registry";
 import { REDUCED_MOTION } from "../../lib/still";
 import { trackMarks, trackPlace, type TrackPlace } from "./CityTrack";
 import { focusAnchor, isPlainClick, jumpHref } from "./jump";
@@ -27,13 +27,11 @@ import { setSection, useSection } from "./useSection";
 // the current one, beside its dot; on short screens (a phone on its side)
 // the dots alone, the current name beside the row. It is drawn only on the
 // journey (data-track="on"): read top to bottom, the Sections menu serves.
-// The bar names the section in words too ("03 / 06 · Projects", from
-// 56rem), and the panel you're at within it ("Projects · 2 of 5 Empyrean",
-// "Projects · Skills") from CityTrack's "trackplace" event, which also
-// says which section you're at while the journey runs: the panel whose
-// middle has passed the screen's (the same list the snap points, the
-// arrows and Page Down use), so the bar, the map and the menu agree. In still view and with reduced motion the fill steps from
-// station to station and nothing pulses or eases.
+// While the journey runs, CityTrack's "trackplace" event says which
+// section you're at: the panel whose middle has passed the screen's (the
+// same list the snap points, the arrows and Page Down use), so the map and
+// the menu agree. In still view and with reduced motion the fill steps
+// from station to station and nothing pulses or eases.
 //
 // One passive scroll listener, throttled to animation frames, reads only
 // scrollY; the stops' places are measured once and again only when the
@@ -51,11 +49,6 @@ export default function ProgressLine() {
   const ref = useRef<HTMLElement>(null);
   const here = useSection();
   const hereIndex = Math.max(0, points.findIndex((s) => s.id === here));
-  const at = points[hereIndex];
-  const [place, setPlace] = useState<TrackPlace | null>(null);
-  // The panel within the section, when it isn't the section itself
-  const part =
-    place && place.section === at.id && place.title !== at.title ? (place.n && place.of ? `${place.n} of ${place.of} ${place.title}` : place.title) : null;
 
   const go = (href: string) => (e: MouseEvent) => {
     if (!isPlainClick(e)) return;
@@ -86,7 +79,6 @@ export default function ProgressLine() {
     const toPlace = (detail: TrackPlace | null) => {
       if (!detail || !points.some((s) => s.id === detail.section)) return;
       placed = true;
-      setPlace(detail);
       setSection(detail.section);
     };
     const onPlace = (event: Event) => toPlace((event as CustomEvent<TrackPlace>).detail);
@@ -213,44 +205,28 @@ export default function ProgressLine() {
   }, []);
 
   return (
-    <>
-      {/* The section you're at, in words, on mid-width screens. Not a
-          control; hidden from assistive technology: the map's stations and
-          the Sections menu mark it with aria-current="location", and words
-          that change as the page scrolls would only be noise read out */}
-      <p className="top-bar-here" aria-hidden="true">
-        <span className="top-bar-here-number">
-          {sectionNumber(at)} / {sectionNumber(points[last])}
+    <nav ref={ref} aria-label="Page progress" className="progress-line" style={{ "--last": last } as CSSProperties}>
+      <div className="progress-rail">
+        <span className="progress-track" aria-hidden="true">
+          <span className="progress-fill" />
         </span>
-        <span className="top-bar-here-name">
-          {" · "}
-          {at.title}
-          {part && ` · ${part}`}
-        </span>
-      </p>
-      <nav ref={ref} aria-label="Page progress" className="progress-line" style={{ "--last": last } as CSSProperties}>
-        <div className="progress-rail">
-          <span className="progress-track" aria-hidden="true">
-            <span className="progress-fill" />
-          </span>
-          <ol className="progress-points">
-            {points.map((s, i) => (
-              <li key={s.id}>
-                <a
-                  href={jumpHref(s.href)}
-                  onClick={go(jumpHref(s.href))}
-                  className="progress-point"
-                  data-lit={i <= hereIndex ? "" : undefined}
-                  aria-current={s.id === here ? "location" : undefined}
-                >
-                  <span className="progress-label">{s.title}</span>
-                  <span className="progress-dot" aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </nav>
-    </>
+        <ol className="progress-points">
+          {points.map((s, i) => (
+            <li key={s.id}>
+              <a
+                href={jumpHref(s.href)}
+                onClick={go(jumpHref(s.href))}
+                className="progress-point"
+                data-lit={i <= hereIndex ? "" : undefined}
+                aria-current={s.id === here ? "location" : undefined}
+              >
+                <span className="progress-label">{s.title}</span>
+                <span className="progress-dot" aria-hidden="true" />
+              </a>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </nav>
   );
 }

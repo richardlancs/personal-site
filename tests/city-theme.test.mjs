@@ -17,22 +17,20 @@ test("the layout loads city.css, city.css the paper, and none of the park", () =
   assert.match(read("app/city.css"), /^@import "tailwindcss";\n@import "\.\/paper\.css";/);
 });
 
-const PAPERS = ["cream", "charcoal", "kraft"];
+const PAPERS = ["cream", "charcoal"];
 const css = () => read("app/city.css");
 // A paper's own token block (cream's selector is ":root,\n:root[data-paper="cream"]")
 const block = (paper) => css().match(new RegExp(`\\n:root\\[data-paper="${paper}"\\] \\{([^}]*)\\}`))?.[1] ?? "";
 
-test("three papers, picked on <html data-paper>, never by the system's appearance", () => {
+test("two papers, day and night, picked on <html data-paper>, never by the system's appearance", () => {
   const text = css();
   assert.doesNotMatch(text, /prefers-color-scheme|light-dark\(/);
   assert.match(text, /\n:root,\n:root\[data-paper="cream"\] \{/, "cream is the default on :root");
-  const schemes = { cream: "light", charcoal: "dark", kraft: "light" };
+  const schemes = { cream: "light", charcoal: "dark" };
   for (const paper of PAPERS) assert.match(block(paper), new RegExp(`\\n\\s*color-scheme: ${schemes[paper]};`), `${paper}'s color-scheme`);
-  // The picker's dots: each paper's base, whatever paper is on
-  for (const paper of PAPERS) {
-    const base = block(paper).match(/\n\s*--paper:\s*(#[0-9a-f]{6});/)?.[1];
-    assert.match(text, new RegExp(`\\n\\s*--swatch-${paper}: ${base};`), `--swatch-${paper}`);
-  }
+  // Kraft is gone, and its swatches with it
+  assert.doesNotMatch(text, /kraft|--swatch-/i);
+  assert.doesNotMatch(read("app/paper.css"), /kraft/i);
 });
 
 test("every palette token in docs/city/style.md is defined in its paper's block with the same hex", () => {

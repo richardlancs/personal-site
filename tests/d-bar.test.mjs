@@ -8,15 +8,15 @@ const root = new URL("../", import.meta.url).pathname;
 const read = (path) => readFileSync(`${root}${path}`, "utf8");
 const css = read("app/city.css");
 
-test("the bar names the panel you're at from CityTrack's trackplace event (10, 16)", () => {
+test("Task 14: no place label on the bar; the map still follows CityTrack's trackplace event", () => {
   const line = read("app/components/city2d/ProgressLine.tsx");
   assert.match(line, /addEventListener\("trackplace", onPlace\)/);
   assert.match(line, /removeEventListener\("trackplace", onPlace\)/);
-  // "Projects · 2 of 5 Empyrean", "Projects · Skills"; the counter stays
-  assert.match(line, /`\$\{place\.n\} of \$\{place\.of\} \$\{place\.title\}`/);
-  assert.match(line, /\{sectionNumber\(at\)\} \/ \{sectionNumber\(points\[last\]\)\}/);
-  // A long place cuts short rather than adding a row to the bar
-  assert.match(css, /\.top-bar-here \{\s*display: block;\s*flex: 1 1 0;\s*min-width: 0;\s*overflow: hidden;\s*text-overflow: ellipsis;/);
+  assert.match(line, /setSection\(detail\.section\)/);
+  // "03 / 06 · Contact" is gone at every width, with its project sub-label
+  assert.doesNotMatch(line, /top-bar-here|sectionNumber|setPlace/);
+  assert.doesNotMatch(read("app/components/city2d/TopBar.tsx"), /top-bar-here/);
+  assert.doesNotMatch(css, /top-bar-here/);
 });
 
 test("Task 11: no Still view key on the bar (still view follows the system's setting)", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type MouseEvent } from "react";
 import { syncStill } from "../../lib/stillStore";
 import { listed } from "../../sections/registry";
 import WeatherClock from "../weather/WeatherClock";
@@ -34,10 +34,7 @@ import { useSection } from "./useSection";
 // back to sticky once the bar is clearly shorter (under 22%), so a phone's
 // toolbar coming and going (the screen's height changing by a little) can't
 // flip it back and forth mid-scroll.
-//
-// children: what the bar hands the menu to show on phones, before the time
-// and weather (TopBar passes the paper picker).
-export default function SectionsMenu({ children }: { children?: ReactNode }) {
+export default function SectionsMenu() {
   const nav = useRef<HTMLElement>(null);
   const here = useSection();
   // Still view follows the system's setting (lib/stillStore.ts); the menu
@@ -100,7 +97,6 @@ export default function SectionsMenu({ children }: { children?: ReactNode }) {
           </li>
         ))}
       </ul>
-      {children}
       <WeatherClock />
     </nav>
   );

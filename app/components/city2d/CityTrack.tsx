@@ -28,7 +28,8 @@ import { glideEase, glideMs, glideOn, landing, nearestPlace, placeAt, scrollYFor
 // the page's snap targets (a zero-size .snap-mark in the runway at each:
 // city-track.css snaps near one on a wide screen, onto one on the narrow
 // layout), the keys' steps (ArrowLeft/Right, PageUp/PageDown, Space), and
-// the bar's label (the "trackplace" event, as the nearest place changes).
+// the section you're at (the "trackplace" event, as the nearest place
+// changes: the metro map and the Sections menu read it).
 //
 // It also carries what a sideways page needs: an anchor (on load, a link,
 // Back/Forward) to its panel, focus moved into a stop off the screen
@@ -44,7 +45,7 @@ let marks: number[] | null = null;
 // journey is on: the metro map reads these as its sections' places
 export const trackMarks = () => marks;
 
-/** The bar's label (TopBar, ProgressLine): the "trackplace" event's detail, the place you're at */
+/** The "trackplace" event's detail, the place you're at (ProgressLine reads its section) */
 export type TrackPlace = { section: SectionId; title: string; n?: number; of?: number };
 let place: TrackPlace | null = null;
 // The last one announced, for a listener that comes after it

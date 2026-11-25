@@ -1,21 +1,21 @@
 // Composited contrast of the words on the keys of the one page (the top
 // bar's keys, the hero's two ways in, a project's keys, Contact's "Email
-// me", Copy and profile keys), on each of the three papers (cream,
-// charcoal, kraft: localStorage["paper"], read by the head script,
+// me", Copy and profile keys), on each of the two papers (cream,
+// charcoal: localStorage["paper"], read by the head script,
 // lib/paper.ts). Each key's own label colour is read as drawn; then its
 // words are hidden,
 // the key is photographed as drawn over the live page, and the pixels
 // under it that are worst for its words (the darkest 1% under dark words,
 // the lightest 1% under light ones, so a stray anti-aliased edge doesn't
 // count) are measured against its text colour. Exits 1 under 4.5:1.
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-contrast.mjs http://localhost:3102 [desktop|phone] [route=/] [papers=cream,charcoal,kraft]
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/glass-contrast.mjs http://localhost:3102 [desktop|phone] [route=/] [papers=cream,charcoal]
 // Task 12 (24 November 2026): the skies are gone with the city; the keys
 // are measured on each paper, against their own label colour.
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3102", view = "desktop", route = "/", paperArg] = process.argv.slice(2);
 const phone = view === "phone";
-const papers = paperArg ? paperArg.split(",") : ["cream", "charcoal", "kraft"];
+const papers = paperArg ? paperArg.split(",") : ["cream", "charcoal"];
 const rgb = (c) => c.match(/[\d.]+/g).slice(0, 3).map(Number);
 const lin = (c) => ((c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
 const lum = ([r, g, b]) => 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);

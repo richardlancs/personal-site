@@ -43,7 +43,7 @@ test("Projects and Experience take the central 80%; Home, the index, Interests a
 test("every panel is a pane of clear glass: a whisper of --panel, a texture and sheen in the paper's light, a rim, a soft shadow in the paper's own --shadow; no blur, no halo, no shade", () => {
   const panel = rule(':root[data-track="on"] .track .panel');
   assert.match(panel, /border: 1px solid var\(--rim\);/);
-  assert.match(panel, /--rim: color-mix\(in srgb, var\(--shadow\) \d+%, transparent\);/, "a darker rim on the light papers");
+  assert.match(panel, /--rim: color-mix\(in srgb, var\(--shadow\) \d+%, transparent\);/, "a darker rim on cream");
   assert.match(panel, /repeating-linear-gradient\(/, "a texture that reads as glass");
   assert.match(panel, /color-mix\(in srgb, var\(--panel\) [0-9]%, transparent\);/, "no more than a whisper of tint");
   assert.doesNotMatch(panel, /background: var\(--panel\);/, "see-through, not a card");

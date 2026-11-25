@@ -20,11 +20,11 @@
 @source not inline("container visible static fixed absolute sticky inline table grow transform resize rounded ring outline shadow blur transition italic");
 
 /*
-  Paper (docs/city/style.md): three crumpled papers, each with its own
-  colours, chosen by the Paper picker (PaperPicker.tsx) and kept on
-  <html data-paper="cream|charcoal|kraft"> by a head script before the
-  first paint; never by the system's appearance. Cream is the default,
-  so it is also plain :root. Components use these names only, never a
+  Paper (docs/city/style.md): two crumpled papers, each with its own
+  colours: cream by day, charcoal by night, chosen with the day/night key
+  (DayNight.tsx) and kept on <html data-paper="cream|charcoal"> by a head
+  script before the first paint; never by the system's appearance. Cream
+  is the default, so it is also plain :root. Components use these names only, never a
   hex. Every text colour is 4.5:1 or better on --paper, --paper-2 and
   --panel, and the grounds still are at the texture's darkest crease and
   lightest ridge (paper.css, measured per paper); the accent fill 3:1 or better on each ground, its label
@@ -79,33 +79,7 @@
   --ink: #050506;
 }
 
-/* Kraft: brown packing paper (hue 34) in near-black; navy (the
-   complement, 214) for the primary action like a blue stamp, oxblood
-   (analogous, 6: the red of a parcel stamp) for links, chosen states
-   and the line */
-:root[data-paper="kraft"] {
-  color-scheme: light;
-  --paper: #c9a77c;
-  --paper-2: #bf9c70;
-  --panel: #d6b98f;
-  --line: #9b7c55;
-  --text: #22180f;
-  --muted: #3a2a1d;
-  --accent: #1e3a5f;
-  --accent-hover: #284b78;
-  --on-accent: #f4e8d4;
-  --accent-2: #561710;
-  --focus: #7a2418;
-  --shadow: #3b2814;
-  --ink: #22180f;
-}
-
 :root {
-  /* Each paper's base whatever paper is on (the picker's dots) */
-  --swatch-cream: #efe7d6;
-  --swatch-charcoal: #080809;
-  --swatch-kraft: #c9a77c;
-
   /* The primary key's grain: one small noise in code (a fixed seed),
      drawn out sideways into brushed streaks, grey, laid over its face in
      soft-light at half strength; the same on every paper */
@@ -115,9 +89,9 @@
   --radius: 10px;
   --radius-lg: 16px;
 
-  /* Set in layout.tsx with next/font (Newsreader, Hanken Grotesk) */
-  --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-text: var(--font-hanken), "Helvetica Neue", Arial, sans-serif;
+  /* Set in layout.tsx with next/font (Fredoka, Nunito) */
+  --font-display: var(--font-fredoka), "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif;
+  --font-text: var(--font-nunito), "Helvetica Neue", Arial, sans-serif;
 
   /* Motion (docs/ui/ux-motion-principles.md): the only durations and
      curves anything uses. Arrive with --ease-out, travel with
@@ -129,6 +103,8 @@
   --t-base: 200ms;
   --t-slow: 280ms;
   --stagger: 60ms;
+  /* The day/night key's sun turning into the moon (DayNight.tsx) */
+  --t-morph: 460ms;
 
   /* The top bar's height and where the Sections menu opens: SectionsMenu
      measures the bar and writes both on <html> (a ResizeObserver), so they
@@ -196,7 +172,7 @@ h3,
 .font-display {
   font-family: var(--font-display);
   line-height: 1.1;
-  /* Newsreader is spaced for print: no extra tracking */
+  /* Fredoka is spaced generously already: no extra tracking */
   letter-spacing: 0;
 }
 
@@ -321,12 +297,22 @@ button.text-link,
   text-decoration: none;
 }
 
-/* The serif name is wider than the old signage face: a step smaller where
-   the bar is tightest (the narrowest phones, and the first widths that
-   show the weather), so the bar keeps its one row */
-@media (max-width: 359px), (min-width: 720px) and (max-width: 767px) {
+/* The round name is wide: on the narrowest phones, where the bar is
+   tightest, it steps down and the Sections key drops its icon (keeping its
+   name in words), so the bar keeps its one row beside the day/night key */
+@media (max-width: 367px) {
   .top-bar .top-bar-name {
     font-size: 1.125rem;
+  }
+
+  .top-bar-sections > svg {
+    display: none;
+  }
+}
+
+@media (max-width: 339px) {
+  .top-bar .top-bar-name {
+    font-size: 1rem;
   }
 }
 
@@ -477,8 +463,9 @@ button.text-link,
 
 /* Narrow: one row, the name and the keys (they drop under it, to the
    right, only with very large text); the time and weather at the foot of
-   the Sections menu instead (R7, M4) */
-@media (max-width: 719px) {
+   the Sections menu instead (R7, M4); up to 768px, where the bar has room
+   for the weather beside the day/night key */
+@media (max-width: 767px) {
   :root {
     --bar-h: calc(4.25rem + env(safe-area-inset-top));
   }
@@ -512,7 +499,7 @@ button.text-link,
   border-radius: 0;
 }
 
-@media (min-width: 720px) {
+@media (min-width: 768px) {
   .sections-menu .rh {
     display: none;
   }
@@ -634,15 +621,6 @@ body::after {
   font-weight: 600;
 }
 
-/* What the bar hands the menu (TopBar: the paper picker, on phones):
-   its own row under the list, a hairline above it; no side padding of
-   its own, so the picker's three keys fit one row at 320px */
-.sections-menu > ul + :not(.rh) {
-  margin-top: 0.5rem;
-  padding: 0.75rem 0 0.25rem;
-  border-top: 1px solid var(--line);
-}
-
 /* A section's part (Skills, under Projects): set in under it */
 .sections-menu .sections-menu-sub {
   padding-left: 2.25rem;
@@ -677,102 +655,94 @@ body::after {
   border: 0;
 }
 
-/* ---------- The Paper picker (components/ui/PaperPicker.tsx) ----------
-   Three keys, each a dot of its paper (--swatch-*, whatever paper is on)
-   and its name, the chosen one pressed (.glass's chosen state). In the
-   bar from 80rem, where it fits on the bar's one row; below, in the
-   Sections menu, above the time and weather. 8px apart, 44px tall. */
-.paper-picker {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
+/* ---------- The day/night key (components/ui/DayNight.tsx) ----------
+   A square key of the bar's glass (.glass-icon), pressed at night. Its
+   icon is drawn from data-paper on <html> (set before the first paint),
+   so it is right from the start and only turns when the paper changes.
+   Day: an outline sun, its rays out, the carving circle off the disc
+   (up and to the right). Night: the rays drawn in, turned and gone, the
+   disc grown (its stroke thinned to match, so the line stays the bar's
+   weight), the carving circle over it: an outline crescent. The turn is
+   --t-morph on --ease-in-out; hover (a pointer that hovers) gives a small
+   part of it, the rays drawing in a little and the circle peeking over
+   the sun's edge (at night, the circle backing off the moon a little and
+   the disc easing back toward the sun's size; the rays stay away), over
+   --t-base, and takes it back. Transforms, opacity and the stroke only.
+   Still view and reduced motion: no transition, nothing on hover. */
+.day-night svg {
+  overflow: visible;
 }
 
-.paper-picker-keys {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.day-night :is(.day-night-rays, .day-night-body, .day-night-cutter) {
+  transform-box: view-box;
+  transform-origin: 12px 12px;
 }
 
-.paper-key {
-  gap: 0.45rem;
-  padding-inline: 0.8rem;
+.day-night-body {
+  stroke-width: 1.75;
 }
 
-.paper-dot {
-  flex: none;
-  width: 0.875rem;
-  height: 0.875rem;
-  border: 1px solid color-mix(in srgb, var(--text) 45%, transparent);
-  border-radius: 50%;
+.day-night-cutter {
+  transform: translate(4.5px, -4.5px);
 }
 
-.paper-dot-cream {
-  background: var(--swatch-cream);
+:root[data-paper="charcoal"] .day-night-rays {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.5);
 }
 
-.paper-dot-charcoal {
-  background: var(--swatch-charcoal);
+:root[data-paper="charcoal"] .day-night-body {
+  stroke-width: 1.2;
+  transform: scale(1.45);
 }
 
-.paper-dot-kraft {
-  background: var(--swatch-kraft);
+:root[data-paper="charcoal"] .day-night-cutter {
+  transform: none;
 }
 
-/* In the bar the keys speak for themselves: the group's name is read
-   out, not drawn */
-.paper-picker-bar .paper-picker-label {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
-.paper-picker-bar {
-  display: none;
-}
-
-/* In the menu: its own row under the sections, the name above the keys */
-.paper-picker-menu {
-  margin-top: 0.5rem;
-  padding: 0.75rem 0.25rem 0.5rem;
-  border-top: 1px solid var(--line);
-}
-
-/* (narrower keys, so all three share one row in the menu's width) */
-.paper-picker-menu .paper-key {
-  gap: 0.3rem;
-  padding-inline: 0.45rem;
-}
-
-.paper-picker-menu .paper-picker-label {
-  width: 100%;
-  color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 500;
-}
-
-@media (min-width: 80rem) {
-  .paper-picker-bar {
-    display: flex;
-  }
-
-  .paper-picker-menu {
-    display: none;
+@media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .day-night :is(.day-night-rays, .day-night-body, .day-night-cutter) {
+    transition:
+      transform var(--t-morph) var(--ease-in-out),
+      opacity var(--t-morph) var(--ease-in-out),
+      stroke-width var(--t-morph) var(--ease-in-out);
   }
 }
 
-/* Without JavaScript (no data-paper from the head script) the keys
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) .day-night:hover :is(.day-night-rays, .day-night-body, .day-night-cutter) {
+    transition-duration: var(--t-base);
+    transition-timing-function: var(--ease-out);
+  }
+
+  :root:not([data-still="on"], [data-paper="charcoal"]) .day-night:hover .day-night-rays {
+    transform: rotate(20deg) scale(0.82);
+  }
+
+  :root:not([data-still="on"], [data-paper="charcoal"]) .day-night:hover .day-night-body {
+    transform: scale(1.08);
+  }
+
+  :root:not([data-still="on"], [data-paper="charcoal"]) .day-night:hover .day-night-cutter {
+    transform: translate(3.2px, -3.2px);
+  }
+
+  :root[data-paper="charcoal"]:not([data-still="on"]) .day-night:hover .day-night-body {
+    transform: scale(1.36);
+  }
+
+  :root[data-paper="charcoal"]:not([data-still="on"]) .day-night:hover .day-night-cutter {
+    transform: translate(1.1px, -1.1px);
+  }
+}
+
+/* Without JavaScript (no data-paper from the head script) the key
    couldn't work: none */
-:root:not([data-paper]) .paper-picker {
+:root:not([data-paper]) .day-night {
   display: none;
 }
 
-/* A new paper cross-fades in (PaperPicker.tsx, a view transition), over
+/* A new paper cross-fades in (DayNight.tsx, a view transition), over
    --t-slow; in still view and with reduced motion it is never started */
 ::view-transition-old(root),
 ::view-transition-new(root) {
@@ -953,20 +923,18 @@ a[data-resume][data-opening] {
 .hero-name {
   color: var(--text);
   font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
-  /* The one personal touch: the name hand-set in the serif's italic, at a
-     medium weight, so it reads like a signature over a printed page
-     (layout.tsx loads that one face alone) */
-  font-family: var(--font-newsreader-italic), var(--font-display);
-  font-style: italic;
-  font-weight: 500;
+  /* The display face upright (never italic), at its semibold: round and
+     happy, the page's one big word */
+  font-family: var(--font-display);
+  font-weight: 600;
   line-height: 1.1;
-  /* The serif's display cut sits a touch tight at this size */
-  letter-spacing: -0.015em;
+  /* Fredoka's wide round letters close up a touch at this size */
+  letter-spacing: -0.01em;
   overflow-wrap: break-word;
 }
 
 /* The programme and school, straight under the name: display type in
-   --text (not an accent), at the serif's book weight so the name above
+   --text (not an accent), at the display face's book weight so the name above
    stays the one bold line; one line on a desktop card, balanced where it
    must wrap; capped at 9vw so it fits a 320px screen at 200% text */
 .hero-headline {
@@ -1187,62 +1155,14 @@ a[data-resume][data-opening] {
 }
 
 /* Until the line has run (the page has loaded; never without JavaScript)
-   the bar doesn't name a section and the fill isn't drawn: they'd only
-   say Home */
-:root:not([data-landed]) :is(.top-bar-here, .progress-fill) {
+   the fill isn't drawn: it would only say Home */
+:root:not([data-landed]) .progress-fill {
   visibility: hidden;
 }
 
-/* A page without the sections (not found, an error): no line, and no
-   section named in the bar */
-body:not(:has(#home)) :is(.progress-line, .top-bar-here) {
+/* A page without the sections (not found, an error): no line */
+body:not(:has(#home)) .progress-line {
   display: none;
-}
-
-/* The section you're at in words, beside the name. The bar is full on one row up to
-   about 52rem (the name, the time and weather, three keys), so it starts
-   at 53rem, as its number alone until 64rem. Quiet words, not a
-   control. */
-.top-bar-here {
-  display: none;
-  color: var(--muted);
-  font-family: var(--font-display);
-  font-size: 0.9375rem;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.top-bar-here-number {
-  font-variant-numeric: tabular-nums;
-}
-
-@media (min-width: 53rem) {
-  /* (it comes after the keys in the bar's order, for Tab: drawn here) */
-  .top-bar-name,
-  .top-bar-here {
-    order: -1;
-  }
-
-  .top-bar-name {
-    margin-right: 0;
-  }
-
-  /* (it takes the room left and cuts short with an ellipsis, so a long
-     place, "Projects · 4 of 5 Codebase Puzzles", never adds a row) */
-  .top-bar-here {
-    display: block;
-    flex: 1 1 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-/* Where the bar is short of room, the number alone */
-@media (min-width: 53rem) and (max-width: 63.99rem) {
-  .top-bar-here-name {
-    display: none;
-  }
 }
 
 /* The lock: the fill eases onto (or off) a station over --t-fast, only at

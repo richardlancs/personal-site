@@ -85,7 +85,7 @@ test("the primary key's face: one grain in code over the accent (charcoal's gold
   const grain = root.match(/--key-grain: url\("data:image\/svg\+xml,([^"]*)"\);/)?.[1];
   assert.ok(grain, "one inline SVG grain on :root");
   assert.match(grain, /feTurbulence[^>]*seed='\d+'/, "a fixed seed");
-  // Charcoal's face is gold leaf: a foil gradient; cream and kraft lay the grain on the flat accent
+  // Charcoal's face is gold leaf: a foil gradient; cream lays the grain on the flat accent
   const charcoal = css.match(/\n:root\[data-paper="charcoal"\] \{([^}]*)\}/)?.[1] ?? "";
   assert.match(charcoal, /\n\s*--accent-fill: [^;]*linear-gradient\(115deg, /);
   const primary = block(".glass-primary");

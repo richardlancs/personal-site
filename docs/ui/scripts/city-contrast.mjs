@@ -1,9 +1,9 @@
 // Composited contrast of every visible word on the one page (`/`), on each
-// of the three papers (cream, charcoal, kraft: <html data-paper>, chosen by
-// the Paper picker and kept in localStorage["paper"], lib/paper.ts), wide
+// of the two papers (cream by day, charcoal by night: <html data-paper>, chosen by
+// the day/night key and kept in localStorage["paper"], lib/paper.ts), wide
 // and on a phone. Any server will do (the papers are the visitor's choice,
 // not a development preview):
-//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3102] [papers=cream,charcoal,kraft] [sizes=1440x900,390x844]  (positional: base, then papers, then sizes; "" for the default)
+//   PLAYWRIGHT=…/playwright/index.mjs node docs/ui/scripts/city-contrast.mjs [base=http://localhost:3102] [papers=cream,charcoal] [sizes=1440x900,390x844]  (positional: base, then papers, then sizes; "" for the default)
 //
 // The method is panel-contrast.mjs's: two photographs of each screen, every
 // word see-through, then magenta. The pixels that differ are the letters;
@@ -29,7 +29,7 @@
 import { launch } from "../../audit/scripts/pw.mjs";
 
 const [base = "http://localhost:3102", paperArg, sizeArg] = process.argv.slice(2);
-const PAPERS = ["cream", "charcoal", "kraft"];
+const PAPERS = ["cream", "charcoal"];
 const papers = paperArg ? paperArg.split(",") : PAPERS;
 const sizes = (sizeArg || "1440x900,390x844").split(",").map((s) => {
   const [width, height] = s.split("x").map(Number);

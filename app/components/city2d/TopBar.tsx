@@ -1,16 +1,15 @@
 import Link from "next/link";
 import { backgroundMusic, profile } from "../../data/portfolio";
 import MusicToggle from "../MusicToggle";
-import PaperPicker from "../ui/PaperPicker";
+import DayNight from "../ui/DayNight";
 import WeatherClock from "../weather/WeatherClock";
 import ProgressLine from "./ProgressLine";
 import SectionsMenu from "./SectionsMenu";
 
 // The bar along the top of every page (city.css, "The top bar"): the
-// name, the way home; the section you're at; Waterloo's time and
-// weather, only to read; the Paper picker (on wide screens: on phones
-// it is in the Sections menu, so the bar never gains a row); the Sections
-// menu, built from the registry; and the music (its note, if the song can't load, hangs
+// name, the way home; Waterloo's time and weather, only to read (on
+// phones, in the Sections menu); the day/night key; the Sections menu,
+// built from the registry; and the music (its note, if the song can't load, hangs
 // under its key); then the metro map, fixed along the foot of the screen
 // (ProgressLine.tsx). It stays at the top while the page scrolls under
 // it, clear of a notch.
@@ -22,7 +21,7 @@ export default function TopBar() {
       </Link>
       <WeatherClock />
       <div className="top-bar-end">
-        <PaperPicker where="bar" />
+        <DayNight />
         {/* A popover button: the browser exposes it as expanded or
             collapsed and returns focus to it when Escape closes the menu.
             No aria-haspopup: the menu is a list of links, not a menu widget */}
@@ -36,14 +35,11 @@ export default function TopBar() {
           <MusicToggle backgroundMusic={backgroundMusic} />
         </span>
       </div>
-      {/* The section you're at, in words on mid-width screens (drawn
-          beside the name: city.css), and the metro map, fixed along the
-          foot of the screen on the journey: after the bar's keys, so Tab
-          reaches the bar's own keys first, then the map */}
+      {/* The metro map, fixed along the foot of the screen on the
+          journey: after the bar's keys, so Tab reaches the bar's own keys
+          first, then the map */}
       <ProgressLine />
-      <SectionsMenu>
-        <PaperPicker where="menu" />
-      </SectionsMenu>
+      <SectionsMenu />
     </header>
   );
 }

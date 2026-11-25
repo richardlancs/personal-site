@@ -3,7 +3,7 @@
 // the paper, the claret accent, the ink and the teal accent-2), and
 // the share card, a sheet of crumpled cream paper drawn here (an SVG
 // turbulence lit from the upper left, a fixed seed) with the name set in
-// the site's own fonts: Newsreader and Hanken Grotesk, as next/font/local
+// the site's own fonts: Fredoka and Nunito, as next/font/local
 // serves them (app/fonts) from a running copy of the site (nothing fetched
 // from anywhere else; the site at <base> must be up: `next dev` or
 // `next start`).
@@ -25,15 +25,14 @@ const [base = "http://localhost:3100"] = process.argv.slice(2);
 const browser = await launch();
 const page = await browser.newPage({ deviceScaleFactor: 1 });
 
-// The site's families (layout.tsx: --font-newsreader, its italic for the
-// name --font-newsreader-italic, --font-hanken),
+// The site's families (layout.tsx: --font-fredoka, --font-nunito),
 // their Latin faces read from its own stylesheets and fetched from it, as
 // data URLs for the card
 await page.goto(base, { waitUntil: "load" });
 const faces = await page.evaluate(async () => {
   const root = getComputedStyle(document.documentElement);
   const family = (name) => root.getPropertyValue(name).split(",")[0].trim().replace(/^['"]|['"]$/g, "");
-  const want = { Display: family("--font-newsreader"), Name: family("--font-newsreader-italic"), Text: family("--font-hanken") };
+  const want = { Display: family("--font-fredoka"), Text: family("--font-nunito") };
   const out = [];
   for (const sheet of document.styleSheets) {
     let rules;
@@ -42,7 +41,7 @@ const faces = await page.evaluate(async () => {
       if (!(rule instanceof CSSFontFaceRule)) continue;
       const name = rule.style.getPropertyValue("font-family").trim().replace(/^['"]|['"]$/g, "");
       const style = rule.style.getPropertyValue("font-style") || "normal";
-      const as = Object.keys(want).find((k) => want[k] === name && (k === "Name") === (style === "italic"));
+      const as = Object.keys(want).find((k) => want[k] === name && style === "normal");
       const range = rule.style.getPropertyValue("unicode-range");
       if (!as || (range && !/U\+0+-F?FF\b/i.test(range))) continue;
       const src = rule.style.getPropertyValue("src").match(/url\(["']?([^"')]+)/)[1];
@@ -54,7 +53,7 @@ const faces = await page.evaluate(async () => {
   }
   return out;
 });
-for (const as of ["Display", "Name", "Text"]) if (!faces.some((f) => f.as === as)) throw new Error(`no ${as} font found at ${base}: is the site running?`);
+for (const as of ["Display", "Text"]) if (!faces.some((f) => f.as === as)) throw new Error(`no ${as} font found at ${base}: is the site running?`);
 
 async function png(html, width, height, type = "png") {
   await page.setViewportSize({ width, height });
@@ -125,7 +124,7 @@ const card = `
   <div style="position:relative;width:1200px;height:630px;overflow:hidden;background:${cream.paper}">
     ${crumple}
     <div style="position:absolute;left:72px;top:72px;padding:38px 48px;border-radius:16px;background:${cream.panel};border:1px solid ${cream.line};box-shadow:0 2px 3px ${cream.shadow},0 22px 44px -18px ${cream.shadow}">
-      <div style="font-family:CardName,CardDisplay;font-style:italic;font-weight:500;font-size:92px;line-height:1.05;color:${cream.text};letter-spacing:-0.015em">Richard Lan</div>
+      <div style="font-family:CardDisplay;font-weight:600;font-size:92px;line-height:1.05;color:${cream.text};letter-spacing:-0.01em">Richard Lan</div>
       <div style="margin-top:14px;font-family:CardDisplay;font-weight:400;font-size:36px;color:${cream.accent}">cs@uwaterloo</div>
       <div style="margin-top:20px;width:56px;height:3px;border-radius:2px;background:${cream.accent2}"></div>
       <div style="margin-top:18px;font-family:CardText;font-weight:500;font-size:26px;color:${cream.text}">Software engineering portfolio</div>

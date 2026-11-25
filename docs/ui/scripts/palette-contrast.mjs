@@ -1,4 +1,4 @@
-// Checks the three papers' palettes (docs/city/style.md, "## Palette", one
+// Checks the two papers' palettes (day: cream; night: charcoal) (docs/city/style.md, "## Palette", one
 // "### <paper>" table each) before any CSS is built on them (WCAG 2.1
 // contrast): text, muted and accent-2 at 4.5:1 or better on every ground,
 // the accent fill and the focus ring at 3:1 or better, the label on the
@@ -34,7 +34,7 @@ const contrast = (a, b) => {
 // The texture's crease (darker) and ridge (lighter): a scale on each channel, or a colour
 const shade = (hex, k) => (typeof k === "string" ? k : scale(hex, k));
 const scale = (hex, k) => `#${[1, 3, 5].map((i) => Math.max(0, Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * k))).toString(16).padStart(2, "0")).join("")}`;
-const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"], kraft: [0.93, 1.04] };
+const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"] };
 
 // The primary key's textured face (app/city.css: --key-grain over
 // --accent-fill, and the hover's wash of --accent-hover): its darkest and
@@ -44,14 +44,13 @@ const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"], kraft: [0.93, 
 const FILLS = {
   cream: { rest: ["#76282e", "#92454c"], hover: ["#883239", "#a15158"] },
   charcoal: { rest: ["#b18436", "#ecd18d"], hover: ["#c89d49", "#e5c37a"] },
-  kraft: { rest: ["#1c375b", "#36567a"], hover: ["#264874", "#436790"] },
 };
 
 const need = ["--paper", "--paper-2", "--panel", "--line", "--text", "--muted", "--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow", "--ink"];
 let failed = false;
 const names = Object.keys(papers);
-if (names.join() !== "cream,charcoal,kraft") {
-  console.error(`expected the cream, charcoal and kraft tables, found: ${names.join(", ") || "none"}`);
+if (names.join() !== "cream,charcoal") {
+  console.error(`expected the cream and charcoal tables, found: ${names.join(", ") || "none"}`);
   failed = true;
 }
 for (const [paper, palette] of Object.entries(papers)) {

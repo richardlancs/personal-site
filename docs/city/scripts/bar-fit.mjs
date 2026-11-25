@@ -5,8 +5,8 @@
 //   PLAYWRIGHT=…/playwright/index.mjs node docs/city/scripts/bar-fit.mjs <base> [out.json] [baseline.json]
 // With a baseline, it compares: every width's `/` bar no taller than the
 // baseline's (exits 1 and lists the widths otherwise; a shorter bar, a
-// row gone, passes and is listed as a note). The Paper picker sits in the
-// bar from 80rem and in the Sections menu below, so it counts here.
+// row gone, passes and is listed as a note). The day/night key sits in
+// the bar at every width, so it counts here.
 import { readFileSync, writeFileSync } from "node:fs";
 import { launch } from "../../audit/scripts/pw.mjs";
 

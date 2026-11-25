@@ -391,14 +391,9 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
 // map's own, nor the top bar's) under the map's parts, where it is fixed
 // at the foot of the screen (on the journey); it must never lie over a
 // panel's words. Words a panel has scrolled out of its own box are hidden
-// by it, so only what shows counts. And the bar's section name must not
-// run into the bar's other parts.
+// by it, so only what shows counts.
 const covers = () => {
   const out = [];
-  const box = (el) => el && el.checkVisibility() && el.getBoundingClientRect();
-  const meets = (a, b) => a && b && a.width > 0 && b.width > 0 && a.left < b.right - 0.5 && a.right > b.left + 0.5 && a.top < b.bottom - 0.5 && a.bottom > b.top + 0.5;
-  const here = box(document.querySelector(".top-bar-here"));
-  if (here) for (const sel of [".top-bar-name", ".top-bar .rh", ".top-bar-end"]) if (meets(here, box(document.querySelector(sel)))) out.push(`the bar's section name runs into ${sel}`);
   const line = document.querySelector(".progress-line");
   if (!line || !line.checkVisibility() || getComputedStyle(line).position !== "fixed") return out;
   const parts = [line, ...line.querySelectorAll("*")].filter((e) => e.checkVisibility({ opacityProperty: true, visibilityProperty: true })).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0 && r.height > 0);

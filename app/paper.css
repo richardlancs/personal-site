@@ -3,8 +3,8 @@
   in code, no photograph. Two noises of creases (feTurbulence, fixed
   seeds), inverted so they fold up into ridges, a fine grain over them,
   lit from the upper left (feDiffuseLighting): a grey relief laid over
-  each paper's own colour in soft-light, so the same sheet serves all
-  three. Drawn at the screen's resolution, so crisp at any pixel ratio.
+  each paper's own colour in soft-light, so the same sheet serves
+  both. Drawn at the screen's resolution, so crisp at any pixel ratio.
   Fixed behind the journey, so the stops travel over one still sheet; it
   never moves. How strongly it shows is per paper (--crumple), inside the
   palette's contrast margins (docs/ui/scripts/palette-contrast.mjs).
@@ -19,10 +19,6 @@
 
 :root[data-paper="charcoal"] {
   --crumple: 0.25;
-}
-
-:root[data-paper="kraft"] {
-  --crumple: 0.42;
 }
 
 /* Its own stacking context, so the sheet sits over the body's paper
