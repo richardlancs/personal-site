@@ -35,7 +35,6 @@
    analogous on the warm side: book cloth, a wax seal, an editor's red
    ink) for the one primary action; deep teal (184, the split's near arm
    and the mark's cyan) for links, chosen states and the metro line.
-   --accent-fill is the primary key's face under the shared grain
    (task-13/A/accents.md) */
 :root,
 :root[data-paper="cream"] {
@@ -48,7 +47,6 @@
   --muted: #50545c;
   --accent: #7a2a30;
   --accent-hover: #8c353c;
-  --accent-fill: linear-gradient(165deg, #86323a, #7a2a30 55%, #6c2329);
   --on-accent: #f7f1e5;
   --accent-2: #0a6168;
   --focus: #1f4f8a;
@@ -95,7 +93,6 @@
   --muted: #3a2a1d;
   --accent: #1e3a5f;
   --accent-hover: #284b78;
-  --accent-fill: linear-gradient(165deg, #24436c, #1e3a5f 55%, #193253);
   --on-accent: #f4e8d4;
   --accent-2: #561710;
   --focus: #1e3a5f;
@@ -112,7 +109,7 @@
   /* The primary key's grain: one small noise in code (a fixed seed),
      drawn out sideways into brushed streaks, grey, laid over its face in
      soft-light at half strength; the same on every paper */
-  --key-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Cfilter id='k' x='0' y='0' width='1' height='1'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 .5'/%3E%3C/filter%3E%3Crect width='240' height='120' filter='url(%23k)'/%3E%3C/svg%3E");
+  --key-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.02 1.1' numOctaves='2' seed='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 .5'/%3E%3C/filter%3E%3Crect width='240' height='120' filter='url(%23k)'/%3E%3C/svg%3E");
 
   /* One family of soft corners */
   --radius: 10px;
@@ -796,7 +793,7 @@ a[data-resume][data-opening] {
   --glass-in: inset 0 0 0 1px var(--accent-2), inset 0 2px 5px -2px color-mix(in srgb, var(--shadow) 55%, transparent);
   --glass-lift: 0 0 #0000;
   border-color: var(--accent-2);
-  background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+  background-color: color-mix(in srgb, var(--accent-2) 12%, #0000);
 }
 
 /* Very large text on a phone: a bar taller than a quarter of the screen
@@ -888,7 +885,7 @@ a[data-resume][data-opening] {
   height: 12px;
   border: 2px solid var(--accent-2);
   border-radius: 50%;
-  background: var(--panel);
+  background: var(--paper);
 }
 
 .exp-entry[data-current]::before {
@@ -1428,10 +1425,12 @@ details[open] > summary.glass {
 /*
   ---------- Keys (.glass, the class's old name) ----------
   Every button and button-like control (tertiary actions stay text
-  links). A rounded tab of card as wide as its words, 44px tall: opaque
-  --panel, an ink edge (--text, two-fifths in), the faintest shadow
-  where it stands off the paper, and an opaque --text label. No blur:
-  paper is never see-through.
+  links). A rounded tab of clear glass as wide as its words, 44px tall,
+  like the panels: no fill (the paper and its crumple show through, and
+  --text is 4.5:1 on every part of it), a crisp ink edge (--text,
+  two-fifths in), the faintest shadow where it stands off the paper, and
+  an opaque --text label. No blur. Hover and chosen tint it with a
+  translucent --accent-2.
 
   The states, the same on every control, in every paper:
   - secondary (.glass); primary (.glass-primary): the paper's textured
@@ -1474,7 +1473,7 @@ details[open] > summary.glass {
   padding: 0 1rem;
   border: 1px solid var(--key-edge, color-mix(in srgb, var(--text) 40%, var(--panel)));
   border-radius: var(--radius);
-  background: var(--tint, var(--panel));
+  background: var(--tint, #0000);
   color: var(--glass-ink, var(--text));
   font-weight: 500;
   text-decoration: none;
@@ -1496,8 +1495,8 @@ details[open] > summary.glass {
   --glass-ink: var(--on-accent);
   border-color: color-mix(in srgb, var(--accent) 75%, var(--text));
   /* Its face: the grain over a light wash (hover only) over the paper's
-     --accent-fill, the flat --accent under all three */
-  background-image: var(--key-grain), var(--key-wash, linear-gradient(#0000 0 0)), var(--accent-fill);
+     --accent-fill (charcoal's gold leaf), over the flat --accent */
+  background-image: var(--key-grain), var(--key-wash, none), var(--accent-fill, none);
   background-blend-mode: soft-light, normal, normal, normal;
   font-weight: 700;
 }
@@ -1577,7 +1576,7 @@ details[open] > summary.glass {
 @media (hover: hover) {
   :where(.glass:not(:disabled, [aria-disabled="true"])):hover {
     border-color: var(--text);
-    background-color: color-mix(in srgb, var(--tint, var(--panel)), var(--accent-2) 10%);
+    background-color: color-mix(in srgb, var(--accent-2) 10%, #0000);
   }
 }
 
@@ -1587,7 +1586,7 @@ details[open] > summary.glass {
   --glass-in: inset 0 0 0 1px var(--accent-2), inset 0 2px 5px -2px color-mix(in srgb, var(--shadow) 55%, transparent);
   --glass-lift: 0 0 #0000;
   border-color: var(--accent-2);
-  background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+  background-color: color-mix(in srgb, var(--accent-2) 12%, #0000);
   background-image: none;
 }
 
@@ -1705,7 +1704,7 @@ details[open] > summary.glass {
 @keyframes glass-tint {
   from {
     border-color: var(--accent-2);
-    background-color: color-mix(in srgb, var(--panel), var(--accent-2) 12%);
+    background-color: color-mix(in srgb, var(--accent-2) 12%, #0000);
     background-image: none;
   }
 }

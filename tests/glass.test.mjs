@@ -62,15 +62,16 @@ test("the keys used most (the top bar's, the Sections menu's) get the tint at on
   assert.doesNotMatch(keyframes("glass-tint"), /scale|translate|transform/);
 });
 
-test("a key is 44px tall, opaque paper with labels in opaque --text, no blur", () => {
+test("a key is 44px tall, clear glass with labels in opaque --text, no blur", () => {
   // In :where(), so a control's own class sets its size and type over it
   const glass = block(":where(.glass)");
   assert.match(glass, /min-height: 44px/);
   assert.match(glass, /color: var\(--glass-ink, var\(--text\)\)/);
   assert.match(glass, /border-radius: var\(--radius\)/);
-  assert.match(glass, /background: var\(--tint, var\(--panel\)\)/);
+  // Clear glass like the panels: no fill of its own, the paper shows through
+  assert.match(glass, /background: var\(--tint, #0000\)/);
   assert.match(glass, /border: 1px solid var\(--key-edge, color-mix\(in srgb, var\(--text\) 40%, var\(--panel\)\)\)/);
-  assert.doesNotMatch(glass, /backdrop-filter/, "paper is never see-through");
+  assert.doesNotMatch(glass, /backdrop-filter/, "no blur");
   const primary = block(".glass-primary");
   assert.match(primary, /--tint: var\(--accent\);\s*--glass-ink: var\(--on-accent\);/);
   // The press layers sit under the label and inside the button
@@ -79,17 +80,16 @@ test("a key is 44px tall, opaque paper with labels in opaque --text, no blur", (
   assert.match(block(".glass::before,\n.glass::after"), /z-index: -1/);
 });
 
-test("the primary key's face: one grain in code over each paper's accent fill, kept on hover, dropped when chosen or for more contrast", () => {
+test("the primary key's face: one grain in code over the accent (charcoal's gold leaf), kept on hover, dropped when chosen or for more contrast", () => {
   const root = css.match(/\n:root \{([^}]*)\}/)?.[1] ?? "";
   const grain = root.match(/--key-grain: url\("data:image\/svg\+xml,([^"]*)"\);/)?.[1];
   assert.ok(grain, "one inline SVG grain on :root");
   assert.match(grain, /feTurbulence[^>]*seed='\d+'/, "a fixed seed");
-  for (const paper of ["cream", "charcoal", "kraft"]) {
-    const own = css.match(new RegExp(`\\n:root\\[data-paper="${paper}"\\] \\{([^}]*)\\}`))?.[1] ?? "";
-    assert.match(own, /\n\s*--accent-fill: [^;]*linear-gradient\(/, `${paper}: --accent-fill`);
-  }
+  // Charcoal's face is gold leaf: a foil gradient; cream and kraft lay the grain on the flat accent
+  const charcoal = css.match(/\n:root\[data-paper="charcoal"\] \{([^}]*)\}/)?.[1] ?? "";
+  assert.match(charcoal, /\n\s*--accent-fill: [^;]*linear-gradient\(115deg, /);
   const primary = block(".glass-primary");
-  assert.match(primary, /background-image: var\(--key-grain\), var\(--key-wash, [^)]*\)\), var\(--accent-fill\);/);
+  assert.match(primary, /background-image: var\(--key-grain\), var\(--key-wash, none\), var\(--accent-fill, none\);/);
   assert.match(primary, /background-blend-mode: soft-light, normal/);
   assert.match(css, /\.glass-primary:not\(:disabled, \[aria-disabled="true"\]\):hover \{\s*--key-wash: linear-gradient\(/, "hover washes the face, the grain kept");
   const chosen = css.match(/\n\.glass:is\(\[aria-pressed="true"\][^{]*\{([^}]*)\}/)?.[1] ?? "";

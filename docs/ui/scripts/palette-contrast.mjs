@@ -42,9 +42,9 @@ const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"], kraft: [0.93, 
 // 1440x900 with the label hidden (inside the edge). The label must hold
 // 4.5:1 on every grain of it.
 const FILLS = {
-  cream: { rest: ["#72272d", "#984a52"], hover: ["#812f36", "#9c4d54"] },
-  charcoal: { rest: ["#b08235", "#ecd18c"], hover: ["#c79b47", "#e5c57d"] },
-  kraft: { rest: ["#1c3658", "#3b5b81"], hover: ["#22426b", "#3e6188"] },
+  cream: { rest: ["#76282e", "#92454c"], hover: ["#883239", "#a15158"] },
+  charcoal: { rest: ["#b18436", "#ecd18d"], hover: ["#c89d49", "#e5c37a"] },
+  kraft: { rest: ["#1c375b", "#36567a"], hover: ["#264874", "#436790"] },
 };
 
 const need = ["--paper", "--paper-2", "--panel", "--line", "--text", "--muted", "--accent", "--accent-hover", "--on-accent", "--accent-2", "--focus", "--shadow", "--ink"];

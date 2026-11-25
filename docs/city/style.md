@@ -156,14 +156,13 @@ paper is flat.
 ## The primary key's face
 
 The one primary action in each paper (`.glass-primary`) is not a flat
-fill: a gradient per paper (`--accent-fill`, in its token block) under
-one shared grain (`--key-grain` on `:root`: a fractal noise in code,
-fixed seed, drawn out sideways into brushed streaks, grey at half
-strength, laid in `soft-light`). The family is the same on every paper;
-on charcoal the gradient is gold leaf (`#ad7f30` to `#e6c477` and back,
-a light band at 46% and a thin highlight along the top edge), on cream
-and kraft a quiet fall of the accent from top left to bottom right, so
-the grain reads as book cloth. Hover lays a wash of `--accent-hover`
+fill: one shared grain (`--key-grain` on `:root`: a fractal noise in
+code, fixed seed, drawn out sideways into brushed streaks, grey at half
+strength, laid in `soft-light`) over the accent. The family is the same
+on every paper; on cream and kraft it lies on the flat `--accent` and
+reads as book cloth; on charcoal over gold leaf (`--accent-fill` in its
+token block: `#ad7f30` to `#e6c477` and back, a light band at 46% and a
+thin highlight along the top edge). Hover lays a wash of `--accent-hover`
 over the face, keeping the grain; chosen and disabled drop the face.
 Under `prefers-contrast: more` and in forced colours the face is flat
 `--accent`. Nothing on it moves.
