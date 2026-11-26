@@ -328,8 +328,9 @@ const measure = ({ scope, insets, phone, touch, width, height }) => {
     if (b.layer && !b.hidden) {
       const x = (b.r.l + b.r.r) / 2;
       const y = r.top + r.height / 2;
-      // (Not one scrolled out of sight inside its menu)
-      const scroller = b.el.parentElement?.closest(":popover-open, .resume-doc");
+      // (Not one scrolled out of sight inside its menu, the résumé's
+      // document or its bar, which scrolls past half the screen)
+      const scroller = b.el.parentElement?.closest(":popover-open, .resume-doc, .resume-bar");
       const sr = scroller?.getBoundingClientRect();
       const shown = !sr || (y > sr.top && y < sr.bottom);
       if (shown && x >= 0 && x < vw && y >= 0 && y < vh) {
