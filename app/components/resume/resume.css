@@ -117,11 +117,16 @@
 
 /* ---------- The bar: title, zoom, pages, Download, Close ---------- */
 
+/* Never more than half the screen (very large text on a phone wraps it to
+   five rows and left the page a slit): past that it scrolls on its own */
 .resume-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem 1rem;
+  max-height: 50svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 0.75rem 1rem 0.75rem 1.4rem;
   border-bottom: 1px solid var(--line);
   background: var(--paper-2);
@@ -185,6 +190,7 @@
   max-width: 100%;
   white-space: normal;
   text-align: center;
+  line-height: 1.25;
 }
 
 .resume .resume-icon {
