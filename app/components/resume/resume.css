@@ -150,10 +150,15 @@
   gap: 0.35rem;
 }
 
+/* (with very large text its keys wrap inside the bar's padding, clear of
+   a phone's notch, rather than running past it) */
 .resume-end {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   align-items: center;
   gap: 0.5rem;
+  max-width: 100%;
 }
 
 .resume svg {
@@ -171,6 +176,15 @@
 .resume .glass {
   font-size: 0.95rem;
   white-space: nowrap;
+}
+
+/* The two longest labels wrap inside their key rather than being cut off
+   by it (200% text on a phone); at any usual size they keep one line */
+.resume .resume-open,
+.resume .resume-download {
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
 }
 
 .resume .resume-icon {
