@@ -839,6 +839,13 @@ a[data-resume][data-opening] {
   gap: 2.5rem;
 }
 
+/* Read top to bottom (phones, no scripts, print): each section clear of
+   the one before and of the bar, no painting above it to rise into */
+:root:not([data-track="on"]) :is(.station-body, .station-row) {
+  margin-top: 0;
+  padding-top: clamp(2rem, 6vw, 3.5rem);
+}
+
 .panel {
   --radius-in: max(0.25rem, var(--radius-lg) - var(--pad, 0px));
 }
@@ -909,20 +916,10 @@ a[data-resume][data-opening] {
    and the links. On the journey it is the first stop's panel
    (city-track.css); stacked, it is all under the band. */
 
+/* (no box round the name: the paper is quiet enough to hold it, either way) */
 .hero-backing {
   display: inline-block;
   max-width: 100%;
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-in, var(--radius-lg));
-  background: var(--panel);
-}
-
-/* On the journey the paper card carries the name: no box in a box */
-:root[data-track="on"] .hero-backing {
-  padding: 0;
-  border: 0;
-  background: none;
 }
 
 /* The name, the page's one h1 (capped so a long word never pushes past a

@@ -34,11 +34,12 @@ test("one primary action with the résumé beside it as plain glass; no duplicat
   assert.match(css, /\.hero-actions \{[^}]*display: flex;[^}]*gap: 0\.75rem;/);
 });
 
-test("the headline is display type in --text, not a cyan accent; no box behind the name on the journey", () => {
+test("the headline is display type in --text, not a cyan accent; no box behind the name", () => {
   const headline = css.match(/\.hero-headline \{[^}]*\}/)?.[0] ?? "";
   assert.match(headline, /color: var\(--text\);/);
   assert.doesNotMatch(headline, /--cyan|letter-spacing/);
-  assert.match(css, /:root\[data-track="on"\] \.hero-backing \{\s*padding: 0;\s*border: 0;\s*background: none;/);
+  const backing = css.match(/\.hero-backing \{[^}]*\}/)?.[0] ?? "";
+  assert.doesNotMatch(backing, /border:|background:/, "the name on the paper itself, read either way");
 });
 
 test("a short screen: a compact name, the actions straight after, the links on their row", () => {

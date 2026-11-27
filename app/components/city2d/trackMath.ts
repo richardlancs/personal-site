@@ -36,7 +36,10 @@ export function stopAt(scrollY: number, offsets: number[], lead = 0): number {
  * tall under the bar, so it reads stacked instead (22em: 704px at 200%,
  * 352px at 100%).
  */
-export const TRACK_MIN = { width: 320, height: 320, ems: 22 } as const;
+// (768px wide: a phone, held either way, reads top to bottom, at
+// Richard's word of 27 November 2026, "change the mobile format to run
+// vertically instead of left and right"; a tablet keeps the journey)
+export const TRACK_MIN = { width: 768, height: 320, ems: 22 } as const;
 
 /**
  * The room a stop's panel has, in px, on a `w` × `h` screen with root text

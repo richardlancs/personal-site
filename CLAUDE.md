@@ -160,7 +160,7 @@ anything, nothing smooths the wheel, nothing traps.
 
 - On: `<html data-track="on">`, set before the first paint by the head
   script (`lib/track.ts`) on `/` with scripts and a screen of at least
-  320 × 320 and 22em tall in the root's text size (`trackMath.ts:
+  768px wide (phones read top to bottom: round 11), 320px and 22em tall in the root's text size (`trackMath.ts:
   TRACK_MIN`, `trackFits`), and where a panel gets at least 20em of room
   (`trackRoom`). `CityTrack` sets the runway's height (`--travel`) and
   `data-track-ready`; if it never does within 3 s of load, the head script

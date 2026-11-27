@@ -181,7 +181,8 @@ test("the head script turns the journey on before the first paint, only on / wit
   // Opened without an anchor, the first measure moves nothing (an anchor: straight there)
   assert.match(ct, /if \(first\) \{\s*first = false;\s*if \(location\.hash\.length > 1\) toHash\(location\.hash, true\);\s*\}/);
   assert.equal(run(1440, 900).attrs["data-track"], "on");
-  assert.equal(run(390, 844).attrs["data-track"], "on");
+  assert.equal(run(390, 844).attrs["data-track"], undefined, "a phone reads top to bottom");
+  assert.equal(run(768, 1024).attrs["data-track"], "on", "a tablet keeps the journey");
   // A panel needs ROOM_EMS of room (trackRoom), so a phone on its side reads stacked
   assert.equal(run(844, 390).attrs["data-track"], undefined, "a phone on its side");
   assert.equal(run(1024, 768).attrs["data-track"], "on", "a small laptop");
@@ -359,5 +360,5 @@ test("Task 9: a panel needs 20em of room, or the page reads stacked", () => {
   assert.ok(trackRoom(844, 390) < 320 && trackRoom(667, 375) < 320, "phones on their side");
   assert.ok(trackRoom(390, 844, 32) < 640, "a phone at 200% text");
   assert.ok(trackRoom(1024, 768) >= 320 && trackRoom(390, 844) >= 320 && trackRoom(1440, 900) >= 320);
-  assert.ok(!trackFits(844, 390) && trackFits(1024, 768) && trackFits(390, 844) && !trackFits(390, 844, 32));
+  assert.ok(!trackFits(844, 390) && trackFits(1024, 768) && !trackFits(390, 844) && trackFits(768, 1024) && !trackFits(390, 844, 32));
 });
