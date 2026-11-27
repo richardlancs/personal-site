@@ -45,3 +45,8 @@ next-env.d.ts
 
 # Source artwork: PSD/KRA files, candidates and full-size masters (large)
 /art/
+
+# Tentsurfer (Måns Grebäck), tried for the headings: the free file is for
+# personal use only and its licence doesn't cover a webfont, so it is never
+# committed (the headings use Oleo Script, OFL, instead)
+/app/fonts/tentsurfer/

@@ -14,7 +14,7 @@ The whole site is one sheet of crumpled paper.
 - **Doodles in the margins.** Hand-drawn line drawings sit beside the cards. By day they are pencil on cream; by night they are chalk on a blackboard: a sun or a constellation, paper stars, a coffee ring or a moon, a small neural network, a sigmoid, a linked list, a git branch and merge, a binary tree, a bell curve, "Hi" in binary, and two equations in every gap between the project cards. They are decoration only: hidden from screen readers, never under the words, and gone with high contrast.
 - **Interests as a scrapbook.** A column of keys picks an interest; its page shows a large stack of polaroids that flip with a toss.
 - **Motion with a still view.** Each stop's arrival is choreographed as you reach it, and the keys answer every press. With reduced motion set, everything is still and fully readable.
-- **Also:** an in-page résumé viewer, Waterloo's time and weather in the top bar, and the Fredoka and Nunito typefaces.
+- **Also:** an in-page résumé viewer, Waterloo's time and weather in the top bar, and the Oleo Script, Fredoka and Nunito typefaces.
 
 ## Tech stack
 

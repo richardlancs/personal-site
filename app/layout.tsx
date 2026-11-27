@@ -36,6 +36,17 @@ const text = localFont({
   variable: "--font-nunito",
   display: "swap",
 });
+// The big headings, the name and each section's title: Oleo Script at its
+// bold (Soytutype, OFL; its text alongside), a rounded brush script, the
+// most composed of the free fonts close to the Tentsurfer Richard chose
+// (27 November 2026: Tentsurfer's free file is for personal use only and
+// doesn't cover a webfont). Its Latin subset, as Google Fonts cuts it
+const heading = localFont({
+  src: "./fonts/oleo-script-latin.woff2",
+  weight: "700",
+  variable: "--font-oleo",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   // Makes canonical addresses and share images absolute (sections/registry.ts)
@@ -66,7 +77,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en"
       data-scroll-behavior="smooth"
-      className={`${display.variable} ${text.variable}`}
+      className={`${display.variable} ${text.variable} ${heading.variable}`}
       // The scripts below set data-paper, data-still and data-track on <html> before React hydrates
       suppressHydrationWarning
     >

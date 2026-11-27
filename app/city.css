@@ -93,6 +93,9 @@
   /* Set in layout.tsx with next/font (Fredoka, Nunito) */
   --font-display: var(--font-fredoka), "Arial Rounded MT Bold", "Helvetica Neue", Arial, sans-serif;
   --font-text: var(--font-nunito), "Helvetica Neue", Arial, sans-serif;
+  /* The big headings (the name, each section's title): a brush script,
+     Oleo Script */
+  --font-heading: var(--font-oleo), var(--font-display);
 
   /* Motion (docs/ui/ux-motion-principles.md): the only durations and
      curves anything uses. Arrive with --ease-out, travel with
@@ -895,6 +898,15 @@ a[data-resume][data-opening] {
   /* Capped at 13vw so a long title stays whole on one line at 320px with
      large text, as the name is */
   font-size: min(clamp(2.25rem, 6vw, 3.75rem), 13vw);
+}
+
+/* The headings, in the brush script at its one weight, the bold
+   (--font-heading): the name, each station's title and the headings in
+   every section (the quiet labels under them, h4, stay plain) */
+.station-title,
+.hero-name,
+.station h3 {
+  font-family: var(--font-heading);
   font-weight: 700;
 }
 
@@ -927,13 +939,8 @@ a[data-resume][data-opening] {
 .hero-name {
   color: var(--text);
   font-size: min(clamp(3rem, 9vw, 5.5rem), 13vw);
-  /* The display face upright (never italic), at its semibold: round and
-     happy, the page's one big word */
-  font-family: var(--font-display);
-  font-weight: 600;
+  /* (upright, never italic: the page's one big word) */
   line-height: 1.1;
-  /* Fredoka's wide round letters close up a touch at this size */
-  letter-spacing: -0.01em;
   overflow-wrap: break-word;
 }
 

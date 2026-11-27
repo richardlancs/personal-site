@@ -212,12 +212,12 @@ anything, nothing smooths the wheel, nothing traps.
 ### Budgets (`docs/audit/scripts/budget.mjs`)
 
 Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
-`totalJs` ≤ 214,000; `totalCss` ≤ 13,200; `resumeJs` ≤ 470,000;
+`totalJs` ≤ 214,000; `totalCss` ≤ 13,300; `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. It also fails on three.js in any chunk and on any
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
 these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
 (Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
-(round 12, 27 November 2026): `totalCss` 13,138 (the scrapbook's rules
+(round 13, 27 November 2026): `totalCss` 13,248 (the scrapbook's rules
 folded into `city.css`: one stylesheet compresses smaller),
 `homeInitialJs` 198,608, `totalJs` 204,243.
 
@@ -292,12 +292,17 @@ texts alongside; the Latin subsets as Google Fonts cuts them, so the
 stylesheet carries one `@font-face` per face, not one per script:
 `display: swap`; copyright lines exactly as in google/fonts). Round 8,
 my words: "use a font that shows a lot of personality almost like a
-childlike happiness". **Fredoka** (variable weight, round and bouncy)
-for headings, section names, the name, the map and the bar's name
+childlike happiness". **Oleo Script** at its bold (OFL, a rounded brush script; round 13, 27
+November 2026: "use the one that is most professional" of the free fonts
+close to Tentsurfer, whose free file is for personal use only and doesn't
+cover a webfont) for the headings: the name, each station's title and
+the headings in every section (`h3`; "implement the font into each of the
+sections"), as `--font-heading`; **Fredoka** (variable weight, round and
+bouncy) for the quiet `h4` labels, the keys, the map and the bar's name
 (`font-display`, `--font-display`); **Nunito** (variable, a soft rounded
 sans) for text (`font-sans`, `--font-text`). The name is upright, never
 italic. No extra tracking and no all-caps labels; weights 700 for a
-station's title and the bar's name, 600 headings and the name, 500 quiet
+station's title, the name and the bar's name, 600 headings, 500 quiet
 labels, 400 the hero's programme line.
 Details: `docs/city/style.md`, "Type".
 

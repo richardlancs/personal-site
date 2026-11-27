@@ -48,8 +48,10 @@ const HOME_JS_LIMIT = 203_000;
 // the same day for the larger glass edges and Show more keys (12,649), under
 // Richard's "finish whatever is needed and deploy", and to 13,200 on 26
 // November 2026 for the interests' scrapbook (13,127 when ruled), at his
-// word. Only goes down from here.
-const TOTAL_CSS_LIMIT = 13_200;
+// word, and to 13,300 on 27 November 2026 for the Oleo Script headings
+// (their @font-face and fallback: 13,248 when ruled), at his word. Only
+// goes down from here.
+const TOTAL_CSS_LIMIT = 13_300;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;
