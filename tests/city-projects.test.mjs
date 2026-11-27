@@ -99,10 +99,19 @@ test("the fold's summary is a full-width glass key: \"Show more\" and what it ho
   assert.match(city, /details\[open\] > summary\.glass \{\s*border-color: var\(--accent-2\);/);
 });
 
-test("a wide cover grows to the words' height, but with the fold open keeps its own shape at the top", () => {
-  const open = "@min-[45.5rem]:[.project:has(.project-more[open])_&]:";
-  assert.ok(source.includes(`${open}self-start`), "the cover's cell stops stretching");
-  assert.ok(source.includes(`${open}h-auto ${open}aspect-(--ar)`), "the frame goes back to the picture's shape");
+test("the fold opens under all the columns, its contents in two balanced columns, so neither side runs long", () => {
+  // The fold is its own grid item after the words' column (not inside it),
+  // spanning the whole grid on a wide panel (beside a tall cover from 27.5rem)
+  const details = row.slice(row.indexOf("<details"));
+  assert.match(details, /^<details className=\{`project-more [^`]*\$\{side \? "@min-\[27\.5rem\]:col-\[1\/-1\]" : "@min-\[45\.5rem\]:col-\[1\/-1\]"\}`\}>/);
+  // Open, what it holds flows down two columns (CSS columns: balanced, the
+  // document's order kept), only when it holds more than one block
+  assert.match(source, /const split = foldedFeatures \|\| extra\.length > 1;/);
+  assert.match(details, /@min-\[45\.5rem\]:columns-2/);
+  assert.match(details, /@min-\[37\.5rem\]:columns-2/);
+  assert.ok((details.match(/break-inside-avoid/g) ?? []).length >= 3, "no point or picture split between columns");
+  // So the words beside a wide cover never grow on open: no open-fold rules
+  assert.doesNotMatch(source, /project-more\[open\]/);
 });
 
 test("a fold opens in place, its height and fade on the motion tokens, only where motion is welcome", () => {

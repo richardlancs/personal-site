@@ -23,7 +23,7 @@ export const sectionWords: Record<SectionId, { summary: string; metadata: { titl
   },
   experience: {
     summary: "Where I've worked and studied.",
-    metadata: { title: "Experience", description: "Richard Lan's experience and education." },
+    metadata: { title: "Background", description: "Richard Lan's experience and education." },
   },
   interests: {
     summary: "What I do away from the keyboard.",

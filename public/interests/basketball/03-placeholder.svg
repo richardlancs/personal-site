@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<title>Placeholder photo</title>
+<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e9dcf0"/><stop offset="1" stop-color="#a58bbf"/></linearGradient>
+<radialGradient id="v" cx=".5" cy=".45" r=".75"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".25"/></radialGradient></defs>
+<rect width="600" height="600" fill="url(#g)"/>
+<path d="M0 470h600" stroke="#fff" stroke-width="8"/><path d="M150 470a150 120 0 0 1 300 0" fill="none" stroke="#fff" stroke-width="8"/><circle cx="420" cy="230" r="45" fill="#e07a3a"/>
+<rect width="600" height="600" fill="url(#v)"/>
+<text x="300" y="565" text-anchor="middle" font-family="system-ui, sans-serif" font-size="22" fill="#3d2c52" fill-opacity=".7">placeholder</text>
+</svg>

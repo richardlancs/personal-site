@@ -51,7 +51,8 @@ test("experience entries have 2 to 4 points", () => {
 test("the notebook's pages each have a heading and a few points", () => {
   const headings = about.map((page) => page.heading);
   assert.equal(new Set(headings).size, headings.length, "headings are unique (they are React keys)");
-  for (const page of about) assert.ok(page.points.length >= 2 && page.points.length <= 5, `${page.heading}: ${page.points.length} points`);
+  // (a page that links on to its own section may be a single line)
+  for (const page of about) assert.ok(page.points.length >= (page.seeAlso ? 1 : 2) && page.points.length <= 5, `${page.heading}: ${page.points.length} points`);
 });
 
 test("interests and skills are filled in", () => {

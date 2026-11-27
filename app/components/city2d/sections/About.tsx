@@ -1,4 +1,5 @@
 import { about, githubNote, profile } from "../../../data/portfolio";
+import { section } from "../../../sections/registry";
 import ProfileLinks from "../ProfileLinks";
 import Figures from "../Figures";
 import Heading from "../Heading";
@@ -19,8 +20,18 @@ export default function About() {
         <section key={entry.heading} className="about-entry reveal border-t border-line pt-6" style={order(i)}>
           <Heading level={3} className="font-display text-2xl font-semibold text-text">{entry.heading}</Heading>
           <ul role="list" className="points mt-4 space-y-2 break-words text-text">
-            {entry.points.map((point) => (
-              <li key={point}><Figures>{point}</Figures></li>
+            {entry.points.map((point, j) => (
+              <li key={point}>
+                <Figures>{point}</Figures>
+                {entry.seeAlso && j === entry.points.length - 1 && (
+                  <>
+                    {" "}
+                    <a href={section(entry.seeAlso).href} className="text-link">
+                      In photos: {section(entry.seeAlso).title} <span aria-hidden="true">→</span>
+                    </a>
+                  </>
+                )}
+              </li>
             ))}
           </ul>
         </section>
@@ -36,7 +47,10 @@ export default function About() {
               </a>
             </li>
           ))}
-          <ProfileLinks variant="text" githubNote={githubNote} />
+          <li className="text-muted">GitHub is {githubNote}.</li>
+        </ul>
+        <ul role="list" aria-label="Links" className="mt-5 flex flex-col gap-3 @min-[27.5rem]:flex-row @min-[27.5rem]:flex-wrap">
+          <ProfileLinks variant="keys" />
         </ul>
       </section>
     </div>

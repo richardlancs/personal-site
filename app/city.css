@@ -31,9 +31,9 @@
   4.5:1 on it (docs/ui/scripts/palette-contrast.mjs).
   The texture itself is in paper.css.
 */
-/* Cream: warm ivory (hue 41) written in blue-black ink. Claret (355,
-   analogous on the warm side: book cloth, a wax seal, an editor's red
-   ink) for the one primary action; deep teal (184, the split's near arm
+/* Cream: warm ivory (hue 41) written in blue-black ink. Antique bronze
+   (40, the same hue as night's gold leaf: a foil-stamped book cover,
+   brushed, with a light band across it) for the one primary action; deep teal (184, the split's near arm
    and the mark's cyan) for links, chosen states and the metro line.
    (task-13/A/accents.md) */
 :root,
@@ -45,8 +45,9 @@
   --line: #c9bca3;
   --text: #1d2330;
   --muted: #50545c;
-  --accent: #7a2a30;
-  --accent-hover: #8c353c;
+  --accent: #6b4d18;
+  --accent-hover: #735520;
+  --accent-fill: linear-gradient(#e9d39c2e, #0000 2px), linear-gradient(115deg, #523a10, #5e4415 32%, #694d1b 46%, #5a4013 60%, #543b11);
   --on-accent: #f7f1e5;
   --accent-2: #0a6168;
   --focus: #0f7c86;

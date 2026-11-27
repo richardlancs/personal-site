@@ -39,10 +39,11 @@ defines the same hexes.
 
 ### Cream
 
-Ivory paper (hue 41). Claret (355, analogous on the warm side of the
-wheel: book cloth, a wax seal, an editor's red ink) for the one primary
-action, chosen at Richard's word on 25 November 2026 over the navy that
-read as corporate; deep teal (184, the near arm of the split complement
+Ivory paper (hue 41). Antique bronze (40, night's gold leaf
+darkened for a light sheet: a foil-stamped cover, brushed, a light band
+across it) for the one primary action, at Richard's word on 26 November
+2026 ("something that feels more premium") over the claret, which had
+replaced a navy that read as corporate; deep teal (184, the near arm of the split complement
 and the mark's cyan) for links, chosen states and the metro line. The
 reasoning: `.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 
@@ -54,8 +55,8 @@ reasoning: `.superpowers/sdd/2026-11-22-horizontal-city/task-13/A/accents.md`.
 | `--line` | `#c9bca3` | Hairlines and card edges (decoration, not a boundary that must read) |
 | `--text` | `#1d2330` | Body text and headings: blue-black ink |
 | `--muted` | `#50545c` | Secondary text |
-| `--accent` | `#7a2a30` | The primary action's fill (under its textured face) |
-| `--accent-hover` | `#8c353c` | Its hover |
+| `--accent` | `#6b4d18` | The primary action's fill (under its textured face) |
+| `--accent-hover` | `#735520` | Its hover |
 | `--on-accent` | `#f7f1e5` | The label on the accent |
 | `--accent-2` | `#0a6168` | Links, chosen states, the metro line, marks |
 | `--focus` | `#0f7c86` | The focus ring |

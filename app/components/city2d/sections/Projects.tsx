@@ -53,13 +53,13 @@ function Keys({ project }: { project: Project }) {
 // share the frame side by side. Each picture opens the full image in a new
 // tab. Nothing is cropped. A wide cover under the title, once the words
 // are beside it, grows to their height (the picture whole and centred in
-// it), so the panel has no empty well; with the fold open (the words far
-// taller) it keeps its own shape at the top instead of a tall dark frame. Around the frame, its depth on a
+// it), so the panel has no empty well (the fold opens under both
+// columns, so the words beside it never grow). Around the frame, its depth on a
 // fine pointer (reveal.css, "Depth"; Tilt.tsx).
 function Picture({ shots, side }: { shots: Screenshot[]; side: boolean }) {
   return (
     <div className="depth rounded-[var(--radius-in)] @min-[45.5rem]:flex-1" data-tilt="">
-      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:h-auto @min-[45.5rem]:[.project:has(.project-more[open])_&]:aspect-(--ar)"}`}>
+      <figure className={`flex aspect-(--ar) items-stretch justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2 ${side ? "" : "@min-[45.5rem]:h-full @min-[45.5rem]:aspect-auto"}`}>
         {shots.map((shot) => (
           <a
             key={shot.src}
@@ -87,7 +87,7 @@ function Picture({ shots, side }: { shots: Screenshot[]; side: boolean }) {
 
 const h4 = "font-display text-xl font-semibold text-text";
 // A heading inside the fold: smaller, the fold's summary is above it
-const h5 = "font-display text-lg font-semibold text-text";
+const h5 = "font-display text-lg font-semibold text-text break-after-avoid";
 
 // The projects section (the site's most important content), then Skills:
 // a row of panels along the towers (Station's `row`), each its own stop on
@@ -160,6 +160,9 @@ export default function Projects() {
             .join(", ");
           // Headings inside the fold, when it holds more than one kind of list
           const subheads = morePart.length > 0;
+          // The open fold splits into two columns only when it holds more
+          // than one block (a lone screenshot stays whole, centred)
+          const split = foldedFeatures || extra.length > 1;
           const titleId = `project-${slug(project.title)}`;
           // On a narrow panel everything stacks in the document's order. A
           // tall cover (a phone's screen, or a pair) stands beside the
@@ -209,7 +212,7 @@ export default function Projects() {
                   cover on a phone on its side with large text) */}
               {cover && (
                 <div
-                  className={`mx-auto w-full min-w-0 max-w-[max(calc(25svh*var(--ar)),46px)] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col @min-[45.5rem]:[.project:has(.project-more[open])_&]:self-start"}`}
+                  className={`mx-auto w-full min-w-0 max-w-[max(calc(25svh*var(--ar)),46px)] ${side ? `@min-[27.5rem]:col-start-1 @min-[27.5rem]:row-span-4 @min-[27.5rem]:row-start-1 @min-[27.5rem]:max-w-none @min-[45.5rem]:row-span-3 ${pair ? "@min-[27.5rem]:w-80" : "@min-[27.5rem]:w-48"}` : "@min-[45.5rem]:col-start-1 @min-[45.5rem]:row-start-3 @min-[45.5rem]:flex @min-[45.5rem]:max-w-none @min-[45.5rem]:flex-col"}`}
                   style={{ "--ar": shown.reduce((w, s) => w + s.width / s.height, 0) } as CSSProperties}
                 >
                   <Picture shots={shown} side={side} />
@@ -240,9 +243,16 @@ export default function Projects() {
                 <p className="mt-6 max-w-[65ch] text-muted">
                   <span className="font-semibold">Built with</span> {project.technologies.join(" · ")}
                 </p>
+              </div>
 
-                {folded && (
-                  <details className="project-more group mt-6">
+              {/* The fold: its own row under all the columns (the cover's
+                  too), its key as wide as the panel; open, what it holds
+                  flows down two balanced columns (the text, then the
+                  pictures, in the document's order), so neither side runs
+                  long: from 45.5rem, or 37.5rem beside a tall cover (a
+                  lone screenshot stays centred under both) */}
+              {folded && (
+                  <details className={`project-more group mt-1 min-w-0 ${side ? "@min-[27.5rem]:col-[1/-1]" : "@min-[45.5rem]:col-[1/-1]"}`}>
                     {/* A full-width glass key: "Show more" and what it
                         holds; open, "Show less" (city.css, "A fold") */}
                     <summary className="glass w-full list-none [&::-webkit-details-marker]:hidden">
@@ -262,12 +272,13 @@ export default function Projects() {
                         <path d="M3 6l5 5 5-5" />
                       </svg>
                     </summary>
+                    <div className={`pt-3 ${!split ? "" : side ? "@min-[37.5rem]:columns-2 @min-[37.5rem]:gap-x-6 @min-[45.5rem]:gap-x-10" : "@min-[45.5rem]:columns-2 @min-[45.5rem]:gap-x-10"}`}>
                     {morePart.length > 0 && (
-                      <section className="mt-3 border-l-2 border-accent-2 pl-5">
+                      <section className="border-l-2 border-accent-2 pl-5">
                         <Heading level={4} className={h5}>More of my part</Heading>
                         <ul role="list" className="points points-quiet mt-2 space-y-2 text-text">
                           {morePart.map((contribution) => (
-                            <li key={contribution}><Figures>{contribution}</Figures></li>
+                            <li key={contribution} className="break-inside-avoid"><Figures>{contribution}</Figures></li>
                           ))}
                         </ul>
                       </section>
@@ -275,24 +286,25 @@ export default function Projects() {
                     {foldedFeatures && (
                       <section className={subheads ? "mt-6" : undefined}>
                         {subheads && <Heading level={4} className={h5}>What it does</Heading>}
-                        <ul role="list" className={`points points-quiet space-y-2 text-text ${subheads ? "mt-2" : "mt-3"}`}>
+                        <ul role="list" className={`points points-quiet space-y-2 text-text ${subheads ? "mt-2" : ""}`}>
                           {project.features.map((feature) => (
-                            <li key={feature}><Figures>{feature}</Figures></li>
+                            <li key={feature} className="break-inside-avoid"><Figures>{feature}</Figures></li>
                           ))}
                         </ul>
                       </section>
                     )}
                     {extra.length > 0 && (
-                      <ul aria-label={`More ${project.title} screenshots`} className="mt-4 grid gap-4 pb-2">
+                      <ul aria-label={`More ${project.title} screenshots`} className={`space-y-4 pb-2 ${foldedFeatures ? "mt-4" : ""}`}>
                         {/* Each as wide as the column (a tall one as tall
-                            as most of the screen), so it can be read */}
+                            as most of the screen, its frame fitted to it),
+                            so it can be read */}
                         {extra.map((shot) => (
-                          <li key={shot.src}>
+                          <li key={shot.src} className="break-inside-avoid">
                             <a
                               href={shot.src}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex min-h-11 justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2"
+                              className={`flex min-h-11 justify-center overflow-hidden rounded-[var(--radius-in)] border border-line bg-paper-2 ${tall(shot) ? "mx-auto w-fit" : ""}`}
                             >
                               <Image
                                 src={shot.src}
@@ -309,9 +321,9 @@ export default function Projects() {
                         ))}
                       </ul>
                     )}
+                    </div>
                   </details>
-                )}
-              </div>
+              )}
               </div>
             </article>
           );

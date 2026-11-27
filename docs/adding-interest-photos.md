@@ -1,7 +1,18 @@
 # Adding photos to an interest
 
-Each interest on the page (Basketball, Badminton, Chess, Poker) opens to show
-its description and, if it has any, its photos. Adding a photo needs no code.
+Each interest on the page (Basketball, Badminton, Chess, Poker) opens to a
+scrapbook page: its description beside its photos, shown as a stack of
+polaroids you flip through with the arrow keys under it. Adding a photo needs
+no code.
+
+## 0. Delete the placeholders first
+
+Until real photos go in, each folder holds three generated stand-ins,
+`01-placeholder.svg`, `02-placeholder.svg` and `03-placeholder.svg` (made by
+`node scripts/interests/make-placeholders.mjs`; each is captioned
+"Placeholder photo" on the page). When you add your own photos to an
+interest, delete that folder's `*-placeholder.svg` files. Don't rerun the
+script after that: it writes them again.
 
 ## 1. Put the file in the interest's folder
 
@@ -14,15 +25,15 @@ its description and, if it has any, its photos. Adding a photo needs no code.
 
 The folder name is the interest's `scene` in `app/data/portfolio.ts`.
 
-- Formats that show up: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif` (upper or
-  lower case). Anything else in the folder is ignored, and so are files whose
+- Formats that show up: `.jpg`, `.jpeg`, `.png`, `.webp`, `.avif`, `.svg`
+  (upper or lower case). Anything else in the folder is ignored, and so are files whose
   names start with a dot (such as `.gitkeep`, which keeps the empty folder in
   git; leave it there).
 - Size: about 1600 px on the long side and under 500 KB is plenty. The site
   makes smaller copies for phones by itself, but a huge original still slows
   the first load of the full-size view.
-- Each photo is shown cropped to a 4:3 tile; clicking it opens the whole
-  picture in a new tab. Keep the subject near the middle.
+- Each photo is shown cropped to a square, like a polaroid. Keep the subject
+  near the middle.
 
 ## 2. Choose the order with the file names
 
@@ -54,7 +65,8 @@ Without a caption a photo is described to screen readers as, for example,
 },
 ```
 
-The caption shows under the tile and is what screen readers read.
+The caption is written on the polaroid's bottom margin and is what screen
+readers read. Without one the margin is left blank.
 
 ## 4. See it
 

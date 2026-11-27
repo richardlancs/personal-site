@@ -154,5 +154,4 @@ test("the sections stay server components; the items carry their order", () => {
   for (const n of ["Projects", "Experience", "Contact"]) assert.match(read(`app/components/city2d/sections/${n}.tsx`), /className="[^"]*\breveal\b/, n);
   // The pictures have their depth wrapper, with the tilt hook
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /<div className="depth [^"]*" data-tilt="">/);
-  assert.match(read("app/components/city2d/sections/Interests.tsx"), /<span className="depth [^"]*" data-tilt="">/);
 });

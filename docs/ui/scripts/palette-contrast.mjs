@@ -42,7 +42,7 @@ const EXTREMES = { cream: [0.97, 1.04], charcoal: [1, "#3c3c3c"] };
 // 1440x900 with the label hidden (inside the edge). The label must hold
 // 4.5:1 on every grain of it.
 const FILLS = {
-  cream: { rest: ["#76282e", "#92454c"], hover: ["#883239", "#a15158"] },
+  cream: { rest: ["#513810", "#80652f"], hover: ["#604617", "#846a33"] },
   charcoal: { rest: ["#b18436", "#ecd18d"], hover: ["#c89d49", "#e5c37a"] },
 };
 

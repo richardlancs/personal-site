@@ -22,7 +22,7 @@ test("three links, from profile, each with an aria-hidden icon and a label", () 
 test("one résumé label everywhere, and every place uses the shared links", () => {
   for (const [file, variant] of [
     ["app/components/city2d/sections/Hero.tsx", "text"],
-    ["app/components/city2d/sections/About.tsx", "text"],
+    ["app/components/city2d/sections/About.tsx", "keys"],
     ["app/components/city2d/sections/Contact.tsx", "keys"],
   ]) {
     const source = read(file);

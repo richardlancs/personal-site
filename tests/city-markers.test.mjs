@@ -35,7 +35,7 @@ test("every content list uses it, as a real list", () => {
     const src = read(`app/components/city2d/sections/${file}.tsx`);
     assert.doesNotMatch(src, /list-disc|list-decimal|marker:/, `${file}: no other marker`);
     const lists = [...src.matchAll(/<ul\b[^>]*>/g)].map((m) => m[0]);
-    const content = lists.filter((tag) => !/aria-label=\{`More|className="mt-3 space-y-1\.5 text-lg/.test(tag));
+    const content = lists.filter((tag) => !/aria-label=\{`More|aria-label="Links"|className="mt-3 space-y-1\.5 text-lg/.test(tag));
     assert.ok(content.length > 0, file);
     for (const tag of content) {
       assert.match(tag, /className=[{"`][^>]*\bpoints\b/, `${file}: ${tag}`);

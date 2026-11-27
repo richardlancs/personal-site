@@ -11,9 +11,11 @@ import path from "node:path";
 // it runs while the page is prerendered and its result is part of the
 // static HTML, so a deployed site shows new files after a rebuild.
 
-export type InterestPhoto = { src: string; alt: string; file: string };
+// (placeholder: a generated stand-in, named *placeholder*.svg by
+// scripts/interests/make-placeholders.mjs, to be deleted for real photos)
+export type InterestPhoto = { src: string; alt: string; file: string; placeholder: boolean };
 
-const IMAGE = /\.(jpe?g|png|webp|avif)$/i;
+const IMAGE = /\.(jpe?g|png|webp|avif|svg)$/i;
 // (turbopackIgnore: the folder is read while the page is prerendered and
 // public/ is served as it is, so the build needn't trace these paths;
 // without it Turbopack traces the whole project into the build output)
@@ -38,5 +40,6 @@ export function interestPhotos(
       src: `/interests/${encodeURIComponent(scene)}/${encodeURIComponent(file)}`,
       alt: captions?.[file] ?? `${name}, photo ${i + 1}`,
       file,
+      placeholder: /placeholder/i.test(file),
     }));
 }

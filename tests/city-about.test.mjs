@@ -18,7 +18,7 @@ test("the about station maps every entry, its heading in an h3", () => {
 
 test("points are list items in a list with the class points", () => {
   assert.match(source, /<ul[^>]*className="points[ "]/);
-  assert.match(source, /<li key=\{point\}><Figures>\{point\}<\/Figures><\/li>/);
+  assert.match(source, /<li key=\{point\}>\s*<Figures>\{point\}<\/Figures>/);
   // No paragraph holds copy from the data
   assert.doesNotMatch(source, /<p[\s>]/);
   for (const entry of about) {
@@ -32,8 +32,9 @@ test("where to find me is built from profile", () => {
   assert.match(source, /profile\.emails\.map\(/);
   assert.match(source, /href=\{`mailto:\$\{email\.address\}`\}/);
   assert.match(source, /\{email\.label\}/);
-  // GitHub (with its note), LinkedIn and the résumé: the shared links
-  assert.match(source, /<ProfileLinks variant="text" githubNote=\{githubNote\} \/>/);
+  // GitHub, LinkedIn and the résumé as keys (the shared links), GitHub's note under them
+  assert.match(source, /<ProfileLinks variant="keys" \/>/);
+  assert.match(source, /\{githubNote\}/);
   assert.doesNotMatch(source, /resumeUrl/);
   // Links that open elsewhere
   for (const m of source.matchAll(/target="_blank"[^>]*/g)) assert.match(m[0], /rel="noopener noreferrer"/);

@@ -1,23 +1,23 @@
-import Image from "next/image";
 import type { ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
-import { newTab } from "../ProfileLinks";
+import Scrapbook from "../Scrapbook";
 import Figures from "../Figures";
 import Heading from "../Heading";
 import { order } from "../Station";
+import "../../../scrapbook.css";
 
 // The interests: one row per interest, a single column on the ground with
 // a little room between them. Each row is a native <details>
 // (name="interests", so opening one closes the others where the browser
 // supports it), its summary a full-width glass key ("Show", "Hide" and a
 // chevron at its end; city.css, "A fold"); the first starts open, and the
-// open one's edge turns to the accent. Inside:
-// the description, then the interest's photos when it has any, read from
+// open one's edge turns to the accent. Inside: a scrapbook page
+// (scrapbook.css), the description beside the interest's photos as a stack
+// of polaroids to flip through (Scrapbook.tsx), read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
-// docs/adding-interest-photos.md). No photos, no gallery. The rows arrive
-// in order as they scroll in, and each photo's frame has depth on a fine
-// pointer (reveal.css; the tilt is Tilt.tsx, mounted in Projects.tsx).
+// docs/adding-interest-photos.md). No photos, no stack. The rows arrive in
+// order as they scroll in (reveal.css).
 
 // Line marks on a 24-unit grid, in the second accent (currentColor). Decoration only.
 const marks: Record<Interest["scene"], ReactNode> = {
@@ -51,13 +51,13 @@ const marks: Record<Interest["scene"], ReactNode> = {
   ),
 };
 
-// The gallery: 2 across on phones, 3 from 768px, 4 from 1280px (the
-// column stops at 72rem, so a tile is never wider than about 18rem)
-const tileSizes = "(min-width: 1280px) 18rem, (min-width: 768px) 33vw, 50vw";
+// A photo's caption: its own from the data file, else "Placeholder photo"
+// for a generated stand-in, else none (the polaroid's margin left blank)
+const placeholderCaption = "Placeholder photo";
 
 // The rows lay themselves out by the list's own width (@container: the
-// indent from 27.5rem, the gallery 3 across from 45.5rem and 4 from
-// 69.5rem). One column that may shrink (grid-cols-1: minmax(0, 1fr)): an
+// description beside the photos from 37.5rem, the photos' column at most
+// 19rem). One column that may shrink (grid-cols-1: minmax(0, 1fr)): an
 // auto column grows to the rows' longest unbroken run (an icon, a heading's
 // word at 200% text, Show and the chevron side by side), wider than a
 // phone, and the page then scrolls sideways.
@@ -109,39 +109,21 @@ export default function Interests() {
                 <path d="m6 9 6 6 6-6" />
               </svg>
             </summary>
-            <div className="pt-4 pb-8 @min-[27.5rem]:pl-16">
+            <div className="scrapbook mt-3 mb-6 grid grid-cols-1 gap-6 @min-[37.5rem]:grid-cols-[minmax(0,1fr)_minmax(0,19rem)] @min-[37.5rem]:items-center">
               <p className="max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
               {photos.length > 0 && (
-                <ul role="list" className="mt-6 grid grid-cols-2 gap-3 @min-[45.5rem]:grid-cols-3 @min-[69.5rem]:grid-cols-4">
-                  {photos.map((photo) => {
-                    const caption = interest.captions?.[photo.file];
-                    return (
-                      <li key={photo.file}>
-                        <a
-                          href={photo.src}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="block rounded-[var(--radius)] text-muted"
-                        >
-                          <span className="depth block rounded-[var(--radius)]" data-tilt="">
-                            <span className="relative block aspect-[4/3] overflow-hidden rounded-[var(--radius)] border border-line bg-panel">
-                              <Image
-                                src={photo.src}
-                                alt={caption ? "" : photo.alt}
-                                fill
-                                sizes={tileSizes}
-                                loading="lazy"
-                                className="object-cover"
-                              />
-                            </span>
-                          </span>
-                          {caption && <span className="mt-2 block text-base leading-snug md:text-sm break-words">{caption}</span>}
-                          {newTab}
-                        </a>
-                      </li>
-                    );
+                <Scrapbook
+                  photos={photos.map((photo) => {
+                    const own = interest.captions?.[photo.file];
+                    return {
+                      src: photo.src,
+                      file: photo.file,
+                      // (a caption of its own says what the photo shows)
+                      alt: own ? "" : photo.alt,
+                      caption: own ?? (photo.placeholder ? placeholderCaption : undefined),
+                    };
                   })}
-                </ul>
+                />
               )}
             </div>
           </details>

@@ -78,6 +78,8 @@ export const backgroundMusic = {
 export type AboutPage = {
   heading: string;
   points: string[];
+  // A section the last point links on to, named by its registry title
+  seeAlso?: "interests";
 };
 
 export const about: AboutPage[] = [
@@ -99,11 +101,8 @@ export const about: AboutPage[] = [
   },
   {
     heading: "Away from the keyboard",
-    points: [
-      "Badminton, basketball, lifting weights, and poker.",
-      "They keep me active and competitive.",
-      "Poker has taught me to think in probabilities and stay calm with incomplete information.",
-    ],
+    points: ["Basketball, badminton, chess and poker."],
+    seeAlso: "interests",
   },
 ];
 

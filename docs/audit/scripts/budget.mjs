@@ -46,8 +46,10 @@ const HOME_JS_LIMIT = 203_000;
 // for the UX panel's 22 fixes (12,257 when ruled), and to 12,600 on 24
 // November 2026 for the clear sky glass (12,526 when ruled), and to 12,700
 // the same day for the larger glass edges and Show more keys (12,649), under
-// Richard's "finish whatever is needed and deploy". Only goes down from here.
-const TOTAL_CSS_LIMIT = 12_700;
+// Richard's "finish whatever is needed and deploy", and to 13,200 on 26
+// November 2026 for the interests' scrapbook (13,127 when ruled), at his
+// word. Only goes down from here.
+const TOTAL_CSS_LIMIT = 13_200;
 // About 5% over the city's measurement (203,727, the whole build's JS
 // except the résumé viewer's, finish pass, 19 November 2026)
 const TOTAL_JS_LIMIT = 214_000;

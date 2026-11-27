@@ -18,7 +18,7 @@ test("six sections, in order, each with a district painted above it", () => {
   );
   assert.deepEqual(
     pageSections.map((s) => s.title),
-    ["Home", "About", "Projects", "Experience", "Interests", "Contact"],
+    ["Home", "About", "Projects", "Background", "Interests", "Contact"],
   );
   assert.deepEqual(
     pageSections.map((s) => s.district),

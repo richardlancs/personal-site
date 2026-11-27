@@ -59,7 +59,7 @@ export const pageSections: Section[] = [
     id: "experience",
     hash: "experience",
     href: "/#experience",
-    title: "Experience",
+    title: "Background",
     listed: true,
     district: "metro",
   },

@@ -178,13 +178,13 @@ anything, nothing smooths the wheel, nothing traps.
 ### Budgets (`docs/audit/scripts/budget.mjs`)
 
 Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
-`totalJs` ≤ 214,000; `totalCss` ≤ 12,700; `resumeJs` ≤ 470,000;
+`totalJs` ≤ 214,000; `totalCss` ≤ 13,200; `resumeJs` ≤ 470,000;
 `resumeCss` ≤ 2,500. It also fails on three.js in any chunk and on any
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
 these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
 (Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
-(round 8, 25 November 2026): `totalCss` 12,355, `homeInitialJs` 197,985,
-`totalJs` 203,620.
+(round 9, 26 November 2026): `totalCss` 13,127, `homeInitialJs` 198,537,
+`totalJs` 204,172.
 
 ### Standing rules
 
@@ -224,9 +224,9 @@ hue:
 | `--line` | `#c9bca3` | `#2a2b2f` |
 | `--text` | `#1d2330` blue-black ink | `#ece6da` chalk |
 | `--muted` | `#50545c` | `#b5afa4` |
-| `--accent` | `#7a2a30` claret (analogous, warm) | `#c99a3e` gold leaf (complement) |
-| `--accent-hover` | `#8c353c` | `#d9ad55` |
-| `--accent-fill` | (the flat accent) | foil: `#ad7f30` to `#e6c477`, a top-edge highlight |
+| `--accent` | `#6b4d18` antique bronze (night's hue, deepened) | `#c99a3e` gold leaf (complement) |
+| `--accent-hover` | `#735520` | `#d9ad55` |
+| `--accent-fill` | brushed bronze: `#523a10` to `#694d1b`, a top-edge highlight | foil: `#ad7f30` to `#e6c477`, a top-edge highlight |
 | `--on-accent` | `#f7f1e5` | `#0b0b0c` |
 | `--accent-2` | `#0a6168` teal (split) | `#7fd4df` cyan (the mark's) |
 | `--focus` | `#0f7c86` bright teal | `#9fe6ef` |

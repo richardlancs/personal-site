@@ -1,6 +1,7 @@
 // The interests (components/city2d/sections/Interests.tsx): one <details>
 // per interest from app/data/portfolio.ts, the first open, with the
 // interest's photos from public/interests/<scene>/ (lib/interestPhotos.ts)
+// as polaroids on a scrapbook page (Scrapbook.tsx, scrapbook.css)
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,14 +18,15 @@ const source = readFileSync(`${root}app/components/city2d/sections/Interests.tsx
 const base = mkdtempSync(path.join(tmpdir(), "interests-"));
 const chess = path.join(base, "chess");
 mkdirSync(chess);
-for (const file of ["10-x.jpg", "2-x.jpg", "1-board.PNG", "a b.webp", "c.avif", "d.jpeg", "notes.txt", ".gitkeep", ".hidden.jpg", "e.gif"]) {
+for (const file of ["10-x.jpg", "2-x.jpg", "1-board.PNG", "a b.webp", "c.avif", "d.jpeg", "f-placeholder.svg", "notes.txt", ".gitkeep", ".hidden.jpg", "e.gif"]) {
   writeFileSync(path.join(chess, file), "");
 }
 after(() => rmSync(base, { recursive: true, force: true }));
 
 test("interestPhotos keeps image files only, in numeric file-name order", () => {
   const files = interestPhotos("chess", "Chess", undefined, base).map((p) => p.file);
-  assert.deepEqual(files, ["1-board.PNG", "2-x.jpg", "10-x.jpg", "a b.webp", "c.avif", "d.jpeg"]);
+  assert.deepEqual(files, ["1-board.PNG", "2-x.jpg", "10-x.jpg", "a b.webp", "c.avif", "d.jpeg", "f-placeholder.svg"]);
+  assert.deepEqual(interestPhotos("chess", "Chess", undefined, base).filter((p) => p.placeholder).map((p) => p.file), ["f-placeholder.svg"]);
 });
 
 test("interestPhotos builds public URLs, encoding file names", () => {
@@ -70,13 +72,34 @@ test("every interest is a <details name=\"interests\">, only the first open", ()
   assert.doesNotMatch(source, /^["']use client["']/m, "a server component");
 });
 
-test("the gallery is rendered only when there are photos", () => {
+test("the scrapbook is rendered only when there are photos, its polaroids from plain props", () => {
   assert.match(source, /interestPhotos\(interest\.scene, interest\.name, interest\.captions\)/);
   assert.match(source, /\{photos\.length > 0 && \(/);
-  assert.match(source, /<Image\b[^>]*\bfill\b/);
-  assert.match(source, /aspect-\[4\/3\]/);
-  assert.match(source, /object-cover/);
-  assert.match(source, /target="_blank"\s+rel="noopener noreferrer"/);
+  assert.match(source, /<Scrapbook\b/);
+  assert.match(source, /import "\.\.\/\.\.\/\.\.\/scrapbook\.css";/);
+  const book = read("app/components/city2d/Scrapbook.tsx");
+  assert.match(book, /^"use client";/);
+  assert.doesNotMatch(book, /data\/portfolio/, "never the data file in a client component");
+  assert.match(book, /<Image\b[^>]*\bfill\b/);
+  assert.match(book, /unoptimized=\{photo\.src\.endsWith\("\.svg"\)\}/);
+  assert.match(book, /aria-label="Previous photo"/);
+  assert.match(book, /aria-label="Next photo"/);
+  assert.match(book, /aria-live="polite"/);
+  assert.equal((book.match(/className="glass glass-icon"/g) ?? []).length, 2);
+  // flipping only moves, behind the still view and reduced-motion guard
+  const css = read("app/scrapbook.css");
+  assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\bwhite\b|\bblack\b/i, "colours only from the paper tokens");
+  assert.doesNotMatch(css, /animation|infinite/);
+  for (const m of css.matchAll(/transition:([^;]*);/g)) assert.doesNotMatch(m[1].replace(/transform|opacity/g, ""), /[a-z-]+ var\(--t-/, m[0]);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \[data-stack\] li \{\s*transition:/);
+});
+
+test("every interest has its placeholder photos until real ones go in", () => {
+  for (const interest of interests) {
+    const photos = interestPhotos(interest.scene, interest.name);
+    assert.ok(photos.length > 0, interest.name);
+  }
+  assert.ok(interestPhotos("basketball", "Basketball").some((p) => p.placeholder && p.file.endsWith(".svg")));
 });
 
 test("no canvas, no 3D, no place names", () => {
