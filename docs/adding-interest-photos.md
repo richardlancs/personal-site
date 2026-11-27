@@ -1,6 +1,6 @@
 # Adding photos to an interest
 
-Each interest on the page (Basketball, Badminton, Chess, Poker) opens to a
+Each interest on the page (Basketball, Badminton, Chess, Poker, Fragrance) opens to a
 scrapbook page: its description beside its photos, shown as a stack of
 polaroids you flip through with the arrow keys under it. Adding a photo needs
 no code.
@@ -22,6 +22,7 @@ script after that: it writes them again.
 | Badminton  | `public/interests/badminton/`  |
 | Chess      | `public/interests/chess/`      |
 | Poker      | `public/interests/poker/`      |
+| Fragrance  | `public/interests/fragrance/`  |
 
 The folder name is the interest's `scene` in `app/data/portfolio.ts`.
 

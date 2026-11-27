@@ -45,9 +45,18 @@ const scenes = {
     `<g>${[0, 1, 2, 3, 4].map((i) => `<ellipse cx="300" cy="${380 - i * 28}" rx="90" ry="28" fill="${i % 2 ? "#2d6a8a" : "#b33"}" stroke="#fff" stroke-width="5" stroke-dasharray="18 14"/>`).join("")}</g>`,
     `${[-24, -8, 8, 24].map((a, i) => `<rect x="240" y="150" width="120" height="175" rx="12" fill="#fff" stroke="#888" stroke-width="2" transform="rotate(${a} 300 420)"/><text x="255" y="190" font-family="Georgia, serif" font-size="30" fill="${i % 2 ? "#222" : "#b33"}" transform="rotate(${a} 300 420)">${["10", "J", "Q", "K"][i]}</text>`).join("")}`,
   ],
+  // a bottle, its cap, a mist
+  fragrance: [
+    `<rect x="220" y="200" width="160" height="210" rx="26" fill="#fff" fill-opacity=".75" stroke="#555" stroke-width="5"/><rect x="275" y="150" width="50" height="50" fill="#555"/><rect x="255" y="105" width="90" height="45" rx="8" fill="#c9a44a"/><rect x="250" y="270" width="100" height="60" rx="6" fill="#fff" stroke="#999" stroke-width="3"/>`,
+    `<rect x="240" y="240" width="120" height="170" rx="60" fill="#fff" fill-opacity=".75" stroke="#555" stroke-width="5"/><rect x="280" y="190" width="40" height="50" fill="#555"/><circle cx="300" cy="170" r="30" fill="#c9a44a"/>`,
+    `<rect x="160" y="260" width="110" height="150" rx="18" fill="#fff" fill-opacity=".75" stroke="#555" stroke-width="5"/><rect x="195" y="220" width="40" height="40" fill="#555"/><g fill="#fff" fill-opacity=".8">${[[330,200,10],[370,170,7],[360,230,8],[410,200,6],[400,250,5],[440,180,4]].map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}"/>`).join("")}</g>`,
+  ],
 };
 
+// (optional) only these scenes: node make-placeholders.mjs fragrance
+const only = process.argv.slice(2);
 for (const [scene, drawings] of Object.entries(scenes)) {
+  if (only.length && !only.includes(scene)) continue;
   const dir = path.join(root, "public", "interests", scene);
   mkdirSync(dir, { recursive: true });
   drawings.forEach((drawing, i) => {
@@ -65,4 +74,4 @@ ${drawing}
     writeFileSync(path.join(dir, `0${i + 1}-placeholder.svg`), svg);
   });
 }
-console.log("wrote 3 placeholders for", Object.keys(scenes).join(", "));
+console.log("wrote 3 placeholders for", Object.keys(scenes).filter((s) => !only.length || only.includes(s)).join(", "));

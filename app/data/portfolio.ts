@@ -43,7 +43,7 @@ export type SkillGroup = {
 export type Interest = {
   name: string;
   description: string;
-  scene: "basketball" | "badminton" | "chess" | "poker";
+  scene: "basketball" | "badminton" | "chess" | "poker" | "fragrance";
   // Photos go in public/interests/<scene>/ and show up by themselves.
   // Optional: a caption for a photo, by its file name
   captions?: Record<string, string>;
@@ -101,7 +101,7 @@ export const about: AboutPage[] = [
   },
   {
     heading: "Away from the keyboard",
-    points: ["Basketball, badminton, chess and poker."],
+    points: ["Basketball, badminton, chess, poker and fragrance."],
     seeAlso: "interests",
   },
 ];
@@ -419,6 +419,11 @@ export const interests: Interest[] = [
     scene: "poker",
     description:
       "Poker has taught me to think in probabilities and to make calm decisions with incomplete information.",
+  },
+  {
+    name: "Fragrance",
+    scene: "fragrance",
+    description: "I like to collect fragrances.",
   },
 ];
 

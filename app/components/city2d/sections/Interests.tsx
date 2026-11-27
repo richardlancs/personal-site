@@ -44,6 +44,13 @@ const marks: Record<Interest["scene"], ReactNode> = {
       <path d="M12 14v3M10.5 17h3" />
     </>
   ),
+  fragrance: (
+    <>
+      <rect x="6" y="9" width="12" height="12" rx="2.5" />
+      <path d="M10 9V6.5h4V9M9.5 4h5v2.5h-5z" />
+      <path d="M9 15h6" />
+    </>
+  ),
 };
 
 // A photo's caption: its own from the data file, else "Placeholder photo"
