@@ -37,6 +37,6 @@ test("only on the journey, only the ring on a phone, none with more contrast or 
 });
 
 test("the margin notes come from the data", () => {
-  assert.match(decor, /import \{ marginNotes \} from "..\/..\/data\/portfolio"/);
+  assert.match(decor, /import \{ marginNotes(, projects)? \} from "..\/..\/data\/portfolio"/);
   for (const stop of ["home", "projects", "contact"]) assert.match(decor, new RegExp(`marginNotes\\.${stop}`));
 });

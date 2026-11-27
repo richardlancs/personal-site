@@ -126,7 +126,8 @@ test("the states: chosen, disabled and focus, the same on every glass control", 
   assert.match(disabled, /cursor: default/);
   assert.match(disabled, /color: var\(--muted\)/);
   assert.match(css, /:where\(\.glass:not\(:disabled, \[aria-disabled="true"\]\)\):hover/, "no hover on a disabled control");
-  const focus = block(".glass:focus-visible");
+  // (the interests' picker keys are labels: their radio's focus rings them)
+  const focus = css.match(/\n\.glass:focus-visible(?:,\n\.pick:focus-visible \+ \.glass)? \{([^}]*)\}/)?.[1] ?? "";
   assert.match(focus, /--glass-out: 0 0 0 6px color-mix\(in srgb, var\(--paper\) 90%, transparent\)/);
   assert.match(focus, /outline: 2px solid var\(--focus\)/);
   // The press never lands on a disabled control

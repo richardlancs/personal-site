@@ -3,13 +3,17 @@
 import Image from "next/image";
 import { useState, useSyncExternalStore, type CSSProperties } from "react";
 
-// One interest's photos as polaroids on its scrapbook page (city.css, "The interests' scrapbook pages").
+// One interest's photos as polaroids, large on its scrapbook page (city.css, "The interests' scrapbook pages").
 // Without scripts, and before hydration, they lie one under another, every
 // one readable. With scripts they become a stack: the
 // current photo on top, the next two peeking out behind it, turned a
 // little, and the "Previous photo" and "Next photo" keys under it flip
 // through them (wrapping), with "Photo 2 of 3" said politely. Only the top
 // photo is reachable; the rest are inert while they are underneath.
+// Flipping on, the top photo is tossed off to the left and slides back in
+// under the stack; flipping back, the bottom one is pulled out from there
+// onto the top (data-move: city.css, "toss" and "pull"; none in
+// still view or with reduced motion, where the stack just changes).
 // Plain props from the server component (Interests.tsx), never the data file.
 
 export type ScrapbookPhoto = {
@@ -45,8 +49,15 @@ const arrow = (d: string) => (
 export default function Scrapbook({ photos }: { photos: ScrapbookPhoto[] }) {
   const stack = useHydrated();
   const [at, setAt] = useState(0);
+  // (the photo moving, and which way: the one leaving the top, or the one
+  // arriving on it)
+  const [move, setMove] = useState<{ i: number; how: "toss" | "pull" } | null>(null);
   const n = photos.length;
-  const flip = (by: number) => setAt((i) => (i + by + n) % n);
+  const flip = (by: number) => {
+    const next = (at + by + n) % n;
+    setMove(by > 0 ? { i: at, how: "toss" } : { i: next, how: "pull" });
+    setAt(next);
+  };
 
   return (
     <div className="grid min-w-0 justify-items-center gap-2" data-stack={stack ? "" : undefined}>
@@ -58,6 +69,8 @@ export default function Scrapbook({ photos }: { photos: ScrapbookPhoto[] }) {
             <li
               key={photo.file}
               data-depth={stack ? Math.min(depth, 3) : undefined}
+              data-move={move?.i === i ? move.how : undefined}
+              onAnimationEnd={() => setMove(null)}
               aria-hidden={under || undefined}
               inert={under}
               style={{ "--tilt": tilts[i % tilts.length] } as CSSProperties}
@@ -68,8 +81,10 @@ export default function Scrapbook({ photos }: { photos: ScrapbookPhoto[] }) {
                     src={photo.src}
                     alt={photo.alt}
                     fill
-                    sizes="18rem"
-                    loading="lazy"
+                    sizes="22rem"
+                    // (the first at once, so choosing an interest shows its
+                    // photo without a wait; the rest when they're needed)
+                    loading={i === 0 ? "eager" : "lazy"}
                     unoptimized={photo.src.endsWith(".svg")}
                     className="object-cover"
                   />

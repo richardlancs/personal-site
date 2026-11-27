@@ -1264,10 +1264,43 @@ details[open] > summary.glass {
   border-color: var(--accent-2);
 }
 
-/* (an interest's row: its mark, its name, "Show" and the chevron, 56px) */
-.interest > summary {
+/* The interests' picker (Interests.tsx): a key per interest, each the
+   label of a hidden radio button, and the chosen one's page. From 40rem
+   of its own width the keys are a column at the left (12rem) and the page
+   takes the rest, from the first row down; narrower, each page under its
+   key. Chosen and focused, a key looks as any chosen or focused key. */
+.picker {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.pick-key {
+  justify-content: flex-start;
+  gap: 0.75rem;
   min-height: 3.5rem;
-  gap: 1rem;
+}
+
+.pick-pane {
+  display: none;
+}
+
+.pick:checked + label + .pick-pane {
+  display: block;
+}
+
+@container (min-width: 40rem) {
+  .picker {
+    grid-template: repeat(var(--n), auto) 1fr / 12rem minmax(0, 1fr);
+    column-gap: 1.5rem;
+  }
+
+  .pick-key {
+    grid-column: 1;
+  }
+
+  .pick-pane {
+    grid-area: 1 / 2 / -1;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -1510,7 +1543,8 @@ details[open] > summary.glass {
   }
 }
 
-.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
+.glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]),
+.pick:checked + .glass {
   /* A chosen primary loses its accent fill, so its label goes back to text */
   --glass-ink: var(--text);
   --glass-in: inset 0 0 0 1px var(--accent-2), inset 0 2px 5px -2px color-mix(in srgb, var(--shadow) 55%, transparent);
@@ -1531,12 +1565,14 @@ details[open] > summary.glass {
 
 /* Forced colours drop the fill and the shade: a heavier edge says chosen */
 @media (forced-colors: active) {
-  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]) {
+  .glass:is([aria-pressed="true"], [aria-selected="true"], [aria-current="page"], [aria-current="location"], [aria-expanded="true"], [data-copied]),
+  .pick:checked + .glass {
     border-width: 3px;
   }
 }
 
-.glass:focus-visible {
+.glass:focus-visible,
+.pick:focus-visible + .glass {
   /* Behind the ring: the paper itself, so the ring reads on a card */
   --glass-out: 0 0 0 6px color-mix(in srgb, var(--paper) 90%, transparent);
   outline: 2px solid var(--focus);
@@ -1691,7 +1727,8 @@ details[open] > summary.glass {
 .polaroids {
   display: grid;
   gap: 1.5rem;
-  width: min(17rem, 100%);
+  /* (large: the picker gives most of its page to the photos.) */
+  width: min(22rem, 100%);
   padding: 1rem 1.75rem 1.5rem;
 }
 
@@ -1751,7 +1788,47 @@ details[open] > summary.glass {
   opacity: 0;
 }
 
+/* Flipping: the top photo tossed off to the left (over the words, where
+   the page has room: the right is the card's edge), then under the stack
+   (it drops behind half way); flipping back, the bottom one pulled out
+   from there onto the top. Each ends where its place in the stack is */
+@keyframes toss {
+  0% {
+    transform: rotate(var(--tilt));
+    z-index: 9;
+  }
+
+  50% {
+    transform: translate(-64%, -5%) rotate(-12deg);
+    z-index: 9;
+  }
+
+  51%,
+  100% {
+    z-index: 0;
+  }
+}
+
+@keyframes pull {
+  0% {
+    transform: translate(-64%, -5%) rotate(-12deg);
+    z-index: 9;
+  }
+
+  100% {
+    z-index: 9;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  :root:not([data-still="on"]) [data-move="toss"] {
+    animation: toss var(--t-morph) var(--ease-in-out);
+  }
+
+  :root:not([data-still="on"]) [data-move="pull"] {
+    animation: pull var(--t-morph) var(--ease-out);
+  }
+
   :root:not([data-still="on"]) [data-stack] li {
     transition:
       transform var(--t-slow) var(--ease-out),

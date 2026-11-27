@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { Fragment, type CSSProperties, type ReactNode } from "react";
 import { interests, type Interest } from "../../../data/portfolio";
 import { interestPhotos } from "../../../lib/interestPhotos";
 import Scrapbook from "../Scrapbook";
@@ -6,12 +6,8 @@ import Figures from "../Figures";
 import Heading from "../Heading";
 import { order } from "../Station";
 
-// The interests: one row per interest, a single column on the ground with
-// a little room between them. Each row is a native <details>
-// (name="interests", so opening one closes the others where the browser
-// supports it), its summary a full-width glass key ("Show", "Hide" and a
-// chevron at its end; city.css, "A fold"); the first starts open, and the
-// open one's edge turns to the accent. Inside: a scrapbook page
+// The interests: a key per interest to choose it, and the chosen one's
+// scrapbook page
 // (city.css, "The interests' scrapbook pages"), the description beside the interest's photos as a stack
 // of polaroids to flip through (Scrapbook.tsx), read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
@@ -54,80 +50,66 @@ const marks: Record<Interest["scene"], ReactNode> = {
 // for a generated stand-in, else none (the polaroid's margin left blank)
 const placeholderCaption = "Placeholder photo";
 
-// The rows lay themselves out by the list's own width (@container: the
-// description beside the photos from 37.5rem, the photos' column at most
-// 19rem). One column that may shrink (grid-cols-1: minmax(0, 1fr)): an
-// auto column grows to the rows' longest unbroken run (an icon, a heading's
-// word at 200% text, Show and the chevron side by side), wider than a
-// phone, and the page then scrolls sideways.
+// A picker, by the list's own width (@container): from 40rem the four
+// interests are a column of keys on the left and the chosen one's page
+// takes the rest, most of it its photos; narrower, the keys one under
+// another, the chosen one's page under its key. Each key is the label of a
+// native radio button (visually hidden, name="interest", the first chosen),
+// so it works without scripts, arrow keys move the choice, and the page
+// shown is pure CSS (city.css, "The interests' picker"). The keys arrive in
+// order as they scroll in (reveal.css).
 export default function Interests() {
   return (
-    <div className="@container interests mt-6 grid grid-cols-1 gap-2">
-      {interests.map((interest, i) => {
-        const photos = interestPhotos(interest.scene, interest.name, interest.captions);
-        return (
-          <details
-            key={interest.scene}
-            name="interests"
-            open={i === 0}
-            className="interest reveal group"
-            style={order(i)}
-          >
-            <summary className="glass w-full list-none [&::-webkit-details-marker]:hidden">
-              <svg
-                aria-hidden="true"
-                focusable="false"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="size-8 shrink-0 text-accent-2"
-              >
-                {marks[interest.scene]}
-              </svg>
-              <Heading level={3} className="min-w-0 flex-1 font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
-              {/* (said by the row's own open state, so hidden from
-                  assistive technology) */}
-              <span aria-hidden="true" className="text-sm text-muted">
-                <span className="group-open:hidden">Show</span>
-                <span className="hidden group-open:inline">Hide</span>
-              </span>
-              <svg
-                aria-hidden="true"
-                focusable="false"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="chevron size-6 shrink-0 text-muted group-open:rotate-180 group-open:text-accent-2"
-              >
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </summary>
-            <div className="scrapbook mt-3 mb-6 grid grid-cols-1 gap-6 @min-[37.5rem]:grid-cols-[minmax(0,1fr)_minmax(0,19rem)] @min-[37.5rem]:items-center">
-              <p className="max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
-              {photos.length > 0 && (
-                <Scrapbook
-                  photos={photos.map((photo) => {
-                    const own = interest.captions?.[photo.file];
-                    return {
-                      src: photo.src,
-                      file: photo.file,
-                      // (a caption of its own says what the photo shows)
-                      alt: own ? "" : photo.alt,
-                      caption: own ?? (photo.placeholder ? placeholderCaption : undefined),
-                    };
-                  })}
-                />
-              )}
-            </div>
-          </details>
-        );
-      })}
+    <div className="@container interests mt-6">
+      <div className="picker" style={{ "--n": interests.length } as CSSProperties}>
+        {interests.map((interest, i) => {
+          const photos = interestPhotos(interest.scene, interest.name, interest.captions);
+          const id = `interest-${interest.scene}`;
+          return (
+            <Fragment key={interest.scene}>
+              <input type="radio" name="interest" id={`pick-${interest.scene}`} className="pick sr-only" defaultChecked={i === 0} />
+              <label htmlFor={`pick-${interest.scene}`} className="glass pick-key reveal" style={order(i)}>
+                <svg
+                  aria-hidden="true"
+                  focusable="false"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="size-7 shrink-0 text-accent-2"
+                >
+                  {marks[interest.scene]}
+                </svg>
+                <span className="min-w-0 font-display text-xl font-semibold break-words">{interest.name}</span>
+              </label>
+              <section aria-labelledby={id} className="scrapbook pick-pane @container">
+                <div className="grid gap-5 @min-[37.5rem]:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] @min-[37.5rem]:items-center">
+                  <div>
+                    <Heading level={3} id={id} className="font-display text-2xl font-semibold text-text break-words">{interest.name}</Heading>
+                    <p className="mt-2 max-w-[65ch] text-base leading-relaxed text-text break-words"><Figures>{interest.description}</Figures></p>
+                  </div>
+                  {photos.length > 0 && (
+                    <Scrapbook
+                      photos={photos.map((photo) => {
+                        const own = interest.captions?.[photo.file];
+                        return {
+                          src: photo.src,
+                          file: photo.file,
+                          // (a caption of its own says what the photo shows)
+                          alt: own ? "" : photo.alt,
+                          caption: own ?? (photo.placeholder ? placeholderCaption : undefined),
+                        };
+                      })}
+                    />
+                  )}
+                </div>
+              </section>
+            </Fragment>
+          );
+        })}
+      </div>
     </div>
   );
 }

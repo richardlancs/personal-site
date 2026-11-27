@@ -1,4 +1,4 @@
-import { about, githubNote, profile } from "../../../data/portfolio";
+import { about, profile } from "../../../data/portfolio";
 import { section } from "../../../sections/registry";
 import ProfileLinks from "../ProfileLinks";
 import Figures from "../Figures";
@@ -47,7 +47,6 @@ export default function About() {
               </a>
             </li>
           ))}
-          <li className="text-muted">GitHub is {githubNote}.</li>
         </ul>
         <ul role="list" aria-label="Links" className="mt-5 flex flex-col gap-3 @min-[27.5rem]:flex-row @min-[27.5rem]:flex-wrap">
           <ProfileLinks variant="keys" />

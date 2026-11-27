@@ -149,6 +149,9 @@ first n numbers (Background), P(win | hand) and a bell curve (Interests),
 The paper clip sits on the projects' index card itself (`PaperClip`), so
 it goes where the card goes. A doodle in a stop's left margin sits wholly
 inside its first 10% (the peek the stop before shows) or wholly past it.
+Round 12: two equations in every gap between the project cards, one in
+each half, so each project's screen has one at either side (`ProjectGaps`);
+"my work" sits on the index card beside its heading (`IndexNote`).
 They ride on the track beside their stop's panel (`decor` on `Station`),
 never under its words, placed and sized inline (`--x`, `--y`, `--s`,
 `--r`) so the CSS is a few rules. Only on the journey; on phones only the
@@ -214,9 +217,9 @@ Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
 these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
 (Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
-(round 11, 27 November 2026): `totalCss` 12,985 (the scrapbook's rules
+(round 12, 27 November 2026): `totalCss` 13,138 (the scrapbook's rules
 folded into `city.css`: one stylesheet compresses smaller),
-`homeInitialJs` 198,537, `totalJs` 204,172.
+`homeInitialJs` 198,608, `totalJs` 204,243.
 
 ### Standing rules
 
@@ -426,9 +429,15 @@ Do not invent projects. Keep them polished but restrained: soft surfaces,
 hairlines, gentle hover; no huge shadows, heavy animation or badge
 clutter.
 
-Interests (`sections/Interests.tsx`) are native `<details>` rows (each
-summary a full-width "Show" / "Hide" key) with optional photos read from
-`public/interests/<scene>/` at build time. To add photos:
+Interests (`sections/Interests.tsx`) are a picker (round 12, my words:
+"a vertical selection box on the left side with a large portion given to
+place photos"): a column of keys on the left, each the label of a hidden
+native radio button (no script needed, arrow keys move the choice), and
+the chosen interest's scrapbook page taking the rest, most of it a large
+stack of polaroids (`Scrapbook.tsx`) whose flips animate (the top one
+tossed off to the left and under the stack; back, pulled out onto the
+top; none in still view). Narrower than 40rem, each page under its key.
+Photos read from `public/interests/<scene>/` at build time. To add photos:
 `docs/adding-interest-photos.md` (no code; captions in `portfolio.ts`).
 
 ---

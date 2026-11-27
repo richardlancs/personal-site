@@ -54,20 +54,25 @@ test("the real folders exist for every interest, so photos can just be dropped i
   }
 });
 
-test("every interest is a <details name=\"interests\">, only the first open", () => {
+test("the interests are a picker: a key per interest, each the label of a radio button, the first chosen, and the chosen one's page", () => {
   assert.ok(interests.length > 0);
   assert.match(source, /import\s*\{[^}]*\binterests\b[^}]*\}\s*from\s*"[./]+\/data\/portfolio"/);
   assert.match(source, /interests\.map\(\(interest, i\)/);
-  const details = source.match(/<details\s[^>]*>/g) ?? [];
-  assert.equal(details.length, 1, "one <details> inside the map");
-  assert.match(details[0], /name="interests"/);
-  assert.match(details[0], /open=\{i === 0\}/);
-  // its summary a full-width glass key, at least 56px tall (city.css)
-  assert.match(source, /<summary className="glass w-full list-none /);
-  assert.match(read("app/city.css"), /\.interest > summary \{\s*min-height: 3\.5rem;/, "the summary is at least 56px tall");
-  assert.match(source, /<span aria-hidden="true"[^>]*>\s*<span className="group-open:hidden">Show<\/span>\s*<span className="hidden group-open:inline">Hide<\/span>/);
-  assert.match(source, /<Heading level=\{3\}[^>]*>\s*\{interest\.name\}\s*<\/Heading>/);
+  assert.doesNotMatch(source, /<details/, "no folds any more (Richard, 27 November 2026)");
+  // native radios: no script needed, arrow keys move the choice
+  assert.match(source, /<input type="radio" name="interest" id=\{`pick-\$\{interest\.scene\}`\} className="pick sr-only" defaultChecked=\{i === 0\} \/>/);
+  assert.match(source, /<label htmlFor=\{`pick-\$\{interest\.scene\}`\} className="glass pick-key reveal"/);
+  // each page named by its own heading
+  assert.match(source, /<section aria-labelledby=\{id\} className="scrapbook pick-pane @container">/);
+  assert.match(source, /<Heading level=\{3\} id=\{id\}[^>]*>\{interest\.name\}<\/Heading>/);
   assert.match(source, /\{interest\.description\}/);
+  const css = read("app/city.css");
+  assert.match(css, /\.pick-key \{[^}]*min-height: 3\.5rem;/, "a key at least 56px tall");
+  assert.match(css, /\.pick-pane \{\s*display: none;/);
+  assert.match(css, /\.pick:checked \+ label \+ \.pick-pane \{\s*display: block;/);
+  assert.match(css, /\.pick:checked \+ \.glass \{/, "a chosen key looks chosen");
+  assert.match(css, /\.pick:focus-visible \+ \.glass \{/, "a focused one shows the ring");
+  assert.match(css, /@container \(min-width: 40rem\) \{\s*\.picker \{\s*grid-template: repeat\(var\(--n\), auto\) 1fr \/ 12rem minmax\(0, 1fr\);/);
   assert.match(source, /^export default function Interests\(\)/m);
   assert.doesNotMatch(source, /^["']use client["']/m, "a server component");
 });
@@ -91,9 +96,11 @@ test("the scrapbook is rendered only when there are photos, its polaroids from p
   const css = all.slice(all.indexOf("/* The interests' scrapbook pages"));
   assert.ok(css.length < all.length, "the scrapbook's rules are in city.css");
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\bwhite\b|\bblack\b/i, "colours only from the paper tokens");
-  assert.doesNotMatch(css, /animation|infinite/);
+  // a flip animates once (toss, pull), behind the guard, never looping
+  assert.doesNotMatch(css, /infinite/);
+  for (const m of css.matchAll(/([^{};]+)\{\s*animation:/g)) assert.match(m[1], /:root:not\(\[data-still="on"\]\)/, m[1]);
   for (const m of css.matchAll(/transition:([^;]*);/g)) assert.doesNotMatch(m[1].replace(/transform|opacity/g, ""), /[a-z-]+ var\(--t-/, m[0]);
-  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{\s*:root:not\(\[data-still="on"\]\) \[data-stack\] li \{\s*transition:/);
+  assert.match(css, /@media \(prefers-reduced-motion: no-preference\) \{[^@]*?:root:not\(\[data-still="on"\]\) \[data-stack\] li \{\s*transition:/);
 });
 
 test("every interest has its placeholder photos until real ones go in", () => {
@@ -112,7 +119,7 @@ test("no canvas, no 3D, no place names", () => {
 
 test("every svg is hidden from assistive technology", () => {
   const svgs = source.match(/<svg\b[^>]*>/g) ?? [];
-  assert.ok(svgs.length >= 2);
+  assert.ok(svgs.length >= 1);
   for (const svg of svgs) assert.match(svg, /aria-hidden="true"/, svg);
 });
 

@@ -7,7 +7,7 @@ import Heading from "../Heading";
 import { section } from "../../../sections/registry";
 import { NextStop, StationHead, order } from "../Station";
 import Tilt from "../Tilt";
-import { PaperClip } from "../Decor";
+import { IndexNote, PaperClip } from "../Decor";
 
 const slug = (title: string) => title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
@@ -111,6 +111,7 @@ export default function Projects() {
       <Tilt />
       <div className="panel project-index reveal relative">
         <PaperClip />
+        <IndexNote />
         <StationHead section={section("projects")} />
         <nav aria-label="Projects">
         <ol className="mt-6 grid grid-cols-1 border-t border-line">

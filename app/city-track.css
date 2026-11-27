@@ -262,6 +262,11 @@
     --pw: 48rem;
   }
 
+  /* (the interests' picker and its photos: wider than the words' cards) */
+  :root[data-track="on"] #interests .station-body {
+    --pw: 62rem;
+  }
+
   :root[data-track="on"] #experience .station-body {
     --w: var(--wide);
   }

@@ -32,9 +32,10 @@ test("where to find me is built from profile", () => {
   assert.match(source, /profile\.emails\.map\(/);
   assert.match(source, /href=\{`mailto:\$\{email\.address\}`\}/);
   assert.match(source, /\{email\.label\}/);
-  // GitHub, LinkedIn and the résumé as keys (the shared links), GitHub's note under them
+  // GitHub, LinkedIn and the résumé as keys (the shared links); no note
+  // on GitHub (removed at Richard's word, 27 November 2026)
   assert.match(source, /<ProfileLinks variant="keys" \/>/);
-  assert.match(source, /\{githubNote\}/);
+  assert.doesNotMatch(source, /githubNote/);
   assert.doesNotMatch(source, /resumeUrl/);
   // Links that open elsewhere
   for (const m of source.matchAll(/target="_blank"[^>]*/g)) assert.match(m[0], /rel="noopener noreferrer"/);

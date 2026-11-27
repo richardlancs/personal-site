@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
-import { marginNotes } from "../../data/portfolio";
+import { marginNotes, projects } from "../../data/portfolio";
 
 // Doodles on the paper (city-track.css, "Doodles"): line drawings in one
 // hand, each with a day version (pencil and ink on cream, `.d`) and a night
@@ -95,14 +95,19 @@ function Arrow({ v, y, r }: { v: number; y: string; r: string }) {
 // with a hooked arrow toward the panel; from 1200px wide (the margins are
 // too thin for words below that). After Home, a note sits in the stop's
 // peek, so the stop before shows it whole
-function Note({ text, x, r }: { text: string; x: string; r: string }) {
-  const style = { "--x": x, "--y": "calc(var(--hang) + 1rem)", "--s": "auto", "--r": r, color: "var(--muted)", whiteSpace: "nowrap" } as CSSProperties;
+function Note({ text, x, y = "calc(var(--hang) + 1rem)", r, back }: { text: string; x: string; y?: string; r: string; back?: boolean }) {
+  const style = { "--x": x, "--y": y, "--s": "auto", "--r": r, color: "var(--muted)", whiteSpace: "nowrap" } as CSSProperties;
+  // (`back`: the arrow before the words, pointing back to the left)
+  const hook = (
+    <svg viewBox="0 0 40 24" width="34" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline-block align-top" style={back ? { scale: "-1 1" } : undefined}>
+      <path d="M2 6c10 0 20 4 26 12M28 18l1-8M28 18l-8-1" />
+    </svg>
+  );
   return (
     <span className="decor font-display text-lg" data-note="" style={style} aria-hidden="true">
+      {back && hook}
       {text}
-      <svg viewBox="0 0 40 24" width="34" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="inline-block align-top">
-        <path d="M2 6c10 0 20 4 26 12M28 18l1-8M28 18l-8-1" />
-      </svg>
+      {!back && hook}
     </span>
   );
 }
@@ -264,6 +269,94 @@ function BellCurve() {
   );
 }
 
+// The integral of x: a drawn integral sign, the rest in words
+function Integral() {
+  const sign = "M14 6c-4-2-6 1-6 5v18c0 4-2 7-6 5";
+  return (
+    <>
+      <path className="d" d={sign} strokeWidth="2.2" />
+      <path className="n" d={sign} strokeWidth="2.4" strokeDasharray="5 2" />
+      <g fill="currentColor" stroke="none" style={display}>
+        <text x="18" y="26" fontSize="15">x dx = x</text>
+        <text x="80" y="20" fontSize="10">2</text>
+        <text x="87" y="26" fontSize="15">/2</text>
+      </g>
+    </>
+  );
+}
+
+// y = sin x on its axes
+function SineWave() {
+  const axes = "M6 34h108M10 6v50";
+  const wave = "M10 34c8-26 18-26 26 0s18 26 26 0 18-26 26 0 18 26 26 0";
+  return (
+    <>
+      <g className="d" strokeWidth="2">
+        <path d={axes} opacity=".7" />
+        <path d={wave} />
+      </g>
+      <g className="n" strokeWidth="2">
+        <path d={axes} strokeDasharray="6 2" />
+        <path d={wave} style={ink("--accent-2", 0.9)} />
+      </g>
+      <text x="76" y="12" fontSize="11" fill="currentColor" stroke="none" style={display}>
+        y = sin x
+      </text>
+    </>
+  );
+}
+
+// The 2 × 2 identity matrix
+function Matrix() {
+  const brackets = "M14 6H8v44h6M66 6h6v44h-6";
+  return (
+    <>
+      <path className="d" d={brackets} strokeWidth="2.2" />
+      <path className="n" d={brackets} strokeWidth="2.4" strokeDasharray="5 2" />
+      <g fill="currentColor" stroke="none" style={display} fontSize="15">
+        <text x="20" y="24">1</text>
+        <text x="48" y="24">0</text>
+        <text x="20" y="44">0</text>
+        <text x="48" y="44">1</text>
+      </g>
+    </>
+  );
+}
+
+// Two sets and where they meet
+function Venn() {
+  return (
+    <>
+      <g className="d" strokeWidth="2">
+        <circle cx="38" cy="32" r="22" />
+        <circle cx="62" cy="32" r="22" />
+      </g>
+      <g className="n" strokeWidth="2">
+        <circle cx="38" cy="32" r="22" strokeDasharray="5 2" />
+        <circle cx="62" cy="32" r="22" style={ink("--accent-2", 0.9)} strokeDasharray="5 2" />
+      </g>
+      <g fill="currentColor" stroke="none" style={display} fontSize="13">
+        <text x="22" y="37">A</text>
+        <text x="70" y="37">B</text>
+      </g>
+    </>
+  );
+}
+
+// The square root of two, written out
+function Root() {
+  const radical = "M4 18l4-3 5 10 6-21h14";
+  return (
+    <>
+      <path className="d" d={radical} strokeWidth="2" />
+      <path className="n" d={radical} strokeWidth="2.2" strokeDasharray="5 2" />
+      <text x="21" y="24" fontSize="15" fill="currentColor" stroke="none" style={display}>
+        2 = 1.41421...
+      </text>
+    </>
+  );
+}
+
 // The sum of the first n numbers: a drawn sigma and the rest in words
 function Sum() {
   const sigma = "M8 12h20M8 12l10 15-10 15h20";
@@ -401,7 +494,7 @@ export function ProjectsDecor() {
   return (
     <>
       <Arrow v={1} y="56%" r="3deg" />
-      <Note text={marginNotes.projects} x="0.75rem" r="4deg" />
+      <ProjectGaps />
       <Doodle
         place={{ ...past(side, "7rem", "6rem"), y: "76%", r: "-3deg" }}
         viewBox="0 0 96 26"
@@ -409,7 +502,7 @@ export function ProjectsDecor() {
         <Formula>O(n log n)</Formula>
       </Doodle>
       <Doodle
-        place={{ x: `calc(100cqw - ${side} / 2 - var(--s) / 2)`, y: "40%", s: `min(10rem, ${side} - 2rem, ${gate(side, "9rem")})`, r: "3deg" }}
+        place={{ x: `calc(100cqw - ${side} + 5cqw - var(--s) / 2)`, y: "40%", s: `min(10rem, 10cqw - 1rem, ${gate("10cqw", "7rem")})`, r: "3deg" }}
         viewBox="0 0 120 60"
       >
         <GitGraph />
@@ -418,8 +511,14 @@ export function ProjectsDecor() {
   );
 }
 
-// The paper clip on the projects' index, at its top right corner (by day
-// steel, by night gold): inside the card, so it goes where the card goes
+// On the projects' index card itself, so they go where the card goes: the
+// note beside its heading, pointing back at it, and the paper clip at its
+// top right corner (by day steel, by night gold)
+export function IndexNote() {
+  // (just past the heading: "03 Projects" in the display face is about 18rem)
+  return <Note text={marginNotes.projects} x="20rem" y="2.75rem" r="-4deg" back />;
+}
+
 export function PaperClip() {
   const clip = "M12 22v36a5 5 0 0 0 10 0V14a8 8 0 0 0-16 0v48a11 11 0 0 0 22 0V26";
   return (
@@ -427,6 +526,51 @@ export function PaperClip() {
       <path className="d" d={clip} strokeWidth="2.6" />
       <path className="n" d={clip} strokeWidth="2.6" style={ink("--accent")} />
     </Doodle>
+  );
+}
+
+// Between the projects' cards: two equations in every gap, one in each
+// half, so each project's screen has one at either side and none is cut
+// at its edge (a gap is 20% of the stage, half of it showing from each of
+// the cards it parts). From where a half can hold one (about 1120px wide)
+const gapEquations: { box: string; draw: ReactNode; y: string; r: string }[] = [
+  // (the first gap's left half holds the branch and merge: none here)
+  { box: "0 0 120 26", y: "34%", r: "-4deg", draw: <Formula>a<tspan dy="-6" fontSize="10">2</tspan><tspan dy="6"> + b</tspan><tspan dy="-6" fontSize="10">2</tspan><tspan dy="6"> = c</tspan><tspan dy="-6" fontSize="10">2</tspan></Formula> },
+  { box: "0 0 120 40", y: "62%", r: "3deg", draw: <Integral /> },
+  { box: "0 0 120 60", y: "28%", r: "-2deg", draw: <SineWave /> },
+  { box: "0 0 120 26", y: "66%", r: "4deg", draw: <Formula>n! = n · (n-1)!</Formula> },
+  { box: "0 0 80 56", y: "30%", r: "-3deg", draw: <Matrix /> },
+  { box: "0 0 90 26", y: "60%", r: "2deg", draw: <Formula>log<tspan dy="4" fontSize="10">2</tspan><tspan dy="-4"> n</tspan></Formula> },
+  { box: "0 0 110 26", y: "36%", r: "-5deg", draw: <Formula>f&apos;(x) = 2x</Formula> },
+  { box: "0 0 100 64", y: "64%", r: "3deg", draw: <Venn /> },
+  { box: "0 0 120 30", y: "30%", r: "-2deg", draw: <Root /> },
+  { box: "0 0 96 26", y: "62%", r: "4deg", draw: <Formula>P = NP ?</Formula> },
+  { box: "0 0 120 26", y: "34%", r: "-3deg", draw: <Formula>2<tspan dy="-6" fontSize="10">10</tspan><tspan dy="6"> = 1024</tspan></Formula> },
+];
+
+export function ProjectGaps() {
+  // (the index is narrower: the first gap starts at its right edge, and
+  // every one after it a stage further along)
+  const first = "(100cqw + min(100cqw - 2 * var(--peek), 50rem)) / 2";
+  const s = `min(8rem, 10cqw - 1rem, ${gate("10cqw", "7rem")})`;
+  const halves = (projects.length + 1) * 2; // the cards after the index, and Skills
+  return (
+    <>
+      {gapEquations.slice(0, halves - 1).map((eq, i) => {
+        const half = i + 1; // 0 is the first gap's left half
+        const gap = Math.floor(half / 2);
+        const centre = `${first} + ${gap} * 100cqw + ${half % 2 ? 15 : 5}cqw`;
+        // (the first gap's right half also shows from the index, whose
+        // margin is narrower than a gap below about 1340px: there it would
+        // be cut at the screen's edge, so it waits for the room)
+        const size = half === 1 ? `min(${s}, ${gate("(100cqw - min(100cqw - 2 * var(--peek), 50rem)) / 2", "20cqw")})` : s;
+        return (
+          <Doodle key={half} place={{ x: `calc(${centre} - var(--s) / 2)`, y: eq.y, s: size, r: eq.r }} viewBox={eq.box}>
+            {eq.draw}
+          </Doodle>
+        );
+      })}
+    </>
   );
 }
 
@@ -452,13 +596,14 @@ export function BackgroundDecor() {
 // Interests: the arrow in; the odds a poker hand is weighing, above it;
 // a bell curve to the right (where there is room)
 export function InterestsDecor() {
-  const strip = "(100cqw - min(100cqw - 2 * var(--peek), 50rem)) / 2";
-  const right = "(40cqw - 25rem)"; // the paper right of the card, before the next stop
+  const right = "(40cqw - 31rem)"; // the paper right of the card, before the next stop
+  // (the formula in the peek, above the arrow: the wide card leaves little
+  // margin past it)
   return (
     <>
       <Arrow v={0} y="58%" r="7deg" />
       <Doodle
-        place={{ ...past(strip, "8.5rem", "7rem"), y: "calc(var(--stop-top) + 2.5rem)", r: "-4deg" }}
+        place={{ x: "calc(5cqw - var(--s) / 2)", s: `min(8rem, 10cqw - 1rem, ${gate("10cqw", "7rem")})`, y: "calc(var(--stop-top) + 2.5rem)", r: "-4deg" }}
         viewBox="0 0 116 26"
       >
         <Formula>P(win | hand)</Formula>
