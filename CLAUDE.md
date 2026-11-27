@@ -140,10 +140,19 @@ wave, each its own height and turn); at Projects a note and a paper clip
 on the index (steel, then gold); at Contact a note, a paper plane, a crop
 mark at its top-right, and, where its margins are 12rem or more, a
 postage stamp and a pencil (night: a worn stick of chalk).
+Round 11 (27 November 2026), my words: "add some mathematics and computer
+science themed stuff to fill the page with … through out all pages": a
+small neural network (Home), a sigmoid and a linked list (About), O(n log n)
+and a git branch and merge (Projects), a binary tree and the sum of the
+first n numbers (Background), P(win | hand) and a bell curve (Interests),
+"Hi" in binary (Contact); by night in chalk, the nodes in `--accent-2`.
+The paper clip sits on the projects' index card itself (`PaperClip`), so
+it goes where the card goes. A doodle in a stop's left margin sits wholly
+inside its first 10% (the peek the stop before shows) or wholly past it.
 They ride on the track beside their stop's panel (`decor` on `Station`),
 never under its words, placed and sized inline (`--x`, `--y`, `--s`,
 `--r`) so the CSS is a few rules. Only on the journey; on phones only the
-ring (smaller, to one side, `--xp`/`--sp`); the notes from 1024px wide (words in `portfolio.ts: marginNotes`);
+ring (smaller, to one side, `--xp`/`--sp`); the notes from 1200px wide (words in `portfolio.ts: marginNotes`);
 none under more contrast or forced colours. `aria-hidden`, no pointer,
 nothing moves (`tests/city-decor.test.mjs`).
 
@@ -205,7 +214,7 @@ Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
 these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
 (Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
-(round 10, 27 November 2026): `totalCss` 12,931 (the scrapbook's rules
+(round 11, 27 November 2026): `totalCss` 12,985 (the scrapbook's rules
 folded into `city.css`: one stylesheet compresses smaller),
 `homeInitialJs` 198,537, `totalJs` 204,172.
 
@@ -305,6 +314,9 @@ weights and generous line-height. Avoid decorative fonts.
   section rather than many small cards. On the journey each stop's panel
   is centred in its stop and substantial, inside the central 80% (`--peek`
   10% clear each side from 768px; phones keep their 16px gutters).
+- Wide screens (laptop and up): every card centred between the bar and
+  the map (round 11, "make the first home page block vertically centered
+  … through out all pages").
 - Wide screens: each stop's words on a pane of clear glass (`.panel`,
   "The journey" above: the crumple shows through, reeds, a corner sheen,
   a `--rim` and a two-part shadow from `--shadow`, no blur); centred between the bar

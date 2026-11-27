@@ -92,8 +92,9 @@ function Arrow({ v, y, r }: { v: number; y: string; r: string }) {
 }
 
 // A note in the margin, a few words in the display face, turned a little,
-// with a hooked arrow toward the panel; from 1024px wide (the margins are
-// too thin for words below that)
+// with a hooked arrow toward the panel; from 1200px wide (the margins are
+// too thin for words below that). After Home, a note sits in the stop's
+// peek, so the stop before shows it whole
 function Note({ text, x, r }: { text: string; x: string; r: string }) {
   const style = { "--x": x, "--y": "calc(var(--hang) + 1rem)", "--s": "auto", "--r": r, color: "var(--muted)", whiteSpace: "nowrap" } as CSSProperties;
   return (
@@ -106,22 +107,182 @@ function Note({ text, x, r }: { text: string; x: string; r: string }) {
   );
 }
 
-// A printer's crop mark just outside a panel's top corner (the hero's
-// left, Contact's right: the first sheet and the last), two hairlines
-// stopping short of it; turned for the right-hand corner
-function Crop({ x, r }: { x: string; r?: string }) {
-  const marks = "M0 32h22M32 0v22";
+// Only where `room` is `need` or more: 0 below it, else no limit (a
+// doodle too small to read as a drawing is left out)
+const gate = (room: string, need: string) => `max(0px, (${room} - ${need}) * 100)`;
+
+// A stop's first 10% (the peek) shows from the stop before, so a doodle in
+// the left margin sits wholly inside it (`peek`) or wholly past it, between
+// it and the card (`past`, where the margin is wider than the peek)
+const peek = (most: string) => ({ x: "calc(5cqw - var(--s) / 2)", s: `min(${most}, 10cqw - 1rem)` });
+const past = (strip: string, most: string, need: string) => ({
+  x: `calc((10cqw + ${strip}) / 2 - var(--s) / 2)`,
+  s: `min(${most}, ${strip} - 10cqw - 1.5rem, ${gate(`${strip} - 10cqw`, need)})`,
+});
+
+const display: CSSProperties = { fontFamily: "var(--font-display)" };
+
+// A formula in pencil; by night in chalk, a faint smudge beside it. One
+// line from children, or several (`lines`)
+function Formula({ children, size = 15, lines }: { children?: ReactNode; size?: number; lines?: string[] }) {
+  const words = (dx = 0, dy = 0) =>
+    lines ? (
+      lines.map((line, i) => (
+        <text key={line + i} x={2 + dx} y={size + i * (size + 3) + dy} fontSize={size} letterSpacing="1">
+          {line}
+        </text>
+      ))
+    ) : (
+      <text x={2 + dx} y={size + 3 + dy} fontSize={size}>
+        {children}
+      </text>
+    );
   return (
-    <Doodle place={{ x, y: "calc(var(--hang) - 1.5rem)", s: "1.5rem", r }} viewBox="0 0 40 40">
-      <path className="d" d={marks} strokeWidth="2.4" />
-      <path className="n" d={marks} strokeWidth="2.6" strokeDasharray="4 2" />
-    </Doodle>
+    <g fill="currentColor" stroke="none" style={display}>
+      <g className="d">{words()}</g>
+      <g className="n">
+        {words()}
+        <g opacity=".25">{words(0.8, 1.2)}</g>
+      </g>
+    </g>
+  );
+}
+
+// Nodes and the edges between them: by day pencil rings, by night chalk
+// edges and filled nodes in the second accent
+function Graph({ nodes, edges, r = 5 }: { nodes: number[][]; edges: number[][]; r?: number }) {
+  const lines = edges.map(([a, b]) => `M${nodes[a][0]} ${nodes[a][1]}L${nodes[b][0]} ${nodes[b][1]}`).join("");
+  return (
+    <>
+      <g className="d">
+        <path d={lines} strokeWidth="1.2" opacity=".6" />
+        {nodes.map(([cx, cy], i) => (
+          <circle key={i} cx={cx} cy={cy} r={r} strokeWidth="2" />
+        ))}
+      </g>
+      <g className="n">
+        <path d={lines} strokeWidth="1.4" strokeDasharray="3 3" opacity=".7" />
+        <g fill="currentColor" stroke="none" style={ink("--accent-2", 0.9)}>
+          {nodes.map(([cx, cy], i) => (
+            <circle key={i} cx={cx} cy={cy} r={r * 0.75} />
+          ))}
+        </g>
+      </g>
+    </>
+  );
+}
+
+// A small neural network: three inputs, four hidden, two out
+function NeuralNet() {
+  const nodes = [
+    [10, 16], [10, 40], [10, 64],
+    [50, 10], [50, 30], [50, 50], [50, 70],
+    [90, 28], [90, 52],
+  ];
+  const edges = [];
+  for (const a of [0, 1, 2]) for (const b of [3, 4, 5, 6]) edges.push([a, b]);
+  for (const a of [3, 4, 5, 6]) for (const b of [7, 8]) edges.push([a, b]);
+  return <Graph nodes={nodes} edges={edges} r={5} />;
+}
+
+// A binary tree, seven nodes
+function BinaryTree() {
+  const nodes = [[50, 10], [28, 38], [72, 38], [16, 66], [40, 66], [60, 66], [84, 66]];
+  return <Graph nodes={nodes} edges={[[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]]} r={6} />;
+}
+
+// A linked list: three nodes, each pointing on, the last to nothing
+function LinkedList() {
+  const boxes = [2, 42, 82];
+  return (
+    <>
+      <g className="d" strokeWidth="2">
+        {boxes.map((x) => (
+          <path key={x} d={`M${x} 6h26v18H${x}zM${x + 18} 6v18`} />
+        ))}
+        <path d="M24 15h18M36 10l6 5-6 5M64 15h18M76 10l6 5-6 5M104 15h14M118 9v12" />
+      </g>
+      <g className="n" strokeWidth="2">
+        {boxes.map((x) => (
+          <path key={x} d={`M${x} 6h26v18H${x}zM${x + 18} 6v18`} strokeDasharray="4 2" />
+        ))}
+        <g fill="currentColor" stroke="none" style={ink("--accent-2", 0.9)}>
+          {boxes.map((x) => (
+            <circle key={x} cx={x + 22} cy="15" r="2.2" />
+          ))}
+        </g>
+        <path d="M24 15h18M36 10l6 5-6 5M64 15h18M76 10l6 5-6 5M104 15h14M118 9v12" />
+      </g>
+    </>
+  );
+}
+
+// A branch off main and its merge back
+function GitGraph() {
+  const main = "M6 44h108";
+  const branch = "M36 44c8 0 10-26 20-26h20c10 0 12 26 20 26";
+  const commits = [[14, 44], [36, 44], [56, 18], [76, 18], [96, 44], [112, 44]];
+  return (
+    <>
+      <g className="d" strokeWidth="2">
+        <path d={main} />
+        <path d={branch} opacity=".75" />
+        {commits.map(([cx, cy]) => (
+          <circle key={`${cx}`} cx={cx} cy={cy} r="4.5" fill="var(--paper)" />
+        ))}
+      </g>
+      <g className="n" strokeWidth="2">
+        <path d={main} strokeDasharray="5 3" />
+        <path d={branch} style={ink("--accent-2", 0.9)} strokeDasharray="5 3" />
+        <g fill="currentColor" stroke="none">
+          {commits.map(([cx, cy]) => (
+            <circle key={`${cx}`} cx={cx} cy={cy} r="3.6" />
+          ))}
+        </g>
+      </g>
+    </>
+  );
+}
+
+// A bell curve on its axes, the mean marked
+function BellCurve() {
+  const axes = "M8 62h106M14 66V6";
+  const curve = "M14 60C40 60 44 10 61 10S82 60 108 60";
+  return (
+    <>
+      <g className="d" strokeWidth="2">
+        <path d={axes} />
+        <path d={curve} />
+        <path d="M61 10v52" strokeDasharray="3 4" opacity=".6" />
+      </g>
+      <g className="n" strokeWidth="2">
+        <path d={axes} strokeDasharray="6 2" />
+        <path d={curve} style={ink("--accent-2", 0.9)} />
+        <path d="M61 10v52" strokeDasharray="1 4" />
+      </g>
+    </>
+  );
+}
+
+// The sum of the first n numbers: a drawn sigma and the rest in words
+function Sum() {
+  const sigma = "M8 12h20M8 12l10 15-10 15h20";
+  return (
+    <>
+      <path className="d" d={sigma} strokeWidth="2.2" />
+      <path className="n" d={sigma} strokeWidth="2.4" strokeDasharray="5 2" />
+      <g fill="currentColor" stroke="none" style={display}>
+        <text x="15" y="8" fontSize="8">n</text>
+        <text x="10" y="51" fontSize="8">i=1</text>
+        <text x="34" y="32" fontSize="15">i = n(n+1)/2</text>
+      </g>
+    </>
   );
 }
 
 // Home, the emptiest stop: a note, paper stars and a coffee ring to its
-// left, a sun to its right; by night a constellation, glowing-paper stars
-// and a ring round the moon
+// left, a sun and a small neural network to its right; by night a
+// constellation, gold stars, a ring round the moon and a network in chalk
 const home = {
   strip: "(50cqw - 23rem)", // the paper either side of the hero's 46rem
 };
@@ -135,7 +296,6 @@ export function HomeDecor() {
   const starSize = `min(6rem, ${home.strip} * 0.5)`;
   return (
     <>
-      <Crop x={`calc(${home.strip} - 1.5rem)`} />
       <Note text={marginNotes.home} x={`max(1.25rem, ${home.strip} - 9rem)`} r="-6deg" />
       <Doodle place={{ x: `calc(${home.strip} / 2 - ${starSize} / 2)`, y: "38%", s: starSize, r: "8deg" }} viewBox="0 0 100 100">
         <g className="d" strokeWidth="2">
@@ -156,7 +316,7 @@ export function HomeDecor() {
       </Doodle>
       <Doodle
         place={{
-          x: `calc(${home.strip} - 4rem)`,
+          x: `calc(${home.strip} / 2 - ${ringSize} / 2)`,
           y: `calc(100% - var(--foot) - ${ringSize} - 1rem)`,
           s: ringSize,
           r: "15deg",
@@ -202,45 +362,120 @@ export function HomeDecor() {
           </g>
         </g>
       </Doodle>
-    </>
-  );
-}
-
-export function AboutDecor() {
-  return <Arrow v={0} y="46%" r="-4deg" />;
-}
-
-// Projects: the arrow in, a note, and a paper clip on the index's corner
-// (by day steel, by night gold)
-export function ProjectsDecor() {
-  const index = "min(100cqw - 2 * var(--peek), 50rem)"; // the index panel's width
-  const clip = "M12 22v36a5 5 0 0 0 10 0V14a8 8 0 0 0-16 0v48a11 11 0 0 0 22 0V26";
-  return (
-    <>
-      <Arrow v={1} y="60%" r="3deg" />
-      <Note text={marginNotes.projects} x={`max(0.5rem, (100cqw - ${index}) / 2 - 8.5rem)`} r="4deg" />
-      <Doodle
-        place={{ x: `calc((100cqw - ${index}) / 2 + ${index} - 5rem)`, y: "calc(var(--hang) - 1.5rem)", s: "1.75rem", r: "10deg", z: 3 }}
-        viewBox="0 0 30 80"
-      >
-        <path className="d" d={clip} strokeWidth="2.6" />
-        <path className="n" d={clip} strokeWidth="2.6" style={ink("--accent")} />
+      <Doodle place={{ x: `calc(70cqw + 11.5rem - ${sunSize} / 2)`, y: "58%", s: sunSize, r: "-4deg" }} viewBox="0 0 100 80">
+        <NeuralNet />
       </Doodle>
     </>
   );
 }
 
+// About: the arrow in; a sigmoid, the machine-learning curve, written out
+// above it and a linked list below (where the margin can hold them)
+export function AboutDecor() {
+  const strip = "(100cqw - var(--w)) / 2";
+  const size = (most: string) => `min(${most}, 10cqw - 1rem, ${gate(strip, "8rem")})`;
+  return (
+    <>
+      <Arrow v={0} y="46%" r="-4deg" />
+      <Doodle place={{ x: "calc(5cqw - var(--s) / 2)", y: "calc(var(--stop-top) + 2rem)", s: size("9.5rem"), r: "-5deg" }} viewBox="0 0 150 26">
+        <Formula>
+          f(x) = 1 / (1 + e
+          <tspan dy="-6" fontSize="10">
+            -x
+          </tspan>
+          <tspan dy="6">)</tspan>
+        </Formula>
+      </Doodle>
+      <Doodle place={{ x: "calc(5cqw - var(--s) / 2)", y: "72%", s: size("8rem"), r: "4deg" }} viewBox="0 0 124 30">
+        <LinkedList />
+      </Doodle>
+    </>
+  );
+}
+
+// Projects: the arrow in and a note; the running time every sort hopes
+// for, low in the margin; a branch and its merge to the index's right.
+// (The paper clip is on the index itself: PaperClip, Projects.tsx)
+export function ProjectsDecor() {
+  const side = "(100cqw - min(100cqw - 2 * var(--peek), 50rem)) / 2"; // either side of the index
+  return (
+    <>
+      <Arrow v={1} y="56%" r="3deg" />
+      <Note text={marginNotes.projects} x="0.75rem" r="4deg" />
+      <Doodle
+        place={{ ...past(side, "7rem", "6rem"), y: "76%", r: "-3deg" }}
+        viewBox="0 0 96 26"
+      >
+        <Formula>O(n log n)</Formula>
+      </Doodle>
+      <Doodle
+        place={{ x: `calc(100cqw - ${side} / 2 - var(--s) / 2)`, y: "40%", s: `min(10rem, ${side} - 2rem, ${gate(side, "9rem")})`, r: "3deg" }}
+        viewBox="0 0 120 60"
+      >
+        <GitGraph />
+      </Doodle>
+    </>
+  );
+}
+
+// The paper clip on the projects' index, at its top right corner (by day
+// steel, by night gold): inside the card, so it goes where the card goes
+export function PaperClip() {
+  const clip = "M12 22v36a5 5 0 0 0 10 0V14a8 8 0 0 0-16 0v48a11 11 0 0 0 22 0V26";
+  return (
+    <Doodle place={{ x: "calc(100% - 4.5rem)", y: "-0.25rem", s: "1.75rem", r: "10deg", z: 3 }} viewBox="0 0 30 80">
+      <path className="d" d={clip} strokeWidth="2.6" />
+      <path className="n" d={clip} strokeWidth="2.6" style={ink("--accent")} />
+    </Doodle>
+  );
+}
+
+// Background: the arrow in; a binary tree above it and a sum below
 export function BackgroundDecor() {
-  return <Arrow v={2} y="38%" r="-2deg" />;
+  const strip = "(100cqw - var(--wide)) / 2";
+  return (
+    <>
+      <Arrow v={2} y="44%" r="-2deg" />
+      <Doodle place={{ ...peek("5.5rem"), y: "calc(var(--stop-top) + 2rem)", r: "-3deg" }} viewBox="0 0 100 80">
+        <BinaryTree />
+      </Doodle>
+      <Doodle
+        place={{ x: "calc(5cqw - var(--s) / 2)", y: "70%", s: `min(7.5rem, 10cqw - 1rem, ${gate(strip, "8rem")})`, r: "3deg" }}
+        viewBox="0 0 140 52"
+      >
+        <Sum />
+      </Doodle>
+    </>
+  );
 }
 
+// Interests: the arrow in; the odds a poker hand is weighing, above it;
+// a bell curve to the right (where there is room)
 export function InterestsDecor() {
-  return <Arrow v={0} y="64%" r="7deg" />;
+  const strip = "(100cqw - min(100cqw - 2 * var(--peek), 50rem)) / 2";
+  const right = "(40cqw - 25rem)"; // the paper right of the card, before the next stop
+  return (
+    <>
+      <Arrow v={0} y="58%" r="7deg" />
+      <Doodle
+        place={{ ...past(strip, "8.5rem", "7rem"), y: "calc(var(--stop-top) + 2.5rem)", r: "-4deg" }}
+        viewBox="0 0 116 26"
+      >
+        <Formula>P(win | hand)</Formula>
+      </Doodle>
+      <Doodle
+        place={{ x: `calc(70cqw + 12.5rem - var(--s) / 2)`, y: "36%", s: `min(9rem, ${right} * 0.8, ${gate(right, "7rem")})`, r: "-2deg" }}
+        viewBox="0 0 120 70"
+      >
+        <BellCurve />
+      </Doodle>
+    </>
+  );
 }
 
-// Contact, the journey's end: the arrow in and a note; a paper plane on
-// its way and a postage stamp to the right; a pencil left on the desk (by
-// night a stick of chalk); the sheet's last corners
+// Contact, the journey's end: the arrow in, a note and "Hi" in binary; a
+// paper plane on its way and a postage stamp to the right; a pencil left
+// on the desk (by night a stick of chalk)
 export function ContactDecor() {
   const side = "(50cqw - 24rem)"; // the paper either side of its 48rem
   const plane = `min(10rem, ${side} * 0.75)`;
@@ -248,13 +483,17 @@ export function ContactDecor() {
   // narrower, the plane and the note are enough)
   const roomy = `max(0px, (${side} - 12rem) * 100)`;
   const stamp = `min(5.5rem, ${side} * 0.6, ${roomy})`;
-  const pencil = `min(8rem, ${side} * 0.7, ${roomy})`;
   const centre = `calc(75cqw + 12rem - var(--s) / 2)`;
   return (
     <>
       <Arrow v={1} y="44%" r="-3deg" />
-      <Note text={marginNotes.contact} x={`max(0.75rem, ${side} - 8rem)`} r="-3deg" />
-      <Crop x="calc(50cqw + 24rem)" r="90deg" />
+      <Note text={marginNotes.contact} x="0.75rem" r="-3deg" />
+      <Doodle
+        place={{ ...past(side, "6rem", "5rem"), y: "calc(var(--hang) + 4.5rem)", r: "-2deg" }}
+        viewBox="0 0 76 36"
+      >
+        <Formula size={13} lines={["01001000", "01101001"]} />
+      </Doodle>
       <Doodle place={{ x: centre, y: "calc(var(--hang) + 1.5rem)", s: plane, r: "-6deg" }} viewBox="0 0 120 80">
         <g strokeWidth="2">
           <path d="M112 10 12 40l38 12 12 20 10-16 40-46zM50 52l62-42M62 72l-12-20" />
@@ -285,7 +524,7 @@ export function ContactDecor() {
         </text>
       </Doodle>
       <Doodle
-        place={{ x: `calc(${side} / 2 - var(--s) / 2)`, y: `calc(100% - var(--foot) - 3.5rem)`, s: pencil, r: "-12deg" }}
+        place={{ ...past(side, "8rem", "6rem"), y: `calc(100% - var(--foot) - 3.5rem)`, r: "-12deg" }}
         viewBox="0 0 120 40"
       >
         <g className="d" strokeWidth="2">

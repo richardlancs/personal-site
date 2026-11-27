@@ -293,6 +293,25 @@
     max-height: 100%;
   }
 
+  /* Every card in the middle of the screen, between the bar and the
+     map, on a laptop or wider (Richard, 27 November 2026; a tall
+     screen's sheet keeps its band): a single panel by its auto margins,
+     a row's panels by the row's alignment */
+  @media not (max-aspect-ratio: 1 / 1) {
+    :root[data-track="on"] .track .station-body {
+      top: var(--stop-top);
+      bottom: var(--foot);
+      height: fit-content;
+      max-height: calc(100% - var(--stop-top) - var(--foot));
+      margin-block: auto;
+    }
+
+    :root[data-track="on"] .track .station-row {
+      align-items: center;
+      padding-top: var(--stop-top);
+    }
+  }
+
   /* On a short screen the cover leaves room for the words */
   :root[data-track="on"] .project .depth {
     max-width: calc((100svh - var(--stop-top)) * 0.8);
@@ -496,7 +515,7 @@
   }
 }
 
-@media (width < 64rem) {
+@media (width < 75rem) {
   :root .decor[data-note] {
     display: none;
   }

@@ -18,15 +18,16 @@ const rule = (sel) => {
 // (the last rule for a selector: the More pill's own, after the rule it shares)
 const lastRule = (sel) => css.slice(css.lastIndexOf(`${sel} {`), css.indexOf("}", css.lastIndexOf(`${sel} {`)));
 
-test("every panel hangs from one top line and ends above the map", () => {
+test("every panel sits in the middle between the bar and the map on a laptop or wider, and ends above the map", () => {
   // (--hang: --line is the hairline colour, used inside the cards)
   assert.match(css, /--hang: calc\(var\(--stop-top\) \+ 1\.5rem\);\s*--room: calc\(100% - var\(--hang\) - var\(--foot\)\);/);
   const body = rule(':root[data-track="on"] .track .station-body');
-  assert.match(body, /top: var\(--hang\);/);
   assert.match(body, /max-height: var\(--room\);/);
-  assert.match(body, /margin: 0;/, "the stacked page's pull-up doesn't move the line");
-  assert.doesNotMatch(body, /min-height|margin: auto/, "sized by what it holds, never re-centred as it grows");
-  assert.match(rule(':root[data-track="on"] .track .station-row'), /align-items: flex-start;[\s\S]*padding: var\(--hang\) 0 var\(--foot\)/);
+  assert.match(body, /margin: 0;/, "the stacked page's pull-up doesn't move it");
+  // Richard, 27 November 2026: the cards vertically centred, throughout
+  const wide = css.slice(css.indexOf("@media not (max-aspect-ratio: 1 / 1)"));
+  assert.match(wide, /\.track \.station-body \{\s*top: var\(--stop-top\);\s*bottom: var\(--foot\);\s*height: fit-content;\s*max-height: calc\(100% - var\(--stop-top\) - var\(--foot\)\);\s*margin-block: auto;/);
+  assert.match(wide, /\.track \.station-row \{\s*align-items: center;\s*padding-top: var\(--stop-top\);/);
   assert.doesNotMatch(css, /justify-content: safe center/, "a panel's words start at its top");
 });
 
