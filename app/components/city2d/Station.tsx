@@ -55,10 +55,12 @@ export function NextStop({ section }: { section: Section }) {
   );
 }
 
-export default function Station({ section, heading, row, children }: { section: Section; heading?: ReactNode; row?: boolean; children?: ReactNode }) {
+// `decor`: the stop's doodles on the paper around its panel (Decor.tsx)
+export default function Station({ section, heading, row, decor, children }: { section: Section; heading?: ReactNode; row?: boolean; decor?: ReactNode; children?: ReactNode }) {
   const id = section.hash || "home";
   return (
     <section id={id} aria-labelledby={`${id}-title`} tabIndex={-1} className="station" data-district={section.district}>
+      {decor}
       {row ? (
         <div className="station-row">{children}</div>
       ) : (

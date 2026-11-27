@@ -109,6 +109,14 @@ export const about: AboutPage[] = [
 // The line beside the GitHub link on the notebook's last page
 export const githubNote = "where I document what I'm learning and share what I build";
 
+// The pencilled notes in the paper's margin, beside three stops
+// (components/city2d/Decor.tsx): decoration, a few words each
+export const marginNotes = {
+  home: "hello!",
+  projects: "my work",
+  contact: "say hi!",
+};
+
 export const projects: Project[] = [
   {
     title: "MarketLab",

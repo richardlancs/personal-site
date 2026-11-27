@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState, useSyncExternalStore, type CSSProperties } from "react";
 
-// One interest's photos as polaroids on its scrapbook page (scrapbook.css).
+// One interest's photos as polaroids on its scrapbook page (city.css, "The interests' scrapbook pages").
 // Without scripts, and before hydration, they lie one under another, every
 // one readable. With scripts they become a stack: the
 // current photo on top, the next two peeking out behind it, turned a

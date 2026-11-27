@@ -125,6 +125,28 @@ charcoal its own specular sheet in `screen` (light on the ridges). Its
 strength per paper is `--crumple`. Gone under `prefers-contrast: more` and
 forced colours.
 
+### The doodles
+
+Round 10 (27 November 2026), my words: "add some things onto the paper to
+give it some more personality that change with light and dark theme".
+Line drawings in one hand (`city2d/Decor.tsx`, a server component; rules
+at the end of `city-track.css`), each a day drawing (`.d`: pencil and ink
+on cream) and a night one (`.n`: chalk and gold leaf on charcoal), the
+paper showing its own: at Home a margin note, paper stars (night: gold),
+a coffee ring (night: a moon in a halo), a sun (night: a constellation;
+only where it can be 5rem or more) and a crop mark at the hero's top-left;
+an arrow in the left margin of every later stop (an arc, a loop or a
+wave, each its own height and turn); at Projects a note and a paper clip
+on the index (steel, then gold); at Contact a note, a paper plane, a crop
+mark at its top-right, and, where its margins are 12rem or more, a
+postage stamp and a pencil (night: a worn stick of chalk).
+They ride on the track beside their stop's panel (`decor` on `Station`),
+never under its words, placed and sized inline (`--x`, `--y`, `--s`,
+`--r`) so the CSS is a few rules. Only on the journey; on phones only the
+ring (smaller, to one side, `--xp`/`--sp`); the notes from 1024px wide (words in `portfolio.ts: marginNotes`);
+none under more contrast or forced colours. `aria-hidden`, no pointer,
+nothing moves (`tests/city-decor.test.mjs`).
+
 ### The journey
 
 `/` is one long sheet you travel along: Home, About, Projects (with Skills
@@ -183,8 +205,9 @@ Bundles (gzip bytes; limits only go down): `homeInitialJs` ≤ 203,000;
 stylesheet `/` doesn't link (besides the résumé's). Fonts are not in
 these: Fredoka and Nunito are about 68.9 KB of woff2, both preloaded
 (Newsreader, its italic and Hanken Grotesk were 118.5 KB). Latest reading
-(round 9, 26 November 2026): `totalCss` 13,127, `homeInitialJs` 198,537,
-`totalJs` 204,172.
+(round 10, 27 November 2026): `totalCss` 12,931 (the scrapbook's rules
+folded into `city.css`: one stylesheet compresses smaller),
+`homeInitialJs` 198,537, `totalJs` 204,172.
 
 ### Standing rules
 

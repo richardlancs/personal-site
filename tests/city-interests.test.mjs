@@ -1,7 +1,7 @@
 // The interests (components/city2d/sections/Interests.tsx): one <details>
 // per interest from app/data/portfolio.ts, the first open, with the
 // interest's photos from public/interests/<scene>/ (lib/interestPhotos.ts)
-// as polaroids on a scrapbook page (Scrapbook.tsx, scrapbook.css)
+// as polaroids on a scrapbook page (Scrapbook.tsx; city.css, "The interests' scrapbook pages")
 import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -76,7 +76,7 @@ test("the scrapbook is rendered only when there are photos, its polaroids from p
   assert.match(source, /interestPhotos\(interest\.scene, interest\.name, interest\.captions\)/);
   assert.match(source, /\{photos\.length > 0 && \(/);
   assert.match(source, /<Scrapbook\b/);
-  assert.match(source, /import "\.\.\/\.\.\/\.\.\/scrapbook\.css";/);
+  assert.doesNotMatch(source, /\.css";/, "its rules live in city.css (one stylesheet compresses smaller)");
   const book = read("app/components/city2d/Scrapbook.tsx");
   assert.match(book, /^"use client";/);
   assert.doesNotMatch(book, /data\/portfolio/, "never the data file in a client component");
@@ -87,7 +87,9 @@ test("the scrapbook is rendered only when there are photos, its polaroids from p
   assert.match(book, /aria-live="polite"/);
   assert.equal((book.match(/className="glass glass-icon"/g) ?? []).length, 2);
   // flipping only moves, behind the still view and reduced-motion guard
-  const css = read("app/scrapbook.css");
+  const all = read("app/city.css");
+  const css = all.slice(all.indexOf("/* The interests' scrapbook pages"));
+  assert.ok(css.length < all.length, "the scrapbook's rules are in city.css");
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|\bwhite\b|\bblack\b/i, "colours only from the paper tokens");
   assert.doesNotMatch(css, /animation|infinite/);
   for (const m of css.matchAll(/transition:([^;]*);/g)) assert.doesNotMatch(m[1].replace(/transform|opacity/g, ""), /[a-z-]+ var\(--t-/, m[0]);

@@ -5,7 +5,6 @@ import Scrapbook from "../Scrapbook";
 import Figures from "../Figures";
 import Heading from "../Heading";
 import { order } from "../Station";
-import "../../../scrapbook.css";
 
 // The interests: one row per interest, a single column on the ground with
 // a little room between them. Each row is a native <details>
@@ -13,7 +12,7 @@ import "../../../scrapbook.css";
 // supports it), its summary a full-width glass key ("Show", "Hide" and a
 // chevron at its end; city.css, "A fold"); the first starts open, and the
 // open one's edge turns to the accent. Inside: a scrapbook page
-// (scrapbook.css), the description beside the interest's photos as a stack
+// (city.css, "The interests' scrapbook pages"), the description beside the interest's photos as a stack
 // of polaroids to flip through (Scrapbook.tsx), read from
 // public/interests/<scene>/ (lib/interestPhotos.ts,
 // docs/adding-interest-photos.md). No photos, no stack. The rows arrive in

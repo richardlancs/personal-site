@@ -1,5 +1,6 @@
 import CityTrack from "./components/city2d/CityTrack";
 import Station from "./components/city2d/Station";
+import { AboutDecor, BackgroundDecor, ContactDecor, HomeDecor, InterestsDecor, ProjectsDecor } from "./components/city2d/Decor";
 import About from "./components/city2d/sections/About";
 import Contact from "./components/city2d/sections/Contact";
 import Experience, { ExperienceHead } from "./components/city2d/sections/Experience";
@@ -24,20 +25,20 @@ export default function Home() {
   return (
     <main>
       <CityTrack>
-        <Station section={section("home")} heading={<Hero />} />
-        <Station section={section("about")}>
+        <Station section={section("home")} heading={<Hero />} decor={<HomeDecor />} />
+        <Station section={section("about")} decor={<AboutDecor />}>
           <About />
         </Station>
-        <Station section={section("projects")} row>
+        <Station section={section("projects")} row decor={<ProjectsDecor />}>
           <Projects />
         </Station>
-        <Station section={section("experience")} heading={<ExperienceHead />}>
+        <Station section={section("experience")} heading={<ExperienceHead />} decor={<BackgroundDecor />}>
           <Experience />
         </Station>
-        <Station section={section("interests")}>
+        <Station section={section("interests")} decor={<InterestsDecor />}>
           <Interests />
         </Station>
-        <Station section={section("contact")}>
+        <Station section={section("contact")} decor={<ContactDecor />}>
           <Contact />
           <footer className="page-foot">
             <Colophon />

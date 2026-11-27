@@ -463,3 +463,47 @@
     background-image: none;
   }
 }
+
+/* Doodles on the paper (Decor.tsx): line drawings beside the panels,
+   riding with their stop, placed and sized from the markup (--x, --y,
+   --s, --r). Only on the journey; on a phone only those with a place
+   there (--xp). Each paper shows its own drawing (.d by day, .n by
+   night). Never with more contrast or forced colours. */
+[data-track="on"] .decor {
+  position: absolute;
+  z-index: var(--z);
+  top: var(--y);
+  left: var(--x);
+  width: var(--s);
+  rotate: var(--r);
+  pointer-events: none;
+}
+
+:root:not([data-track="on"]) .decor,
+[data-paper="charcoal"] .decor .d,
+:root:not([data-paper="charcoal"]) .decor .n {
+  display: none;
+}
+
+@media (max-aspect-ratio: 1 / 1) {
+  [data-track="on"] .decor {
+    left: var(--xp);
+    width: var(--sp, var(--s));
+  }
+
+  .decor:not([data-phone]) {
+    display: none;
+  }
+}
+
+@media (width < 64rem) {
+  :root .decor[data-note] {
+    display: none;
+  }
+}
+
+@media (prefers-contrast: more), (forced-colors: active) {
+  :root .decor {
+    display: none;
+  }
+}

@@ -101,7 +101,7 @@ test("a section is a labelled section with its number and its heading, no band a
 test("home is the hero: no h2", () => {
   const src = read("app/components/city2d/Station.tsx");
   assert.match(src, /\{heading \?\? <StationHead/, "the hero in place of the heading");
-  assert.match(read("app/page.tsx"), /<Station section=\{section\("home"\)\} heading=\{<Hero \/>\} \/>/);
+  assert.match(read("app/page.tsx"), /<Station section=\{section\("home"\)\} heading=\{<Hero \/>\}(?: decor=\{<HomeDecor \/>\})? \/>/);
   assert.doesNotMatch(read("app/components/city2d/sections/Hero.tsx"), /<h2/);
   // The hero has no list of stops
   assert.doesNotMatch(read("app/components/city2d/sections/Hero.tsx"), /StationIndex|station-index/);
@@ -113,17 +113,17 @@ test("home is the hero: no h2", () => {
 test("the home page is the six stations, with the Skills anchor inside Projects", () => {
   const page = read("app/page.tsx");
   assert.match(page, /<Station /);
-  const projects = page.match(/<Station section=\{section\("projects"\)\} row>([\s\S]*?)<\/Station>/)?.[1];
+  const projects = page.match(/<Station section=\{section\("projects"\)\} row(?: decor=\{<ProjectsDecor \/>\})?>([\s\S]*?)<\/Station>/)?.[1];
   assert.ok(projects, "the projects station");
   // Skills is Projects' own <section id="skills">, the page's only one
   assert.match(projects, /<Projects \/>/);
   assert.doesNotMatch(page, /id="skills"/, "no second Skills anchor on the page");
   assert.match(read("app/components/city2d/sections/Projects.tsx"), /<section id="skills"/);
   for (const [id, name, row] of [["about", "About", ""], ["experience", "Experience", " heading={<ExperienceHead />}"], ["interests", "Interests", ""]]) {
-    assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}${row}>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
+    assert.match(page, new RegExp(`<Station section=\\{section\\("${id}"\\)\\}${row}(?: decor=\\{<\\w+ \\/>\\})?>\\s*<${name} \\/>\\s*</Station>`), `${id} is filled`);
   }
   // Contact, then the foot of the page (the colophon), which ends the last stop
-  assert.match(page, /<Station section=\{section\("contact"\)\}>\s*<Contact \/>\s*<footer className="page-foot">\s*<Colophon \/>\s*<\/footer>\s*<\/Station>/, "contact is filled");
+  assert.match(page, /<Station section=\{section\("contact"\)\}(?: decor=\{<ContactDecor \/>\})?>\s*<Contact \/>\s*<footer className="page-foot">\s*<Colophon \/>\s*<\/footer>\s*<\/Station>/, "contact is filled");
   // The six stations are the journey's stops (CityTrack.tsx)
   assert.match(page, /<CityTrack>\s*<Station section=\{section\("home"\)\}[\s\S]*<\/Station>\s*<\/CityTrack>/);
   for (const id of ["home", "about", "projects", "experience", "interests", "contact"]) assert.match(page, new RegExp(`section\\("${id}"\\)`), `page renders ${id}`);
