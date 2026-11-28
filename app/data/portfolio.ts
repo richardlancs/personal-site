@@ -424,6 +424,14 @@ export const interests: Interest[] = [
     name: "Fragrance",
     scene: "fragrance",
     description: "I like to collect fragrances.",
+    // Drawn stand-ins (illustrations) until Richard's own photos go in
+    captions: {
+      "01-imagination.svg": "Louis Vuitton Imagination",
+      "02-bleu-de-chanel.svg": "Bleu de Chanel",
+      "03-ysl-y.svg": "YSL Y",
+      "04-stronger-with-you-intensely.svg": "Stronger With You Intensely",
+      "05-the-dreamer.svg": "Versace The Dreamer",
+    },
   },
 ];
 

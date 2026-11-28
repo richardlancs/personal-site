@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600" width="600" height="600">
+<title>Illustration</title>
+<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1cf9c"/><stop offset="1" stop-color="#c27a45"/></linearGradient>
+<linearGradient id="gl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".35" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<radialGradient id="v" cx=".5" cy=".45" r=".8"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></radialGradient></defs>
+<rect width="600" height="600" fill="url(#s)"/><g fill="#c9822f" opacity=".85"><path d="M110 120q30-40 70-10-30 40-70 10z"/><path d="M430 90q40-20 60 20-40 20-60-20z"/><path d="M360 200q30-30 60 0-30 30-60 0z"/></g>
+<path d="M0 440q150-30 300-10t300-5V600H0z" fill="#6b4a2e"/>
+<g fill="#b5652c" opacity=".9"><path d="M40 470q30-90 110-110-20 80-110 110z"/><path d="M520 460q-10-80 60-120 10 80-60 120z"/><path d="M470 500q40-50 110-40-40 50-110 40z"/></g>
+<ellipse cx="300" cy="470" rx="120" ry="16" fill="#000" opacity=".22"/>
+<path d="M215 240q0-40 40-40h90q40 0 40 40v200q0 30-30 30H245q-30 0-30-30z" fill="#7a3d1c" stroke="#4a220e" stroke-width="4"/>
+<path d="M215 240q0-40 40-40h90q40 0 40 40v200q0 30-30 30H245q-30 0-30-30z" fill="url(#gl)"/>
+<rect x="268" y="170" width="64" height="30" fill="#b8a27a"/>
+<rect x="255" y="100" width="90" height="70" rx="12" fill="#2a1a12"/>
+<rect width="600" height="600" fill="url(#v)"/></svg>
